@@ -1,0 +1,51 @@
+[
+  {
+    "id": "t1",
+    "date": "2023-11-18",
+    "label": "Domain example-domain.com registered",
+    "source": "whois",
+    "entityId": "n1"
+  },
+  {
+    "id": "t2",
+    "date": "2024-01-12",
+    "label": "First archived snapshot of example-domain.com captured",
+    "source": "wayback",
+    "entityId": "n1"
+  },
+  {
+    "id": "t3",
+    "date": "2024-06-30",
+    "label": "SSL certificate issued for mail.example-domain.com",
+    "source": "crt.sh",
+    "entityId": "n1"
+  },
+  {
+    "id": "t4",
+    "date": "2024-09-14",
+    "label": "SSL certificate issued for dev.example-domain.com",
+    "source": "crt.sh",
+    "entityId": "n1"
+  },
+  {
+    "id": "t5",
+    "date": "2025-02-08",
+    "label": "Username suspectuser99 first observed on GitHub",
+    "source": "sherlock",
+    "entityId": "n1"
+  },
+  {
+    "id": "t6",
+    "date": "2025-03-22",
+    "label": "Username suspectuser99 observed on Reddit",
+    "source": "sherlock",
+    "entityId": "n1"
+  },
+  {
+    "id": "t7",
+    "date": "2025-08-01",
+    "label": "Phone number and co-registered email surfaced in demo breach dataset",
+    "source": "breach_demo",
+    "entityId": "n1"
+  }
+]

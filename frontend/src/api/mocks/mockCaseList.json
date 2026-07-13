@@ -1,0 +1,32 @@
+[
+  {
+    "caseId": "case-001",
+    "title": "Operation Ember — phishing domain cluster",
+    "investigatorId": "inv-042",
+    "status": "active",
+    "createdAt": "2026-06-01T08:00:00Z",
+    "lastActivity": "2026-06-07T16:48:00Z",
+    "tags": ["phishing", "domain-cluster", "priority-high"],
+    "entityCount": 4
+  },
+  {
+    "caseId": "case-002",
+    "title": "Suspect username correlation — crypto fraud",
+    "investigatorId": "inv-042",
+    "status": "active",
+    "createdAt": "2026-05-20T10:30:00Z",
+    "lastActivity": "2026-06-05T14:25:00Z",
+    "tags": ["crypto", "username-enum"],
+    "entityCount": 2
+  },
+  {
+    "caseId": "case-003",
+    "title": "Archived leaked credential set — closed",
+    "investigatorId": "inv-017",
+    "status": "closed",
+    "createdAt": "2026-04-11T09:00:00Z",
+    "lastActivity": "2026-04-30T12:00:00Z",
+    "tags": ["breach", "resolved"],
+    "entityCount": 1
+  }
+]

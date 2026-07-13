@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-950 text-slate-100 font-sans antialiased overflow-x-hidden;
+  }
+  
+  /* Custom scrollbar styling for a tech/investigative feel */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-slate-900;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-800 rounded hover:bg-slate-700 transition-colors;
+  }
+}
+
+@layer utilities {
+  .cyber-grid {
+    background-image: radial-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  
+  .glow-shadow {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.08);
+  }
+  
+  .glow-border {
+    border-color: rgba(99, 102, 241, 0.2);
+  }
+}

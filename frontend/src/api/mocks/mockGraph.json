@@ -1,0 +1,13 @@
+{
+  "nodes": [
+    { "id": "n1", "label": "suspect@example.com", "type": "email", "confidence": 1.0, "sourceCount": 3 },
+    { "id": "n2", "label": "suspectuser99", "type": "username", "confidence": 0.82, "sourceCount": 2 },
+    { "id": "n3", "label": "example-domain.com", "type": "domain", "confidence": 1.0, "sourceCount": 2 },
+    { "id": "n4", "label": "+91-98XXXXXXX", "type": "phone", "confidence": 0.65, "sourceCount": 1 }
+  ],
+  "edges": [
+    { "id": "e1", "source": "n1", "target": "n2", "relationType": "co-registered", "confidence": 0.9, "sourceProvenance": "breach_demo" },
+    { "id": "e2", "source": "n1", "target": "n3", "relationType": "registrant_email", "confidence": 1.0, "sourceProvenance": "whois" },
+    { "id": "e3", "source": "n3", "target": "n2", "relationType": "co-occurs_with", "confidence": 0.6, "sourceProvenance": "crt.sh" }
+  ]
+}

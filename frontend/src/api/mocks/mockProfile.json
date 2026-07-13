@@ -1,0 +1,90 @@
+{
+  "entityId": "n1",
+  "displayName": "suspect@example.com",
+  "attributes": [
+    {
+      "key": "registrant_email",
+      "value": "suspect@example.com",
+      "source": "whois",
+      "confidence": 1.0,
+      "discoveredAt": "2026-06-02T09:14:00Z"
+    },
+    {
+      "key": "registrant_organization",
+      "value": "Not disclosed (privacy proxy)",
+      "source": "whois",
+      "confidence": 0.6,
+      "discoveredAt": "2026-06-02T09:14:00Z"
+    },
+    {
+      "key": "domain_registered",
+      "value": "example-domain.com",
+      "source": "whois",
+      "confidence": 1.0,
+      "discoveredAt": "2026-06-02T09:14:00Z"
+    },
+    {
+      "key": "domain_creation_date",
+      "value": "2023-11-18",
+      "source": "whois",
+      "confidence": 1.0,
+      "discoveredAt": "2026-06-02T09:14:00Z"
+    },
+    {
+      "key": "subdomain_found",
+      "value": "mail.example-domain.com",
+      "source": "crt.sh",
+      "confidence": 0.9,
+      "discoveredAt": "2026-06-03T11:40:00Z"
+    },
+    {
+      "key": "subdomain_found",
+      "value": "dev.example-domain.com",
+      "source": "crt.sh",
+      "confidence": 0.85,
+      "discoveredAt": "2026-06-04T08:05:00Z"
+    },
+    {
+      "key": "username_match",
+      "value": "suspectuser99",
+      "source": "sherlock",
+      "confidence": 0.82,
+      "discoveredAt": "2026-06-05T14:22:00Z"
+    },
+    {
+      "key": "platform_hit",
+      "value": "GitHub",
+      "source": "sherlock",
+      "confidence": 0.88,
+      "discoveredAt": "2026-06-05T14:22:00Z"
+    },
+    {
+      "key": "platform_hit",
+      "value": "Reddit",
+      "source": "sherlock",
+      "confidence": 0.7,
+      "discoveredAt": "2026-06-05T14:25:00Z"
+    },
+    {
+      "key": "archived_snapshot",
+      "value": "https://web.archive.org/web/20240112/example-domain.com",
+      "source": "wayback",
+      "confidence": 1.0,
+      "discoveredAt": "2026-06-06T10:00:00Z"
+    },
+    {
+      "key": "phone_number",
+      "value": "+91-98XXXXXXX",
+      "source": "breach_demo",
+      "confidence": 0.65,
+      "discoveredAt": "2026-06-07T16:45:00Z"
+    },
+    {
+      "key": "co_registered_email",
+      "value": "backup.suspect@example.com",
+      "source": "breach_demo",
+      "confidence": 0.55,
+      "discoveredAt": "2026-06-07T16:48:00Z"
+    }
+  ]
+}

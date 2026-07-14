@@ -3,6 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.connectors.base import registry
 from app.connectors.crtsh import CrtShConnector
+from app.connectors.whois import WhoisConnector
+from app.connectors.wayback import WaybackConnector
+from app.connectors.username_enum import UsernameEnumConnector
+from app.connectors.breach_demo import BreachDemoConnector
 from app.database import Base, engine
 from app.routers import auth as auth_router
 from app.routers import cases as cases_router
@@ -24,6 +28,10 @@ app.include_router(cases_router.router)
 app.include_router(identifiers_router.router)
 
 registry.register(CrtShConnector())
+registry.register(WhoisConnector())
+registry.register(WaybackConnector())
+registry.register(UsernameEnumConnector())
+registry.register(BreachDemoConnector())
 
 
 @app.on_event("startup")

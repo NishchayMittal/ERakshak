@@ -42,3 +42,19 @@ def on_startup() -> None:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/health/connectors")
+async def health_connectors() -> dict[str, dict]:
+    import asyncio
+    connectors = registry.all()
+
+    async def check(conn):
+        try:
+            is_healthy = await conn.check_health()
+        except Exception:
+            is_healthy = False
+        return conn.name, {"status": "healthy" if is_healthy else "unhealthy"}
+
+    results = await asyncio.gather(*(check(c) for c in connectors))
+    return dict(results)

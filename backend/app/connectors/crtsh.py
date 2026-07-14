@@ -10,6 +10,15 @@ class CrtShConnector(BaseConnector):
     timeout_seconds = 20.0
     max_retries = 2
 
+    async def check_health(self) -> bool:
+        import httpx
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                res = await client.head("https://crt.sh/", follow_redirects=True)
+                return res.status_code in {200, 301, 302}
+        except Exception:
+            return False
+
     async def run(self, identifier_value: str) -> list[Finding]:
         domain = identifier_value.lstrip("@")
         url = f"https://crt.sh/?q=%25.{quote_plus(domain)}&output=json"

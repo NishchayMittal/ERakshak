@@ -6,6 +6,15 @@ class WhoisConnector(BaseConnector):
     applies_to = (IdentifierType.domain,)
     timeout_seconds = 15.0
 
+    async def check_health(self) -> bool:
+        import httpx
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                res = await client.head("https://rdap.org/", follow_redirects=True)
+                return res.status_code in {200, 301, 302}
+        except Exception:
+            return False
+
     async def run(self, identifier_value: str) -> list[Finding]:
         domain = identifier_value.lstrip("@").strip().lower()
         url = f"https://rdap.org/domain/{domain}"

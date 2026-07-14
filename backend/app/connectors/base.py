@@ -28,6 +28,9 @@ class BaseConnector(ABC):
     async def run(self, identifier_value: str) -> list[Finding]:
         raise NotImplementedError
 
+    async def check_health(self) -> bool:
+        return True
+
     async def _get_json(self, url: str, params: dict | None = None) -> dict | list | None:
         timeout = httpx.Timeout(self.timeout_seconds)
         backoff = 0.5

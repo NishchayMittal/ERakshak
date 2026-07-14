@@ -71,6 +71,15 @@ class UsernameEnumConnector(BaseConnector):
     applies_to = (IdentifierType.username,)
     timeout_seconds = 5.0
 
+    async def check_health(self) -> bool:
+        import httpx
+        try:
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                res = await client.head("https://github.com/", follow_redirects=True)
+                return res.status_code == 200
+        except Exception:
+            return False
+
     async def run(self, identifier_value: str) -> list[Finding]:
         username = identifier_value.lstrip("@").strip()
         if not username:

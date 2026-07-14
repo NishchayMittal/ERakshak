@@ -48,5 +48,10 @@ def normalize(raw_value: str, id_type: IdentifierType) -> str:
         parsed = phonenumbers.parse(value, "IN")
         return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
 
-    # TODO: add indic-transliteration for Hindi/Gujarati/Hinglish -> Latin normalization.
-    return value
+    if id_type == IdentifierType.name:
+        from anyascii import anyascii
+        return anyascii(value).lower().strip()
+
+    # Transliterate any other fallback values
+    from anyascii import anyascii
+    return anyascii(value)

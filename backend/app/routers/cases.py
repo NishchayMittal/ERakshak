@@ -3,17 +3,20 @@ from sqlalchemy.orm import Session
 import networkx as nx
 from networkx.readwrite import json_graph
 from rapidfuzz import fuzz
+from pydantic import BaseModel
+import asyncio
 
 from app.audit import log_action
 from app.auth import get_current_investigator
 from app.database import get_db
-from app.models import Case, Investigator, Identifier, Finding
+from app.models import Case, Investigator, Identifier, Finding, CaseNote
 from app.schemas import CaseCreate, CaseOut
 
 
 router = APIRouter(prefix="/cases", tags=["cases"])
 
 
+@router.post("", response_model=CaseOut, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=CaseOut, status_code=status.HTTP_201_CREATED)
 def create_case(
     payload: CaseCreate,
@@ -33,6 +36,7 @@ def create_case(
     return case
 
 
+@router.get("", response_model=list[CaseOut])
 @router.get("/", response_model=list[CaseOut])
 def list_cases(db: Session = Depends(get_db), current_investigator: Investigator = Depends(get_current_investigator)):
     return (
@@ -196,3 +200,270 @@ def get_case_graph(
             G.nodes[node]["expand_investigation"] = True
 
     return json_graph.node_link_data(G)
+
+
+class IdentifierInputItem(BaseModel):
+    type: str
+    rawValue: str
+
+
+class IdentifiersSubmitPayload(BaseModel):
+    identifiers: list[IdentifierInputItem]
+
+
+@router.post("/{case_id}/identifiers")
+async def submit_case_identifiers(
+    case_id: str,
+    payload: IdentifiersSubmitPayload,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    saved_findings = []
+    
+    # Process each identifier in the payload
+    for item in payload.identifiers:
+        id_type_str = item.type
+        from app.models import IdentifierType
+        try:
+            valid_type = IdentifierType(id_type_str)
+        except ValueError:
+            from app.normalize import detect_type
+            valid_type = detect_type(item.rawValue)
+
+        from app.normalize import normalize
+        normalized_value = normalize(item.rawValue, valid_type)
+
+        db_id = Identifier(
+            type=valid_type,
+            raw_value=item.rawValue,
+            normalized_value=normalized_value,
+            confidence=1.0,
+            source="manual_intake",
+            case_id=case_id,
+            investigator_id=current_investigator.id
+        )
+        db.add(db_id)
+        db.commit()
+        db.refresh(db_id)
+
+        log_action(
+            db,
+            "identifier.create",
+            investigator_id=current_investigator.id,
+            case_id=case_id,
+            detail={"identifier_id": db_id.id, "type": db_id.type.value, "normalized_value": db_id.normalized_value},
+        )
+
+        from app.connectors.base import registry
+        connectors = registry.for_type(db_id.type)
+
+        async def invoke(connector):
+            try:
+                return connector, await connector.run(db_id.normalized_value)
+            except Exception:
+                return connector, []
+
+        results = await asyncio.gather(*(invoke(connector) for connector in connectors))
+
+        for connector, connector_results in results:
+            connector_saved = []
+            for result in connector_results:
+                finding = Finding(
+                    identifier_id=db_id.id,
+                    connector_name=result.connector_name,
+                    result_type=result.result_type,
+                    result_value=result.result_value,
+                    confidence=result.confidence,
+                    raw_payload=result.raw_payload,
+                )
+                db.add(finding)
+                connector_saved.append(finding)
+                saved_findings.append(finding)
+            db.commit()
+            for finding in connector_saved:
+                db.refresh(finding)
+            
+            log_action(
+                db,
+                "connector.run",
+                investigator_id=current_investigator.id,
+                case_id=case_id,
+                detail={"identifier_id": db_id.id, "connector": connector.name, "result_count": len(connector_results)},
+            )
+
+    is_ambiguous = any(item.type == "name" for item in payload.identifiers)
+    fields_needed = ["city", "age", "employer"] if is_ambiguous else []
+
+    return {
+        "ok": True,
+        "jobId": "pipeline-job-123",
+        "ambiguous": is_ambiguous,
+        "ambiguousFieldsNeeded": fields_needed
+    }
+
+
+@router.get("/{case_id}/entities/{entity_id}/graph")
+def get_entity_graph(
+    case_id: str,
+    entity_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    return get_case_graph(case_id, db, current_investigator)
+
+
+@router.get("/{case_id}/entities/{entity_id}/profile")
+def get_entity_profile(
+    case_id: str,
+    entity_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    # Find identifier where value or database id matches entity_id
+    identifiers = db.query(Identifier).filter(
+        Identifier.case_id == case_id,
+        (Identifier.normalized_value == entity_id) | (Identifier.id == entity_id)
+    ).all()
+
+    findings = []
+    if identifiers:
+        id_ids = [i.id for i in identifiers]
+        findings = db.query(Finding).filter(Finding.identifier_id.in_(id_ids)).all()
+    else:
+        # Search directly for matching finding result values in the case
+        findings = db.query(Finding).join(Identifier).filter(
+            Identifier.case_id == case_id,
+            Finding.result_value == entity_id
+        ).all()
+
+    attributes = []
+    for f in findings:
+        attributes.append({
+            "key": f.result_type,
+            "value": f.result_value,
+            "source": f.connector_name,
+            "confidence": f.confidence,
+            "discoveredAt": f.discovered_at.isoformat()
+        })
+
+    return {
+        "entityId": entity_id,
+        "displayName": entity_id,
+        "attributes": attributes
+    }
+
+
+@router.get("/{case_id}/entities/{entity_id}/timeline")
+def get_entity_timeline(
+    case_id: str,
+    entity_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    identifiers = db.query(Identifier).filter(
+        Identifier.case_id == case_id,
+        (Identifier.normalized_value == entity_id) | (Identifier.id == entity_id)
+    ).all()
+
+    findings = []
+    if identifiers:
+        id_ids = [i.id for i in identifiers]
+        findings = db.query(Finding).filter(Finding.identifier_id.in_(id_ids)).all()
+    else:
+        findings = db.query(Finding).join(Identifier).filter(
+            Identifier.case_id == case_id,
+            Finding.result_value == entity_id
+        ).all()
+
+    timeline = []
+    for f in findings:
+        date_str = f.discovered_at.isoformat()
+        label = f"{f.connector_name} - {f.result_type}: {f.result_value}"
+        
+        if f.connector_name == "wayback_cdx" and f.raw_payload:
+            ts = f.raw_payload.get("timestamp")
+            if ts and len(ts) >= 8:
+                date_str = f"{ts[0:4]}-{ts[4:6]}-{ts[6:8]}"
+                label = f"Wayback Snapshot: {f.raw_payload.get('original_url')}"
+        elif f.connector_name == "whois_rdap" and f.result_type == "domain_event":
+            val = f.result_value
+            if ": " in val:
+                date_str = val.split(": ")[1].split("T")[0]
+                label = val.split(": ")[0]
+
+        timeline.append({
+            "id": f.id,
+            "date": date_str,
+            "label": label,
+            "source": f.connector_name,
+            "entityId": entity_id
+        })
+
+    timeline.sort(key=lambda x: x["date"], reverse=True)
+    return timeline
+
+
+@router.get("/{case_id}/notes")
+def get_case_notes(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    notes = db.query(CaseNote).filter(CaseNote.case_id == case_id).order_by(CaseNote.created_at.asc()).all()
+    return [{
+        "id": n.id,
+        "caseId": n.case_id,
+        "authorId": n.author_id,
+        "text": n.text,
+        "createdAt": n.created_at.isoformat()
+    } for n in notes]
+
+
+class NoteCreatePayload(BaseModel):
+    authorId: str
+    text: str
+
+
+@router.post("/{case_id}/notes")
+def create_case_note(
+    case_id: str,
+    payload: NoteCreatePayload,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    note = CaseNote(
+        case_id=case_id,
+        author_id=payload.authorId,
+        text=payload.text
+    )
+    db.add(note)
+    db.commit()
+    db.refresh(note)
+
+    return {
+        "id": note.id,
+        "caseId": note.case_id,
+        "authorId": note.author_id,
+        "text": note.text,
+        "createdAt": note.created_at.isoformat()
+    }

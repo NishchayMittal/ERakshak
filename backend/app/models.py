@@ -97,3 +97,13 @@ class AuditLog(Base):
 
     investigator = relationship("Investigator", back_populates="audit_logs")
     case = relationship("Case", back_populates="audit_logs")
+
+
+class CaseNote(Base):
+    __tablename__ = "case_notes"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid4()))
+    case_id: Mapped[str] = mapped_column(String, ForeignKey("cases.id"), nullable=False)
+    author_id: Mapped[str] = mapped_column(String, nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)

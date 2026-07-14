@@ -1,10 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 import networkx as nx
 from networkx.readwrite import json_graph
 from rapidfuzz import fuzz
 from pydantic import BaseModel
 import asyncio
+import io
+import csv
+from datetime import datetime
 
 from app.audit import log_action
 from app.auth import get_current_investigator
@@ -145,6 +149,9 @@ def get_case_graph(
             else:
                 target_node_id = result_val.strip()
             target_type = "social_profile"
+        elif result_type == "face_similarity":
+            target_node_id = result_val.split("Match: ")[1].split(" (Similarity:")[0].strip()
+            target_type = "person"
         elif result_type == "leak_record":
             breach_name = result_val.split(" (Hint:")[0].strip()
             target_node_id = breach_name
@@ -467,3 +474,155 @@ def create_case_note(
         "text": note.text,
         "createdAt": note.created_at.isoformat()
     }
+
+
+@router.get("/{case_id}/export/json")
+def export_case_json(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    identifiers = db.query(Identifier).filter(Identifier.case_id == case_id).all()
+    notes = db.query(CaseNote).filter(CaseNote.case_id == case_id).all()
+    
+    data = {
+        "case": {
+            "id": case.id,
+            "title": case.title,
+            "description": case.description,
+            "status": case.status,
+            "created_at": case.created_at.isoformat()
+        },
+        "identifiers": [{
+            "id": i.id,
+            "type": i.type.value,
+            "raw_value": i.raw_value,
+            "normalized_value": i.normalized_value,
+            "confidence": i.confidence,
+            "source": i.source,
+            "findings": [{
+                "id": f.id,
+                "connector": f.connector_name,
+                "type": f.result_type,
+                "value": f.result_value,
+                "confidence": f.confidence,
+                "raw_payload": f.raw_payload
+            } for f in db.query(Finding).filter(Finding.identifier_id == i.id).all()]
+        } for i in identifiers],
+        "notes": [{
+            "id": n.id,
+            "author_id": n.author_id,
+            "text": n.text,
+            "created_at": n.created_at.isoformat()
+        } for n in notes]
+    }
+    return data
+
+
+@router.get("/{case_id}/export/csv")
+def export_case_csv(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    identifiers = db.query(Identifier).filter(Identifier.case_id == case_id).all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Identifier ID", "Identifier Type", "Raw Value", "Normalized Value", "Connector", "Finding Type", "Finding Value", "Confidence"])
+    
+    for i in identifiers:
+        findings = db.query(Finding).filter(Finding.identifier_id == i.id).all()
+        if not findings:
+            writer.writerow([i.id, i.type.value, i.raw_value, i.normalized_value, "N/A", "N/A", "N/A", i.confidence])
+        for f in findings:
+            writer.writerow([i.id, i.type.value, i.raw_value, i.normalized_value, f.connector_name, f.result_type, f.result_value, f.confidence])
+
+    output.seek(0)
+    headers = {"Content-Disposition": f"attachment; filename=ERakshak_Dossier_{case_id}.csv"}
+    return StreamingResponse(io.BytesIO(output.getvalue().encode('utf-8')), headers=headers, media_type="text/csv")
+
+
+@router.get("/{case_id}/export/pdf")
+def export_case_pdf(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    notes = db.query(CaseNote).filter(CaseNote.case_id == case_id).all()
+    identifiers = db.query(Identifier).filter(Identifier.case_id == case_id).all()
+    
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=54, leftMargin=54, topMargin=54, bottomMargin=54)
+    story = []
+    styles = getSampleStyleSheet()
+
+    # Title
+    title_style = ParagraphStyle(
+        'TitleStyle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        leading=28,
+        textColor=colors.HexColor('#1A202C')
+    )
+    story.append(Paragraph(f"e-Rakshak Dossier Report", title_style))
+    story.append(Spacer(1, 10))
+
+    # Meta
+    meta_style = ParagraphStyle(
+        'MetaStyle',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=colors.HexColor('#4A5568')
+    )
+    story.append(Paragraph(f"<b>Case Title:</b> {case.title}", meta_style))
+    story.append(Paragraph(f"<b>Status:</b> {case.status.upper()}", meta_style))
+    story.append(Paragraph(f"<b>Date Generated:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", meta_style))
+    story.append(Spacer(1, 20))
+
+    # Identifiers
+    story.append(Paragraph(f"<b>Seed Identifiers & Suspect Profiles</b>", styles['Heading2']))
+    story.append(Spacer(1, 8))
+    
+    for identifier in identifiers:
+        story.append(Paragraph(f"• <b>{identifier.type.value.upper()}</b>: {identifier.raw_value} (Normalized: {identifier.normalized_value})", meta_style))
+        findings = db.query(Finding).filter(Finding.identifier_id == identifier.id).all()
+        for f in findings:
+            story.append(Paragraph(f"   - <i>{f.connector_name} ({f.result_type})</i>: {f.result_value} [Confidence: {f.confidence}]", meta_style))
+        story.append(Spacer(1, 10))
+
+    story.append(Spacer(1, 15))
+
+    # Case Notes
+    story.append(Paragraph(f"<b>Investigator Case Notes</b>", styles['Heading2']))
+    story.append(Spacer(1, 8))
+    if notes:
+        for note in notes:
+            story.append(Paragraph(f"<b>Agent {note.author_id}</b> ({note.created_at.strftime('%Y-%m-%d %H:%M:%S')}):", meta_style))
+            story.append(Paragraph(f"{note.text}", meta_style))
+            story.append(Spacer(1, 8))
+    else:
+        story.append(Paragraph("No notes added to this case yet.", meta_style))
+
+    doc.build(story)
+    buffer.seek(0)
+    
+    headers = {"Content-Disposition": f"attachment; filename=ERakshak_Dossier_{case_id}.pdf"}
+    return StreamingResponse(buffer, headers=headers, media_type="application/pdf")

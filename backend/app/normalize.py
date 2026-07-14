@@ -14,6 +14,10 @@ BTC_RE = re.compile(r"^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$")
 
 def detect_type(raw_value: str) -> IdentifierType:
     value = raw_value.strip()
+    lower_val = value.lower()
+    if lower_val.endswith((".png", ".jpg", ".jpeg", ".webp", ".gif")) or "suspect_" in lower_val:
+        return IdentifierType.photo
+
     if EMAIL_RE.match(value):
         return IdentifierType.email
 

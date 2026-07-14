@@ -19,6 +19,7 @@ class IdentifierType(str, Enum):
     username = "username"
     wallet = "wallet"
     name = "name"
+    photo = "photo"
     other = "other"
 
 

@@ -50,12 +50,25 @@ export default function ExportMenu({ caseId }: ExportMenuProps) {
     setExporting(true);
     showToast('Generating PDF Intelligence Report...', 'info');
 
-    // Simulate PDF generation delay
-    setTimeout(() => {
+    try {
+      const downloadAnchor = document.createElement('a');
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+      downloadAnchor.setAttribute("href", `${apiBaseUrl}/cases/${caseId}/export/pdf`);
+      downloadAnchor.setAttribute("download", `ERakshak_Dossier_${caseId}.pdf`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+
+      setTimeout(() => {
+        setExporting(false);
+        showToast('Intelligence Report PDF exported successfully', 'success');
+        setIsOpen(false);
+      }, 2000);
+    } catch (err) {
+      console.error(err);
       setExporting(false);
-      showToast('Intelligence Report PDF exported successfully', 'success');
-      setIsOpen(false);
-    }, 2000);
+      showToast('Failed to generate PDF Report', 'error');
+    }
   };
 
   return (

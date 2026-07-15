@@ -388,20 +388,26 @@ def get_link_feedbacks(
     return db.query(LinkFeedback).filter(LinkFeedback.case_id == case_id).all()
 
 
+from app.narrative import generate_narrative
+
 @router.get("/{case_id}/narrative")
 def get_case_narrative(
     case_id: str,
     db: Session = Depends(get_db),
     current_investigator: Investigator = Depends(get_current_investigator)
 ):
+    # Case validation is handled inside compile_evidence_pack, 
+    # but we can do it here for explicit 404
     case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
     if not case:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
 
-    # Stub/mock response containing markdown formatted synthesized narrative dossier
+    evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
+    narrative_text = generate_narrative(evidence_pack)
+    
     return {
         "case_id": case_id,
-        "narrative": "### e-Rakshak Suspect Dossier Intelligence Report\n\n**Subject Profile**: Suspect Alpha (Developer Profile)\n**Associated Entities**: suspect@example.com (Email), +919876543210 (Phone), asha.mehta@example.com (Email)\n\n#### 1. Ingest Overview & Intake Summary\nInvestigation was initiated upon receiving seed domain identifiers indicating suspect activities. Dynamic query scanning was deployed to crawl public RDAP WHOIS databases, Certificate Logs, and historical snapshots.\n\n#### 2. Suspect Correlation & Leaks Analysis\nCross-referencing the database against local breach repository archives reveals high-confidence links:\n- Leaked credentials associate username `suspect_dev` and email `suspect@example.com` to Canva Leak 2024.\n- Historic CDX Wayback snapshots trace active domains registering contact email `john.doe@example.com` and matching suspect phone numbers with standard geographic parameters.\n\n#### 3. Face Similarity Match\nGrayscale structural similarity calculations of suspect photo inputs yield **92.5% alignment** to known Developer suspect alpha."
+        "narrative": narrative_text
     }
 
 

@@ -1,13 +1,11 @@
 import { create } from 'zustand';
 import type { GraphData } from '../types/graph';
-import type { ProfileData } from '../types/profile';
-import type { TimelineEntry } from '../types/timeline';
-import { getGraph, getProfile, getTimeline } from '../api/endpoints';
+import type { EvidencePack } from '../types/evidence';
+import { getGraph, getEvidencePack } from '../api/endpoints';
 
 interface GraphState {
   graphData: GraphData | null;
-  profileData: ProfileData | null;
-  timelineData: TimelineEntry[];
+  evidencePack: EvidencePack | null;
   selectedEntityId: string | null;
   confidenceThreshold: number; // 0 to 1
   selectedSources: string[]; // e.g., ['whois', 'crt.sh', 'wayback', 'sherlock', 'breach_demo']
@@ -22,8 +20,7 @@ interface GraphState {
 
 export const useGraphStore = create<GraphState>((set, get) => ({
   graphData: null,
-  profileData: null,
-  timelineData: [],
+  evidencePack: null,
   selectedEntityId: null,
   confidenceThreshold: 0.0,
   selectedSources: ['whois', 'crt.sh', 'wayback', 'sherlock', 'breach_demo'],
@@ -42,15 +39,13 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   loadEntityGraph: async (caseId, entityId) => {
     set({ loading: true, selectedEntityId: entityId });
     try {
-      const [graph, profile, timeline] = await Promise.all([
+      const [graph, evidence] = await Promise.all([
         getGraph(caseId, entityId),
-        getProfile(caseId, entityId),
-        getTimeline(caseId, entityId),
+        getEvidencePack(caseId),
       ]);
       set({
         graphData: graph,
-        profileData: profile,
-        timelineData: timeline,
+        evidencePack: evidence,
       });
     } catch (err) {
       console.error('Failed to load entity graph data:', err);
@@ -58,5 +53,5 @@ export const useGraphStore = create<GraphState>((set, get) => ({
       set({ loading: false });
     }
   },
-  clearGraph: () => set({ graphData: null, profileData: null, timelineData: [], selectedEntityId: null }),
+  clearGraph: () => set({ graphData: null, evidencePack: null, selectedEntityId: null }),
 }));

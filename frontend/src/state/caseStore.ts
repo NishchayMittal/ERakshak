@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { CaseSummary, CaseNote } from '../types/case';
-import { getCaseList, getNotes, addNote } from '../api/endpoints';
+import { getCaseList, getNotes, addNote, createCase } from '../api/endpoints';
 
 interface CaseState {
   cases: CaseSummary[];
@@ -11,6 +11,7 @@ interface CaseState {
   selectCase: (caseId: string) => void;
   loadNotes: (caseId: string) => Promise<void>;
   addCaseNote: (caseId: string, authorId: string, text: string) => Promise<void>;
+  initializeNewCase: (title: string, description?: string) => Promise<CaseSummary>;
 }
 
 export const useCaseStore = create<CaseState>((set, get) => ({
@@ -23,7 +24,6 @@ export const useCaseStore = create<CaseState>((set, get) => ({
     try {
       const caseList = await getCaseList();
       set({ cases: caseList });
-      // If we don't have an active case yet, default to the first one
       if (!get().activeCase && caseList.length > 0) {
         set({ activeCase: caseList[0] });
       }
@@ -55,6 +55,22 @@ export const useCaseStore = create<CaseState>((set, get) => ({
       }));
     } catch (err) {
       console.error('Failed to add note:', err);
+    }
+  },
+  initializeNewCase: async (title, description) => {
+    set({ loading: true });
+    try {
+      const newCase = await createCase(title, description);
+      set((state) => ({
+        cases: [newCase, ...state.cases],
+        activeCase: newCase,
+      }));
+      return newCase;
+    } catch (err) {
+      console.error('Failed to initialize new case:', err);
+      throw err;
+    } finally {
+      set({ loading: false });
     }
   },
 }));

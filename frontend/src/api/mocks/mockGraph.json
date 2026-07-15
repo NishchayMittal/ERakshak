@@ -1,13 +1,18 @@
 {
   "nodes": [
-    { "id": "n1", "label": "suspect@example.com", "type": "email", "confidence": 1.0, "sourceCount": 3 },
-    { "id": "n2", "label": "suspectuser99", "type": "username", "confidence": 0.82, "sourceCount": 2 },
-    { "id": "n3", "label": "example-domain.com", "type": "domain", "confidence": 1.0, "sourceCount": 2 },
-    { "id": "n4", "label": "+91-98XXXXXXX", "type": "phone", "confidence": 0.65, "sourceCount": 1 }
+    { "id": "n1", "label": "suspect@example.com", "type": "email", "confidence": 1.0, "sourceCount": 3, "pivot": true, "expandInvestigation": true },
+    { "id": "n2", "label": "suspectuser99", "type": "username", "confidence": 0.82, "sourceCount": 2, "pivot": false, "expandInvestigation": false },
+    { "id": "n3", "label": "example-domain.com", "type": "domain", "confidence": 1.0, "sourceCount": 2, "pivot": false, "expandInvestigation": false },
+    { "id": "n4", "label": "+91-98XXXXXXX", "type": "phone", "confidence": 0.65, "sourceCount": 1, "pivot": false, "expandInvestigation": false },
+    { "id": "n5", "label": "alex.morgan", "type": "person", "confidence": 0.88, "sourceCount": 2, "pivot": false, "expandInvestigation": false },
+    { "id": "n6", "label": "wallet-0x91ab", "type": "wallet", "confidence": 0.74, "sourceCount": 1, "pivot": false, "expandInvestigation": false }
   ],
   "edges": [
-    { "id": "e1", "source": "n1", "target": "n2", "relationType": "co-registered", "confidence": 0.9, "sourceProvenance": "breach_demo" },
-    { "id": "e2", "source": "n1", "target": "n3", "relationType": "registrant_email", "confidence": 1.0, "sourceProvenance": "whois" },
-    { "id": "e3", "source": "n3", "target": "n2", "relationType": "co-occurs_with", "confidence": 0.6, "sourceProvenance": "crt.sh" }
+    { "id": "e1", "source": "n1", "target": "n2", "relationType": "co-registered", "confidence": 0.9, "sourceProvenance": "breach_demo", "matchType": "xgboost", "shapFeatures": { "name_similarity": 0.72, "email_domain_match": 0.68, "shared_alias": 0.41 } },
+    { "id": "e2", "source": "n1", "target": "n3", "relationType": "registrant_email", "confidence": 1.0, "sourceProvenance": "whois", "matchType": "confirmed", "shapFeatures": { "domain_cooccurrence": 0.95, "registrant_email": 0.9, "source_provenance": 0.8 } },
+    { "id": "e3", "source": "n3", "target": "n2", "relationType": "co-occurs_with", "confidence": 0.6, "sourceProvenance": "crt.sh", "matchType": "baseline", "shapFeatures": { "shared_domains": 0.55, "username_overlap": 0.23, "temporal_gap": 0.11 } },
+    { "id": "e4", "source": "n1", "target": "n5", "relationType": "face_similarity", "confidence": 0.85, "sourceProvenance": "face_matcher", "matchType": "xgboost", "shapFeatures": { "photo_similarity": 0.84, "name_overlap": 0.39, "source_quality": 0.25 } },
+    { "id": "e5", "source": "n2", "target": "n6", "relationType": "wallet_link", "confidence": 0.77, "sourceProvenance": "breach_demo", "matchType": "baseline", "shapFeatures": { "wallet_overlap": 0.7, "shared_alias": 0.32, "activity_gap": 0.14 } },
+    { "id": "e6", "source": "n5", "target": "n6", "relationType": "shared_infra", "confidence": 0.63, "sourceProvenance": "wayback", "matchType": "baseline", "shapFeatures": { "shared_domains": 0.45, "temporal_overlap": 0.3, "source_count": 0.2 } }
   ]
 }

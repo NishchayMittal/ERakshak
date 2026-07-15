@@ -1,132 +1,168 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Download, FileCheck, RefreshCw, FileText, ChevronDown } from 'lucide-react';
+import { exportCaseCSV, exportCaseJSON, exportCasePDF } from '../../api/endpoints';
 import { useUIStore } from '../../state/uiStore';
-import { useGraphStore } from '../../state/graphStore';
 
 interface ExportMenuProps {
   caseId: string;
 }
 
+// Audio click synth
+const playClickTone = () => {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1000, ctx.currentTime);
+    osc.frequency.setValueAtTime(1200, ctx.currentTime + 0.05);
+    gain.gain.setValueAtTime(0.03, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.1);
+  } catch (e) {}
+};
+
 export default function ExportMenu({ caseId }: ExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const { showToast } = useUIStore();
-  const { graphData, profileData } = useGraphStore();
 
-  const handleExportJSON = () => {
-    if (!graphData) return;
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ caseId, graphData, profileData }, null, 2));
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = window.URL.createObjectURL(blob);
     const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `ERakshak_Dossier_${caseId}_Export.json`);
+    downloadAnchor.href = url;
+    downloadAnchor.download = filename;
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
-    showToast('Raw JSON Dossier exported', 'success');
-    setIsOpen(false);
+    window.URL.revokeObjectURL(url);
   };
 
-  const handleExportCSV = () => {
-    if (!graphData) return;
-    // Flatten findings to CSV format
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Node ID,Label,Type,Confidence,Source Count\n";
-    
-    graphData.nodes.forEach(n => {
-      csvContent += `"${n.id}","${n.label}","${n.type}",${n.confidence},${n.sourceCount}\n`;
-    });
-
-    const encodedUri = encodeURI(csvContent);
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", encodedUri);
-    downloadAnchor.setAttribute("download", `ERakshak_Findings_${caseId}.csv`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-    showToast('Flattened CSV exported successfully', 'success');
-    setIsOpen(false);
-  };
-
-  const handleExportPDF = () => {
+  const handleExportJSON = async () => {
+    playClickTone();
     setExporting(true);
-    showToast('Generating PDF Intelligence Report...', 'info');
+    try {
+      const blob = await exportCaseJSON(caseId);
+      downloadBlob(blob, `ERakshak_Dossier_${caseId}_Export.json`);
+      showToast('Raw JSON dossier exported', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Failed to export JSON dossier', 'error');
+    } finally {
+      setExporting(false);
+      setIsOpen(false);
+    }
+  };
+
+  const handleExportCSV = async () => {
+    playClickTone();
+    setExporting(true);
+    try {
+      const blob = await exportCaseCSV(caseId);
+      downloadBlob(blob, `ERakshak_Findings_${caseId}.csv`);
+      showToast('Flattened CSV exported successfully', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Failed to export CSV findings', 'error');
+    } finally {
+      setExporting(false);
+      setIsOpen(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    playClickTone();
+    setExporting(true);
+    showToast('Generating PDF intelligence report...', 'info');
 
     try {
-      const downloadAnchor = document.createElement('a');
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-      downloadAnchor.setAttribute("href", `${apiBaseUrl}/cases/${caseId}/export/pdf`);
-      downloadAnchor.setAttribute("download", `ERakshak_Dossier_${caseId}.pdf`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-
-      setTimeout(() => {
-        setExporting(false);
-        showToast('Intelligence Report PDF exported successfully', 'success');
-        setIsOpen(false);
-      }, 2000);
-    } catch (err) {
-      console.error(err);
+      const blob = await exportCasePDF(caseId);
+      downloadBlob(blob, `ERakshak_Dossier_${caseId}.pdf`);
+      showToast('Intelligence report PDF exported successfully', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Failed to generate PDF report', 'error');
+    } finally {
       setExporting(false);
-      showToast('Failed to generate PDF Report', 'error');
+      setIsOpen(false);
     }
   };
 
   return (
-    <div className="relative inline-block text-left">
+    <div className="relative inline-block text-left select-none">
       <div>
-        <button
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-slate-100 rounded text-xs font-semibold shadow border border-slate-700 flex items-center gap-1.5 transition-all"
+          onClick={() => {
+            playClickTone();
+            setIsOpen(!isOpen);
+          }}
+          disabled={exporting}
+          className="px-3.5 py-2 bg-indigo-600/90 hover:bg-indigo-500 text-white rounded text-xs font-bold shadow hover:shadow-indigo-500/10 transition-all border border-indigo-400/40 flex items-center gap-1.5 font-mono uppercase tracking-wider"
         >
-          <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <span>Export Dossier</span>
-          <svg className="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
+          {exporting ? (
+            <RefreshCw className="w-4 h-4 text-white animate-spin" />
+          ) : (
+            <Download className="w-4 h-4 text-slate-100" />
+          )}
+          <span>{exporting ? 'Exporting...' : 'Export Dossier'}</span>
+          <ChevronDown className={`w-3.5 h-3.5 text-slate-200 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </motion.button>
       </div>
 
-      {isOpen && (
-        <>
-          <div 
-            onClick={() => setIsOpen(false)} 
-            className="fixed inset-0 z-10"
-          ></div>
-          <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-2xl bg-slate-900 border border-slate-800 z-20 focus:outline-none overflow-hidden">
-            <div className="py-1">
-              <button
-                onClick={handleExportJSON}
-                disabled={exporting}
-                className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-850 hover:text-white flex items-center gap-2 transition-colors border-b border-slate-850/50"
-              >
-                <span className="font-semibold text-[9px] uppercase px-1 bg-slate-950 rounded text-amber-500 font-mono">JSON</span>
-                Raw Graph Dataset
-              </button>
-              
-              <button
-                onClick={handleExportCSV}
-                disabled={exporting}
-                className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-850 hover:text-white flex items-center gap-2 transition-colors border-b border-slate-850/50"
-              >
-                <span className="font-semibold text-[9px] uppercase px-1 bg-slate-950 rounded text-emerald-500 font-mono">CSV</span>
-                Flattened Findings Table
-              </button>
-              
-              <button
-                onClick={handleExportPDF}
-                disabled={exporting}
-                className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-850 hover:text-white flex items-center gap-2 transition-colors"
-              >
-                <span className="font-semibold text-[9px] uppercase px-1 bg-slate-950 rounded text-rose-500 font-mono">PDF</span>
-                {exporting ? 'Generating Report...' : 'Intelligence Report PDF'}
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+      <AnimatePresence>
+        {isOpen && (
+          <>
+            <div
+              onClick={() => setIsOpen(false)}
+              className="fixed inset-0 z-10"
+            ></div>
+            <motion.div 
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="origin-top-right absolute right-0 mt-2.5 w-52 rounded-lg shadow-2xl bg-slate-900 border border-slate-800 z-20 focus:outline-none overflow-hidden cyber-panel"
+            >
+              <div className="py-1">
+                <button
+                  onClick={() => void handleExportJSON()}
+                  disabled={exporting}
+                  className="w-full text-left px-4 py-3 text-xs text-slate-350 hover:bg-slate-850 hover:text-white flex items-center gap-2.5 transition-colors border-b border-slate-850/50 font-sans"
+                >
+                  <span className="font-bold text-[8px] uppercase px-1.5 py-0.5 bg-slate-950 rounded text-amber-500 font-mono border border-slate-800">JSON</span>
+                  <span className="font-mono text-[10px] uppercase font-bold tracking-wide">Raw Graph Dataset</span>
+                </button>
+
+                <button
+                  onClick={() => void handleExportCSV()}
+                  disabled={exporting}
+                  className="w-full text-left px-4 py-3 text-xs text-slate-350 hover:bg-slate-850 hover:text-white flex items-center gap-2.5 transition-colors border-b border-slate-850/50 font-sans"
+                >
+                  <span className="font-bold text-[8px] uppercase px-1.5 py-0.5 bg-slate-950 rounded text-emerald-500 font-mono border border-slate-800">CSV</span>
+                  <span className="font-mono text-[10px] uppercase font-bold tracking-wide">Flattened Findings</span>
+                </button>
+
+                <button
+                  onClick={() => void handleExportPDF()}
+                  disabled={exporting}
+                  className="w-full text-left px-4 py-3 text-xs text-slate-350 hover:bg-slate-850 hover:text-white flex items-center gap-2.5 transition-colors font-sans"
+                >
+                  <span className="font-bold text-[8px] uppercase px-1.5 py-0.5 bg-slate-950 rounded text-rose-500 font-mono border border-slate-800">PDF</span>
+                  <span className="font-mono text-[10px] uppercase font-bold tracking-wide">Dossier Report PDF</span>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

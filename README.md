@@ -13,7 +13,7 @@ The system is composed of two main parts:
 - **Pluggable Connector Architecture**: Concurrent asynchronous registry loop to query various OSINT sources like WHOIS/RDAP, crt.sh, Web Archive CDX, Breach Repositories, and Face Similarity Matcher.
 - **Ingestion & Normalization**: Translates native text scripts to normalized Latin form, dynamically categorizes inputs (emails, domains, phones, etc.), and sanitizes data.
 - **NetworkX Link Correlation Engine**: Maps case-wide associations, disambiguates suspects using fuzzy string comparison, and detects key hub entities (pivots). It utilizes a Fellegi-Sunter baseline matcher and an XGBoost refinement layer.
-- **Evidentiary Dossier Reports**: Compiles a single source of truth "Evidence Pack" and generates comprehensive case reports in JSON, CSV, and PDF formats, accompanied by Claude-powered LLM narrative synthesis.
+- **Evidentiary Dossier Reports**: Compiles a single source of truth "Evidence Pack" and generates comprehensive case reports in JSON, CSV, and PDF formats, accompanied by LLM narrative synthesis using Ollama.
 
 ## Project Structure
 
@@ -21,6 +21,78 @@ The system is composed of two main parts:
 - [`frontend/`](frontend/): Contains the React UI, graph visualization components, and dossier dashboards.
 - [`architecture_doc.md`](architecture_doc.md): Detailed architectural documentation of the system.
 - [`implement.md`](implement.md): A 14-day implementation roadmap and design details.
+
+---
+
+## Installation & Setup Guide
+
+### 1. Prerequisites
+- **Python 3.10+** (For the backend)
+- **Node.js 18+** (For the frontend)
+- **Git**
+- **Ollama** (Optional, for generating AI PDF dossiers completely for free)
+
+### 2. Backend Setup
+The backend is a FastAPI Python application.
+
+1. Open a terminal and navigate to the `backend` directory:
+   ```bash
+   cd backend
+   ```
+2. Create and activate a Python virtual environment:
+   ```bash
+   python -m venv .venv
+   
+   # Windows:
+   .\.venv\Scripts\activate
+   
+   # Mac/Linux:
+   source .venv/bin/activate
+   ```
+3. Install the required Python packages:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Create a `.env` file in the `backend/` directory with the following variables:
+   ```ini
+   DATABASE_URL="sqlite:///./erakshak.db"
+   JWT_SECRET="your-super-secret-key-here"
+   OLLAMA_BASE_URL="http://localhost:11434"
+   ```
+5. Start the backend server:
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+   *The backend API will now be running at http://127.0.0.1:8000*
+
+### 3. Frontend Setup
+The frontend is a React application.
+
+1. Open a **new** terminal (keep the backend running in the first one) and navigate to the `frontend` directory:
+   ```bash
+   cd frontend
+   ```
+2. Install the Node modules:
+   ```bash
+   npm install
+   ```
+3. Start the React development server:
+   ```bash
+   npm start
+   ```
+   *The frontend UI will automatically open in your browser at http://localhost:3000*
+
+### 4. Setting up the Local AI (Ollama)
+e-Rakshak uses a local, 100% free AI model to generate intelligent summaries for your PDF dossiers without requiring paid API keys.
+
+1. Download and install **Ollama** from [ollama.com](https://ollama.com).
+2. Open a terminal and run the following command to download the `llama3` model (this takes a few minutes but you only have to do it once):
+   ```bash
+   ollama run llama3
+   ```
+3. Once the model is downloaded and running, the e-Rakshak backend will automatically connect to it to generate dossier narratives! If Ollama is not running, the system will gracefully degrade and output a mock placeholder narrative.
+
+---
 
 ## Disclaimer
 

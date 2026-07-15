@@ -4,15 +4,19 @@ export interface GraphNode {
   type: 'person' | 'email' | 'username' | 'phone' | 'domain' | 'wallet';
   confidence: number;
   sourceCount: number;
+  pivot?: boolean;
+  expandInvestigation?: boolean;
 }
 
 export interface GraphEdge {
   id: string;
-  source: string;           // node id
-  target: string;           // node id
-  relationType: string;     // e.g. "registered_by", "used_on", "co-occurs_with"
+  source: string;
+  target: string;
+  relationType: string;
   confidence: number;
-  sourceProvenance: string; // e.g. "crt.sh", "whois", "sherlock"
+  sourceProvenance: string;
+  matchType?: 'baseline' | 'xgboost' | 'confirmed' | 'rejected';
+  shapFeatures?: Record<string, number>;
 }
 
 export interface GraphData {

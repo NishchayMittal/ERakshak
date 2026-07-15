@@ -2,6 +2,7 @@ import type { GraphData } from '../../types/graph';
 import type { ProfileData } from '../../types/profile';
 import type { TimelineEntry } from '../../types/timeline';
 import type { CaseSummary, CaseNote } from '../../types/case';
+import type { EvidencePack } from '../../types/evidence';
 
 import mockGraph from './mockGraph.json';
 import mockProfile from './mockProfile.json';
@@ -15,20 +16,25 @@ function delay<T>(value: T): Promise<T> {
   return new Promise(resolve => setTimeout(() => resolve(value), FAKE_DELAY_MS));
 }
 
-// in-memory mutable copy so notes/tags "persist" for the session without a backend
+// in-memory mutable copy so notes/tags/cases "persist" for the session without a backend
 let notesStore: CaseNote[] = [];
+let mockCasesStore: CaseSummary[] = [...(mockCaseList as CaseSummary[])];
 
 export function getMockCaseList(): Promise<CaseSummary[]> {
-  return delay(mockCaseList as CaseSummary[]);
+  return delay(mockCasesStore);
 }
 
 export function getMockCase(caseId: string): Promise<CaseSummary | undefined> {
-  const found = (mockCaseList as CaseSummary[]).find(c => c.caseId === caseId);
+  const found = mockCasesStore.find(c => c.caseId === caseId);
   return delay(found);
 }
 
+export function appendMockCase(newCase: CaseSummary) {
+  mockCasesStore = [newCase, ...mockCasesStore];
+}
+
 export function getMockGraph(_caseId: string, _entityId: string): Promise<GraphData> {
-  return delay(mockGraph as GraphData);
+  return delay(mockGraph as unknown as GraphData);
 }
 
 export function getMockProfile(_caseId: string, _entityId: string): Promise<ProfileData> {
@@ -69,4 +75,130 @@ export function addMockNote(caseId: string, authorId: string, text: string): Pro
   };
   notesStore.push(note);
   return delay(note);
+}
+
+export function getMockEvidencePack(caseId: string): Promise<EvidencePack> {
+  const mockPack: EvidencePack = {
+    case: {
+      id: caseId,
+      title: "Dossier #1 — Mock Investigation",
+      status: "active",
+      createdAt: "2026-06-01T08:00:00Z"
+    },
+    identifiers: [
+      {
+        id: "n1",
+        type: "email",
+        rawValue: "suspect@example.com",
+        normalizedValue: "suspect@example.com",
+        confidence: 1.0,
+        source: "manual",
+        findings: [
+          {
+            id: "f1",
+            connector: "whois",
+            type: "registrant_email",
+            value: "suspect@example.com",
+            confidence: 1.0,
+            discoveredAt: "2026-06-02T09:14:00Z",
+            rawPayload: { label: "Domain example-domain.com registered" }
+          },
+          {
+            id: "f2",
+            connector: "whois",
+            type: "registrant_organization",
+            value: "Not disclosed (privacy proxy)",
+            confidence: 0.6,
+            discoveredAt: "2026-06-02T09:14:00Z",
+            rawPayload: { label: "Whois record privacy settings updated" }
+          },
+          {
+            id: "f3",
+            connector: "whois",
+            type: "domain_registered",
+            value: "example-domain.com",
+            confidence: 1.0,
+            discoveredAt: "2023-11-18T10:30:00Z",
+            rawPayload: { label: "Domain example-domain.com registered" }
+          },
+          {
+            id: "f4",
+            connector: "wayback",
+            type: "archived_snapshot",
+            value: "https://web.archive.org/web/20240112/example-domain.com",
+            confidence: 1.0,
+            discoveredAt: "2024-01-12T12:00:00Z",
+            rawPayload: { label: "First archived snapshot of example-domain.com captured" }
+          },
+          {
+            id: "f5",
+            connector: "crt.sh",
+            type: "subdomain_found",
+            value: "mail.example-domain.com",
+            confidence: 0.9,
+            discoveredAt: "2024-06-30T15:20:00Z",
+            rawPayload: { label: "SSL certificate issued for mail.example-domain.com" }
+          },
+          {
+            id: "f6",
+            connector: "crt.sh",
+            type: "subdomain_found",
+            value: "dev.example-domain.com",
+            confidence: 0.85,
+            discoveredAt: "2024-09-14T11:45:00Z",
+            rawPayload: { label: "SSL certificate issued for dev.example-domain.com" }
+          },
+          {
+            id: "f7",
+            connector: "sherlock",
+            type: "username_match",
+            value: "suspectuser99",
+            confidence: 0.82,
+            discoveredAt: "2025-02-08T16:10:00Z",
+            rawPayload: { label: "Username suspectuser99 first observed on GitHub" }
+          },
+          {
+            id: "f8",
+            connector: "sherlock",
+            type: "platform_hit",
+            value: "Reddit",
+            confidence: 0.7,
+            discoveredAt: "2025-03-22T19:30:00Z",
+            rawPayload: { label: "Username suspectuser99 observed on Reddit" }
+          },
+          {
+            id: "f9",
+            connector: "breach_demo",
+            type: "phone_number",
+            value: "+91-98XXXXXXX",
+            confidence: 0.65,
+            discoveredAt: "2025-08-01T14:05:00Z",
+            rawPayload: { label: "Phone number surfaced in demo breach dataset" }
+          },
+          {
+            id: "f10",
+            connector: "breach_demo",
+            type: "co_registered_email",
+            value: "backup.suspect@example.com",
+            confidence: 0.55,
+            discoveredAt: "2025-08-01T14:15:00Z",
+            rawPayload: { label: "Co-registered backup email backup.suspect@example.com surfaced" }
+          }
+        ]
+      }
+    ]
+  };
+  return delay(mockPack);
+}
+
+export function triggerMockModelRetrain(): Promise<{ message: string }> {
+  return delay({ message: "Model retraining triggered in the background." });
+}
+
+export function updateMockProfile(fullName: string): Promise<{ id: string; badge_id: string; full_name: string }> {
+  return delay({
+    id: 'inv-042',
+    badge_id: 'ER-2026-042',
+    full_name: fullName
+  });
 }

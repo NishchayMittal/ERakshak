@@ -3,12 +3,45 @@ import type { GraphData } from '../types/graph';
 import type { ProfileData } from '../types/profile';
 import type { TimelineEntry } from '../types/timeline';
 import type { CaseSummary, CaseNote } from '../types/case';
+import type { EvidencePack } from '../types/evidence';
 import * as mock from './mocks/mockHandlers';
+
+function normalizeCaseSummary(item: any): CaseSummary {
+  return {
+    caseId: item.id || item.caseId,
+    title: item.title || 'Untitled Case',
+    investigatorId: item.leadInvestigatorId || item.investigatorId || 'unknown',
+    status: (item.status === 'closed' ? 'closed' : 'active') as CaseSummary['status'],
+    createdAt: item.created_at || item.createdAt || new Date().toISOString(),
+    lastActivity: item.updated_at || item.lastActivity || item.created_at || item.createdAt || new Date().toISOString(),
+    tags: item.tags || [],
+    entityCount: item.entityCount || 0,
+  };
+}
 
 export async function getCaseList(): Promise<CaseSummary[]> {
   if (isMockMode()) return mock.getMockCaseList();
   const res = await apiClient.get('/cases');
-  return res.data;
+  return (res.data || []).map(normalizeCaseSummary);
+}
+
+export async function createCase(title: string, description?: string): Promise<CaseSummary> {
+  if (isMockMode()) {
+    const mockCase: CaseSummary = {
+      caseId: `case-${Date.now()}`,
+      title,
+      investigatorId: 'inv-042',
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      lastActivity: new Date().toISOString(),
+      tags: ['investigation', 'ad-hoc'],
+      entityCount: 0
+    };
+    mock.appendMockCase(mockCase);
+    return mockCase;
+  }
+  const res = await apiClient.post('/cases', { title, description: description || '', status: 'open' });
+  return normalizeCaseSummary(res.data);
 }
 
 export async function getGraph(caseId: string, entityId: string): Promise<GraphData> {
@@ -47,6 +80,15 @@ export async function addNote(caseId: string, authorId: string, text: string): P
   return res.data;
 }
 
+export async function submitLinkFeedback(
+  caseId: string,
+  payload: { case_id: string; source_id: string; target_id: string; status: 'confirmed' | 'rejected' },
+) {
+  if (isMockMode()) return { ok: true, payload };
+  const res = await apiClient.post(`/cases/${caseId}/feedback`, payload);
+  return res.data;
+}
+
 export async function getNarrative(caseId: string): Promise<{ narrative: string }> {
   if (isMockMode()) {
     return {
@@ -54,5 +96,58 @@ export async function getNarrative(caseId: string): Promise<{ narrative: string 
     };
   }
   const res = await apiClient.get(`/cases/${caseId}/narrative`);
+  return res.data;
+}
+
+export async function exportCaseJSON(caseId: string): Promise<Blob> {
+  if (isMockMode()) {
+    const payload = JSON.stringify({ caseId, exportedAt: new Date().toISOString(), mode: 'mock' }, null, 2);
+    return new Blob([payload], { type: 'application/json' });
+  }
+  const res = await apiClient.get(`/cases/${caseId}/export/json`, { responseType: 'blob' });
+  return res.data;
+}
+
+export async function exportCaseCSV(caseId: string): Promise<Blob> {
+  if (isMockMode()) {
+    return new Blob(['caseId,exportedAt\n' + caseId + ',' + new Date().toISOString() + '\n'], { type: 'text/csv;charset=utf-8' });
+  }
+  const res = await apiClient.get(`/cases/${caseId}/export/csv`, { responseType: 'blob' });
+  return res.data;
+}
+
+export async function exportCasePDF(caseId: string): Promise<Blob> {
+  if (isMockMode()) {
+    return new Blob(['mock pdf byte stream'], { type: 'application/pdf' });
+  }
+  const res = await apiClient.get(`/cases/${caseId}/export/pdf`, { responseType: 'blob' });
+  return res.data;
+}
+
+export async function getEvidencePack(caseId: string): Promise<EvidencePack> {
+  if (isMockMode()) return mock.getMockEvidencePack(caseId);
+  try {
+    const res = await apiClient.get(`/cases/${caseId}/evidence`);
+    return res.data;
+  } catch (error) {
+    // Staging fallback: P4 is building compiler.py so if /evidence returns 404, we can consume /export/json
+    // which has an extremely similar structure. This is robust for Day 10.
+    const res = await apiClient.get(`/cases/${caseId}/export/json`);
+    return res.data;
+  }
+}
+
+export async function triggerModelRetrain(): Promise<{ message: string }> {
+  if (isMockMode()) return mock.triggerMockModelRetrain();
+  const res = await apiClient.post('/model/retrain');
+  return res.data;
+}
+
+export async function updateInvestigatorProfile(fullName?: string, password?: string): Promise<any> {
+  if (isMockMode()) return mock.updateMockProfile(fullName || 'Leon Lobo');
+  const payload: any = {};
+  if (fullName) payload.full_name = fullName;
+  if (password) payload.password = password;
+  const res = await apiClient.patch('/auth/profile', payload);
   return res.data;
 }

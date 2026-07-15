@@ -200,13 +200,38 @@ def get_case_graph(
                 confidence=float(confidence),
             )
 
-    # 3. Pivot detection (high degree)
-    for node, degree in dict(G.degree()).items():
-        if degree >= 3:
-            G.nodes[node]["pivot"] = True
-            G.nodes[node]["expand_investigation"] = True
+    # 4. Format graph for the frontend schema
+    nodes = []
+    for node, data in G.nodes(data=True):
+        is_pivot = data.get("pivot", False) or G.degree(node) >= 3
+        nodes.append({
+            "id": node,
+            "label": data.get("label", node),
+            "type": data.get("type", "other"),
+            "confidence": float(data.get("confidence", 1.0)),
+            "sourceCount": int(G.degree(node)),
+            "pivot": is_pivot,
+            "expand_investigation": is_pivot
+        })
 
-    return json_graph.node_link_data(G)
+    edges = []
+    edge_idx = 1
+    for u, v, key, data in G.edges(keys=True, data=True):
+        edges.append({
+            "id": f"e{edge_idx}",
+            "source": u,
+            "target": v,
+            "relationType": data.get("label", "associated_with"),
+            "confidence": float(data.get("confidence", 1.0)),
+            "sourceProvenance": data.get("source", "unknown"),
+            "shapFeatures": data.get("shap_features", {})  # Placeholder for SHAP feature contributions
+        })
+        edge_idx += 1
+
+    return {
+        "nodes": nodes,
+        "edges": edges
+    }
 
 
 class IdentifierInputItem(BaseModel):

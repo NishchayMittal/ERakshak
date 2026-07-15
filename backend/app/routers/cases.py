@@ -14,7 +14,7 @@ from app.audit import log_action
 from app.auth import get_current_investigator
 from app.database import get_db
 from app.models import Case, Investigator, Identifier, Finding, CaseNote, LinkFeedback
-from app.schemas import CaseCreate, CaseOut, CaseUpdate, LinkFeedbackCreate, LinkFeedbackOut
+from app.schemas import CaseCreate, CaseOut, CaseUpdate, LinkFeedbackCreate, LinkFeedbackOut, EvidencePackOut
 from app.correlation.matcher import trigger_background_retrain
 
 
@@ -94,67 +94,7 @@ def update_case(
     return case
 
 
-def serialize_graph(G: nx.MultiDiGraph) -> dict:
-    nodes_list = []
-    for node_id, data in G.nodes(data=True):
-        sources = set()
-        for u, v, k, edge_data in G.edges(keys=True, data=True):
-            if u == node_id or v == node_id:
-                prov = edge_data.get("source") or edge_data.get("sourceProvenance")
-                if prov:
-                    sources.add(prov)
-        source_count = max(len(sources), 1)
-
-        is_pivot = data.get("pivot", False) or G.degree(node_id) >= 3
-
-        raw_type = data.get("type", "username")
-        if raw_type in ("name", "photo"):
-            node_type = "person"
-        elif raw_type == "other":
-            node_type = "username"
-        else:
-            node_type = raw_type
-
-        nodes_list.append({
-            "id": node_id,
-            "label": data.get("label", node_id),
-            "type": node_type,
-            "confidence": float(data.get("confidence", 1.0)),
-            "sourceCount": source_count,
-            "pivot": is_pivot,
-            "expand_investigation": is_pivot
-        })
-
-    edges_list = []
-    edge_idx = 1
-    for u, v, k, data in G.edges(keys=True, data=True):
-        edge_id = data.get("id") or f"e_{edge_idx}"
-        edge_idx += 1
-        
-        relation_type = data.get("relationType") or data.get("label", "connected")
-        source_prov = data.get("sourceProvenance")
-        if not source_prov:
-            raw_source = data.get("source")
-            if raw_source and raw_source != u and raw_source != v:
-                source_prov = raw_source
-            else:
-                source_prov = "unknown"
-
-        edges_list.append({
-            "id": edge_id,
-            "source": u,
-            "target": v,
-            "relationType": relation_type,
-            "confidence": float(data.get("confidence", 1.0)),
-            "sourceProvenance": source_prov,
-            "shapFeatures": data.get("shapFeatures") or data.get("shap_features", {})
-        })
-
-    return {
-        "nodes": nodes_list,
-        "edges": edges_list
-    }
-
+from app.compiler import generate_case_graph
 
 @router.get("/{case_id}/graph")
 def get_case_graph(
@@ -162,162 +102,7 @@ def get_case_graph(
     db: Session = Depends(get_db),
     current_investigator: Investigator = Depends(get_current_investigator),
 ):
-    case = (
-        db.query(Case)
-        .filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id)
-        .first()
-    )
-    if not case:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
-
-    # Fetch all identifiers in this case
-    identifiers = db.query(Identifier).filter(Identifier.case_id == case_id).all()
-    identifier_ids = [i.id for i in identifiers]
-
-    # Fetch all findings for these identifiers
-    findings = (
-        db.query(Finding)
-        .filter(Finding.identifier_id.in_(identifier_ids))
-        .all()
-        if identifier_ids
-        else []
-    )
-
-    G = nx.MultiDiGraph()
-
-    # Get all seed name identifiers for name matching score
-    seed_names = [i.normalized_value for i in identifiers if i.type.value == "name"]
-
-    # 1. Add identifier nodes
-    id_map = {}
-    for identifier in identifiers:
-        node_id = identifier.normalized_value
-        id_map[identifier.id] = node_id
-        if not G.has_node(node_id):
-            G.add_node(
-                node_id,
-                label=node_id,
-                type=identifier.type.value,
-                node_class="identifier",
-                id=identifier.id,
-                confidence=identifier.confidence,
-            )
-
-    # 2. Add finding nodes and edges
-    for finding in findings:
-        parent_node_id = id_map.get(finding.identifier_id)
-        if not parent_node_id:
-            continue
-
-        source_connector = finding.connector_name
-        result_type = finding.result_type
-        result_val = finding.result_value
-        confidence = finding.confidence
-
-        target_node_id = None
-        target_type = "other"
-        edge_label = result_type
-
-        # Parse specific findings
-        if result_type == "subdomain":
-            target_node_id = result_val.strip().lower()
-            target_type = "domain"
-        elif result_type == "registrant_email":
-            target_node_id = result_val.strip().lower()
-            target_type = "email"
-        elif result_type == "registrant_phone":
-            target_node_id = result_val.strip()
-            target_type = "phone"
-        elif result_type == "registrant_name":
-            target_node_id = result_val.split(" (")[0].strip()
-            target_type = "person" # map to person in frontend types
-            if seed_names:
-                match_score = max(fuzz.token_set_ratio(n, target_node_id) / 100.0 for n in seed_names)
-                confidence = max(confidence * match_score, 0.1)
-        elif result_type == "registrant_org":
-            target_node_id = result_val.split(" (")[0].strip()
-            target_type = "domain"
-        elif result_type == "social_profile":
-            if "Profile: " in result_val:
-                target_node_id = result_val.split("Profile: ")[1].strip()
-            else:
-                target_node_id = result_val.strip()
-            target_type = "username" # map to username or person
-        elif result_type == "face_similarity":
-            target_node_id = result_val.split("Match: ")[1].split(" (Similarity:")[0].strip()
-            target_type = "person"
-        elif result_type == "leak_record":
-            breach_name = result_val.split(" (Hint:")[0].strip()
-            target_node_id = breach_name
-            target_type = "username"
-            
-            payload = finding.raw_payload or {}
-            ip = payload.get("ip_address")
-            if ip:
-                ip_node_id = ip.strip()
-                if not G.has_node(ip_node_id):
-                    G.add_node(
-                        ip_node_id,
-                        label=ip_node_id,
-                        type="domain", # map to domain or other in frontend
-                        node_class="finding",
-                        id=finding.id,
-                        confidence=1.0,
-                    )
-                G.add_edge(
-                    parent_node_id,
-                    ip_node_id,
-                    label="leak_ip",
-                    source=source_connector,
-                    confidence=1.0,
-                )
-        elif result_type == "archived_page":
-            payload = finding.raw_payload or {}
-            orig_url = payload.get("original_url")
-            if orig_url:
-                target_node_id = orig_url.strip()
-                target_type = "domain"
-
-        if target_node_id:
-            if not G.has_node(target_node_id):
-                G.add_node(
-                    target_node_id,
-                    label=target_node_id,
-                    type=target_type,
-                    node_class="finding",
-                    id=finding.id,
-                    confidence=float(confidence),
-                )
-            G.add_edge(
-                parent_node_id,
-                target_node_id,
-                label=edge_label,
-                source=source_connector,
-                confidence=float(confidence),
-            )
-
-    # 3. Add correlated edges from correlation engine
-    from app.correlation.matcher import compute_correlations
-    correlations = compute_correlations(case_id, db)
-    for link in correlations:
-        if G.has_node(link["source"]) and G.has_node(link["target"]):
-            G.add_edge(
-                link["source"],
-                link["target"],
-                id=link["id"],
-                relationType=link["relationType"],
-                sourceProvenance=link["sourceProvenance"],
-                confidence=link["confidence"],
-                shap_features=link.get("shapFeatures") or link.get("shap_features", {})
-            )
-
-    # 4. Pivot detection (high degree)
-    for node, degree in dict(G.degree()).items():
-        if degree >= 3:
-            G.nodes[node]["pivot"] = True
-            G.nodes[node]["expand_investigation"] = True
-
-    return serialize_graph(G)
+    return generate_case_graph(case_id, db, current_investigator.id)
 
 
 class IdentifierInputItem(BaseModel):
@@ -620,51 +405,15 @@ def get_case_narrative(
     }
 
 
-@router.get("/{case_id}/export/json")
+from app.compiler import compile_evidence_pack
+
+@router.get("/{case_id}/export/json", response_model=EvidencePackOut)
 def export_case_json(
     case_id: str,
     db: Session = Depends(get_db),
     current_investigator: Investigator = Depends(get_current_investigator)
 ):
-    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
-    if not case:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
-
-    identifiers = db.query(Identifier).filter(Identifier.case_id == case_id).all()
-    notes = db.query(CaseNote).filter(CaseNote.case_id == case_id).all()
-    
-    data = {
-        "case": {
-            "id": case.id,
-            "title": case.title,
-            "description": case.description,
-            "status": case.status,
-            "created_at": case.created_at.isoformat()
-        },
-        "identifiers": [{
-            "id": i.id,
-            "type": i.type.value,
-            "raw_value": i.raw_value,
-            "normalized_value": i.normalized_value,
-            "confidence": i.confidence,
-            "source": i.source,
-            "findings": [{
-                "id": f.id,
-                "connector": f.connector_name,
-                "type": f.result_type,
-                "value": f.result_value,
-                "confidence": f.confidence,
-                "raw_payload": f.raw_payload
-            } for f in db.query(Finding).filter(Finding.identifier_id == i.id).all()]
-        } for i in identifiers],
-        "notes": [{
-            "id": n.id,
-            "author_id": n.author_id,
-            "text": n.text,
-            "created_at": n.created_at.isoformat()
-        } for n in notes]
-    }
-    return data
+    return compile_evidence_pack(case_id, db, current_investigator.id)
 
 
 @router.get("/{case_id}/export/csv")

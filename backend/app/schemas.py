@@ -129,4 +129,47 @@ class LinkFeedbackOut(LinkFeedbackBase):
     investigator_id: str
     timestamp: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EvidenceGraphNode(BaseModel):
+    id: str
+    label: str
+    type: str
+    confidence: float
+    sourceCount: int
+    pivot: bool
+    expand_investigation: bool
+
+
+class EvidenceGraphEdge(BaseModel):
+    id: str
+    source: str
+    target: str
+    relationType: str
+    confidence: float
+    sourceProvenance: str
+    shapFeatures: dict | None = None
+
+
+class EvidenceGraph(BaseModel):
+    nodes: list[EvidenceGraphNode]
+    edges: list[EvidenceGraphEdge]
+
+
+class EvidenceIdentifierOut(BaseModel):
+    id: str
+    type: str
+    raw_value: str
+    normalized_value: str
+    confidence: float
+    source: str
+    findings: list[dict]
+
+
+class EvidencePackOut(BaseModel):
+    case: CaseOut
+    identifiers: list[EvidenceIdentifierOut]
+    notes: list[CaseNoteOut]
+    graph: EvidenceGraph
+

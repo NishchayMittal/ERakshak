@@ -18,6 +18,47 @@ class Finding:
     raw_payload: dict | None = None
 
 
+class TokenBucketLimiter:
+    def __init__(self, rate: float, capacity: float = 1.0):
+        self.rate = rate  # tokens per second
+        self.capacity = capacity
+        self.tokens = capacity
+        self.last_update = asyncio.get_event_loop().time()
+        self.lock = asyncio.Lock()
+
+    async def acquire(self):
+        async with self.lock:
+            while True:
+                now = asyncio.get_event_loop().time()
+                elapsed = now - self.last_update
+                self.last_update = now
+                self.tokens = min(self.capacity, self.tokens + elapsed * self.rate)
+                if self.tokens >= 1.0:
+                    self.tokens -= 1.0
+                    return
+                # Sleep until enough tokens have accumulated
+                sleep_time = (1.0 - self.tokens) / self.rate
+                await asyncio.sleep(sleep_time)
+
+
+# Predefined rate limiters for the 4 connector categories
+DOMAIN_LIMITER = TokenBucketLimiter(rate=0.7)    #rdap/crt.sh (~1 request per 1.5s)
+ARCHIVE_LIMITER = TokenBucketLimiter(rate=1.0)   # wayback (~1 request per second)
+USERNAME_LIMITER = TokenBucketLimiter(rate=3.0)  # username checks (~3 requests per second)
+OFFLINE_LIMITER = TokenBucketLimiter(rate=100.0) # local offline connectors (no limit)
+
+
+def get_limiter_for_connector(connector_name: str) -> TokenBucketLimiter:
+    if connector_name in ("whois_rdap", "crtsh"):
+        return DOMAIN_LIMITER
+    elif connector_name == "wayback_cdx":
+        return ARCHIVE_LIMITER
+    elif connector_name == "username_enumeration":
+        return USERNAME_LIMITER
+    else:
+        return OFFLINE_LIMITER
+
+
 class BaseConnector(ABC):
     name: str
     applies_to: tuple[IdentifierType, ...]
@@ -32,10 +73,13 @@ class BaseConnector(ABC):
         return True
 
     async def _get_json(self, url: str, params: dict | None = None) -> dict | list | None:
+        limiter = get_limiter_for_connector(self.name)
         timeout = httpx.Timeout(self.timeout_seconds)
         backoff = 0.5
         for attempt in range(self.max_retries + 1):
             try:
+                # Apply rate limiting before the call
+                await limiter.acquire()
                 async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
                     response = await client.get(url, params=params)
                     response.raise_for_status()

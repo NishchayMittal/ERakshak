@@ -4,48 +4,93 @@ import random
 from rapidfuzz import fuzz
 from anyascii import anyascii
 
-# Define Demo Personas
-PERSONAS = [
-    {
-        "name": "suspect alpha",
-        "aliases": ["alpha_dev", "alpha99", "alphacoder"],
-        "emails": ["alpha@example.com", "alpha.dev@gmail.com", "alpha_dev@example.com", "alpha99@gmail.com", "alphacoder@alphasite.com"],
-        "phones": ["+919876543210", "+919876543211"],
-        "domains": ["alphasite.com", "alphadev.net"]
-    },
-    {
-        "name": "suspect beta",
-        "aliases": ["beta_hacker", "secops_beta", "betapower"],
-        "emails": ["beta@secops.org", "beta.hacker@proton.me", "beta_hacker@secops.org", "secops_beta@betasecure.net", "betapower@betalabs.io"],
-        "phones": ["+918765432109", "+918765432108"],
-        "domains": ["betasecure.net", "betalabs.io"]
-    }
-]
+# -------------------------------------------------------------------------
+# Persona Generator (Generates many personas dynamically to build a big DB)
+# -------------------------------------------------------------------------
+FIRST_NAMES = ["john", "jane", "amit", "priya", "robert", "emily", "michael", "neha", "rajesh", "sara", "david", "lisa", "rahul", "ananya", "carlos", "elena", "yuki", "ken", "ali", "fatima"]
+LAST_NAMES = ["doe", "smith", "sharma", "patel", "johnson", "williams", "brown", "gupta", "kumar", "jones", "miller", "davis", "singh", "devi", "garcia", "martinez", "sato", "tanaka", "khan", "ahmed"]
+HOSTS = ["gmail.com", "yahoo.com", "outlook.com", "proton.me", "hotmail.com"]
 
-DECOY_NAMES = [
-    "john doe", "jane smith", "robert johnson", "emily williams", "michael brown",
-    "amit sharma", "priya patel", "rahul verma", "neha gupta", "rajesh kumar"
-]
+def mutate_string(val: str, mutation_prob: float = 0.25) -> str:
+    """
+    Introduces realistic typographical mutations (deletions, insertions, swaps)
+    to names and usernames.
+    """
+    if random.random() > mutation_prob or len(val) < 3:
+        return val
+        
+    chars = list(val)
+    mutation_type = random.choice(["delete", "insert", "swap"])
+    
+    if mutation_type == "delete":
+        idx = random.randint(0, len(chars) - 1)
+        chars.pop(idx)
+    elif mutation_type == "insert":
+        idx = random.randint(0, len(chars))
+        char_to_add = random.choice("abcdefghijklmnopqrstuvwxyz0123456789_")
+        chars.insert(idx, char_to_add)
+    elif mutation_type == "swap":
+        idx = random.randint(0, len(chars) - 2)
+        chars[idx], chars[idx + 1] = chars[idx + 1], chars[idx]
+        
+    return "".join(chars)
 
-DECOY_USERNAMES = [
-    "user123", "hacker_pro", "shadow_ninja", "cyber_warrior", "test_acc",
-    "coder_xyz", "data_wizard", "pixel_perfect", "coffee_lover", "travel_bug"
-]
+def generate_large_personas(num_personas: int = 50) -> list[dict]:
+    random.seed(1337)
+    personas = []
+    
+    for i in range(num_personas):
+        first = random.choice(FIRST_NAMES)
+        last = random.choice(LAST_NAMES)
+        name = f"{first} {last}"
+        
+        # Primary base alias
+        base_alias = f"{first}_{last}" if random.random() < 0.5 else f"{first}{random.randint(10, 99)}"
+        aliases = [
+            base_alias,
+            mutate_string(base_alias, mutation_prob=0.8), # Typo alias
+            f"{base_alias}coder" if random.random() < 0.3 else f"hacker_{base_alias}"
+        ]
+        # Remove duplicates
+        aliases = list(set(aliases))
+        
+        # Emails
+        emails = [
+            f"{base_alias}@{random.choice(HOSTS)}",
+            f"{aliases[0]}@{first}site.net" if random.random() < 0.5 else f"{mutate_string(first)}@customlab.org"
+        ]
+        
+        # Phones
+        phones = [
+            f"+91{random.randint(7000000000, 9999999999)}",
+            f"+1{random.randint(2000000000, 9999999999)}"
+        ]
+        
+        # Domains
+        domains = [
+            f"{first}{last}site.com",
+            f"{aliases[0]}dev.org" if random.random() < 0.4 else f"{first}labs.net"
+        ]
+        
+        personas.append({
+            "name": name,
+            "aliases": aliases,
+            "emails": emails,
+            "phones": phones,
+            "domains": domains
+        })
+        
+    return personas
 
-DECOY_EMAILS = [
-    "user123@gmail.com", "hacker_pro@yahoo.com", "shadow@proton.me", "cyber@outlook.com",
-    "amit@sharma.com", "priya@patel.org", "info@example.com", "support@test.net"
-]
+# Generate 50 unique personas
+PERSONAS = generate_large_personas(50)
 
-DECOY_PHONES = [
-    "+919999999999", "+918888888888", "+917777777777", "+919123456789",
-    "+919812739182", "+918723912039", "+917012938129", "+919900881122"
-]
-
-DECOY_DOMAINS = [
-    "google.com", "github.com", "twitter.com", "example.com", "testsite.org",
-    "myspace.com", "linkedin.com", "stackoverflow.com", "reddit.com"
-]
+# Decoy lists for negative pairs
+DECOY_NAMES = [f"{fn} {ln}" for fn in FIRST_NAMES for ln in LAST_NAMES]
+DECOY_USERNAMES = [f"user_{random.randint(100, 9999)}" for _ in range(500)]
+DECOY_EMAILS = [f"contact_{random.randint(100, 9999)}@{random.choice(HOSTS)}" for _ in range(500)]
+DECOY_PHONES = [f"+91{random.randint(6000000000, 6999999999)}" for _ in range(500)]
+DECOY_DOMAINS = [f"site_{random.randint(100, 9999)}.com" for _ in range(500)]
 
 def get_email_local_part(email: str) -> str:
     return email.split("@")[0].lower()
@@ -54,14 +99,11 @@ def compute_features(val1: str, type1: str, val2: str, type2: str, is_match: boo
     val1_norm = anyascii(val1).strip().lower()
     val2_norm = anyascii(val2).strip().lower()
     
-    # Initialize features
     exact_match = 1.0 if val1_norm == val2_norm else 0.0
     
     # 1. Name Similarity
-    # Compare strings using fuzz.token_set_ratio (0.0 to 1.0)
     name_similarity = 0.0
     if type1 in ("name", "username") or type2 in ("name", "username"):
-        # For names/usernames or email local parts
         s1 = get_email_local_part(val1_norm) if type1 == "email" else val1_norm
         s2 = get_email_local_part(val2_norm) if type2 == "email" else val2_norm
         name_similarity = fuzz.token_set_ratio(s1, s2) / 100.0
@@ -87,16 +129,21 @@ def compute_features(val1: str, type1: str, val2: str, type2: str, is_match: boo
         email_str = val1_norm if type1 == "email" else val2_norm
         domain_str = val2_norm if type1 == "email" else val1_norm
         email_domain = email_str.split("@")[-1] if "@" in email_str else ""
-        shared_domains = 1.0 if email_domain == domain_str and domain_str not in ("gmail.com", "yahoo.com", "outlook.com", "proton.me", "protonmail.com") else 0.0
+        shared_domains = 1.0 if email_domain == domain_str and domain_str not in HOSTS else 0.0
 
-    # 5. Shared Findings Count
-    # Simulate based on whether it is a match or non-match
+    # 5. Shared Findings Count (WITH DROPOUT AND FP NOISE)
     if is_match:
-        # True matching pairs are likely to share registrar contacts, IPs, etc.
-        shared_findings_count = random.choices([0, 1, 2, 3], weights=[0.1, 0.4, 0.4, 0.1])[0]
+        # 30% DROPOUT RATE: matching suspects share 0 findings in database
+        if random.random() < 0.30:
+            shared_findings_count = 0
+        else:
+            shared_findings_count = random.choices([0, 1, 2, 3], weights=[0.1, 0.4, 0.4, 0.1])[0]
     else:
-        # Non-matching pairs rarely share findings
-        shared_findings_count = random.choices([0, 1], weights=[0.98, 0.02])[0]
+        # 4% FALSE POSITIVE RATE: non-matching decoy pairs share findings
+        if random.random() < 0.04:
+            shared_findings_count = random.choices([1, 2], weights=[0.8, 0.2])[0]
+        else:
+            shared_findings_count = 0
         
     return {
         "name_similarity": round(name_similarity, 3),
@@ -107,10 +154,11 @@ def compute_features(val1: str, type1: str, val2: str, type2: str, is_match: boo
         "shared_domains": shared_domains
     }
 
-def generate_dataset(output_path: str):
+def generate_large_dataset(output_path: str):
     pairs = []
     
-    # 1. Generate Positive Pairs (within same persona)
+    # 1. Generate Positive Pairs (from the 50 personas)
+    print("Generating positive matches...")
     for persona in PERSONAS:
         all_identifiers = []
         all_identifiers.append((persona["name"], "name"))
@@ -123,11 +171,21 @@ def generate_dataset(output_path: str):
         for domain in persona["domains"]:
             all_identifiers.append((domain, "domain"))
             
-        # Pair all identifiers of the persona with each other
-        for i in range(len(all_identifiers)):
-            for j in range(i + 1, len(all_identifiers)):
-                val1, type1 = all_identifiers[i]
-                val2, type2 = all_identifiers[j]
+        # Add spelling typo mutations inside positive pairs to simulate real mutations
+        mutated_idents = []
+        for val, itype in all_identifiers:
+            mutated_idents.append((val, itype))
+            if itype in ("name", "username"):
+                mutated_idents.append((mutate_string(val, mutation_prob=0.8), itype))
+                
+        # Deduplicate
+        mutated_idents = list(set(mutated_idents))
+        
+        # Build pairwise positives
+        for i in range(len(mutated_idents)):
+            for j in range(i + 1, len(mutated_idents)):
+                val1, type1 = mutated_idents[i]
+                val2, type2 = mutated_idents[j]
                 
                 features = compute_features(val1, type1, val2, type2, is_match=True)
                 pairs.append({
@@ -137,63 +195,66 @@ def generate_dataset(output_path: str):
                     "label": 1
                 })
                 
-    # 2. Generate Negative Pairs
-    # Cross-persona negative pairs
-    alpha_idents = []
-    alpha_idents.append((PERSONAS[0]["name"], "name"))
-    alpha_idents.extend((a, "username") for a in PERSONAS[0]["aliases"])
-    alpha_idents.extend((e, "email") for e in PERSONAS[0]["emails"])
+    # Cap positives at 2000 to keep classes reasonable
+    random.shuffle(pairs)
+    positives = pairs[:2000]
     
-    beta_idents = []
-    beta_idents.append((PERSONAS[1]["name"], "name"))
-    beta_idents.extend((a, "username") for a in PERSONAS[1]["aliases"])
-    beta_idents.extend((e, "email") for e in PERSONAS[1]["emails"])
+    # 2. Generate Negative Pairs (Cross-persona and Decoys)
+    negatives = []
+    print("Generating negative pairs...")
     
-    for a_val, a_type in alpha_idents:
-        for b_val, b_type in beta_idents:
-            features = compute_features(a_val, a_type, b_val, b_type, is_match=False)
-            pairs.append({
-                "val1": a_val, "type1": a_type,
-                "val2": b_val, "type2": b_type,
-                **features,
-                "label": 0
-            })
+    # Cross-persona negatives
+    for _ in range(2500):
+        p1 = random.choice(PERSONAS)
+        p2 = random.choice(PERSONAS)
+        while p1 == p2:
+            p2 = random.choice(PERSONAS)
             
-    # Add decoy negative pairs
-    for i in range(300):
-        # Pick two random decoys or a persona value and a decoy
-        t1, t2 = random.choice([("name", "username"), ("email", "username"), ("phone", "email"), ("domain", "email"), ("username", "username")])
+        t1 = random.choice(["name", "username", "email", "phone", "domain"])
+        t2 = random.choice(["name", "username", "email", "phone", "domain"])
         
-        # Select val1
-        if random.random() < 0.3:
-            p = random.choice(PERSONAS)
-            val1 = p["name"] if t1 == "name" else (p["aliases"][0] if t1 == "username" else (p["emails"][0] if t1 == "email" else p["phones"][0] if t1 == "phone" else p["domains"][0]))
-        else:
-            val1 = random.choice(DECOY_NAMES if t1 == "name" else DECOY_USERNAMES if t1 == "username" else DECOY_EMAILS if t1 == "email" else DECOY_PHONES if t1 == "phone" else DECOY_DOMAINS)
-            
-        # Select val2
+        val1 = p1["name"] if t1 == "name" else (p1["aliases"][0] if t1 == "username" else (p1["emails"][0] if t1 == "email" else p1["phones"][0] if t1 == "phone" else p1["domains"][0]))
+        val2 = p2["name"] if t2 == "name" else (p2["aliases"][0] if t2 == "username" else (p2["emails"][0] if t2 == "email" else p2["phones"][0] if t2 == "phone" else p2["domains"][0]))
+        
+        features = compute_features(val1, t1, val2, t2, is_match=False)
+        negatives.append({
+            "val1": val1, "type1": t1,
+            "val2": val2, "type2": t2,
+            **features,
+            "label": 0
+        })
+        
+    # Decoy negatives (completely random contacts/sites)
+    for _ in range(2500):
+        t1 = random.choice(["name", "username", "email", "phone", "domain"])
+        t2 = random.choice(["name", "username", "email", "phone", "domain"])
+        
+        val1 = random.choice(DECOY_NAMES if t1 == "name" else DECOY_USERNAMES if t1 == "username" else DECOY_EMAILS if t1 == "email" else DECOY_PHONES if t1 == "phone" else DECOY_DOMAINS)
         val2 = random.choice(DECOY_NAMES if t2 == "name" else DECOY_USERNAMES if t2 == "username" else DECOY_EMAILS if t2 == "email" else DECOY_PHONES if t2 == "phone" else DECOY_DOMAINS)
         
-        # Make sure they aren't the same
         if val1 == val2:
             continue
             
         features = compute_features(val1, t1, val2, t2, is_match=False)
-        pairs.append({
+        negatives.append({
             "val1": val1, "type1": t1,
             "val2": val2, "type2": t2,
             **features,
             "label": 0
         })
 
+    # Combine positives and negatives
+    all_pairs = positives + negatives
+    random.shuffle(all_pairs)
+    
     # Save to CSV
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["val1", "type1", "val2", "type2", "name_similarity", "username_similarity", "exact_match", "email_username_match", "shared_findings_count", "shared_domains", "label"])
         writer.writeheader()
-        writer.writerows(pairs)
+        writer.writerows(all_pairs)
         
-    print(f"Generated {len(pairs)} synthetic pairs at {output_path}")
+    print(f"Generated {len(all_pairs)} synthetic pairs at {output_path} ({len(positives)} matches, {len(negatives)} non-matches).")
 
 if __name__ == "__main__":
-    generate_dataset("backend/app/resources/synthetic_pairs.csv")
+    generate_large_dataset("backend/app/resources/synthetic_pairs.csv")

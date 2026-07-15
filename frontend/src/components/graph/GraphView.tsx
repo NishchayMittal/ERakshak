@@ -144,8 +144,13 @@ export default function GraphView({ caseId, onSelectNode }: GraphViewProps) {
   };
 
   return (
-    <div className="w-full h-full min-h-[400px] bg-slate-950 border border-slate-900 rounded-lg relative overflow-hidden flex-1 glow-shadow">
-      <div className="absolute inset-0 cyber-grid opacity-75 pointer-events-none"></div>
+    <div className="w-full h-full min-h-[420px] relative overflow-hidden flex-1">
+      <div className="absolute inset-0 animated-sky grid-fade pointer-events-none"></div>
+      <div className="absolute right-0 top-0 pointer-events-none">
+        <div className="orb" style={{ '--orb-size': '220px' } as React.CSSProperties} />
+      </div>
+      <div className="relative w-full h-full p-4 card-soft border border-slate-800/40 rounded-lg glow-shadow">
+        <div className="absolute inset-0 cyber-grid opacity-35 pointer-events-none rounded-lg"></div>
 
       {selectedEdge && (
         <div className="absolute right-3 top-3 z-10 w-72 max-w-[calc(100%-1.5rem)] rounded-lg border border-slate-800 bg-slate-900/95 p-3 shadow-2xl backdrop-blur">
@@ -215,19 +220,20 @@ export default function GraphView({ caseId, onSelectNode }: GraphViewProps) {
         </div>
       )}
 
-      {elements.length === 0 ? (
-        <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-slate-600 text-xs leading-6">
-          No elements match the active filters. Lower the confidence threshold or enable more source channels to inspect the graph.
-        </div>
-      ) : (
-        <CytoscapeComponent
-          elements={elements}
-          style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}
-          stylesheet={graphStyles}
-          cy={setupCytoscape}
-          layout={{ name: 'cola' } as any}
-        />
-      )}
+        {elements.length === 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center px-6 text-center text-slate-400 text-sm leading-6">
+            No elements match the active filters. Lower the confidence threshold or enable more source channels to inspect the graph.
+          </div>
+        ) : (
+          <CytoscapeComponent
+            elements={elements}
+            style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}
+            stylesheet={graphStyles}
+            cy={setupCytoscape}
+            layout={{ name: 'cola' } as any}
+          />
+        )}
+      </div>
     </div>
   );
 }

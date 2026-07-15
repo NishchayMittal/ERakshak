@@ -3,6 +3,7 @@ import type { GraphData } from '../types/graph';
 import type { ProfileData } from '../types/profile';
 import type { TimelineEntry } from '../types/timeline';
 import type { CaseSummary, CaseNote } from '../types/case';
+import type { EvidencePack } from '../types/evidence';
 import * as mock from './mocks/mockHandlers';
 
 function normalizeCaseSummary(item: any): CaseSummary {
@@ -101,5 +102,24 @@ export async function exportCasePDF(caseId: string): Promise<Blob> {
     return new Blob(['mock pdf byte stream'], { type: 'application/pdf' });
   }
   const res = await apiClient.get(`/cases/${caseId}/export/pdf`, { responseType: 'blob' });
+  return res.data;
+}
+
+export async function getEvidencePack(caseId: string): Promise<EvidencePack> {
+  if (isMockMode()) return mock.getMockEvidencePack(caseId);
+  try {
+    const res = await apiClient.get(`/cases/${caseId}/evidence`);
+    return res.data;
+  } catch (error) {
+    // Staging fallback: P4 is building compiler.py so if /evidence returns 404, we can consume /export/json
+    // which has an extremely similar structure. This is robust for Day 10.
+    const res = await apiClient.get(`/cases/${caseId}/export/json`);
+    return res.data;
+  }
+}
+
+export async function triggerModelRetrain(): Promise<{ message: string }> {
+  if (isMockMode()) return mock.triggerMockModelRetrain();
+  const res = await apiClient.post('/model/retrain');
   return res.data;
 }

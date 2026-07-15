@@ -4,7 +4,8 @@
 
 @layer base {
   body {
-    @apply bg-slate-950 text-slate-100 font-sans antialiased overflow-x-hidden;
+    @apply bg-slate-950 text-slate-100 font-sans antialiased overflow-x-hidden select-none;
+    background-color: #030712; /* Fallback */
   }
   
   /* Custom scrollbar styling for a tech/investigative feel */
@@ -13,24 +14,218 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    @apply bg-slate-900;
+    @apply bg-slate-950;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-slate-800 rounded hover:bg-slate-700 transition-colors;
+    @apply bg-indigo-950/80 rounded border border-indigo-500/20 hover:bg-indigo-500/30 transition-colors;
   }
 }
 
 @layer utilities {
   .cyber-grid {
-    background-image: radial-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px);
-    background-size: 24px 24px;
+    background-image: 
+      linear-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: center;
+  }
+
+  .cyber-grid-dense {
+    background-image: 
+      linear-gradient(rgba(6, 182, 212, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(6, 182, 212, 0.04) 1px, transparent 1px);
+    background-size: 16px 16px;
   }
   
   .glow-shadow {
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.08);
+    box-shadow: 0 0 25px rgba(99, 102, 241, 0.15);
+  }
+
+  .glow-shadow-emerald {
+    box-shadow: 0 0 25px rgba(16, 185, 129, 0.15);
   }
   
   .glow-border {
-    border-color: rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.35);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.1);
+  }
+
+  .glow-text-indigo {
+    text-shadow: 0 0 8px rgba(99, 102, 241, 0.6);
+  }
+
+  .glow-text-cyan {
+    text-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
+  }
+
+  .glow-text-emerald {
+    text-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  }
+
+  /* Scanline simulation */
+  .scanline {
+    background: linear-gradient(
+      rgba(18, 16, 16, 0) 50%, 
+      rgba(0, 0, 0, 0.25) 50%
+    );
+    background-size: 100% 4px;
+    z-index: 999;
+  }
+
+  /* Animated gradient background */
+  .animated-sky {
+    background: linear-gradient(90deg, rgba(15, 23, 42, 0.8), rgba(99, 102, 241, 0.08), rgba(6, 182, 212, 0.04), rgba(15, 23, 42, 0.8));
+    background-size: 300% 300%;
+    animation: skyShift 15s ease infinite;
+  }
+
+  @keyframes skyShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Rotating radar beam sweep */
+  .radar-sweep {
+    background: conic-gradient(
+      from 0deg,
+      rgba(99, 102, 241, 0.15) 0deg,
+      rgba(6, 182, 212, 0.05) 120deg,
+      transparent 270deg,
+      rgba(99, 102, 241, 0.15) 360deg
+    );
+    animation: radarRotation 8s linear infinite;
+    transform-origin: center;
+  }
+
+  @keyframes radarRotation {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Soft glowing orb element */
+  .orb {
+    position: absolute;
+    border-radius: 9999px;
+    width: var(--orb-size, 150px);
+    height: var(--orb-size, 150px);
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.2) 0%, transparent 70%);
+    filter: blur(24px);
+    pointer-events: none;
+  }
+
+  /* Grid opacity pulsing */
+  .grid-pulse {
+    animation: gridPulse 8s ease-in-out infinite;
+  }
+
+  @keyframes gridPulse {
+    0%, 100% { opacity: 0.15; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Glassmorphism cyber dashboard panel */
+  .cyber-panel {
+    background: rgba(10, 15, 30, 0.7);
+    border: 1px solid rgba(99, 102, 241, 0.15);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cyber-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.03) 0%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    pointer-events: none;
+  }
+
+  /* Cyber corner decors */
+  .corner-decor {
+    position: relative;
+  }
+  
+  .corner-decor::after {
+    content: '';
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    width: 8px;
+    height: 8px;
+    border-top: 2px solid rgba(99, 102, 241, 0.85);
+    border-right: 2px solid rgba(99, 102, 241, 0.85);
+    pointer-events: none;
+  }
+
+  .corner-decor::before {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: -1px;
+    width: 8px;
+    height: 8px;
+    border-bottom: 2px solid rgba(99, 102, 241, 0.85);
+    border-left: 2px solid rgba(99, 102, 241, 0.85);
+    pointer-events: none;
+  }
+
+  /* Glowing dot marker */
+  .status-dot {
+    position: relative;
+  }
+
+  .status-dot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: currentColor;
+    animation: statusPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes statusPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(2.5); opacity: 0; }
+  }
+
+  /* Glitch Text Effect */
+  .glitch-text {
+    position: relative;
+    animation: glitchText 4s infinite;
+  }
+
+  @keyframes glitchText {
+    0%, 95%, 98%, 100% {
+      text-shadow: none;
+      transform: skew(0deg);
+    }
+    96% {
+      text-shadow: 2px -1px 0 rgba(239, 68, 68, 0.5), -2px 1px 0 rgba(6, 182, 212, 0.5);
+      transform: skew(-2deg);
+    }
+    97% {
+      text-shadow: -2px 1px 0 rgba(239, 68, 68, 0.5), 2px -1px 0 rgba(99, 102, 241, 0.5);
+      transform: skew(2deg);
+    }
+  }
+
+  /* Floating UI item */
+  .float-anim {
+    animation: floatOverlay 6s ease-in-out infinite;
+  }
+
+  @keyframes floatOverlay {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
   }
 }

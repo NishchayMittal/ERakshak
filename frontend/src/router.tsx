@@ -5,24 +5,29 @@ import LoginPage from './pages/LoginPage';
 import CaseDashboardPage from './pages/CaseDashboardPage';
 import IntakePage from './pages/IntakePage';
 import InvestigationPage from './pages/InvestigationPage';
+import PortalPage from './pages/PortalPage';
+import SettingsPage from './pages/SettingsPage';
 
 export const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <PortalPage />,
+  },
   {
     path: '/login',
     element: <LoginPage />,
   },
   {
-    path: '/',
     element: <AppShell />,
     children: [
-      { path: '', element: <Navigate to="/cases" replace /> },
-      { path: 'cases', element: <CaseDashboardPage /> },
-      { path: 'cases/:caseId/intake', element: <IntakePage /> },
-      { path: 'cases/:caseId/entities/:entityId', element: <InvestigationPage /> },
+      { path: '/cases', element: <CaseDashboardPage /> },
+      { path: '/cases/:caseId/intake', element: <IntakePage /> },
+      { path: '/cases/:caseId/entities/:entityId', element: <InvestigationPage /> },
+      { path: '/settings', element: <SettingsPage /> },
     ],
   },
   {
     path: '*',
-    element: <Navigate to="/cases" replace />,
+    element: <Navigate to="/" replace />,
   }
 ]);

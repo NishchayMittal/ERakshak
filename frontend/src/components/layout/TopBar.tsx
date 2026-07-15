@@ -1,5 +1,7 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { LogOut, User, Cpu, Activity, Briefcase } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useCaseStore } from '../../state/caseStore';
 
@@ -11,7 +13,7 @@ export default function TopBar() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
   };
 
   // Determine current page context title
@@ -23,20 +25,25 @@ export default function TopBar() {
   }
 
   return (
-    <header className="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-6 z-10">
+    <header className="h-16 bg-slate-950/65 backdrop-blur-md border-b border-indigo-500/10 flex items-center justify-between px-6 z-20 relative select-none">
+      <div className="absolute inset-0 opacity-15 pointer-events-none cyber-grid-dense"></div>
+      
       {/* Title / Current Context */}
       <div className="flex items-center gap-4">
-        <h2 className="font-bold text-slate-100 text-sm tracking-wide uppercase font-sans">
-          {pageTitle}
+        <h2 className="font-bold text-slate-100 text-xs tracking-widest uppercase font-mono flex items-center gap-3">
+          <div className="w-8 h-8 rounded border border-indigo-500/30 flex items-center justify-center bg-indigo-950/40 text-indigo-400 font-bold text-sm float-anim">
+            eR
+          </div>
+          <span className="glow-text-indigo">{pageTitle}</span>
         </h2>
         {activeCase && (location.pathname.includes('/intake') || location.pathname.includes('/entities/')) && (
           <>
-            <span className="text-slate-600">|</span>
+            <span className="text-slate-700">|</span>
             <div className="flex items-center gap-2">
-              <span className="text-xs px-2 py-0.5 bg-slate-800 text-indigo-300 rounded-full font-mono border border-slate-700">
+              <span className="text-[10px] px-2 py-0.5 bg-indigo-950/40 text-indigo-400 rounded-full font-mono border border-indigo-500/20">
                 {activeCase.caseId}
               </span>
-              <span className="text-xs font-medium text-slate-300">
+              <span className="text-[10px] uppercase font-bold text-slate-350 tracking-wider">
                 {activeCase.title}
               </span>
             </div>
@@ -48,22 +55,26 @@ export default function TopBar() {
       <div className="flex items-center gap-4">
         {user && (
           <div className="hidden sm:flex flex-col text-right">
-            <span className="text-xs font-semibold text-slate-300">{user.name}</span>
-            <span className="text-[10px] text-slate-500 font-mono">{user.role}</span>
+            <span className="text-xs font-semibold text-slate-300 font-sans flex items-center justify-end gap-1.5">
+              <User className="w-3.5 h-3.5 text-indigo-400" />
+              {user.name}
+            </span>
+            <span className="text-[9px] text-slate-500 font-mono">{user.role}</span>
           </div>
         )}
 
-        <div className="w-px h-8 bg-slate-800"></div>
+        <div className="w-px h-8 bg-indigo-500/10"></div>
 
-        <button 
+        <motion.button 
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
           onClick={handleLogout}
-          className="text-xs flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-slate-300 hover:text-slate-100 rounded transition-all"
+          className="flex items-center gap-2 px-3 py-1.5 rounded border border-rose-500/25 bg-rose-950/20 hover:bg-rose-900/40 text-rose-400 text-xs font-semibold uppercase tracking-wider transition-all"
+          title="Disconnect Gateway Session"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
+          <LogOut className="w-3.5 h-3.5" />
           <span>Disconnect</span>
-        </button>
+        </motion.button>
       </div>
     </header>
   );

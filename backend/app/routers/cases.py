@@ -106,10 +106,18 @@ def serialize_graph(G: nx.MultiDiGraph) -> dict:
 
         is_pivot = data.get("pivot", False) or G.degree(node_id) >= 3
 
+        raw_type = data.get("type", "username")
+        if raw_type in ("name", "photo"):
+            node_type = "person"
+        elif raw_type == "other":
+            node_type = "username"
+        else:
+            node_type = raw_type
+
         nodes_list.append({
             "id": node_id,
             "label": data.get("label", node_id),
-            "type": data.get("type", "username"),
+            "type": node_type,
             "confidence": float(data.get("confidence", 1.0)),
             "sourceCount": source_count,
             "pivot": is_pivot,

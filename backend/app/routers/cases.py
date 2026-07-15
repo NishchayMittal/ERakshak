@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 import networkx as nx
@@ -557,6 +557,7 @@ def create_case_note(
 def submit_link_feedback(
     case_id: str,
     payload: LinkFeedbackCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_investigator: Investigator = Depends(get_current_investigator)
 ):
@@ -583,7 +584,7 @@ def submit_link_feedback(
         detail={"feedback_id": feedback.id, "source_id": payload.source_id, "target_id": payload.target_id, "status": payload.status}
     )
 
-    # Trigger model retraining in background thread
+    # Trigger model retraining in background thread (P2's implementation)
     trigger_background_retrain(db)
 
     return feedback

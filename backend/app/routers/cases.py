@@ -472,6 +472,52 @@ def create_case_note(
     }
 
 
+@router.post("/{case_id}/feedback", response_model=LinkFeedbackOut, status_code=status.HTTP_201_CREATED)
+def submit_link_feedback(
+    case_id: str,
+    payload: LinkFeedbackCreate,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    feedback = LinkFeedback(
+        case_id=case_id,
+        source_id=payload.source_id,
+        target_id=payload.target_id,
+        status=payload.status,
+        investigator_id=current_investigator.id
+    )
+    db.add(feedback)
+    db.commit()
+    db.refresh(feedback)
+
+    log_action(
+        db, 
+        "feedback.submit", 
+        investigator_id=current_investigator.id, 
+        case_id=case_id, 
+        detail={"feedback_id": feedback.id, "source_id": payload.source_id, "target_id": payload.target_id, "status": payload.status}
+    )
+
+    return feedback
+
+
+@router.get("/{case_id}/feedback", response_model=list[LinkFeedbackOut])
+def get_link_feedbacks(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    return db.query(LinkFeedback).filter(LinkFeedback.case_id == case_id).all()
+
+
 @router.get("/{case_id}/export/json")
 def export_case_json(
     case_id: str,

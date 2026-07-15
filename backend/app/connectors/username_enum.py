@@ -85,32 +85,48 @@ class UsernameEnumConnector(BaseConnector):
         if not username:
             return []
 
+        # Concurrency limit for username checks
+        sem = asyncio.Semaphore(3)
+        from app.connectors.base import get_limiter_for_connector
+        limiter = get_limiter_for_connector(self.name)
+
         async def check_site(client: httpx.AsyncClient, site: dict) -> Finding | None:
             url = site["uri_check"].format(account=username)
             # Use headers to look like a browser and avoid bot blockers
             headers = {
                 "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             }
-            try:
-                response = await client.get(url, headers=headers, timeout=self.timeout_seconds, follow_redirects=True)
-                if response.status_code == site["e_code"]:
-                    # Basic check for some sites that return 200 but contain "not found" text
-                    text = response.text.lower()
-                    if "user not found" in text or "page not found" in text or "profile not found" in text:
+            backoff = 0.5
+            for attempt in range(self.max_retries + 1):
+                try:
+                    async with sem:
+                        # Apply category rate limiting
+                        await limiter.acquire()
+                        response = await client.get(url, headers=headers, timeout=self.timeout_seconds, follow_redirects=True)
+                        response.raise_for_status()
+                        
+                        if response.status_code == site["e_code"]:
+                            # Basic check for some sites that return 200 but contain "not found" text
+                            text = response.text.lower()
+                            if "user not found" in text or "page not found" in text or "profile not found" in text:
+                                return None
+                            return Finding(
+                                connector_name=self.name,
+                                result_type="social_profile",
+                                result_value=f"{site['name']} Profile: {url}",
+                                confidence=0.85,
+                                raw_payload={
+                                    "site_name": site["name"],
+                                    "profile_url": url,
+                                    "status_code": response.status_code
+                                }
+                            )
                         return None
-                    return Finding(
-                        connector_name=self.name,
-                        result_type="social_profile",
-                        result_value=f"{site['name']} Profile: {url}",
-                        confidence=0.85,
-                        raw_payload={
-                            "site_name": site["name"],
-                            "profile_url": url,
-                            "status_code": response.status_code
-                        }
-                    )
-            except Exception:
-                pass
+                except Exception:
+                    if attempt >= self.max_retries:
+                        return None
+                    await asyncio.sleep(backoff)
+                    backoff *= 2
             return None
 
         # Run concurrent checks

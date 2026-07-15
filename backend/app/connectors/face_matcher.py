@@ -35,8 +35,34 @@ class FaceMatcherConnector(BaseConnector):
             try:
                 # If target is a web URL, download it
                 if identifier_value.startswith("http://") or identifier_value.startswith("https://"):
-                    urllib.request.urlretrieve(identifier_value, temp_path)
-                    target_img = Image.open(temp_path)
+                    import httpx
+                    import asyncio
+                    from app.connectors.base import get_limiter_for_connector
+                    limiter = get_limiter_for_connector(self.name)
+                    
+                    async def download_image():
+                        timeout = httpx.Timeout(self.timeout_seconds)
+                        backoff = 0.5
+                        for attempt in range(self.max_retries + 1):
+                            try:
+                                await limiter.acquire()
+                                async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
+                                    response = await client.get(identifier_value)
+                                    response.raise_for_status()
+                                    with open(temp_path, "wb") as f:
+                                        f.write(response.content)
+                                    return True
+                            except Exception:
+                                if attempt >= self.max_retries:
+                                    return False
+                                await asyncio.sleep(backoff)
+                                backoff *= 2
+                        return False
+
+                    # We run the async download using a coroutine wait, since this connector is run inside an async event loop
+                    download_success = await download_image()
+                    if download_success:
+                        target_img = Image.open(temp_path)
                 elif os.path.exists(identifier_value):
                     target_img = Image.open(identifier_value)
             except Exception:

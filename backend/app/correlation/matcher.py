@@ -143,6 +143,36 @@ class FellegiSunterModel:
 
         return probability
 
+    def get_explanations(self, vector: dict) -> list[dict]:
+        """
+        Computes feature contribution log-likelihood weights for the baseline model.
+        """
+        readable_names = {
+            "name_match": "Name Similarity",
+            "username_match": "Username Similarity",
+            "exact_match": "Exact Value Match",
+            "email_username_match": "Email/Username Alignment",
+            "shared_findings": "Shared Findings",
+            "shared_domains": "Shared Domain Names"
+        }
+        
+        contributions = []
+        for key, val in vector.items():
+            if key in self.weights:
+                weight_val = self.weights[key][int(val)]
+                # Skip zero contribution features
+                if abs(weight_val) < 1e-4:
+                    continue
+                contributions.append({
+                    "feature": readable_names.get(key, key),
+                    "value": round(weight_val, 4),
+                    "direction": "positive" if weight_val > 0 else "negative"
+                })
+                
+        # Sort by absolute weight value descending
+        contributions.sort(key=lambda x: abs(x["value"]), reverse=True)
+        return contributions[:3]
+
 
 # Singleton model instance
 _model_instance = None
@@ -159,6 +189,7 @@ class XGBoostModel:
     def __init__(self, model_path: str = "backend/app/resources/xgboost_model.json"):
         self.model_path = model_path
         self.model = None
+        self.explainer = None
         self.load()
 
     def load(self):
@@ -167,12 +198,15 @@ class XGBoostModel:
             return
         try:
             import xgboost as xgb
+            import shap
             self.model = xgb.XGBClassifier()
             self.model.load_model(self.model_path)
-            logger.info("XGBoost model loaded successfully for correlation refinement.")
+            self.explainer = shap.TreeExplainer(self.model)
+            logger.info("XGBoost model and SHAP TreeExplainer loaded successfully.")
         except Exception as e:
-            logger.error(f"Error loading XGBoost model: {e}")
+            logger.error(f"Error loading XGBoost model or SHAP: {e}")
             self.model = None
+            self.explainer = None
 
     def predict_probability(self, vector: dict) -> float | None:
         if self.model is None:
@@ -193,6 +227,50 @@ class XGBoostModel:
         except Exception as e:
             logger.error(f"Error executing XGBoost prediction: {e}")
             return None
+
+    def get_shap_explanations(self, vector: dict) -> list[dict]:
+        if self.model is None or self.explainer is None:
+            return []
+        try:
+            feat_order = [
+                "name_similarity",
+                "username_similarity",
+                "exact_match",
+                "email_username_match",
+                "shared_findings_count",
+                "shared_domains"
+            ]
+            x = [[float(vector.get(f, 0.0)) for f in feat_order]]
+            shap_vals = self.explainer.shap_values(x)
+            row_vals = shap_vals[0]
+            
+            readable_names = {
+                "name_similarity": "Name Similarity",
+                "username_similarity": "Username Similarity",
+                "exact_match": "Exact Value Match",
+                "email_username_match": "Email/Username Alignment",
+                "shared_findings_count": "Shared Findings",
+                "shared_domains": "Shared Domain Names"
+            }
+            
+            features_with_shap = []
+            for i, feat in enumerate(feat_order):
+                val = float(row_vals[i])
+                if abs(val) < 1e-4:
+                    continue
+                features_with_shap.append({
+                    "feature": readable_names.get(feat, feat),
+                    "value": round(val, 4),
+                    "direction": "positive" if val > 0 else "negative"
+                })
+                
+            # Sort by absolute SHAP value descending
+            features_with_shap.sort(key=lambda x: abs(x["value"]), reverse=True)
+            return features_with_shap[:3]
+            
+        except Exception as e:
+            logger.error(f"Error computing SHAP: {e}")
+            return []
 
 
 def get_xgb_model() -> XGBoostModel:
@@ -288,7 +366,7 @@ def compute_correlations(case_id: str, db: Session) -> list[dict]:
     """
     Computes pairwise correlations between all identifiers in a case using
     Fellegi-Sunter baseline scores and refines them using an XGBoost model.
-    Applies investigator feedbacks to override scores.
+    Applies investigator feedbacks to override scores and attaches SHAP explanations.
     """
     identifiers = db.query(Identifier).filter(Identifier.case_id == case_id).all()
     if len(identifiers) < 2:
@@ -318,6 +396,7 @@ def compute_correlations(case_id: str, db: Session) -> list[dict]:
             fb_status = fb_map.get(fb_key_val) or fb_map.get(fb_key_id)
 
             match_type = "baseline"
+            explanations = []
 
             if fb_status == "rejected":
                 confidence = 0.0
@@ -335,6 +414,11 @@ def compute_correlations(case_id: str, db: Session) -> list[dict]:
                     if refined_prob is not None:
                         confidence = refined_prob
                         match_type = "xgboost"
+                        explanations = xgb_model.get_shap_explanations(vector)
+                        
+                # Default explanation fallback to FS weights if XGBoost not used/failed
+                if not explanations:
+                    explanations = model.get_explanations(vector)
 
             # Output link if confidence is above threshold
             if confidence >= 0.5:
@@ -355,7 +439,118 @@ def compute_correlations(case_id: str, db: Session) -> list[dict]:
                     "relationType": rel_type,
                     "confidence": round(confidence, 2),
                     "sourceProvenance": "correlation_engine",
-                    "matchType": match_type
+                    "matchType": match_type,
+                    "explanations": explanations
                 })
 
     return correlated_links
+
+
+def run_retrain_flow(bind):
+    """
+    Executes model retraining by combining synthetic pairs with investigator feedbacks.
+    Invoked in a background thread to prevent blocking main requests.
+    """
+    from sqlalchemy.orm import Session as SessionClass
+    from app.models import LinkFeedback, Identifier
+    import xgboost as xgb
+    import csv
+    import os
+
+    db = SessionClass(bind=bind)
+    try:
+        feedbacks = db.query(LinkFeedback).all()
+        if not feedbacks:
+            logger.info("No investigator feedback found in database. Retraining skipped.")
+            return
+
+        feedback_vectors = []
+        feedback_labels = []
+
+        for fb in feedbacks:
+            id1 = db.query(Identifier).filter((Identifier.id == fb.source_id) | (Identifier.normalized_value == fb.source_id)).first()
+            id2 = db.query(Identifier).filter((Identifier.id == fb.target_id) | (Identifier.normalized_value == fb.target_id)).first()
+            
+            if not id1 or not id2:
+                continue
+
+            vector = generate_comparison_vector(id1, id2, db)
+            label = 1 if fb.status == "confirmed" else 0
+            
+            feat_vector = [
+                float(vector["name_similarity"]),
+                float(vector["username_similarity"]),
+                float(vector["exact_match"]),
+                float(vector["email_username_match"]),
+                float(vector["shared_findings_count"]),
+                float(vector["shared_domains"])
+            ]
+            feedback_vectors.append(feat_vector)
+            feedback_labels.append(label)
+
+        if not feedback_vectors:
+            logger.info("No valid identifier pairs resolved from feedbacks. Retraining skipped.")
+            return
+
+        logger.info(f"Loaded {len(feedback_vectors)} real-world feedbacks. Proceeding with retraining...")
+
+        # Load original synthetic pairs
+        CSV_PATH = "backend/app/resources/synthetic_pairs.csv"
+        X_combined = []
+        y_combined = []
+
+        if os.path.exists(CSV_PATH):
+            with open(CSV_PATH, mode="r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    feat_vector = [
+                        float(row["name_similarity"]),
+                        float(row["username_similarity"]),
+                        float(row["exact_match"]),
+                        float(row["email_username_match"]),
+                        float(row["shared_findings_count"]),
+                        float(row["shared_domains"])
+                    ]
+                    X_combined.append(feat_vector)
+                    y_combined.append(int(row["label"]))
+
+        # Add feedbacks to dataset with a 10x replication factor to emphasize analyst input
+        for val, lbl in zip(feedback_vectors, feedback_labels):
+            for _ in range(10):
+                X_combined.append(val)
+                y_combined.append(lbl)
+
+        # Retrain model
+        model = xgb.XGBClassifier(
+            n_estimators=50,
+            max_depth=3,
+            learning_rate=0.1,
+            random_state=42,
+            eval_metric="logloss"
+        )
+        model.fit(X_combined, y_combined)
+
+        # Save and reload model
+        MODEL_PATH = "backend/app/resources/xgboost_model.json"
+        os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
+        model.save_model(MODEL_PATH)
+        logger.info(f"Retrained XGBoost model saved successfully.")
+
+        get_xgb_model().load()
+        logger.info("In-memory active model reloaded successfully.")
+
+    except Exception as e:
+        logger.error(f"Error executing active retraining loop: {e}")
+    finally:
+        db.close()
+
+
+def trigger_background_retrain(db_session: Session):
+    """
+    Forks a background thread to retrain the XGBoost model asynchronously.
+    """
+    import threading
+    thread = threading.Thread(target=run_retrain_flow, args=(db_session.bind,))
+    thread.daemon = True
+    thread.start()
+

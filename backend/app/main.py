@@ -12,6 +12,7 @@ from app.database import Base, engine
 from app.routers import auth as auth_router
 from app.routers import cases as cases_router
 from app.routers import identifiers as identifiers_router
+from app.routers import model as model_router
 
 
 app = FastAPI(title="e-Rakshak API", version="0.1.0")
@@ -27,6 +28,7 @@ app.add_middleware(
 app.include_router(auth_router.router)
 app.include_router(cases_router.router)
 app.include_router(identifiers_router.router)
+app.include_router(model_router.router)
 
 registry.register(CrtShConnector())
 registry.register(WhoisConnector())

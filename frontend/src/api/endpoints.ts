@@ -142,3 +142,12 @@ export async function triggerModelRetrain(): Promise<{ message: string }> {
   const res = await apiClient.post('/model/retrain');
   return res.data;
 }
+
+export async function updateInvestigatorProfile(fullName?: string, password?: string): Promise<any> {
+  if (isMockMode()) return mock.updateMockProfile(fullName || 'Leon Lobo');
+  const payload: any = {};
+  if (fullName) payload.full_name = fullName;
+  if (password) payload.password = password;
+  const res = await apiClient.patch('/auth/profile', payload);
+  return res.data;
+}

@@ -194,3 +194,11 @@ export function getMockEvidencePack(caseId: string): Promise<EvidencePack> {
 export function triggerMockModelRetrain(): Promise<{ message: string }> {
   return delay({ message: "Model retraining triggered in the background." });
 }
+
+export function updateMockProfile(fullName: string): Promise<{ id: string; badge_id: string; full_name: string }> {
+  return delay({
+    id: 'inv-042',
+    badge_id: 'ER-2026-042',
+    full_name: fullName
+  });
+}

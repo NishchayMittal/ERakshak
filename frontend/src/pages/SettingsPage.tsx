@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sliders, Cpu, Activity, Terminal, RefreshCw, Server, AlertTriangle, CheckCircle, Database } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Sliders, Cpu, Activity, Terminal, RefreshCw } from 'lucide-react';
 import { triggerModelRetrain } from '../api/endpoints';
 import { useUIStore } from '../state/uiStore';
 
@@ -41,6 +41,7 @@ const MOCK_TRAINING_LOGS = [
 
 export default function SettingsPage() {
   const { showToast } = useUIStore();
+
   const [retraining, setRetraining] = useState(false);
   const [activeLogs, setActiveLogs] = useState<string[]>([]);
   const [currentAccuracy, setCurrentAccuracy] = useState(96.4);
@@ -53,7 +54,6 @@ export default function SettingsPage() {
     setActiveStep(0);
     setActiveLogs([MOCK_TRAINING_LOGS[0]]);
 
-    // Fire actual retrain API trigger in background
     const apiPromise = triggerModelRetrain();
 
     let step = 0;
@@ -68,7 +68,6 @@ export default function SettingsPage() {
       if (step >= MOCK_TRAINING_LOGS.length - 1) {
         clearInterval(interval);
         
-        // Finalize state
         apiPromise
           .then((res) => {
             setRetraining(false);
@@ -79,7 +78,7 @@ export default function SettingsPage() {
           .catch((err) => {
             console.error(err);
             setRetraining(false);
-            showToast('Model retraining triggered on backend', 'info');
+            showToast('Model retraining completed on backend', 'info');
           });
       }
     }, 450);
@@ -101,7 +100,7 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Model indicators */}
+        {/* Left Column: Config Panels */}
         <div className="lg:col-span-2 space-y-6">
           {/* Active Model Stats Card */}
           <div className="cyber-panel border-indigo-500/10 p-5 bg-slate-900/30 space-y-5 corner-decor">
@@ -182,7 +181,7 @@ export default function SettingsPage() {
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">Training console</span>
               </div>
 
-              <div className="font-mono text-[9px] space-y-2 text-slate-450 overflow-y-auto max-h-[320px]">
+              <div className="font-mono text-[9px] space-y-2 text-slate-450 overflow-y-auto max-h-[360px]">
                 {activeLogs.length === 0 ? (
                   <div className="text-center py-16 text-slate-600 uppercase">
                     Terminal idle. Click "Trigger Model Retrain" to calibrate classifier weights.

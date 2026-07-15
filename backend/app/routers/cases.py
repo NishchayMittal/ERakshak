@@ -265,42 +265,8 @@ async def submit_case_identifiers(
             detail={"identifier_id": db_id.id, "type": db_id.type.value, "normalized_value": db_id.normalized_value},
         )
 
-        from app.connectors.base import registry
-        connectors = registry.for_type(db_id.type)
-
-        async def invoke(connector):
-            try:
-                return connector, await connector.run(db_id.normalized_value)
-            except Exception:
-                return connector, []
-
-        results = await asyncio.gather(*(invoke(connector) for connector in connectors))
-
-        for connector, connector_results in results:
-            connector_saved = []
-            for result in connector_results:
-                finding = Finding(
-                    identifier_id=db_id.id,
-                    connector_name=result.connector_name,
-                    result_type=result.result_type,
-                    result_value=result.result_value,
-                    confidence=result.confidence,
-                    raw_payload=result.raw_payload,
-                )
-                db.add(finding)
-                connector_saved.append(finding)
-                saved_findings.append(finding)
-            db.commit()
-            for finding in connector_saved:
-                db.refresh(finding)
-            
-            log_action(
-                db,
-                "connector.run",
-                investigator_id=current_investigator.id,
-                case_id=case_id,
-                detail={"identifier_id": db_id.id, "connector": connector.name, "result_count": len(connector_results)},
-            )
+        from app.connectors.runner import run_connectors_and_pivot
+        await run_connectors_and_pivot(db, db_id, current_investigator.id, depth=0)
 
     is_ambiguous = any(item.type == "name" for item in payload.identifiers)
     fields_needed = ["city", "age", "employer"] if is_ambiguous else []

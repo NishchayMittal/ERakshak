@@ -69,44 +69,8 @@ async def run_connectors(
     if not identifier:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Identifier not found")
 
-    connectors = registry.for_type(identifier.type)
-
-    async def invoke(connector):
-        try:
-            return connector, await connector.run(identifier.normalized_value)
-        except Exception:
-            return connector, []
-
-    results = await asyncio.gather(*(invoke(connector) for connector in connectors))
-
-    saved_findings: list[Finding] = []
-    for connector, connector_results in results:
-        connector_saved: list[Finding] = []
-        for result in connector_results:
-            finding = Finding(
-                identifier_id=identifier.id,
-                connector_name=result.connector_name,
-                result_type=result.result_type,
-                result_value=result.result_value,
-                confidence=result.confidence,
-                raw_payload=result.raw_payload,
-            )
-            db.add(finding)
-            connector_saved.append(finding)
-            saved_findings.append(finding)
-        db.commit()
-        for finding in connector_saved:
-            db.refresh(finding)
-        log_action(
-            db,
-            "connector.run",
-            investigator_id=current_investigator.id,
-            case_id=identifier.case_id,
-            detail={"identifier_id": identifier.id, "connector": connector.name, "result_count": len(connector_results)},
-        )
-
-    for finding in saved_findings:
-        db.refresh(finding)
+    from app.connectors.runner import run_connectors_and_pivot
+    saved_findings = await run_connectors_and_pivot(db, identifier, current_investigator.id, depth=0)
     return saved_findings
 
 

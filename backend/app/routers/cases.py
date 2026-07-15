@@ -13,8 +13,8 @@ from datetime import datetime
 from app.audit import log_action
 from app.auth import get_current_investigator
 from app.database import get_db
-from app.models import Case, Investigator, Identifier, Finding, CaseNote
-from app.schemas import CaseCreate, CaseOut
+from app.models import Case, Investigator, Identifier, Finding, CaseNote, LinkFeedback
+from app.schemas import CaseCreate, CaseOut, CaseUpdate, LinkFeedbackCreate, LinkFeedbackOut
 
 
 router = APIRouter(prefix="/cases", tags=["cases"])
@@ -60,6 +60,36 @@ def get_case(case_id: str, db: Session = Depends(get_db), current_investigator: 
     )
     if not case:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+    return case
+
+
+@router.patch("/{case_id}", response_model=CaseOut)
+def update_case(
+    case_id: str,
+    payload: CaseUpdate,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    updated_fields = {}
+    if payload.title is not None:
+        case.title = payload.title
+        updated_fields["title"] = payload.title
+    if payload.description is not None:
+        case.description = payload.description
+        updated_fields["description"] = payload.description
+    if payload.status is not None:
+        case.status = payload.status
+        updated_fields["status"] = payload.status
+
+    if updated_fields:
+        db.commit()
+        db.refresh(case)
+        log_action(db, "case.update", investigator_id=current_investigator.id, case_id=case.id, detail=updated_fields)
+
     return case
 
 
@@ -465,6 +495,52 @@ def create_case_note(
         "text": note.text,
         "createdAt": note.created_at.isoformat()
     }
+
+
+@router.post("/{case_id}/feedback", response_model=LinkFeedbackOut, status_code=status.HTTP_201_CREATED)
+def submit_link_feedback(
+    case_id: str,
+    payload: LinkFeedbackCreate,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    feedback = LinkFeedback(
+        case_id=case_id,
+        source_id=payload.source_id,
+        target_id=payload.target_id,
+        status=payload.status,
+        investigator_id=current_investigator.id
+    )
+    db.add(feedback)
+    db.commit()
+    db.refresh(feedback)
+
+    log_action(
+        db, 
+        "feedback.submit", 
+        investigator_id=current_investigator.id, 
+        case_id=case_id, 
+        detail={"feedback_id": feedback.id, "source_id": payload.source_id, "target_id": payload.target_id, "status": payload.status}
+    )
+
+    return feedback
+
+
+@router.get("/{case_id}/feedback", response_model=list[LinkFeedbackOut])
+def get_link_feedbacks(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    return db.query(LinkFeedback).filter(LinkFeedback.case_id == case_id).all()
 
 
 @router.get("/{case_id}/export/json")

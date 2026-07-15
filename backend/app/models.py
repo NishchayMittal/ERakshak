@@ -108,3 +108,18 @@ class CaseNote(Base):
     author_id: Mapped[str] = mapped_column(String, nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class LinkFeedback(Base):
+    __tablename__ = "link_feedbacks"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid4()))
+    case_id: Mapped[str] = mapped_column(String, ForeignKey("cases.id"), nullable=False)
+    source_id: Mapped[str] = mapped_column(String, nullable=False)
+    target_id: Mapped[str] = mapped_column(String, nullable=False)
+    status: Mapped[str] = mapped_column(String, nullable=False)  # "confirmed" / "rejected"
+    investigator_id: Mapped[str] = mapped_column(String, ForeignKey("investigators.id"), nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    case = relationship("Case")
+    investigator = relationship("Investigator")

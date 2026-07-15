@@ -93,6 +93,60 @@ def update_case(
     return case
 
 
+def serialize_graph(G: nx.MultiDiGraph) -> dict:
+    nodes_list = []
+    for node_id, data in G.nodes(data=True):
+        sources = set()
+        for u, v, k, edge_data in G.edges(keys=True, data=True):
+            if u == node_id or v == node_id:
+                prov = edge_data.get("source") or edge_data.get("sourceProvenance")
+                if prov:
+                    sources.add(prov)
+        source_count = max(len(sources), 1)
+
+        is_pivot = data.get("pivot", False) or G.degree(node_id) >= 3
+
+        nodes_list.append({
+            "id": node_id,
+            "label": data.get("label", node_id),
+            "type": data.get("type", "username"),
+            "confidence": float(data.get("confidence", 1.0)),
+            "sourceCount": source_count,
+            "pivot": is_pivot,
+            "expand_investigation": is_pivot
+        })
+
+    edges_list = []
+    edge_idx = 1
+    for u, v, k, data in G.edges(keys=True, data=True):
+        edge_id = data.get("id") or f"e_{edge_idx}"
+        edge_idx += 1
+        
+        relation_type = data.get("relationType") or data.get("label", "connected")
+        source_prov = data.get("sourceProvenance")
+        if not source_prov:
+            raw_source = data.get("source")
+            if raw_source and raw_source != u and raw_source != v:
+                source_prov = raw_source
+            else:
+                source_prov = "unknown"
+
+        edges_list.append({
+            "id": edge_id,
+            "source": u,
+            "target": v,
+            "relationType": relation_type,
+            "confidence": float(data.get("confidence", 1.0)),
+            "sourceProvenance": source_prov,
+            "shapFeatures": data.get("shapFeatures") or data.get("shap_features", {})
+        })
+
+    return {
+        "nodes": nodes_list,
+        "edges": edges_list
+    }
+
+
 @router.get("/{case_id}/graph")
 def get_case_graph(
     case_id: str,
@@ -137,6 +191,7 @@ def get_case_graph(
                 type=identifier.type.value,
                 node_class="identifier",
                 id=identifier.id,
+                confidence=identifier.confidence,
             )
 
     # 2. Add finding nodes and edges
@@ -157,7 +212,7 @@ def get_case_graph(
         # Parse specific findings
         if result_type == "subdomain":
             target_node_id = result_val.strip().lower()
-            target_type = "subdomain"
+            target_type = "domain"
         elif result_type == "registrant_email":
             target_node_id = result_val.strip().lower()
             target_type = "email"
@@ -166,26 +221,26 @@ def get_case_graph(
             target_type = "phone"
         elif result_type == "registrant_name":
             target_node_id = result_val.split(" (")[0].strip()
-            target_type = "name"
+            target_type = "person" # map to person in frontend types
             if seed_names:
                 match_score = max(fuzz.token_set_ratio(n, target_node_id) / 100.0 for n in seed_names)
                 confidence = max(confidence * match_score, 0.1)
         elif result_type == "registrant_org":
             target_node_id = result_val.split(" (")[0].strip()
-            target_type = "org"
+            target_type = "domain"
         elif result_type == "social_profile":
             if "Profile: " in result_val:
                 target_node_id = result_val.split("Profile: ")[1].strip()
             else:
                 target_node_id = result_val.strip()
-            target_type = "social_profile"
+            target_type = "username" # map to username or person
         elif result_type == "face_similarity":
             target_node_id = result_val.split("Match: ")[1].split(" (Similarity:")[0].strip()
             target_type = "person"
         elif result_type == "leak_record":
             breach_name = result_val.split(" (Hint:")[0].strip()
             target_node_id = breach_name
-            target_type = "breach"
+            target_type = "username"
             
             payload = finding.raw_payload or {}
             ip = payload.get("ip_address")
@@ -195,9 +250,10 @@ def get_case_graph(
                     G.add_node(
                         ip_node_id,
                         label=ip_node_id,
-                        type="ip",
+                        type="domain", # map to domain or other in frontend
                         node_class="finding",
                         id=finding.id,
+                        confidence=1.0,
                     )
                 G.add_edge(
                     parent_node_id,
@@ -211,7 +267,7 @@ def get_case_graph(
             orig_url = payload.get("original_url")
             if orig_url:
                 target_node_id = orig_url.strip()
-                target_type = "url"
+                target_type = "domain"
 
         if target_node_id:
             if not G.has_node(target_node_id):
@@ -221,6 +277,7 @@ def get_case_graph(
                     type=target_type,
                     node_class="finding",
                     id=finding.id,
+                    confidence=float(confidence),
                 )
             G.add_edge(
                 parent_node_id,
@@ -230,38 +287,28 @@ def get_case_graph(
                 confidence=float(confidence),
             )
 
-    # 4. Format graph for the frontend schema
-    nodes = []
-    for node, data in G.nodes(data=True):
-        is_pivot = data.get("pivot", False) or G.degree(node) >= 3
-        nodes.append({
-            "id": node,
-            "label": data.get("label", node),
-            "type": data.get("type", "other"),
-            "confidence": float(data.get("confidence", 1.0)),
-            "sourceCount": int(G.degree(node)),
-            "pivot": is_pivot,
-            "expand_investigation": is_pivot
-        })
+    # 3. Add correlated edges from correlation engine
+    from app.correlation.matcher import compute_correlations
+    correlations = compute_correlations(case_id, db)
+    for link in correlations:
+        if G.has_node(link["source"]) and G.has_node(link["target"]):
+            G.add_edge(
+                link["source"],
+                link["target"],
+                id=link["id"],
+                relationType=link["relationType"],
+                sourceProvenance=link["sourceProvenance"],
+                confidence=link["confidence"],
+                shap_features=link.get("shapFeatures") or link.get("shap_features", {})
+            )
 
-    edges = []
-    edge_idx = 1
-    for u, v, key, data in G.edges(keys=True, data=True):
-        edges.append({
-            "id": f"e{edge_idx}",
-            "source": u,
-            "target": v,
-            "relationType": data.get("label", "associated_with"),
-            "confidence": float(data.get("confidence", 1.0)),
-            "sourceProvenance": data.get("source", "unknown"),
-            "shapFeatures": data.get("shap_features", {})  # Placeholder for SHAP feature contributions
-        })
-        edge_idx += 1
+    # 4. Pivot detection (high degree)
+    for node, degree in dict(G.degree()).items():
+        if degree >= 3:
+            G.nodes[node]["pivot"] = True
+            G.nodes[node]["expand_investigation"] = True
 
-    return {
-        "nodes": nodes,
-        "edges": edges
-    }
+    return serialize_graph(G)
 
 
 class IdentifierInputItem(BaseModel):

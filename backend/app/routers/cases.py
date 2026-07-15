@@ -428,27 +428,24 @@ def export_case_csv(
     db: Session = Depends(get_db),
     current_investigator: Investigator = Depends(get_current_investigator)
 ):
-    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
-    if not case:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
-
-    identifiers = db.query(Identifier).filter(Identifier.case_id == case_id).all()
+    evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
     
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow(["Identifier ID", "Identifier Type", "Raw Value", "Normalized Value", "Connector", "Finding Type", "Finding Value", "Confidence"])
     
-    for i in identifiers:
-        findings = db.query(Finding).filter(Finding.identifier_id == i.id).all()
-        if not findings:
-            writer.writerow([i.id, i.type.value, i.raw_value, i.normalized_value, "N/A", "N/A", "N/A", i.confidence])
-        for f in findings:
-            writer.writerow([i.id, i.type.value, i.raw_value, i.normalized_value, f.connector_name, f.result_type, f.result_value, f.confidence])
+    for i in evidence_pack["identifiers"]:
+        if not i["findings"]:
+            writer.writerow([i["id"], i["type"], i["raw_value"], i["normalized_value"], "N/A", "N/A", "N/A", i["confidence"]])
+        for f in i["findings"]:
+            writer.writerow([i["id"], i["type"], i["raw_value"], i["normalized_value"], f["connector"], f["type"], f["value"], f["confidence"]])
 
     output.seek(0)
     headers = {"Content-Disposition": f"attachment; filename=ERakshak_Dossier_{case_id}.csv"}
     return StreamingResponse(io.BytesIO(output.getvalue().encode('utf-8')), headers=headers, media_type="text/csv")
 
+
+import re
 
 @router.get("/{case_id}/export/pdf")
 def export_case_pdf(
@@ -456,12 +453,9 @@ def export_case_pdf(
     db: Session = Depends(get_db),
     current_investigator: Investigator = Depends(get_current_investigator)
 ):
-    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
-    if not case:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
-
-    notes = db.query(CaseNote).filter(CaseNote.case_id == case_id).all()
-    identifiers = db.query(Identifier).filter(Identifier.case_id == case_id).all()
+    evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
+    narrative_text = generate_narrative(evidence_pack)
+    case_data = evidence_pack["case"]
     
     from reportlab.lib.pagesizes import letter
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
@@ -491,20 +485,40 @@ def export_case_pdf(
         fontSize=10,
         textColor=colors.HexColor('#4A5568')
     )
-    story.append(Paragraph(f"<b>Case Title:</b> {case.title}", meta_style))
-    story.append(Paragraph(f"<b>Status:</b> {case.status.upper()}", meta_style))
+    story.append(Paragraph(f"<b>Case Title:</b> {case_data['title']}", meta_style))
+    story.append(Paragraph(f"<b>Status:</b> {case_data['status'].upper()}", meta_style))
     story.append(Paragraph(f"<b>Date Generated:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", meta_style))
     story.append(Spacer(1, 20))
+
+    # LLM Narrative Section
+    story.append(Paragraph(f"<b>Executive Summary (AI Generated)</b>", styles['Heading2']))
+    story.append(Spacer(1, 8))
+    
+    # Basic markdown parsing for reportlab
+    parsed_narrative = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', narrative_text)
+    parsed_narrative = re.sub(r'### (.*)', r'<b>\1</b>', parsed_narrative)
+    parsed_narrative = parsed_narrative.replace('- ', '• ')
+    parsed_narrative = parsed_narrative.replace('> [!WARNING]', '<b>[WARNING]</b>')
+    parsed_narrative = parsed_narrative.replace('> ', '<i>') # basic italic quote block
+    
+    for line in parsed_narrative.split('\n'):
+        if line.strip():
+            # close italic tag if line started with italic
+            if line.startswith('<i>'):
+                line = line + '</i>'
+            story.append(Paragraph(line, meta_style))
+            story.append(Spacer(1, 4))
+
+    story.append(Spacer(1, 15))
 
     # Identifiers
     story.append(Paragraph(f"<b>Seed Identifiers & Suspect Profiles</b>", styles['Heading2']))
     story.append(Spacer(1, 8))
     
-    for identifier in identifiers:
-        story.append(Paragraph(f"• <b>{identifier.type.value.upper()}</b>: {identifier.raw_value} (Normalized: {identifier.normalized_value})", meta_style))
-        findings = db.query(Finding).filter(Finding.identifier_id == identifier.id).all()
-        for f in findings:
-            story.append(Paragraph(f"   - <i>{f.connector_name} ({f.result_type})</i>: {f.result_value} [Confidence: {f.confidence}]", meta_style))
+    for i in evidence_pack["identifiers"]:
+        story.append(Paragraph(f"• <b>{i['type'].upper()}</b>: {i['raw_value']} (Normalized: {i['normalized_value']})", meta_style))
+        for f in i["findings"]:
+            story.append(Paragraph(f"   - <i>{f['connector']} ({f['type']})</i>: {f['value']} [Confidence: {f['confidence']}]", meta_style))
         story.append(Spacer(1, 10))
 
     story.append(Spacer(1, 15))
@@ -512,10 +526,11 @@ def export_case_pdf(
     # Case Notes
     story.append(Paragraph(f"<b>Investigator Case Notes</b>", styles['Heading2']))
     story.append(Spacer(1, 8))
+    notes = evidence_pack.get("notes", [])
     if notes:
         for note in notes:
-            story.append(Paragraph(f"<b>Agent {note.author_id}</b> ({note.created_at.strftime('%Y-%m-%d %H:%M:%S')}):", meta_style))
-            story.append(Paragraph(f"{note.text}", meta_style))
+            story.append(Paragraph(f"<b>Agent {note['author_id']}</b> ({note['created_at']}):", meta_style))
+            story.append(Paragraph(f"{note['text']}", meta_style))
             story.append(Spacer(1, 8))
     else:
         story.append(Paragraph("No notes added to this case yet.", meta_style))

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
+import { exportCaseCSV, exportCaseJSON, exportCasePDF } from '../../api/endpoints';
 import { useUIStore } from '../../state/uiStore';
-import { useGraphStore } from '../../state/graphStore';
 
 interface ExportMenuProps {
   caseId: string;
@@ -10,64 +10,62 @@ export default function ExportMenu({ caseId }: ExportMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const { showToast } = useUIStore();
-  const { graphData, profileData } = useGraphStore();
 
-  const handleExportJSON = () => {
-    if (!graphData) return;
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ caseId, graphData, profileData }, null, 2));
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = window.URL.createObjectURL(blob);
     const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `ERakshak_Dossier_${caseId}_Export.json`);
+    downloadAnchor.href = url;
+    downloadAnchor.download = filename;
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
-    showToast('Raw JSON Dossier exported', 'success');
-    setIsOpen(false);
+    window.URL.revokeObjectURL(url);
   };
 
-  const handleExportCSV = () => {
-    if (!graphData) return;
-    // Flatten findings to CSV format
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Node ID,Label,Type,Confidence,Source Count\n";
-    
-    graphData.nodes.forEach(n => {
-      csvContent += `"${n.id}","${n.label}","${n.type}",${n.confidence},${n.sourceCount}\n`;
-    });
-
-    const encodedUri = encodeURI(csvContent);
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", encodedUri);
-    downloadAnchor.setAttribute("download", `ERakshak_Findings_${caseId}.csv`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-    showToast('Flattened CSV exported successfully', 'success');
-    setIsOpen(false);
-  };
-
-  const handleExportPDF = () => {
+  const handleExportJSON = async () => {
     setExporting(true);
-    showToast('Generating PDF Intelligence Report...', 'info');
+    try {
+      const blob = await exportCaseJSON(caseId);
+      downloadBlob(blob, `ERakshak_Dossier_${caseId}_Export.json`);
+      showToast('Raw JSON dossier exported', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Failed to export JSON dossier', 'error');
+    } finally {
+      setExporting(false);
+      setIsOpen(false);
+    }
+  };
+
+  const handleExportCSV = async () => {
+    setExporting(true);
+    try {
+      const blob = await exportCaseCSV(caseId);
+      downloadBlob(blob, `ERakshak_Findings_${caseId}.csv`);
+      showToast('Flattened CSV exported successfully', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Failed to export CSV findings', 'error');
+    } finally {
+      setExporting(false);
+      setIsOpen(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    setExporting(true);
+    showToast('Generating PDF intelligence report...', 'info');
 
     try {
-      const downloadAnchor = document.createElement('a');
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-      downloadAnchor.setAttribute("href", `${apiBaseUrl}/cases/${caseId}/export/pdf`);
-      downloadAnchor.setAttribute("download", `ERakshak_Dossier_${caseId}.pdf`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-
-      setTimeout(() => {
-        setExporting(false);
-        showToast('Intelligence Report PDF exported successfully', 'success');
-        setIsOpen(false);
-      }, 2000);
-    } catch (err) {
-      console.error(err);
+      const blob = await exportCasePDF(caseId);
+      downloadBlob(blob, `ERakshak_Dossier_${caseId}.pdf`);
+      showToast('Intelligence report PDF exported successfully', 'success');
+    } catch (error) {
+      console.error(error);
+      showToast('Failed to generate PDF report', 'error');
+    } finally {
       setExporting(false);
-      showToast('Failed to generate PDF Report', 'error');
+      setIsOpen(false);
     }
   };
 
@@ -91,32 +89,32 @@ export default function ExportMenu({ caseId }: ExportMenuProps) {
 
       {isOpen && (
         <>
-          <div 
-            onClick={() => setIsOpen(false)} 
+          <div
+            onClick={() => setIsOpen(false)}
             className="fixed inset-0 z-10"
           ></div>
           <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-2xl bg-slate-900 border border-slate-800 z-20 focus:outline-none overflow-hidden">
             <div className="py-1">
               <button
-                onClick={handleExportJSON}
+                onClick={() => void handleExportJSON()}
                 disabled={exporting}
                 className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-850 hover:text-white flex items-center gap-2 transition-colors border-b border-slate-850/50"
               >
                 <span className="font-semibold text-[9px] uppercase px-1 bg-slate-950 rounded text-amber-500 font-mono">JSON</span>
                 Raw Graph Dataset
               </button>
-              
+
               <button
-                onClick={handleExportCSV}
+                onClick={() => void handleExportCSV()}
                 disabled={exporting}
                 className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-850 hover:text-white flex items-center gap-2 transition-colors border-b border-slate-850/50"
               >
                 <span className="font-semibold text-[9px] uppercase px-1 bg-slate-950 rounded text-emerald-500 font-mono">CSV</span>
                 Flattened Findings Table
               </button>
-              
+
               <button
-                onClick={handleExportPDF}
+                onClick={() => void handleExportPDF()}
                 disabled={exporting}
                 className="w-full text-left px-4 py-2.5 text-xs text-slate-300 hover:bg-slate-850 hover:text-white flex items-center gap-2 transition-colors"
               >

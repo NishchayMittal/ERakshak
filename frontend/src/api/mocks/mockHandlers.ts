@@ -28,7 +28,7 @@ export function getMockCase(caseId: string): Promise<CaseSummary | undefined> {
 }
 
 export function getMockGraph(_caseId: string, _entityId: string): Promise<GraphData> {
-  return delay(mockGraph as GraphData);
+  return delay(mockGraph as unknown as GraphData);
 }
 
 export function getMockProfile(_caseId: string, _entityId: string): Promise<ProfileData> {

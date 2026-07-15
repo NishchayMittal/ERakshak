@@ -12,11 +12,8 @@ export default function GraphLegend() {
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 space-y-3">
-      <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-        Graph Legends
-      </div>
+      <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Graph Legend</div>
 
-      {/* Entity Nodes */}
       <div className="grid grid-cols-2 gap-2 text-xs">
         {legendItems.map((item) => (
           <div key={item.label} className="flex items-center gap-2">
@@ -28,15 +25,18 @@ export default function GraphLegend() {
 
       <div className="h-px bg-slate-800 my-2"></div>
 
-      {/* Edge Provenance info */}
       <div className="text-[10px] text-slate-500 flex flex-col gap-1">
         <div className="flex items-center justify-between">
-          <span>Solid Path:</span>
-          <span className="font-semibold text-slate-400">High Confidence (&gt;80%)</span>
+          <span>High confidence</span>
+          <span className="font-semibold text-emerald-400">Thicker green edge</span>
         </div>
         <div className="flex items-center justify-between">
-          <span>Dashed/Faded Path:</span>
-          <span className="font-semibold text-slate-400">Low Confidence (&lt;50%)</span>
+          <span>Refined match</span>
+          <span className="font-semibold text-sky-400">Blue edge</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span>Pivot node</span>
+          <span className="font-semibold text-amber-400">Golden highlight</span>
         </div>
       </div>
     </div>

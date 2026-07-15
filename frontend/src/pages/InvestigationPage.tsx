@@ -58,7 +58,7 @@ export default function InvestigationPage() {
         
         {/* Graph Canvas area */}
         <div className="lg:col-span-8 flex flex-col gap-4 min-h-0">
-          <GraphView onSelectNode={handleSelectNode} />
+          <GraphView caseId={caseId} onSelectNode={handleSelectNode} />
           <GraphLegend />
         </div>
 

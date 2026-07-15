@@ -5,10 +5,23 @@ import type { TimelineEntry } from '../types/timeline';
 import type { CaseSummary, CaseNote } from '../types/case';
 import * as mock from './mocks/mockHandlers';
 
+function normalizeCaseSummary(item: any): CaseSummary {
+  return {
+    caseId: item.id || item.caseId,
+    title: item.title || 'Untitled Case',
+    investigatorId: item.leadInvestigatorId || item.investigatorId || 'unknown',
+    status: (item.status === 'closed' ? 'closed' : 'active') as CaseSummary['status'],
+    createdAt: item.created_at || item.createdAt || new Date().toISOString(),
+    lastActivity: item.updated_at || item.lastActivity || item.created_at || item.createdAt || new Date().toISOString(),
+    tags: item.tags || [],
+    entityCount: item.entityCount || 0,
+  };
+}
+
 export async function getCaseList(): Promise<CaseSummary[]> {
   if (isMockMode()) return mock.getMockCaseList();
   const res = await apiClient.get('/cases');
-  return res.data;
+  return (res.data || []).map(normalizeCaseSummary);
 }
 
 export async function getGraph(caseId: string, entityId: string): Promise<GraphData> {
@@ -44,5 +57,39 @@ export async function getNotes(caseId: string): Promise<CaseNote[]> {
 export async function addNote(caseId: string, authorId: string, text: string): Promise<CaseNote> {
   if (isMockMode()) return mock.addMockNote(caseId, authorId, text);
   const res = await apiClient.post(`/cases/${caseId}/notes`, { authorId, text });
+  return res.data;
+}
+
+export async function submitLinkFeedback(
+  caseId: string,
+  payload: { case_id: string; source_id: string; target_id: string; status: 'confirmed' | 'rejected' },
+) {
+  if (isMockMode()) return { ok: true, payload };
+  const res = await apiClient.post(`/cases/${caseId}/feedback`, payload);
+  return res.data;
+}
+
+export async function exportCaseJSON(caseId: string): Promise<Blob> {
+  if (isMockMode()) {
+    const payload = JSON.stringify({ caseId, exportedAt: new Date().toISOString(), mode: 'mock' }, null, 2);
+    return new Blob([payload], { type: 'application/json' });
+  }
+  const res = await apiClient.get(`/cases/${caseId}/export/json`, { responseType: 'blob' });
+  return res.data;
+}
+
+export async function exportCaseCSV(caseId: string): Promise<Blob> {
+  if (isMockMode()) {
+    return new Blob(['caseId,exportedAt\n' + caseId + ',' + new Date().toISOString() + '\n'], { type: 'text/csv;charset=utf-8' });
+  }
+  const res = await apiClient.get(`/cases/${caseId}/export/csv`, { responseType: 'blob' });
+  return res.data;
+}
+
+export async function exportCasePDF(caseId: string): Promise<Blob> {
+  if (isMockMode()) {
+    return new Blob(['mock pdf byte stream'], { type: 'application/pdf' });
+  }
+  const res = await apiClient.get(`/cases/${caseId}/export/pdf`, { responseType: 'blob' });
   return res.data;
 }

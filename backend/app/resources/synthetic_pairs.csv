@@ -1,0 +1,537 @@
+val1,type1,val2,type2,name_similarity,username_similarity,exact_match,email_username_match,shared_findings_count,shared_domains,label
+suspect alpha,name,alpha_dev,username,0.545,0.0,0.0,0.0,1,0.0,1
+suspect alpha,name,alpha99,username,0.5,0.0,0.0,0.0,1,0.0,1
+suspect alpha,name,alphacoder,username,0.522,0.0,0.0,0.0,2,0.0,1
+suspect alpha,name,alpha@example.com,email,1.0,0.0,0.0,0.0,2,0.0,1
+suspect alpha,name,alpha.dev@gmail.com,email,0.545,0.0,0.0,0.0,2,0.0,1
+suspect alpha,name,alpha_dev@example.com,email,0.545,0.0,0.0,0.0,2,0.0,1
+suspect alpha,name,alpha99@gmail.com,email,0.5,0.0,0.0,0.0,1,0.0,1
+suspect alpha,name,alphacoder@alphasite.com,email,0.522,0.0,0.0,0.0,2,0.0,1
+suspect alpha,name,+919876543210,phone,0.0,0.0,0.0,0.0,2,0.0,1
+suspect alpha,name,+919876543211,phone,0.0,0.0,0.0,0.0,2,0.0,1
+suspect alpha,name,alphasite.com,domain,0.615,0.0,0.0,0.0,1,0.0,1
+suspect alpha,name,alphadev.net,domain,0.56,0.0,0.0,0.0,2,0.0,1
+alpha_dev,username,alpha99,username,0.625,0.625,0.0,0.0,2,0.0,1
+alpha_dev,username,alphacoder,username,0.737,0.737,0.0,0.0,1,0.0,1
+alpha_dev,username,alpha@example.com,email,0.714,0.0,0.0,0.0,1,0.0,1
+alpha_dev,username,alpha.dev@gmail.com,email,0.889,0.0,0.0,0.0,1,0.0,1
+alpha_dev,username,alpha_dev@example.com,email,1.0,0.0,0.0,1.0,1,0.0,1
+alpha_dev,username,alpha99@gmail.com,email,0.625,0.0,0.0,0.0,1,0.0,1
+alpha_dev,username,alphacoder@alphasite.com,email,0.737,0.0,0.0,0.0,3,0.0,1
+alpha_dev,username,+919876543210,phone,0.0,0.0,0.0,0.0,1,0.0,1
+alpha_dev,username,+919876543211,phone,0.0,0.0,0.0,0.0,2,0.0,1
+alpha_dev,username,alphasite.com,domain,0.545,0.0,0.0,0.0,1,0.0,1
+alpha_dev,username,alphadev.net,domain,0.762,0.0,0.0,0.0,2,0.0,1
+alpha99,username,alphacoder,username,0.588,0.588,0.0,0.0,2,0.0,1
+alpha99,username,alpha@example.com,email,0.833,0.0,0.0,0.0,2,0.0,1
+alpha99,username,alpha.dev@gmail.com,email,0.625,0.0,0.0,0.0,1,0.0,1
+alpha99,username,alpha_dev@example.com,email,0.625,0.0,0.0,0.0,3,0.0,1
+alpha99,username,alpha99@gmail.com,email,1.0,0.0,0.0,1.0,1,0.0,1
+alpha99,username,alphacoder@alphasite.com,email,0.588,0.0,0.0,0.0,1,0.0,1
+alpha99,username,+919876543210,phone,0.2,0.0,0.0,0.0,2,0.0,1
+alpha99,username,+919876543211,phone,0.2,0.0,0.0,0.0,2,0.0,1
+alpha99,username,alphasite.com,domain,0.5,0.0,0.0,0.0,0,0.0,1
+alpha99,username,alphadev.net,domain,0.526,0.0,0.0,0.0,1,0.0,1
+alphacoder,username,alpha@example.com,email,0.667,0.0,0.0,0.0,2,0.0,1
+alphacoder,username,alpha.dev@gmail.com,email,0.737,0.0,0.0,0.0,1,0.0,1
+alphacoder,username,alpha_dev@example.com,email,0.737,0.0,0.0,0.0,1,0.0,1
+alphacoder,username,alpha99@gmail.com,email,0.588,0.0,0.0,0.0,1,0.0,1
+alphacoder,username,alphacoder@alphasite.com,email,1.0,0.0,0.0,1.0,0,0.0,1
+alphacoder,username,+919876543210,phone,0.0,0.0,0.0,0.0,2,0.0,1
+alphacoder,username,+919876543211,phone,0.0,0.0,0.0,0.0,2,0.0,1
+alphacoder,username,alphasite.com,domain,0.609,0.0,0.0,0.0,1,0.0,1
+alphacoder,username,alphadev.net,domain,0.636,0.0,0.0,0.0,1,0.0,1
+alpha@example.com,email,alpha.dev@gmail.com,email,0.0,0.0,0.0,0.0,1,0.0,1
+alpha@example.com,email,alpha_dev@example.com,email,0.0,0.0,0.0,0.0,2,0.0,1
+alpha@example.com,email,alpha99@gmail.com,email,0.0,0.0,0.0,0.0,1,0.0,1
+alpha@example.com,email,alphacoder@alphasite.com,email,0.0,0.0,0.0,0.0,1,0.0,1
+alpha@example.com,email,+919876543210,phone,0.0,0.0,0.0,0.0,2,0.0,1
+alpha@example.com,email,+919876543211,phone,0.0,0.0,0.0,0.0,2,0.0,1
+alpha@example.com,email,alphasite.com,domain,0.0,0.0,0.0,0.0,1,0.0,1
+alpha@example.com,email,alphadev.net,domain,0.0,0.0,0.0,0.0,2,0.0,1
+alpha.dev@gmail.com,email,alpha_dev@example.com,email,0.0,0.0,0.0,0.0,1,0.0,1
+alpha.dev@gmail.com,email,alpha99@gmail.com,email,0.0,0.0,0.0,0.0,1,0.0,1
+alpha.dev@gmail.com,email,alphacoder@alphasite.com,email,0.0,0.0,0.0,0.0,1,0.0,1
+alpha.dev@gmail.com,email,+919876543210,phone,0.0,0.0,0.0,0.0,1,0.0,1
+alpha.dev@gmail.com,email,+919876543211,phone,0.0,0.0,0.0,0.0,1,0.0,1
+alpha.dev@gmail.com,email,alphasite.com,domain,0.0,0.0,0.0,0.0,1,0.0,1
+alpha.dev@gmail.com,email,alphadev.net,domain,0.0,0.0,0.0,0.0,1,0.0,1
+alpha_dev@example.com,email,alpha99@gmail.com,email,0.0,0.0,0.0,0.0,1,0.0,1
+alpha_dev@example.com,email,alphacoder@alphasite.com,email,0.0,0.0,0.0,0.0,1,0.0,1
+alpha_dev@example.com,email,+919876543210,phone,0.0,0.0,0.0,0.0,2,0.0,1
+alpha_dev@example.com,email,+919876543211,phone,0.0,0.0,0.0,0.0,0,0.0,1
+alpha_dev@example.com,email,alphasite.com,domain,0.0,0.0,0.0,0.0,1,0.0,1
+alpha_dev@example.com,email,alphadev.net,domain,0.0,0.0,0.0,0.0,1,0.0,1
+alpha99@gmail.com,email,alphacoder@alphasite.com,email,0.0,0.0,0.0,0.0,2,0.0,1
+alpha99@gmail.com,email,+919876543210,phone,0.0,0.0,0.0,0.0,2,0.0,1
+alpha99@gmail.com,email,+919876543211,phone,0.0,0.0,0.0,0.0,2,0.0,1
+alpha99@gmail.com,email,alphasite.com,domain,0.0,0.0,0.0,0.0,1,0.0,1
+alpha99@gmail.com,email,alphadev.net,domain,0.0,0.0,0.0,0.0,1,0.0,1
+alphacoder@alphasite.com,email,+919876543210,phone,0.0,0.0,0.0,0.0,1,0.0,1
+alphacoder@alphasite.com,email,+919876543211,phone,0.0,0.0,0.0,0.0,2,0.0,1
+alphacoder@alphasite.com,email,alphasite.com,domain,0.0,0.0,0.0,0.0,1,1.0,1
+alphacoder@alphasite.com,email,alphadev.net,domain,0.0,0.0,0.0,0.0,3,0.0,1
++919876543210,phone,+919876543211,phone,0.0,0.0,0.0,0.0,1,0.0,1
++919876543210,phone,alphasite.com,domain,0.0,0.0,0.0,0.0,1,0.0,1
++919876543210,phone,alphadev.net,domain,0.0,0.0,0.0,0.0,1,0.0,1
++919876543211,phone,alphasite.com,domain,0.0,0.0,0.0,0.0,2,0.0,1
++919876543211,phone,alphadev.net,domain,0.0,0.0,0.0,0.0,1,0.0,1
+alphasite.com,domain,alphadev.net,domain,0.0,0.0,0.0,0.0,3,0.0,1
+suspect beta,name,beta_hacker,username,0.435,0.0,0.0,0.0,2,0.0,1
+suspect beta,name,secops_beta,username,0.348,0.0,0.0,0.0,3,0.0,1
+suspect beta,name,betapower,username,0.571,0.0,0.0,0.0,1,0.0,1
+suspect beta,name,beta@secops.org,email,1.0,0.0,0.0,0.0,0,0.0,1
+suspect beta,name,beta.hacker@proton.me,email,0.435,0.0,0.0,0.0,1,0.0,1
+suspect beta,name,beta_hacker@secops.org,email,0.435,0.0,0.0,0.0,2,0.0,1
+suspect beta,name,secops_beta@betasecure.net,email,0.348,0.0,0.0,0.0,2,0.0,1
+suspect beta,name,betapower@betalabs.io,email,0.571,0.0,0.0,0.0,3,0.0,1
+suspect beta,name,+918765432109,phone,0.0,0.0,0.0,0.0,1,0.0,1
+suspect beta,name,+918765432108,phone,0.0,0.0,0.0,0.0,2,0.0,1
+suspect beta,name,betasecure.net,domain,0.615,0.0,0.0,0.0,3,0.0,1
+suspect beta,name,betalabs.io,domain,0.435,0.0,0.0,0.0,1,0.0,1
+beta_hacker,username,secops_beta,username,0.364,0.364,0.0,0.0,1,0.0,1
+beta_hacker,username,betapower,username,0.6,0.6,0.0,0.0,2,0.0,1
+beta_hacker,username,beta@secops.org,email,0.533,0.0,0.0,0.0,2,0.0,1
+beta_hacker,username,beta.hacker@proton.me,email,0.909,0.0,0.0,0.0,2,0.0,1
+beta_hacker,username,beta_hacker@secops.org,email,1.0,0.0,0.0,1.0,1,0.0,1
+beta_hacker,username,secops_beta@betasecure.net,email,0.364,0.0,0.0,0.0,1,0.0,1
+beta_hacker,username,betapower@betalabs.io,email,0.6,0.0,0.0,0.0,1,0.0,1
+beta_hacker,username,+918765432109,phone,0.0,0.0,0.0,0.0,2,0.0,1
+beta_hacker,username,+918765432108,phone,0.0,0.0,0.0,0.0,2,0.0,1
+beta_hacker,username,betasecure.net,domain,0.48,0.0,0.0,0.0,0,0.0,1
+beta_hacker,username,betalabs.io,domain,0.455,0.0,0.0,0.0,1,0.0,1
+secops_beta,username,betapower,username,0.4,0.4,0.0,0.0,2,0.0,1
+secops_beta,username,beta@secops.org,email,0.533,0.0,0.0,0.0,3,0.0,1
+secops_beta,username,beta.hacker@proton.me,email,0.364,0.0,0.0,0.0,1,0.0,1
+secops_beta,username,beta_hacker@secops.org,email,0.364,0.0,0.0,0.0,2,0.0,1
+secops_beta,username,secops_beta@betasecure.net,email,1.0,0.0,0.0,1.0,3,0.0,1
+secops_beta,username,betapower@betalabs.io,email,0.4,0.0,0.0,0.0,2,0.0,1
+secops_beta,username,+918765432109,phone,0.0,0.0,0.0,0.0,3,0.0,1
+secops_beta,username,+918765432108,phone,0.0,0.0,0.0,0.0,0,0.0,1
+secops_beta,username,betasecure.net,domain,0.4,0.0,0.0,0.0,1,0.0,1
+secops_beta,username,betalabs.io,domain,0.364,0.0,0.0,0.0,2,0.0,1
+betapower,username,beta@secops.org,email,0.615,0.0,0.0,0.0,2,0.0,1
+betapower,username,beta.hacker@proton.me,email,0.6,0.0,0.0,0.0,1,0.0,1
+betapower,username,beta_hacker@secops.org,email,0.6,0.0,0.0,0.0,1,0.0,1
+betapower,username,secops_beta@betasecure.net,email,0.4,0.0,0.0,0.0,0,0.0,1
+betapower,username,betapower@betalabs.io,email,1.0,0.0,0.0,1.0,3,0.0,1
+betapower,username,+918765432109,phone,0.0,0.0,0.0,0.0,0,0.0,1
+betapower,username,+918765432108,phone,0.0,0.0,0.0,0.0,2,0.0,1
+betapower,username,betasecure.net,domain,0.522,0.0,0.0,0.0,0,0.0,1
+betapower,username,betalabs.io,domain,0.5,0.0,0.0,0.0,1,0.0,1
+beta@secops.org,email,beta.hacker@proton.me,email,0.0,0.0,0.0,0.0,1,0.0,1
+beta@secops.org,email,beta_hacker@secops.org,email,0.0,0.0,0.0,0.0,1,0.0,1
+beta@secops.org,email,secops_beta@betasecure.net,email,0.0,0.0,0.0,0.0,2,0.0,1
+beta@secops.org,email,betapower@betalabs.io,email,0.0,0.0,0.0,0.0,3,0.0,1
+beta@secops.org,email,+918765432109,phone,0.0,0.0,0.0,0.0,2,0.0,1
+beta@secops.org,email,+918765432108,phone,0.0,0.0,0.0,0.0,1,0.0,1
+beta@secops.org,email,betasecure.net,domain,0.0,0.0,0.0,0.0,1,0.0,1
+beta@secops.org,email,betalabs.io,domain,0.0,0.0,0.0,0.0,1,0.0,1
+beta.hacker@proton.me,email,beta_hacker@secops.org,email,0.0,0.0,0.0,0.0,2,0.0,1
+beta.hacker@proton.me,email,secops_beta@betasecure.net,email,0.0,0.0,0.0,0.0,2,0.0,1
+beta.hacker@proton.me,email,betapower@betalabs.io,email,0.0,0.0,0.0,0.0,2,0.0,1
+beta.hacker@proton.me,email,+918765432109,phone,0.0,0.0,0.0,0.0,2,0.0,1
+beta.hacker@proton.me,email,+918765432108,phone,0.0,0.0,0.0,0.0,0,0.0,1
+beta.hacker@proton.me,email,betasecure.net,domain,0.0,0.0,0.0,0.0,0,0.0,1
+beta.hacker@proton.me,email,betalabs.io,domain,0.0,0.0,0.0,0.0,1,0.0,1
+beta_hacker@secops.org,email,secops_beta@betasecure.net,email,0.0,0.0,0.0,0.0,2,0.0,1
+beta_hacker@secops.org,email,betapower@betalabs.io,email,0.0,0.0,0.0,0.0,0,0.0,1
+beta_hacker@secops.org,email,+918765432109,phone,0.0,0.0,0.0,0.0,1,0.0,1
+beta_hacker@secops.org,email,+918765432108,phone,0.0,0.0,0.0,0.0,2,0.0,1
+beta_hacker@secops.org,email,betasecure.net,domain,0.0,0.0,0.0,0.0,1,0.0,1
+beta_hacker@secops.org,email,betalabs.io,domain,0.0,0.0,0.0,0.0,2,0.0,1
+secops_beta@betasecure.net,email,betapower@betalabs.io,email,0.0,0.0,0.0,0.0,3,0.0,1
+secops_beta@betasecure.net,email,+918765432109,phone,0.0,0.0,0.0,0.0,1,0.0,1
+secops_beta@betasecure.net,email,+918765432108,phone,0.0,0.0,0.0,0.0,0,0.0,1
+secops_beta@betasecure.net,email,betasecure.net,domain,0.0,0.0,0.0,0.0,1,1.0,1
+secops_beta@betasecure.net,email,betalabs.io,domain,0.0,0.0,0.0,0.0,2,0.0,1
+betapower@betalabs.io,email,+918765432109,phone,0.0,0.0,0.0,0.0,1,0.0,1
+betapower@betalabs.io,email,+918765432108,phone,0.0,0.0,0.0,0.0,1,0.0,1
+betapower@betalabs.io,email,betasecure.net,domain,0.0,0.0,0.0,0.0,1,0.0,1
+betapower@betalabs.io,email,betalabs.io,domain,0.0,0.0,0.0,0.0,3,1.0,1
++918765432109,phone,+918765432108,phone,0.0,0.0,0.0,0.0,0,0.0,1
++918765432109,phone,betasecure.net,domain,0.0,0.0,0.0,0.0,2,0.0,1
++918765432109,phone,betalabs.io,domain,0.0,0.0,0.0,0.0,1,0.0,1
++918765432108,phone,betasecure.net,domain,0.0,0.0,0.0,0.0,1,0.0,1
++918765432108,phone,betalabs.io,domain,0.0,0.0,0.0,0.0,2,0.0,1
+betasecure.net,domain,betalabs.io,domain,0.0,0.0,0.0,0.0,1,0.0,1
+suspect alpha,name,suspect beta,name,0.737,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,beta_hacker,username,0.333,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,secops_beta,username,0.333,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,betapower,username,0.273,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,beta@secops.org,email,0.235,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,beta.hacker@proton.me,email,0.333,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,beta_hacker@secops.org,email,0.333,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,secops_beta@betasecure.net,email,0.333,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,betapower@betalabs.io,email,0.273,0.0,0.0,0.0,0,0.0,0
+alpha_dev,username,suspect beta,name,0.286,0.0,0.0,0.0,0,0.0,0
+alpha_dev,username,beta_hacker,username,0.4,0.4,0.0,0.0,0,0.0,0
+alpha_dev,username,secops_beta,username,0.3,0.3,0.0,0.0,0,0.0,0
+alpha_dev,username,betapower,username,0.333,0.333,0.0,0.0,1,0.0,0
+alpha_dev,username,beta@secops.org,email,0.154,0.0,0.0,0.0,0,0.0,0
+alpha_dev,username,beta.hacker@proton.me,email,0.4,0.0,0.0,0.0,0,0.0,0
+alpha_dev,username,beta_hacker@secops.org,email,0.4,0.0,0.0,0.0,0,0.0,0
+alpha_dev,username,secops_beta@betasecure.net,email,0.3,0.0,0.0,0.0,1,0.0,0
+alpha_dev,username,betapower@betalabs.io,email,0.333,0.0,0.0,0.0,0,0.0,0
+alpha99,username,suspect beta,name,0.211,0.0,0.0,0.0,0,0.0,0
+alpha99,username,beta_hacker,username,0.333,0.333,0.0,0.0,0,0.0,0
+alpha99,username,secops_beta,username,0.222,0.222,0.0,0.0,0,0.0,0
+alpha99,username,betapower,username,0.25,0.25,0.0,0.0,0,0.0,0
+alpha99,username,beta@secops.org,email,0.182,0.0,0.0,0.0,0,0.0,0
+alpha99,username,beta.hacker@proton.me,email,0.333,0.0,0.0,0.0,0,0.0,0
+alpha99,username,beta_hacker@secops.org,email,0.333,0.0,0.0,0.0,0,0.0,0
+alpha99,username,secops_beta@betasecure.net,email,0.222,0.0,0.0,0.0,0,0.0,0
+alpha99,username,betapower@betalabs.io,email,0.25,0.0,0.0,0.0,0,0.0,0
+alphacoder,username,suspect beta,name,0.273,0.0,0.0,0.0,0,0.0,0
+alphacoder,username,beta_hacker,username,0.571,0.571,0.0,0.0,0,0.0,0
+alphacoder,username,secops_beta,username,0.286,0.286,0.0,0.0,0,0.0,0
+alphacoder,username,betapower,username,0.526,0.526,0.0,0.0,0,0.0,0
+alphacoder,username,beta@secops.org,email,0.143,0.0,0.0,0.0,0,0.0,0
+alphacoder,username,beta.hacker@proton.me,email,0.571,0.0,0.0,0.0,0,0.0,0
+alphacoder,username,beta_hacker@secops.org,email,0.571,0.0,0.0,0.0,0,0.0,0
+alphacoder,username,secops_beta@betasecure.net,email,0.286,0.0,0.0,0.0,0,0.0,0
+alphacoder,username,betapower@betalabs.io,email,0.526,0.0,0.0,0.0,0,0.0,0
+alpha@example.com,email,suspect beta,name,0.235,0.0,0.0,0.0,0,0.0,0
+alpha@example.com,email,beta_hacker,username,0.375,0.0,0.0,0.0,0,0.0,0
+alpha@example.com,email,secops_beta,username,0.25,0.0,0.0,0.0,0,0.0,0
+alpha@example.com,email,betapower,username,0.286,0.0,0.0,0.0,0,0.0,0
+alpha@example.com,email,beta@secops.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha@example.com,email,beta.hacker@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha@example.com,email,beta_hacker@secops.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha@example.com,email,secops_beta@betasecure.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha@example.com,email,betapower@betalabs.io,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha.dev@gmail.com,email,suspect beta,name,0.286,0.0,0.0,0.0,0,0.0,0
+alpha.dev@gmail.com,email,beta_hacker,username,0.4,0.0,0.0,0.0,0,0.0,0
+alpha.dev@gmail.com,email,secops_beta,username,0.2,0.0,0.0,0.0,0,0.0,0
+alpha.dev@gmail.com,email,betapower,username,0.333,0.0,0.0,0.0,0,0.0,0
+alpha.dev@gmail.com,email,beta@secops.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha.dev@gmail.com,email,beta.hacker@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha.dev@gmail.com,email,beta_hacker@secops.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha.dev@gmail.com,email,secops_beta@betasecure.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha.dev@gmail.com,email,betapower@betalabs.io,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha_dev@example.com,email,suspect beta,name,0.286,0.0,0.0,0.0,0,0.0,0
+alpha_dev@example.com,email,beta_hacker,username,0.4,0.0,0.0,0.0,0,0.0,0
+alpha_dev@example.com,email,secops_beta,username,0.3,0.0,0.0,0.0,0,0.0,0
+alpha_dev@example.com,email,betapower,username,0.333,0.0,0.0,0.0,0,0.0,0
+alpha_dev@example.com,email,beta@secops.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha_dev@example.com,email,beta.hacker@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha_dev@example.com,email,beta_hacker@secops.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha_dev@example.com,email,secops_beta@betasecure.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha_dev@example.com,email,betapower@betalabs.io,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha99@gmail.com,email,suspect beta,name,0.211,0.0,0.0,0.0,0,0.0,0
+alpha99@gmail.com,email,beta_hacker,username,0.333,0.0,0.0,0.0,0,0.0,0
+alpha99@gmail.com,email,secops_beta,username,0.222,0.0,0.0,0.0,0,0.0,0
+alpha99@gmail.com,email,betapower,username,0.25,0.0,0.0,0.0,0,0.0,0
+alpha99@gmail.com,email,beta@secops.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha99@gmail.com,email,beta.hacker@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha99@gmail.com,email,beta_hacker@secops.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha99@gmail.com,email,secops_beta@betasecure.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha99@gmail.com,email,betapower@betalabs.io,email,0.0,0.0,0.0,0.0,1,0.0,0
+alphacoder@alphasite.com,email,suspect beta,name,0.273,0.0,0.0,0.0,0,0.0,0
+alphacoder@alphasite.com,email,beta_hacker,username,0.571,0.0,0.0,0.0,0,0.0,0
+alphacoder@alphasite.com,email,secops_beta,username,0.286,0.0,0.0,0.0,0,0.0,0
+alphacoder@alphasite.com,email,betapower,username,0.526,0.0,0.0,0.0,0,0.0,0
+alphacoder@alphasite.com,email,beta@secops.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+alphacoder@alphasite.com,email,beta.hacker@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
+alphacoder@alphasite.com,email,beta_hacker@secops.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+alphacoder@alphasite.com,email,secops_beta@betasecure.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+alphacoder@alphasite.com,email,betapower@betalabs.io,email,0.0,0.0,0.0,0.0,0,0.0,0
+testsite.org,domain,info@example.com,email,0.0,0.0,0.0,0.0,0,0.0,0
++918765432109,phone,priya@patel.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+suspect beta,name,hacker_pro,username,0.182,0.0,0.0,0.0,0,0.0,0
+github.com,domain,amit@sharma.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+example.com,domain,amit@sharma.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+pixel_perfect,username,user123,username,0.2,0.2,0.0,0.0,0,0.0,0
+twitter.com,domain,amit@sharma.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+suspect beta,name,test_acc,username,0.4,0.0,0.0,0.0,0,0.0,0
+alpha_dev,username,shadow_ninja,username,0.286,0.286,0.0,0.0,0,0.0,0
+priya patel,name,coder_xyz,username,0.3,0.0,0.0,0.0,0,0.0,0
+john doe,name,pixel_perfect,username,0.095,0.0,0.0,0.0,0,0.0,0
+info@example.com,email,travel_bug,username,0.0,0.0,0.0,0.0,0,0.0,0
+alpha_dev,username,shadow_ninja,username,0.286,0.286,0.0,0.0,0,0.0,0
+neha gupta,name,pixel_perfect,username,0.174,0.0,0.0,0.0,0,0.0,0
+cyber@outlook.com,email,pixel_perfect,username,0.222,0.0,0.0,0.0,0,0.0,0
+alpha@example.com,email,test_acc,username,0.154,0.0,0.0,0.0,0,0.0,0
+beta@secops.org,email,shadow_ninja,username,0.125,0.0,0.0,0.0,0,0.0,0
++918765432109,phone,amit@sharma.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+cyber@outlook.com,email,hacker_pro,username,0.4,0.0,0.0,0.0,0,0.0,0
+priya@patel.org,email,data_wizard,username,0.25,0.0,0.0,0.0,0,0.0,0
+suspect beta,name,cyber_warrior,username,0.24,0.0,0.0,0.0,0,0.0,0
+myspace.com,domain,shadow@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
++917777777777,phone,user123@gmail.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+rajesh kumar,name,hacker_pro,username,0.273,0.0,0.0,0.0,0,0.0,0
+robert johnson,name,data_wizard,username,0.08,0.0,0.0,0.0,0,0.0,0
+cyber_warrior,username,hacker_pro,username,0.522,0.522,0.0,0.0,0,0.0,0
++918723912039,phone,user123@gmail.com,email,0.0,0.0,0.0,0.0,0,0.0,0
++919900881122,phone,user123@gmail.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+test_acc,username,coder_xyz,username,0.235,0.235,0.0,0.0,0,0.0,0
++918765432109,phone,priya@patel.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+rajesh kumar,name,data_wizard,username,0.174,0.0,0.0,0.0,0,0.0,0
+beta_hacker,username,travel_bug,username,0.286,0.286,0.0,0.0,0,0.0,0
+coffee_lover,username,cyber_warrior,username,0.4,0.4,0.0,0.0,0,0.0,0
+hacker_pro@yahoo.com,email,coffee_lover,username,0.364,0.0,0.0,0.0,0,0.0,0
+coder_xyz,username,coffee_lover,username,0.381,0.381,0.0,0.0,0,0.0,0
++918888888888,phone,amit@sharma.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+reddit.com,domain,info@example.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+alphasite.com,domain,support@test.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+linkedin.com,domain,shadow@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha_dev,username,user123,username,0.125,0.125,0.0,0.0,0,0.0,0
+amit@sharma.com,email,coffee_lover,username,0.0,0.0,0.0,0.0,0,0.0,0
+myspace.com,domain,user123@gmail.com,email,0.0,0.0,0.0,0.0,0,0.0,0
++917777777777,phone,priya@patel.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+suspect beta,name,coder_xyz,username,0.095,0.0,0.0,0.0,0,0.0,0
+alpha_dev,username,user123,username,0.125,0.125,0.0,0.0,0,0.0,0
++919999999999,phone,support@test.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+rahul verma,name,shadow_ninja,username,0.174,0.0,0.0,0.0,0,0.0,0
++917012938129,phone,cyber@outlook.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+hacker_pro@yahoo.com,email,hacker_pro,username,1.0,0.0,0.0,1.0,0,0.0,0
++917777777777,phone,user123@gmail.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha@example.com,email,hacker_pro,username,0.267,0.0,0.0,0.0,0,0.0,0
+alphasite.com,domain,priya@patel.org,email,0.0,0.0,0.0,0.0,0,0.0,0
++917777777777,phone,hacker_pro@yahoo.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+linkedin.com,domain,cyber@outlook.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+hacker_pro@yahoo.com,email,coder_xyz,username,0.421,0.0,0.0,0.0,0,0.0,0
++918765432109,phone,support@test.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+linkedin.com,domain,amit@sharma.com,email,0.0,0.0,0.0,0.0,0,0.0,0
++919900881122,phone,cyber@outlook.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+pixel_perfect,username,travel_bug,username,0.261,0.261,0.0,0.0,0,0.0,0
+amit@sharma.com,email,coffee_lover,username,0.0,0.0,0.0,0.0,0,0.0,0
+betasecure.net,domain,cyber@outlook.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+info@example.com,email,cyber_warrior,username,0.235,0.0,0.0,0.0,0,0.0,0
++917777777777,phone,shadow@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
+priya@patel.org,email,cyber_warrior,username,0.222,0.0,0.0,0.0,0,0.0,0
+john doe,name,coffee_lover,username,0.3,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,test_acc,username,0.19,0.0,0.0,0.0,0,0.0,0
+travel_bug,username,cyber_warrior,username,0.174,0.174,0.0,0.0,0,0.0,0
+alphasite.com,domain,support@test.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+priya patel,name,hacker_pro,username,0.381,0.0,0.0,0.0,0,0.0,0
++919123456789,phone,hacker_pro@yahoo.com,email,0.0,0.0,0.0,0.0,0,0.0,0
++919876543210,phone,shadow@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
+alphasite.com,domain,cyber@outlook.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+rajesh kumar,name,pixel_perfect,username,0.16,0.0,0.0,0.0,0,0.0,0
+suspect beta,name,data_wizard,username,0.174,0.0,0.0,0.0,0,0.0,0
++919900881122,phone,support@test.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+suspect beta,name,cyber_warrior,username,0.24,0.0,0.0,0.0,0,0.0,0
+amit sharma,name,pixel_perfect,username,0.167,0.0,0.0,0.0,0,0.0,0
++918888888888,phone,shadow@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha_dev,username,data_wizard,username,0.4,0.4,0.0,0.0,0,0.0,0
+beta_hacker,username,test_acc,username,0.526,0.526,0.0,0.0,0,0.0,0
+alphasite.com,domain,user123@gmail.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+cyber@outlook.com,email,travel_bug,username,0.133,0.0,0.0,0.0,0,0.0,0
+betasecure.net,domain,cyber@outlook.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+cyber@outlook.com,email,data_wizard,username,0.125,0.0,0.0,0.0,1,0.0,0
++918765432109,phone,priya@patel.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+user123@gmail.com,email,shadow_ninja,username,0.105,0.0,0.0,0.0,0,0.0,0
++918723912039,phone,hacker_pro@yahoo.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+robert johnson,name,user123,username,0.286,0.0,0.0,0.0,0,0.0,0
+emily williams,name,hacker_pro,username,0.083,0.0,0.0,0.0,0,0.0,0
+reddit.com,domain,priya@patel.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+beta@secops.org,email,hacker_pro,username,0.143,0.0,0.0,0.0,0,0.0,0
++919812739182,phone,info@example.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+michael brown,name,data_wizard,username,0.25,0.0,0.0,0.0,0,0.0,0
++919812739182,phone,support@test.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+suspect beta,name,travel_bug,username,0.273,0.0,0.0,0.0,0,0.0,0
+user123,username,test_acc,username,0.133,0.133,0.0,0.0,0,0.0,0
+alpha_dev,username,test_acc,username,0.118,0.118,0.0,0.0,0,0.0,0
+hacker_pro@yahoo.com,email,coder_xyz,username,0.421,0.0,0.0,0.0,0,0.0,0
++918723912039,phone,info@example.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+michael brown,name,user123,username,0.1,0.0,0.0,0.0,0,0.0,0
+stackoverflow.com,domain,cyber@outlook.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+hacker_pro@yahoo.com,email,coder_xyz,username,0.421,0.0,0.0,0.0,0,0.0,0
+info@example.com,email,cyber_warrior,username,0.235,0.0,0.0,0.0,1,0.0,0
+betasecure.net,domain,amit@sharma.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+beta@secops.org,email,coffee_lover,username,0.125,0.0,0.0,0.0,0,0.0,0
+suspect beta,name,coffee_lover,username,0.167,0.0,0.0,0.0,0,0.0,0
+pixel_perfect,username,user123,username,0.2,0.2,0.0,0.0,0,0.0,0
++918723912039,phone,support@test.net,email,0.0,0.0,0.0,0.0,0,0.0,0
++919123456789,phone,priya@patel.org,email,0.0,0.0,0.0,0.0,0,0.0,0
++919123456789,phone,info@example.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha@example.com,email,test_acc,username,0.154,0.0,0.0,0.0,0,0.0,0
+suspect beta,name,cyber_warrior,username,0.24,0.0,0.0,0.0,0,0.0,0
+github.com,domain,cyber@outlook.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+hacker_pro@yahoo.com,email,travel_bug,username,0.3,0.0,0.0,0.0,0,0.0,0
+robert johnson,name,coder_xyz,username,0.261,0.0,0.0,0.0,0,0.0,0
+testsite.org,domain,priya@patel.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,test_acc,username,0.19,0.0,0.0,0.0,0,0.0,0
+robert johnson,name,coffee_lover,username,0.308,0.0,0.0,0.0,0,0.0,0
+suspect beta,name,travel_bug,username,0.273,0.0,0.0,0.0,0,0.0,0
+alphasite.com,domain,info@example.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+priya patel,name,coder_xyz,username,0.3,0.0,0.0,0.0,0,0.0,0
++919876543210,phone,priya@patel.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+beta_hacker,username,shadow_ninja,username,0.261,0.261,0.0,0.0,0,0.0,0
+cyber_warrior,username,user123,username,0.2,0.2,0.0,0.0,0,0.0,0
+betasecure.net,domain,cyber@outlook.com,email,0.0,0.0,0.0,0.0,0,0.0,0
++919999999999,phone,support@test.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+user123,username,test_acc,username,0.133,0.133,0.0,0.0,0,0.0,0
+hacker_pro,username,cyber_warrior,username,0.522,0.522,0.0,0.0,0,0.0,0
+support@test.net,email,coffee_lover,username,0.211,0.0,0.0,0.0,0,0.0,0
+stackoverflow.com,domain,support@test.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+betasecure.net,domain,priya@patel.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+coffee_lover,username,travel_bug,username,0.182,0.182,0.0,0.0,0,0.0,0
+amit@sharma.com,email,pixel_perfect,username,0.235,0.0,0.0,0.0,0,0.0,0
+cyber@outlook.com,email,shadow_ninja,username,0.0,0.0,0.0,0.0,0,0.0,0
++918765432109,phone,info@example.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+github.com,domain,hacker_pro@yahoo.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+user123@gmail.com,email,coffee_lover,username,0.211,0.0,0.0,0.0,0,0.0,0
++918888888888,phone,amit@sharma.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+priya patel,name,coffee_lover,username,0.261,0.0,0.0,0.0,0,0.0,0
+betasecure.net,domain,user123@gmail.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha_dev,username,coffee_lover,username,0.19,0.19,0.0,0.0,0,0.0,0
+amit sharma,name,coder_xyz,username,0.1,0.0,0.0,0.0,0,0.0,0
++919999999999,phone,shadow@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
+github.com,domain,amit@sharma.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+beta_hacker,username,test_acc,username,0.526,0.526,0.0,0.0,0,0.0,0
++919900881122,phone,info@example.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+hacker_pro,username,pixel_perfect,username,0.348,0.348,0.0,0.0,0,0.0,0
+suspect beta,name,cyber_warrior,username,0.24,0.0,0.0,0.0,0,0.0,0
+support@test.net,email,coder_xyz,username,0.25,0.0,0.0,0.0,0,0.0,0
+emily williams,name,hacker_pro,username,0.083,0.0,0.0,0.0,0,0.0,0
++919123456789,phone,amit@sharma.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+myspace.com,domain,info@example.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+testsite.org,domain,amit@sharma.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+coder_xyz,username,test_acc,username,0.235,0.235,0.0,0.0,0,0.0,0
+myspace.com,domain,hacker_pro@yahoo.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+cyber_warrior,username,pixel_perfect,username,0.231,0.231,0.0,0.0,0,0.0,0
++919999999999,phone,shadow@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
++917012938129,phone,amit@sharma.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+amit@sharma.com,email,coffee_lover,username,0.0,0.0,0.0,0.0,0,0.0,0
+coder_xyz,username,travel_bug,username,0.211,0.211,0.0,0.0,0,0.0,0
+suspect alpha,name,hacker_pro,username,0.261,0.0,0.0,0.0,0,0.0,0
+alphasite.com,domain,priya@patel.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+amit@sharma.com,email,test_acc,username,0.167,0.0,0.0,0.0,0,0.0,0
+google.com,domain,cyber@outlook.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+travel_bug,username,coffee_lover,username,0.182,0.182,0.0,0.0,0,0.0,0
+myspace.com,domain,priya@patel.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha_dev,username,shadow_ninja,username,0.286,0.286,0.0,0.0,0,0.0,0
+alpha_dev,username,hacker_pro,username,0.316,0.316,0.0,0.0,0,0.0,0
+rajesh kumar,name,hacker_pro,username,0.273,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,user123,username,0.3,0.0,0.0,0.0,0,0.0,0
+robert johnson,name,user123,username,0.286,0.0,0.0,0.0,0,0.0,0
++918888888888,phone,hacker_pro@yahoo.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+linkedin.com,domain,shadow@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
+emily williams,name,pixel_perfect,username,0.148,0.0,0.0,0.0,0,0.0,0
+michael brown,name,coder_xyz,username,0.182,0.0,0.0,0.0,0,0.0,0
+data_wizard,username,pixel_perfect,username,0.167,0.167,0.0,0.0,0,0.0,0
++919999999999,phone,hacker_pro@yahoo.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+user123@gmail.com,email,pixel_perfect,username,0.2,0.0,0.0,0.0,0,0.0,0
+shadow_ninja,username,cyber_warrior,username,0.16,0.16,0.0,0.0,0,0.0,0
+linkedin.com,domain,user123@gmail.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+shadow@proton.me,email,shadow_ninja,username,0.667,0.0,0.0,0.0,0,0.0,0
+hacker_pro@yahoo.com,email,test_acc,username,0.222,0.0,0.0,0.0,0,0.0,0
++919900881122,phone,amit@sharma.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+amit@sharma.com,email,cyber_warrior,username,0.235,0.0,0.0,0.0,0,0.0,0
+info@example.com,email,data_wizard,username,0.133,0.0,0.0,0.0,0,0.0,0
+rahul verma,name,coder_xyz,username,0.2,0.0,0.0,0.0,0,0.0,0
++918723912039,phone,support@test.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+support@test.net,email,data_wizard,username,0.111,0.0,0.0,0.0,0,0.0,0
+betasecure.net,domain,cyber@outlook.com,email,0.0,0.0,0.0,0.0,0,0.0,0
++918765432109,phone,shadow@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
+beta@secops.org,email,test_acc,username,0.5,0.0,0.0,0.0,0,0.0,0
+suspect beta,name,coder_xyz,username,0.095,0.0,0.0,0.0,0,0.0,0
++919876543210,phone,cyber@outlook.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+priya patel,name,user123,username,0.222,0.0,0.0,0.0,0,0.0,0
+alpha@example.com,email,coffee_lover,username,0.118,0.0,0.0,0.0,0,0.0,0
++917777777777,phone,priya@patel.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+suspect beta,name,hacker_pro,username,0.182,0.0,0.0,0.0,0,0.0,0
+alphasite.com,domain,support@test.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,test_acc,username,0.19,0.0,0.0,0.0,0,0.0,0
+github.com,domain,shadow@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,pixel_perfect,username,0.385,0.0,0.0,0.0,0,0.0,0
+cyber@outlook.com,email,hacker_pro,username,0.4,0.0,0.0,0.0,0,0.0,0
+user123,username,pixel_perfect,username,0.2,0.2,0.0,0.0,0,0.0,0
++919812739182,phone,user123@gmail.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+shadow_ninja,username,data_wizard,username,0.348,0.348,0.0,0.0,0,0.0,0
+hacker_pro,username,cyber_warrior,username,0.522,0.522,0.0,0.0,0,0.0,0
+alphasite.com,domain,support@test.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+michael brown,name,coder_xyz,username,0.182,0.0,0.0,0.0,0,0.0,0
+beta@secops.org,email,shadow_ninja,username,0.125,0.0,0.0,0.0,0,0.0,0
+neha gupta,name,coffee_lover,username,0.091,0.0,0.0,0.0,0,0.0,0
+myspace.com,domain,support@test.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+robert johnson,name,cyber_warrior,username,0.222,0.0,0.0,0.0,0,0.0,0
+cyber_warrior,username,hacker_pro,username,0.522,0.522,0.0,0.0,0,0.0,0
+michael brown,name,hacker_pro,username,0.261,0.0,0.0,0.0,0,0.0,0
+data_wizard,username,cyber_warrior,username,0.333,0.333,0.0,0.0,0,0.0,0
+john doe,name,travel_bug,username,0.111,0.0,0.0,0.0,0,0.0,0
+pixel_perfect,username,coder_xyz,username,0.182,0.182,0.0,0.0,0,0.0,0
+john doe,name,shadow_ninja,username,0.3,0.0,0.0,0.0,0,0.0,0
+betasecure.net,domain,priya@patel.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha@example.com,email,coder_xyz,username,0.0,0.0,0.0,0.0,0,0.0,0
+betasecure.net,domain,support@test.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+rahul verma,name,pixel_perfect,username,0.25,0.0,0.0,0.0,0,0.0,0
+amit@sharma.com,email,data_wizard,username,0.267,0.0,0.0,0.0,0,0.0,0
++917777777777,phone,shadow@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
+github.com,domain,cyber@outlook.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+stackoverflow.com,domain,user123@gmail.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+info@example.com,email,coder_xyz,username,0.154,0.0,0.0,0.0,0,0.0,0
+testsite.org,domain,support@test.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+beta_hacker,username,travel_bug,username,0.286,0.286,0.0,0.0,0,0.0,0
+alphasite.com,domain,info@example.com,email,0.0,0.0,0.0,0.0,0,0.0,0
++919812739182,phone,cyber@outlook.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+amit sharma,name,travel_bug,username,0.286,0.0,0.0,0.0,0,0.0,0
+shadow_ninja,username,pixel_perfect,username,0.08,0.08,0.0,0.0,0,0.0,0
+user123@gmail.com,email,test_acc,username,0.133,0.0,0.0,0.0,0,0.0,0
+betasecure.net,domain,amit@sharma.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,coffee_lover,username,0.16,0.0,0.0,0.0,1,0.0,0
++918765432109,phone,cyber@outlook.com,email,0.0,0.0,0.0,0.0,0,0.0,0
++918765432109,phone,shadow@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,cyber_warrior,username,0.077,0.0,0.0,0.0,1,0.0,0
+alpha_dev,username,travel_bug,username,0.316,0.316,0.0,0.0,0,0.0,0
+reddit.com,domain,cyber@outlook.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+test_acc,username,coder_xyz,username,0.235,0.235,0.0,0.0,0,0.0,0
+betasecure.net,domain,hacker_pro@yahoo.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha_dev,username,pixel_perfect,username,0.273,0.273,0.0,0.0,0,0.0,0
+amit@sharma.com,email,cyber_warrior,username,0.235,0.0,0.0,0.0,0,0.0,0
+john doe,name,pixel_perfect,username,0.095,0.0,0.0,0.0,0,0.0,0
+support@test.net,email,cyber_warrior,username,0.2,0.0,0.0,0.0,0,0.0,0
+reddit.com,domain,info@example.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+info@example.com,email,hacker_pro,username,0.143,0.0,0.0,0.0,0,0.0,0
+alpha_dev,username,hacker_pro,username,0.316,0.316,0.0,0.0,0,0.0,0
+beta_hacker,username,travel_bug,username,0.286,0.286,0.0,0.0,0,0.0,0
+stackoverflow.com,domain,priya@patel.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha_dev,username,coffee_lover,username,0.19,0.19,0.0,0.0,0,0.0,0
+linkedin.com,domain,hacker_pro@yahoo.com,email,0.0,0.0,0.0,0.0,0,0.0,0
++919900881122,phone,shadow@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
++917777777777,phone,shadow@proton.me,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha_dev,username,shadow_ninja,username,0.286,0.286,0.0,0.0,0,0.0,0
+priya patel,name,user123,username,0.222,0.0,0.0,0.0,1,0.0,0
+alpha@example.com,email,shadow_ninja,username,0.235,0.0,0.0,0.0,0,0.0,0
+coffee_lover,username,data_wizard,username,0.174,0.174,0.0,0.0,0,0.0,0
+cyber@outlook.com,email,data_wizard,username,0.125,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,coder_xyz,username,0.091,0.0,0.0,0.0,0,0.0,0
++918888888888,phone,hacker_pro@yahoo.com,email,0.0,0.0,0.0,0.0,0,0.0,0
++919999999999,phone,priya@patel.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+hacker_pro,username,coder_xyz,username,0.421,0.421,0.0,0.0,0,0.0,0
++917777777777,phone,support@test.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+travel_bug,username,coder_xyz,username,0.211,0.211,0.0,0.0,0,0.0,0
+john doe,name,travel_bug,username,0.111,0.0,0.0,0.0,0,0.0,0
+coffee_lover,username,user123,username,0.211,0.211,0.0,0.0,0,0.0,0
+suspect beta,name,test_acc,username,0.4,0.0,0.0,0.0,0,0.0,0
+beta_hacker,username,data_wizard,username,0.455,0.455,0.0,0.0,0,0.0,0
++917012938129,phone,support@test.net,email,0.0,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,travel_bug,username,0.261,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,user123,username,0.3,0.0,0.0,0.0,0,0.0,0
+john doe,name,coder_xyz,username,0.235,0.0,0.0,0.0,0,0.0,0
+alphasite.com,domain,user123@gmail.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+jane smith,name,coffee_lover,username,0.091,0.0,0.0,0.0,0,0.0,0
+test_acc,username,data_wizard,username,0.316,0.316,0.0,0.0,0,0.0,0
+alphasite.com,domain,user123@gmail.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+beta@secops.org,email,coffee_lover,username,0.125,0.0,0.0,0.0,0,0.0,0
+coder_xyz,username,user123,username,0.25,0.25,0.0,0.0,0,0.0,0
+google.com,domain,cyber@outlook.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+suspect beta,name,data_wizard,username,0.174,0.0,0.0,0.0,0,0.0,0
+john doe,name,shadow_ninja,username,0.3,0.0,0.0,0.0,0,0.0,0
+pixel_perfect,username,travel_bug,username,0.261,0.261,0.0,0.0,0,0.0,0
+example.com,domain,hacker_pro@yahoo.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+coffee_lover,username,user123,username,0.211,0.211,0.0,0.0,0,0.0,0
+testsite.org,domain,user123@gmail.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+suspect alpha,name,coder_xyz,username,0.091,0.0,0.0,0.0,0,0.0,0
+testsite.org,domain,amit@sharma.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+shadow_ninja,username,data_wizard,username,0.348,0.348,0.0,0.0,0,0.0,0
+info@example.com,email,shadow_ninja,username,0.25,0.0,0.0,0.0,0,0.0,0
++918765432109,phone,info@example.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+alpha_dev,username,cyber_warrior,username,0.091,0.091,0.0,0.0,0,0.0,0
++918888888888,phone,info@example.com,email,0.0,0.0,0.0,0.0,0,0.0,0
+suspect beta,name,cyber_warrior,username,0.24,0.0,0.0,0.0,0,0.0,0
++918765432109,phone,priya@patel.org,email,0.0,0.0,0.0,0.0,0,0.0,0
+hacker_pro,username,test_acc,username,0.222,0.222,0.0,0.0,0,0.0,0
+shadow@proton.me,email,travel_bug,username,0.125,0.0,0.0,0.0,0,0.0,0

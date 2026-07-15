@@ -6,6 +6,7 @@ import GraphLegend from '../components/graph/GraphLegend';
 import ProfileCard from '../components/profile/ProfileCard';
 import TimelineView from '../components/timeline/TimelineView';
 import NotesPanel from '../components/cases/NotesPanel';
+import ReportPanel from '../components/cases/ReportPanel';
 import ExportMenu from '../components/export/ExportMenu';
 import { useGraphStore } from '../state/graphStore';
 import { useUIStore } from '../state/uiStore';
@@ -96,6 +97,16 @@ export default function InvestigationPage() {
             >
               Notes
             </button>
+            <button
+              onClick={() => setActiveTab('report')}
+              className={`flex-1 py-3 text-center font-bold tracking-wider uppercase border-b-2 transition-all ${
+                activeTab === 'report'
+                  ? 'border-indigo-500 text-indigo-400 bg-slate-900/50'
+                  : 'border-transparent text-slate-500 hover:text-slate-350'
+              }`}
+            >
+              Report
+            </button>
           </div>
 
           {/* Active Panel View */}
@@ -103,6 +114,7 @@ export default function InvestigationPage() {
             {activeTab === 'graph' && <ProfileCard />}
             {activeTab === 'timeline' && <TimelineView />}
             {activeTab === 'notes' && caseId && <NotesPanel caseId={caseId} />}
+            {activeTab === 'report' && caseId && <ReportPanel caseId={caseId} />}
           </div>
         </div>
       </div>

@@ -88,3 +88,39 @@ class FindingOut(FindingBase):
     discovered_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class CaseNoteBase(BaseModel):
+    case_id: str
+    text: str
+
+
+class CaseNoteCreate(CaseNoteBase):
+    pass
+
+
+class CaseNoteOut(CaseNoteBase):
+    id: str
+    author_id: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LinkFeedbackBase(BaseModel):
+    case_id: str
+    source_id: str
+    target_id: str
+    status: str
+
+
+class LinkFeedbackCreate(LinkFeedbackBase):
+    pass
+
+
+class LinkFeedbackOut(LinkFeedbackBase):
+    id: str
+    investigator_id: str
+    timestamp: datetime
+
+    model_config = ConfigDict(from_attributes=True)

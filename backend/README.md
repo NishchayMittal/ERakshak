@@ -10,14 +10,13 @@ From the `backend/` directory:
 docker compose up --build
 ```
 
-The API will be available on `http://localhost:8000` and Postgres on `localhost:5432`.
+The API will be available on `http://localhost:8000`.
 
 ## Run Without Docker
 
 1. Create a virtual environment and install dependencies from `requirements.txt`.
-2. Copy `.env.example` to `.env` and set `JWT_SECRET`.
-3. Start Postgres locally and point `DATABASE_URL` at it.
-4. Run:
+2. Copy `.env.example` to `.env` and set `DATABASE_URL=sqlite:///erakshak.db` and `JWT_SECRET`.
+3. Run:
 
 ```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000

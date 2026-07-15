@@ -61,7 +61,7 @@ For evidentiary validation, e-Rakshak exposes three dossier formats:
 
 ## 5. Security & Auditing
 
-All actions taken by investigators are audited in a PostgreSQL log system. The backend records:
+All actions taken by investigators are audited in a SQLite log system. The backend records:
 * Creator ID & Case details.
 * Specific actions (e.g., case initialization, identifier addition, connector runs).
 * Ingestion parameters for evidence tracking.

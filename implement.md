@@ -90,11 +90,11 @@ This document details the day-by-day roadmap and technical design to complete th
 ## 14-Day Day-by-Day Plan
 
 ### Day 1 — Schema Agreements & Setup
-- **Shared**: Finalize the graph node/edge schema (confidence scale, source provenance, SHAP features metadata) and stand up PostgreSQL.
+- **Shared**: Finalize the graph node/edge schema (confidence scale, source provenance, SHAP features metadata) and stand up SQL (SQLite).
 - **P1**: Build the initial identifier type router framework and prepare connector mocks.
 - **P2**: Generate the synthetic labeled training pairs for XGBoost (`generate_synthetic.py`).
 - **P3**: Sync existing `GraphNode` and `GraphEdge` TypeScript interfaces with P2's schema; adjust graph components.
-- **P4**: Update PostgreSQL schema to support `link_feedbacks` table and audit log operations.
+- **P4**: Update SQL schema to support `link_feedbacks` table and audit log operations.
 
 ### Day 2 — Router Skeleton & Pipeline Flow
 - **P1**: Complete router and final connector interface contracts.
@@ -118,13 +118,13 @@ This document details the day-by-day roadmap and technical design to complete th
 - **P1**: Implement face matching and the recursive pivot-back loop.
 - **P2**: Complete the Fellegi-Sunter baseline matcher and estimate EM weightings.
 - **P3**: Test UI visual rendering with complex graph mocks containing pivot points.
-- **P4**: Stand up the Postgres endpoint for analyst feedback (confirm/reject link).
+- **P4**: Stand up the SQLite endpoint for analyst feedback (confirm/reject link).
 - *Milestone Checkpoint*: Pipeline fan-out and Fellegi-Sunter scoring are fully operational end-to-end.
 
 ### Day 6 — Scoring Wiring & Graph Store Live
 - **P2**: Save Fellegi-Sunter confidence scores to NetworkX edges.
 - **P3**: Fetch and render real graph structure (with baseline scores) for the first time.
-- **P4**: Connect front-end confirm/reject clicks to PostgreSQL database writes.
+- **P4**: Connect front-end confirm/reject clicks to SQLite database writes.
 
 ### Day 7 — XGBoost Integration
 - **P2**: Train and save the XGBoost model using synthetic labels.

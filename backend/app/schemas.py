@@ -37,6 +37,12 @@ class CaseCreate(CaseBase):
     pass
 
 
+class CaseUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    status: str | None = None
+
+
 class CaseOut(CaseBase):
     id: str
     lead_investigator_id: str

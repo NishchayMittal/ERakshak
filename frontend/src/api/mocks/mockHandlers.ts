@@ -16,16 +16,21 @@ function delay<T>(value: T): Promise<T> {
   return new Promise(resolve => setTimeout(() => resolve(value), FAKE_DELAY_MS));
 }
 
-// in-memory mutable copy so notes/tags "persist" for the session without a backend
+// in-memory mutable copy so notes/tags/cases "persist" for the session without a backend
 let notesStore: CaseNote[] = [];
+let mockCasesStore: CaseSummary[] = [...(mockCaseList as CaseSummary[])];
 
 export function getMockCaseList(): Promise<CaseSummary[]> {
-  return delay(mockCaseList as CaseSummary[]);
+  return delay(mockCasesStore);
 }
 
 export function getMockCase(caseId: string): Promise<CaseSummary | undefined> {
-  const found = (mockCaseList as CaseSummary[]).find(c => c.caseId === caseId);
+  const found = mockCasesStore.find(c => c.caseId === caseId);
   return delay(found);
+}
+
+export function appendMockCase(newCase: CaseSummary) {
+  mockCasesStore = [newCase, ...mockCasesStore];
 }
 
 export function getMockGraph(_caseId: string, _entityId: string): Promise<GraphData> {

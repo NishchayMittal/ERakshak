@@ -25,6 +25,25 @@ export async function getCaseList(): Promise<CaseSummary[]> {
   return (res.data || []).map(normalizeCaseSummary);
 }
 
+export async function createCase(title: string, description?: string): Promise<CaseSummary> {
+  if (isMockMode()) {
+    const mockCase: CaseSummary = {
+      caseId: `case-${Date.now()}`,
+      title,
+      investigatorId: 'inv-042',
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      lastActivity: new Date().toISOString(),
+      tags: ['investigation', 'ad-hoc'],
+      entityCount: 0
+    };
+    mock.appendMockCase(mockCase);
+    return mockCase;
+  }
+  const res = await apiClient.post('/cases', { title, description: description || '', status: 'open' });
+  return normalizeCaseSummary(res.data);
+}
+
 export async function getGraph(caseId: string, entityId: string): Promise<GraphData> {
   if (isMockMode()) return mock.getMockGraph(caseId, entityId);
   const res = await apiClient.get(`/cases/${caseId}/entities/${entityId}/graph`);

@@ -7,7 +7,7 @@ import { useUIStore } from '../state/uiStore';
 import { useAuth } from '../hooks/useAuth';
 
 export default function CaseDashboardPage() {
-  const { cases, loading, loadCases, selectCase } = useCaseStore();
+  const { cases, loading, loadCases, selectCase, initializeNewCase } = useCaseStore();
   const { showToast } = useUIStore();
   const { user } = useAuth();
 
@@ -15,24 +15,15 @@ export default function CaseDashboardPage() {
     loadCases();
   }, [loadCases]);
 
-  const handleCreateCase = () => {
-    const newId = `case-00${cases.length + 1}`;
-    const newCase = {
-      caseId: newId,
-      title: `Dossier #${cases.length + 1} — Custom Investigation`,
-      investigatorId: user?.id || 'inv-042',
-      status: 'active' as const,
-      createdAt: new Date().toISOString(),
-      lastActivity: new Date().toISOString(),
-      tags: ['investigation', 'ad-hoc'],
-      entityCount: 0
-    };
-    
-    useCaseStore.setState({
-      cases: [newCase, ...cases]
-    });
-    
-    showToast(`Case dossier ${newId} initialized`, 'success');
+  const handleCreateCase = async () => {
+    const caseNumber = cases.length + 1;
+    const title = `Dossier #${caseNumber} — Custom Investigation`;
+    try {
+      const newCase = await initializeNewCase(title, 'Analyst custom investigation pack');
+      showToast(`Case dossier ${newCase.caseId} initialized`, 'success');
+    } catch (err) {
+      showToast('Failed to initialize case file', 'error');
+    }
   };
 
   const activeCasesCount = cases.filter(c => c.status === 'active').length;

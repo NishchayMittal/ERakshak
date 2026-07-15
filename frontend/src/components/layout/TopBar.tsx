@@ -1,69 +1,152 @@
-import React from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
+import React, { useEffect, useState, useRef } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useCaseStore } from '../../state/caseStore';
 
 export default function TopBar() {
-  const { user, logout } = useAuth();
+  const [time, setTime] = useState('');
+  const [search, setSearch] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
   const { activeCase } = useCaseStore();
   const location = useLocation();
+  const params = useParams<{ caseId: string }>();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  // Live 24-hr clock
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const ss = String(now.getSeconds()).padStart(2, '0');
+      setTime(`${hh}:${mm}:${ss}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Page context label
+  let pageContext = 'CASE DASHBOARD';
+  if (location.pathname.includes('/intake'))       pageContext = 'IDENTIFIER INGESTION';
+  else if (location.pathname.includes('/entities')) pageContext = 'LINK ANALYSIS WORKSPACE';
+
+  const caseId = params.caseId || activeCase?.caseId;
+  const caseLabel = caseId ? `CASE // ${caseId.toUpperCase().slice(0, 8)}` : null;
+
+  const handleSearch = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && search.trim()) {
+      // Future: route to search results
+      setSearch('');
+    }
   };
 
-  // Determine current page context title
-  let pageTitle = 'Case Dashboard';
-  if (location.pathname.includes('/intake')) {
-    pageTitle = 'Identifier Ingestion & Normalization';
-  } else if (location.pathname.includes('/entities/')) {
-    pageTitle = 'Link Analysis Workspace';
-  }
-
   return (
-    <header className="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-6 z-10">
-      {/* Title / Current Context */}
-      <div className="flex items-center gap-4">
-        <h2 className="font-bold text-slate-100 text-sm tracking-wide uppercase font-sans">
-          {pageTitle}
-        </h2>
-        {activeCase && (location.pathname.includes('/intake') || location.pathname.includes('/entities/')) && (
-          <>
-            <span className="text-slate-600">|</span>
-            <div className="flex items-center gap-2">
-              <span className="text-xs px-2 py-0.5 bg-slate-800 text-indigo-300 rounded-full font-mono border border-slate-700">
-                {activeCase.caseId}
-              </span>
-              <span className="text-xs font-medium text-slate-300">
-                {activeCase.title}
-              </span>
-            </div>
-          </>
+    <header
+      style={{
+        height: 56,
+        background: '#080c10',
+        borderBottom: '1px solid var(--struct-line)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 20px',
+        gap: 16,
+        flexShrink: 0,
+      }}
+    >
+      {/* ── Left: page context label ── */}
+      <div style={{
+        fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
+        letterSpacing: '0.2em', color: 'var(--text-muted)', textTransform: 'uppercase',
+        borderLeft: '2px solid var(--accent-primary)', paddingLeft: 10,
+        whiteSpace: 'nowrap',
+      }}>
+        {pageContext}
+      </div>
+
+      {/* ── Center: terminal search ── */}
+      <div style={{ flex: 1, maxWidth: 480, position: 'relative' }}>
+        {/* ">" prompt marker */}
+        <span style={{
+          position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
+          color: 'var(--accent-primary)', fontFamily: 'var(--font-mono)', fontSize: 12,
+          pointerEvents: 'none',
+        }}>▶</span>
+        <input
+          ref={inputRef}
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={handleSearch}
+          placeholder="SEARCH // ENTITY / DOMAIN / PHONE..."
+          style={{
+            width: '100%',
+            background: 'var(--bg-1)',
+            border: '1px solid var(--struct-line)',
+            outline: 'none',
+            color: 'var(--accent-primary)',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 11,
+            letterSpacing: '0.05em',
+            padding: '7px 12px 7px 26px',
+            caretColor: 'var(--accent-primary)',
+            transition: 'border-color 0.1s',
+          }}
+          onFocus={(e) => { e.target.style.borderColor = 'var(--accent-primary)'; }}
+          onBlur={(e) => { e.target.style.borderColor = 'var(--struct-line)'; }}
+        />
+        {/* blinking cursor indicator when empty */}
+        {!search && (
+          <span style={{
+            position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
+            color: 'var(--accent-primary)', fontSize: 10,
+            animation: 'blink 1s step-start infinite',
+          }}>▌</span>
         )}
       </div>
 
-      {/* Investigator Info & Actions */}
-      <div className="flex items-center gap-4">
-        {user && (
-          <div className="hidden sm:flex flex-col text-right">
-            <span className="text-xs font-semibold text-slate-300">{user.name}</span>
-            <span className="text-[10px] text-slate-500 font-mono">{user.role}</span>
+      {/* ── Right: case ID + clock + live badge ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
+        {/* Case ID stamp */}
+        {caseLabel && (
+          <div style={{
+            fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.2em',
+            color: 'var(--text-muted)', textTransform: 'uppercase',
+            border: '1px solid var(--struct-line)', padding: '3px 8px',
+          }}>
+            {caseLabel}
           </div>
         )}
 
-        <div className="w-px h-8 bg-slate-800"></div>
+        {/* Separator */}
+        <div style={{ width: 1, height: 28, background: 'var(--struct-line)' }} />
 
-        <button 
-          onClick={handleLogout}
-          className="text-xs flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700/80 border border-slate-700 text-slate-300 hover:text-slate-100 rounded transition-all"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          <span>Disconnect</span>
-        </button>
+        {/* Live indicator */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.15em',
+          color: 'var(--accent-threat)',
+        }}>
+          <span style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: 'var(--accent-threat)',
+            boxShadow: '0 0 4px var(--accent-threat)',
+            animation: 'intro-live-pulse 0.8s step-start infinite',
+            display: 'inline-block',
+          }} />
+          LIVE
+        </div>
+
+        {/* Clock */}
+        <div style={{
+          fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.1em',
+          color: 'var(--accent-primary)',
+          textShadow: '0 0 8px rgba(0,255,194,0.4)',
+          minWidth: 70,
+          textAlign: 'right',
+        }}>
+          {time}
+        </div>
       </div>
     </header>
   );

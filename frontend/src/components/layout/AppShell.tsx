@@ -1,68 +1,122 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
+import StatusBar from './StatusBar';
+import IntroSequence from '../intro/IntroSequence';
 import { useAuth } from '../../hooks/useAuth';
 import { useUIStore } from '../../state/uiStore';
 import { useCaseStore } from '../../state/caseStore';
 
+// Key to track if intro has been shown this browser session
+const INTRO_SHOWN_KEY = 'er_intro_shown';
+
 export default function AppShell() {
   const { isAuthenticated } = useAuth();
-  const { toast, clearToast, sidebarCollapsed } = useUIStore();
+  const { toast, clearToast } = useUIStore();
   const { loadCases } = useCaseStore();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Authentication Guard (Temporary Client-Side Redirect)
+  // Show intro once per session
+  const [showIntro, setShowIntro] = useState<boolean>(() => {
+    return !sessionStorage.getItem(INTRO_SHOWN_KEY);
+  });
+
+  // Authentication Guard
   useEffect(() => {
     if (!isAuthenticated) {
       navigate('/login');
     }
   }, [isAuthenticated, navigate]);
 
-  // Load cases at start
+  // Load cases after auth
   useEffect(() => {
     if (isAuthenticated) {
       loadCases();
     }
   }, [isAuthenticated, loadCases]);
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  if (!isAuthenticated) return null;
+
+  const handleIntroComplete = () => {
+    sessionStorage.setItem(INTRO_SHOWN_KEY, '1');
+    setShowIntro(false);
+  };
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden font-sans relative">
-      {/* Sidebar Navigation */}
-      <Sidebar />
+    <>
+      {/* Intro Sequence overlay */}
+      {showIntro && <IntroSequence onComplete={handleIntroComplete} />}
 
-      {/* Main Workspace Area */}
-      <div className={`flex flex-col flex-1 overflow-hidden transition-all duration-300`}>
-        {/* Top Header Controls */}
-        <TopBar />
+      {/* Main App Layout – grid: sidebar | [topbar / content / statusbar] */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'auto 1fr',
+          gridTemplateRows: 'auto 1fr auto',
+          height: '100vh',
+          background: 'linear-gradient(160deg, #000 0%, #0D1117 50%, #131A22 100%)',
+          overflow: 'hidden',
+          fontFamily: 'var(--font-mono)',
+        }}
+      >
+        {/* ── Left Sidebar ── */}
+        <div style={{ gridColumn: '1', gridRow: '1 / 4' }}>
+          <Sidebar />
+        </div>
 
-        {/* Dynamic Outlet Page Wrapper */}
-        <main className="flex-1 overflow-y-auto bg-slate-950 p-6 relative">
-          <Outlet />
+        {/* ── Top Bar ── */}
+        <div style={{ gridColumn: '2', gridRow: '1' }}>
+          <TopBar />
+        </div>
+
+        {/* ── Main Content (Outlet) ── */}
+        <main
+          style={{
+            gridColumn: '2', gridRow: '2',
+            overflow: 'auto',
+            position: 'relative',
+            background: 'transparent',
+            padding: '20px 24px',
+          }}
+        >
+          {/* Subtle cyber-grid background */}
+          <div className="cyber-grid" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
+          <div style={{ position: 'relative', zIndex: 1, height: '100%' }}>
+            <Outlet />
+          </div>
         </main>
+
+        {/* ── Status Bar ── */}
+        <div style={{ gridColumn: '2', gridRow: '3' }}>
+          <StatusBar />
+        </div>
       </div>
 
-      {/* Global Toast Notification System */}
+      {/* ── Global Toast ── */}
       {toast && (
-        <div 
+        <div
           onClick={clearToast}
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl cursor-pointer hover:opacity-90 animate-bounce duration-500 ${
-            toast.type === 'success' 
-              ? 'bg-emerald-950/90 border-emerald-800 text-emerald-200' 
-              : toast.type === 'error'
-              ? 'bg-rose-950/90 border-rose-800 text-rose-200'
-              : 'bg-slate-900/90 border-indigo-800 text-slate-200'
-          }`}
+          style={{
+            position: 'fixed', bottom: 20, right: 20, zIndex: 10000,
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '10px 16px',
+            background: 'var(--bg-card)',
+            border: `1px solid ${toast.type === 'error' ? 'var(--accent-threat)' : toast.type === 'success' ? 'var(--accent-primary)' : 'var(--accent-secondary)'}`,
+            boxShadow: `0 0 12px ${toast.type === 'error' ? 'rgba(255,0,68,0.3)' : 'rgba(0,255,194,0.25)'}`,
+            cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 12,
+            color: 'var(--text-primary)', letterSpacing: '0.03em',
+          }}
         >
-          <span className="text-sm font-medium">{toast.message}</span>
-          <button className="text-xs opacity-65 hover:opacity-100">&times;</button>
+          <span style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: toast.type === 'error' ? 'var(--accent-threat)' : toast.type === 'success' ? 'var(--accent-primary)' : 'var(--accent-secondary)',
+          }} />
+          {toast.message}
+          <span style={{ marginLeft: 8, opacity: 0.5 }}>✕</span>
         </div>
       )}
-    </div>
+    </>
   );
 }

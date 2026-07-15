@@ -1,109 +1,197 @@
-// Cytoscape styles mapping to fit our cyber-security investigation theme
+// Cytoscape styles for the e-RAKSHAK black-ops forensics theme
+// Node shapes: rectangle=org, diamond=domain, ellipse=person, triangle=flagged
 export const graphStyles: any[] = [
+  // ── Base node defaults ──
   {
     selector: 'node',
     style: {
-      'width': 38,
-      'height': 38,
-      'label': 'data(label)',
-      'color': '#e2e8f0', // slate-200
-      'font-size': '10px',
+      width: 38,
+      height: 38,
+      label: 'data(label)',
+      color: '#E6EDF3',
+      'font-family': 'JetBrains Mono, monospace',
+      'font-size': '9px',
+      'letter-spacing': '0.03em',
       'text-valign': 'bottom',
-      'text-margin-y': 6,
-      'background-color': '#475569', // slate-600 (default)
-      'border-width': 2,
-      'border-color': '#1e293b', // slate-800
-      'text-background-color': '#0f172a', // slate-900 background for readability
-      'text-background-opacity': 0.75,
-      'text-background-shape': 'roundrectangle',
-      'text-background-padding': '3px',
-      'transition-property': 'background-color, border-color, width, height',
-      'transition-duration': 0.2,
-    }
+      'text-margin-y': 7,
+      'background-color': '#0D1117',
+      'border-width': 1.5,
+      'border-color': '#2A3038',
+      'text-background-color': '#080c10',
+      'text-background-opacity': 0.85,
+      'text-background-shape': 'rectangle',
+      'text-background-padding': '2px',
+      'transition-property': 'background-color, border-color, border-width, width, height',
+      'transition-duration': 0.1,
+    },
   },
-  // Color code nodes by entity type
+
+  // ── Entity types ──
   {
     selector: 'node[type="email"]',
     style: {
-      'background-color': '#6366f1', // indigo-500
-      'border-color': '#4f46e5',
-    }
+      shape: 'ellipse',
+      'border-color': '#00FFC2',
+      'border-width': 1.5,
+      'background-color': '#001f18',
+    },
   },
   {
     selector: 'node[type="username"]',
     style: {
-      'background-color': '#06b6d4', // cyan-500
-      'border-color': '#0891b2',
-    }
+      shape: 'ellipse',
+      'border-color': '#00E5FF',
+      'border-width': 1.5,
+      'background-color': '#001a1f',
+    },
   },
   {
     selector: 'node[type="domain"]',
     style: {
-      'background-color': '#a855f7', // purple-500
-      'border-color': '#9333ea',
-    }
+      shape: 'diamond',
+      width: 44,
+      height: 44,
+      'border-color': '#00FFC2',
+      'border-width': 1.5,
+      'background-color': '#001a0f',
+    },
   },
   {
     selector: 'node[type="phone"]',
     style: {
-      'background-color': '#10b981', // emerald-500
-      'border-color': '#059669',
-    }
+      shape: 'pentagon',
+      'border-color': '#FFB800',
+      'border-width': 1.5,
+      'background-color': '#1a1200',
+    },
   },
   {
     selector: 'node[type="wallet"]',
     style: {
-      'background-color': '#f59e0b', // amber-500
-      'border-color': '#d97706',
-    }
+      shape: 'hexagon',
+      width: 40,
+      height: 40,
+      'border-color': '#FFB800',
+      'border-width': 1.5,
+      'background-color': '#130e00',
+    },
   },
   {
     selector: 'node[type="person"]',
     style: {
-      'background-color': '#ef4444', // red-500
-      'border-color': '#dc2626',
-    }
+      shape: 'ellipse',
+      width: 42,
+      height: 42,
+      'border-color': '#00FFC2',
+      'border-width': 2,
+      'background-color': '#001e14',
+    },
   },
-  // Selected state
+  {
+    selector: 'node[type="org"]',
+    style: {
+      shape: 'rectangle',
+      width: 42,
+      height: 38,
+      'border-color': '#00FFC2',
+      'border-width': 1.5,
+      'background-color': '#001a10',
+    },
+  },
+  // Flagged / high-risk nodes → triangle warning shape + red
+  {
+    selector: 'node[flagged="true"]',
+    style: {
+      shape: 'triangle',
+      width: 44,
+      height: 44,
+      'background-color': '#300010',
+      'border-color': '#FF0044',
+      'border-width': 2,
+      color: '#FF0044',
+    },
+  },
+
+  // ── Selected state ──
   {
     selector: 'node:selected',
     style: {
-      'border-width': 4,
-      'border-color': '#ffffff',
-      'width': 44,
-      'height': 44,
-    }
+      'border-width': 3,
+      'border-color': '#00FFC2',
+      'background-color': '#002e22',
+      width: 48,
+      height: 48,
+      'box-shadow': '0 0 12px #00FFC2',
+    },
   },
-  
-  // Edge Styles
+
+  // ── Hover state (animated via JS event, but pre-style) ──
+  {
+    selector: 'node.hovered',
+    style: {
+      'border-width': 2.5,
+      'border-color': '#00FFC2',
+      'background-color': '#002a1e',
+    },
+  },
+
+  // ── Base edge ──
   {
     selector: 'edge',
     style: {
-      'width': 2,
-      'line-color': '#334155', // slate-700
+      width: 1,
+      'line-color': '#00FFC2',
       'target-arrow-shape': 'chevron',
-      'target-arrow-color': '#334155',
+      'target-arrow-color': '#00FFC2',
       'curve-style': 'bezier',
-      'label': 'data(relationType)',
-      'font-size': '8px',
-      'color': '#94a3b8', // slate-400
+      label: 'data(relationType)',
+      'font-size': '7px',
+      'font-family': 'JetBrains Mono, monospace',
+      color: '#6E7681',
       'text-rotation': 'autorotate',
-      'text-margin-y': -8,
-      'text-background-color': '#0f172a',
-      'text-background-opacity': 0.75,
-      'text-background-shape': 'roundrectangle',
-      'text-background-padding': '2px',
+      'text-margin-y': -7,
+      'text-background-color': '#080c10',
+      'text-background-opacity': 0.7,
+      'text-background-shape': 'rectangle',
+      'text-background-padding': '1px',
       'line-style': 'solid',
-      'opacity': 'data(confidence)', // scale edge opacity based on confidence
-    }
+      opacity: 0.6,
+      'transition-property': 'line-color, width, opacity',
+      'transition-duration': 0.1,
+    },
   },
+
+  // ── High-risk edges (confidence < 0.5 or explicitly flagged) ──
+  {
+    selector: 'edge[highRisk="true"]',
+    style: {
+      'line-color': '#FF0044',
+      'target-arrow-color': '#FF0044',
+      width: 2,
+      opacity: 0.85,
+    },
+  },
+
+  // ── Medium-risk / unverified edges ──
+  {
+    selector: 'edge[midRisk="true"]',
+    style: {
+      'line-color': '#FFB800',
+      'target-arrow-color': '#FFB800',
+      width: 1.5,
+      opacity: 0.75,
+    },
+  },
+
+  // ── Selected edge ──
   {
     selector: 'edge:selected',
     style: {
-      'width': 4,
-      'line-color': '#6366f1',
-      'target-arrow-color': '#6366f1',
-      'color': '#ffffff',
-    }
-  }
+      width: 3,
+      'line-color': '#00FFC2',
+      'target-arrow-color': '#00FFC2',
+      opacity: 1,
+      color: '#E6EDF3',
+    },
+  },
 ];

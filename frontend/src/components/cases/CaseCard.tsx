@@ -32,7 +32,7 @@ export default function CaseCard({ caseItem, onSelect }: CaseCardProps) {
 
         {/* Tags */}
         <div className="flex flex-wrap gap-1 mb-4">
-          {caseItem.tags.map((tag) => (
+          {(caseItem.tags ?? []).map((tag) => (
             <span 
               key={tag} 
               className="text-[9px] px-1.5 py-0.5 rounded bg-slate-950 text-slate-400 border border-slate-800"

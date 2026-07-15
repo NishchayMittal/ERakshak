@@ -1,68 +1,84 @@
 import React from 'react';
 import { useGraphStore } from '../../state/graphStore';
 
-export default function GraphFilterBar() {
-  const { 
-    confidenceThreshold, 
-    setConfidenceThreshold, 
-    selectedSources, 
-    toggleSourceFilter 
-  } = useGraphStore();
+const sources = [
+  { id: 'whois',       label: 'WHOIS/RDAP' },
+  { id: 'crt.sh',     label: 'CRT.SH' },
+  { id: 'wayback',    label: 'WAYBACK' },
+  { id: 'sherlock',   label: 'SHERLOCK' },
+  { id: 'breach_demo', label: 'BREACH DB' },
+];
 
-  const sources = [
-    { id: 'whois', label: 'WHOIS/RDAP' },
-    { id: 'crt.sh', label: 'crt.sh Certs' },
-    { id: 'wayback', label: 'Wayback CDX' },
-    { id: 'sherlock', label: 'Sherlock Enum' },
-    { id: 'breach_demo', label: 'Breach DB (Demo)' },
-  ];
+export default function GraphFilterBar() {
+  const { confidenceThreshold, setConfidenceThreshold, selectedSources, toggleSourceFilter } = useGraphStore();
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between gap-6">
-      
-      {/* Slider Filter */}
-      <div className="flex-1 space-y-2">
-        <div className="flex justify-between items-center text-xs">
-          <label className="font-semibold text-slate-300">Link Confidence Threshold</label>
-          <span className="font-mono text-indigo-400 font-bold bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-            &gt;= {Math.round(confidenceThreshold * 100)}%
-          </span>
-        </div>
-        
+    <div style={{
+      display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 16,
+      padding: '8px 14px',
+      background: '#080c10',
+      border: '1px solid var(--struct-line)',
+    }}>
+
+      {/* Confidence threshold slider */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 200 }}>
+        <span style={{
+          fontFamily: 'var(--font-heading)', fontSize: 9,
+          color: 'var(--text-muted)', letterSpacing: '0.15em', textTransform: 'uppercase',
+          whiteSpace: 'nowrap',
+        }}>
+          CONFIDENCE THRESHOLD
+        </span>
         <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
+          type="range" min="0" max="1" step="0.05"
           value={confidenceThreshold}
           onChange={(e) => setConfidenceThreshold(parseFloat(e.target.value))}
-          className="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+          style={{ flex: 1, accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
         />
+        <span style={{
+          fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600,
+          color: 'var(--accent-primary)',
+          background: 'var(--bg-1)', border: '1px solid var(--struct-line)',
+          padding: '2px 6px', minWidth: 36, textAlign: 'center',
+        }}>
+          {Math.round(confidenceThreshold * 100)}%
+        </span>
       </div>
 
-      {/* Sources Checkboxes */}
-      <div className="space-y-2">
-        <label className="block text-xs font-semibold text-slate-300">Provenance Source Filter</label>
-        
-        <div className="flex flex-wrap gap-2">
-          {sources.map((src) => {
-            const isChecked = selectedSources.includes(src.id);
-            return (
-              <button
-                key={src.id}
-                type="button"
-                onClick={() => toggleSourceFilter(src.id)}
-                className={`px-3 py-1.5 rounded text-xs font-medium border transition-all ${
-                  isChecked
-                    ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-300 shadow'
-                    : 'bg-slate-950 border-slate-800 text-slate-500 hover:text-slate-300 hover:border-slate-700'
-                }`}
-              >
-                {src.label}
-              </button>
-            );
-          })}
-        </div>
+      {/* Separator */}
+      <div style={{ width: 1, height: 20, background: 'var(--struct-line)', flexShrink: 0 }} />
+
+      {/* Source filter toggles */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        <span style={{
+          fontFamily: 'var(--font-heading)', fontSize: 9,
+          color: 'var(--text-muted)', letterSpacing: '0.15em', textTransform: 'uppercase',
+          marginRight: 4, whiteSpace: 'nowrap',
+        }}>
+          SOURCE
+        </span>
+        {sources.map((src) => {
+          const active = selectedSources.includes(src.id);
+          return (
+            <button
+              key={src.id}
+              onClick={() => toggleSourceFilter(src.id)}
+              style={{
+                padding: '4px 10px',
+                background: active ? 'var(--accent-primary-dim)' : 'transparent',
+                border: `1px solid ${active ? 'var(--accent-primary)' : 'var(--struct-line)'}`,
+                color: active ? 'var(--accent-primary)' : 'var(--text-muted)',
+                fontFamily: 'var(--font-heading)', fontSize: 9,
+                letterSpacing: '0.12em', textTransform: 'uppercase',
+                cursor: 'pointer',
+                transition: 'all 0.1s linear',
+                boxShadow: active ? '0 0 4px rgba(0,255,194,0.2)' : 'none',
+              }}
+            >
+              {src.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

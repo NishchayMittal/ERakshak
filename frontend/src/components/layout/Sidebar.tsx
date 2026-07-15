@@ -4,10 +4,68 @@ import { useUIStore } from '../../state/uiStore';
 import { useCaseStore } from '../../state/caseStore';
 import { useAuth } from '../../hooks/useAuth';
 
+// Hard-edged SVG icons – no libraries needed
+const Icons = {
+  cases: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <rect x="2" y="5" width="16" height="11" rx="0" stroke="currentColor" strokeWidth="1.2"/>
+      <path d="M6 5V3h8v2" stroke="currentColor" strokeWidth="1.2"/>
+      <line x1="2" y1="9" x2="18" y2="9" stroke="currentColor" strokeWidth="1"/>
+    </svg>
+  ),
+  entities: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="7" r="3" stroke="currentColor" strokeWidth="1.2"/>
+      <circle cx="4"  cy="15" r="2" stroke="currentColor" strokeWidth="1.2"/>
+      <circle cx="16" cy="15" r="2" stroke="currentColor" strokeWidth="1.2"/>
+      <line x1="10" y1="10" x2="4"  y2="13" stroke="currentColor" strokeWidth="0.9"/>
+      <line x1="10" y1="10" x2="16" y2="13" stroke="currentColor" strokeWidth="0.9"/>
+    </svg>
+  ),
+  graph: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <polygon points="10,2 18,16 2,16" stroke="currentColor" strokeWidth="1.2" fill="none"/>
+      <circle cx="10" cy="10" r="2" fill="currentColor"/>
+    </svg>
+  ),
+  breach: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <rect x="3" y="9" width="14" height="9" rx="0" stroke="currentColor" strokeWidth="1.2"/>
+      <path d="M7 9V6a3 3 0 116 0v3" stroke="currentColor" strokeWidth="1.2"/>
+      <circle cx="10" cy="13.5" r="1.5" fill="currentColor"/>
+    </svg>
+  ),
+  export: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <rect x="3" y="3" width="10" height="13" rx="0" stroke="currentColor" strokeWidth="1.2"/>
+      <path d="M13 6h4v11H7v-3" stroke="currentColor" strokeWidth="1.2"/>
+      <path d="M10 10v-5l3 3" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="bevel"/>
+    </svg>
+  ),
+  collapse: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="square"/>
+    </svg>
+  ),
+  expand: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="square"/>
+    </svg>
+  ),
+};
+
+const NAV_ITEMS = [
+  { key: 'cases',    label: 'CASES',    path: '/cases' },
+  { key: 'entities', label: 'ENTITIES', path: null },
+  { key: 'graph',    label: 'GRAPH',    path: null },
+  { key: 'breach',   label: 'BREACH',   path: null },
+  { key: 'export',   label: 'EXPORT',   path: null },
+];
+
 export default function Sidebar() {
   const { sidebarCollapsed, setSidebarCollapsed } = useUIStore();
   const { cases, activeCase, selectCase } = useCaseStore();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const params = useParams();
 
@@ -15,137 +73,182 @@ export default function Sidebar() {
 
   const handleCaseChange = (caseId: string) => {
     selectCase(caseId);
-    // When changing case, redirect to that case's intake flow
     navigate(`/cases/${caseId}/intake`);
   };
 
   return (
-    <aside 
-      className={`bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-300 ${
-        sidebarCollapsed ? 'w-16' : 'w-64'
-      }`}
+    <aside
+      style={{
+        width: sidebarCollapsed ? 60 : 220,
+        height: '100vh',
+        background: '#080c10',
+        borderRight: '1px solid var(--struct-line)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        transition: 'width 0.15s linear',
+        overflow: 'hidden',
+        flexShrink: 0,
+        position: 'relative',
+      }}
     >
-      {/* Brand Header */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800">
+      {/* ── Logo / Brand ── */}
+      <div
+        style={{
+          height: 56, width: '100%',
+          display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between',
+          padding: sidebarCollapsed ? 0 : '0 12px',
+          borderBottom: '1px solid var(--struct-line)',
+          flexShrink: 0,
+        }}
+      >
         {!sidebarCollapsed && (
-          <div className="flex items-center gap-2 font-bold text-lg tracking-wider bg-gradient-to-r from-indigo-400 to-indigo-200 bg-clip-text text-transparent">
-            <span>e-RAKSHAK</span>
-            <span className="text-[9px] px-1.5 py-0.5 bg-indigo-900/60 text-indigo-300 rounded border border-indigo-700/50 font-mono">v1.0</span>
-          </div>
+          <span style={{
+            fontFamily: 'var(--font-heading)', fontSize: 13, fontWeight: 700,
+            color: 'var(--accent-primary)', letterSpacing: '0.2em',
+            textTransform: 'uppercase', textShadow: '0 0 10px rgba(0,255,194,0.4)',
+          }}>
+            e-RAKSHAK
+          </span>
         )}
         {sidebarCollapsed && (
-          <div className="w-8 h-8 rounded bg-indigo-600/20 border border-indigo-500/50 flex items-center justify-center font-bold text-indigo-400 text-sm">
+          <span style={{
+            fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
+            color: 'var(--accent-primary)', letterSpacing: '0.1em',
+          }}>
             eR
-          </div>
+          </span>
         )}
-        <button 
+        <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="text-slate-400 hover:text-slate-200 hover:bg-slate-800 p-1.5 rounded transition-colors"
-          title={sidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          title={sidebarCollapsed ? 'Expand' : 'Collapse'}
+          style={{
+            background: 'none', border: '1px solid var(--struct-line)',
+            color: 'var(--text-muted)', cursor: 'pointer',
+            padding: '4px 5px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            {sidebarCollapsed ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7M19 19l-7-7 7-7" />
-            )}
-          </svg>
+          {sidebarCollapsed ? Icons.expand : Icons.collapse}
         </button>
       </div>
 
-      {/* Main Routes */}
-      <nav className="p-3 space-y-1.5 flex-1">
-        <NavLink
-          to="/cases"
-          className={({ isActive }) =>
-            `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              isActive 
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/10' 
-                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-            }`
-          }
-        >
-          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-          </svg>
-          {!sidebarCollapsed && <span>Cases Dashboard</span>}
-        </NavLink>
-
-        {activeCaseId && (
-          <div className="pt-4 mt-4 border-t border-slate-800 space-y-1">
-            {!sidebarCollapsed && (
-              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500 px-3 mb-2">
-                Active Investigation
-              </div>
-            )}
-            
+      {/* ── Nav Items ── */}
+      <nav style={{ width: '100%', padding: '8px 0', flex: 1, overflow: 'hidden' }}>
+        {NAV_ITEMS.map((item) => {
+          const to = item.path ?? (activeCaseId ? `/cases/${activeCaseId}/${item.key}` : '/cases');
+          return (
             <NavLink
-              to={`/cases/${activeCaseId}/intake`}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                  isActive 
-                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30' 
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-transparent'
-                }`
-              }
+              key={item.key}
+              to={to}
+              style={({ isActive }) => ({
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: sidebarCollapsed ? '10px 0' : '10px 14px',
+                justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+                textDecoration: 'none',
+                fontFamily: 'var(--font-heading)',
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: '0.15em',
+                textTransform: 'uppercase',
+                color: isActive ? 'var(--bg-0)' : 'var(--text-muted)',
+                background: isActive ? 'var(--accent-primary)' : 'transparent',
+                borderLeft: isActive ? '3px solid var(--accent-primary)' : '3px solid transparent',
+                position: 'relative',
+                transition: 'background 0.1s linear, color 0.1s linear',
+              })}
             >
-              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              {!sidebarCollapsed && <span>Identifier Intake</span>}
-            </NavLink>
+              {/* Bracket frame icon container */}
+              <span style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                className="bracket-frame"
+              >
+                {Icons[item.key as keyof typeof Icons] as React.ReactNode}
+              </span>
+              {!sidebarCollapsed && <span>{item.label}</span>}
 
-            <NavLink
-              to={`/cases/${activeCaseId}/entities/n1`}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                  isActive 
-                    ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30' 
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-transparent'
-                }`
-              }
-            >
-              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-              {!sidebarCollapsed && <span>Link Graph Analysis</span>}
+              {/* Red notification dot – always show for demo */}
+              <span style={{
+                position: 'absolute', top: 6, right: sidebarCollapsed ? 10 : 8,
+                width: 6, height: 6, borderRadius: '50%',
+                background: 'var(--accent-threat)',
+                boxShadow: '0 0 4px var(--accent-threat)',
+              }} />
             </NavLink>
-          </div>
-        )}
+          );
+        })}
       </nav>
 
-      {/* Case List Navigation / Quick Switcher */}
+      {/* ── Case switcher (expanded only) ── */}
       {!sidebarCollapsed && cases.length > 0 && (
-        <div className="p-4 border-t border-slate-800 bg-slate-900/50">
-          <label className="block text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-2">
-            Switch Focus Case
-          </label>
-          <select 
-            value={activeCaseId || ''} 
+        <div style={{
+          width: '100%', padding: '10px 12px',
+          borderTop: '1px solid var(--struct-line)',
+        }}>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.15em', marginBottom: 6, fontFamily: 'var(--font-heading)' }}>
+            ACTIVE CASE
+          </div>
+          <select
+            value={activeCaseId || ''}
             onChange={(e) => handleCaseChange(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-sans"
+            style={{
+              width: '100%', background: 'var(--bg-1)',
+              border: '1px solid var(--struct-line)',
+              color: 'var(--text-primary)', padding: '5px 8px',
+              fontSize: 10, fontFamily: 'var(--font-mono)',
+              outline: 'none', cursor: 'pointer',
+            }}
           >
-            <option value="" disabled>Select case...</option>
+            <option value="" disabled>SELECT CASE...</option>
             {cases.map((c) => (
               <option key={c.caseId} value={c.caseId}>
-                {c.title.length > 25 ? `${c.title.substring(0, 25)}...` : c.title}
+                {c.title.length > 22 ? `${c.title.substring(0, 22)}…` : c.title}
               </option>
             ))}
           </select>
         </div>
       )}
 
-      {/* Investigator Badge Block */}
-      <div className="p-4 border-t border-slate-800 bg-slate-950/40 text-xs text-slate-500 flex flex-col gap-1">
+      {/* ── Investigator badge ── */}
+      <div style={{
+        width: '100%', borderTop: '1px solid var(--struct-line)',
+        padding: sidebarCollapsed ? '10px 0' : '10px 12px',
+        display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between',
+        flexShrink: 0,
+      }}>
         {!sidebarCollapsed && user && (
           <>
-            <div className="font-semibold text-slate-300">{user.name}</div>
-            <div className="text-[10px] text-slate-500 font-mono flex items-center justify-between">
-              <span>{user.badgeNumber}</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <div>
+              <div style={{ fontSize: 10, fontFamily: 'var(--font-heading)', color: 'var(--text-primary)', fontWeight: 600 }}>
+                {user.name}
+              </div>
+              <div style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginTop: 2 }}>
+                {user.badgeNumber}
+              </div>
             </div>
+            <button
+              onClick={() => { logout(); navigate('/login'); }}
+              title="Disconnect"
+              style={{
+                background: 'none', border: '1px solid var(--struct-line)',
+                color: 'var(--text-muted)', cursor: 'pointer', padding: '4px 6px',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                <path d="M13 3h4v14h-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square"/>
+                <path d="M9 14l5-4-5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square"/>
+                <line x1="3" y1="10" x2="14" y2="10" stroke="currentColor" strokeWidth="1.5"/>
+              </svg>
+            </button>
           </>
         )}
+        {/* Online indicator */}
+        <span style={{
+          width: 6, height: 6, borderRadius: '50%',
+          background: 'var(--accent-primary)',
+          boxShadow: '0 0 6px var(--accent-primary)',
+          display: sidebarCollapsed ? 'block' : 'none',
+        }} />
       </div>
     </aside>
   );

@@ -1,16 +1,19 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import GraphView from '../components/graph/GraphView';
 import GraphFilterBar from '../components/graph/GraphFilterBar';
 import GraphLegend from '../components/graph/GraphLegend';
-import ProfileCard from '../components/profile/ProfileCard';
 import TimelineView from '../components/timeline/TimelineView';
 import NotesPanel from '../components/cases/NotesPanel';
 import ReportPanel from '../components/cases/ReportPanel';
 import ExportMenu from '../components/export/ExportMenu';
+import DossierPanel from '../components/dossier/DossierPanel';
 import { useGraphStore } from '../state/graphStore';
 import { useUIStore } from '../state/uiStore';
 import { useCaseStore } from '../state/caseStore';
+
+const TABS = ['DOSSIER', 'TIMELINE', 'NOTES', 'REPORT'] as const;
+type Tab = typeof TABS[number];
 
 export default function InvestigationPage() {
   const { caseId, entityId } = useParams<{ caseId: string; entityId: string }>();
@@ -24,97 +27,117 @@ export default function InvestigationPage() {
       selectCase(caseId);
       loadEntityGraph(caseId, entityId);
     }
-    return () => {
-      clearGraph();
-    };
+    return () => { clearGraph(); };
   }, [caseId, entityId, loadEntityGraph, clearGraph, selectCase]);
 
   const handleSelectNode = (selectedNodeId: string) => {
-    if (caseId) {
-      navigate(`/cases/${caseId}/entities/${selectedNodeId}`);
-    }
+    if (caseId) navigate(`/cases/${caseId}/entities/${selectedNodeId}`);
+  };
+
+  // Map uiStore tab keys to display tabs
+  const tabMap: Record<string, Tab> = {
+    graph: 'DOSSIER',
+    timeline: 'TIMELINE',
+    notes: 'NOTES',
+    report: 'REPORT',
+  };
+  const activeDisplay = tabMap[activeTab] ?? 'DOSSIER';
+  const reverseTabMap: Record<Tab, string> = {
+    DOSSIER: 'graph',
+    TIMELINE: 'timeline',
+    NOTES: 'notes',
+    REPORT: 'report',
   };
 
   return (
-    <div className="h-full flex flex-col gap-5 overflow-hidden">
-      
-      {/* Action header bar */}
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 12, overflow: 'hidden' }}>
+
+      {/* ── Action header ── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '8px 12px',
+        background: '#080c10',
+        border: '1px solid var(--struct-line)',
+      }}>
         <div>
-          <h1 className="text-lg font-bold tracking-wide text-slate-100">Dossier Visual Analysis</h1>
-          <p className="text-xs text-slate-400">
-            Interactive correlation graph. Select any node to trace historical timelines and attributes.
-          </p>
+          <div style={{
+            fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
+            color: 'var(--accent-primary)', letterSpacing: '0.2em', textTransform: 'uppercase',
+          }}>
+            DOSSIER VISUAL ANALYSIS
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', marginTop: 2, letterSpacing: '0.05em' }}>
+            Interactive correlation graph — select any node to trace timelines and attributes
+          </div>
         </div>
-        
-        {/* Export Dossier dropdown */}
         {caseId && <ExportMenu caseId={caseId} />}
       </div>
 
-      {/* Filter panel */}
+      {/* ── Filter bar ── */}
       <GraphFilterBar />
 
-      {/* Main Workspace grid */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-0 overflow-hidden">
-        
-        {/* Graph Canvas area */}
-        <div className="lg:col-span-8 flex flex-col gap-4 min-h-0">
+      {/* ── Main Workspace ── */}
+      <div style={{
+        flex: 1, display: 'grid',
+        gridTemplateColumns: '1fr 320px',
+        gap: 12, minHeight: 0, overflow: 'hidden',
+      }}>
+
+        {/* ── Graph canvas ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0, overflow: 'hidden' }}>
           <GraphView onSelectNode={handleSelectNode} />
           <GraphLegend />
         </div>
 
-        {/* Dynamic Sidebar card panels */}
-        <div className="lg:col-span-4 flex flex-col bg-slate-900 border border-slate-800 rounded-lg min-h-0 overflow-hidden shadow-2xl">
-          {/* Tab Navigation */}
-          <div className="flex border-b border-slate-800 bg-slate-950/20 text-xs">
-            <button
-              onClick={() => setActiveTab('graph')}
-              className={`flex-1 py-3 text-center font-bold tracking-wider uppercase border-b-2 transition-all ${
-                activeTab === 'graph'
-                  ? 'border-indigo-500 text-indigo-400 bg-slate-900/50'
-                  : 'border-transparent text-slate-500 hover:text-slate-350'
-              }`}
-            >
-              Profile
-            </button>
-            <button
-              onClick={() => setActiveTab('timeline')}
-              className={`flex-1 py-3 text-center font-bold tracking-wider uppercase border-b-2 transition-all ${
-                activeTab === 'timeline'
-                  ? 'border-indigo-500 text-indigo-400 bg-slate-900/50'
-                  : 'border-transparent text-slate-500 hover:text-slate-350'
-              }`}
-            >
-              Timeline
-            </button>
-            <button
-              onClick={() => setActiveTab('notes')}
-              className={`flex-1 py-3 text-center font-bold tracking-wider uppercase border-b-2 transition-all ${
-                activeTab === 'notes'
-                  ? 'border-indigo-500 text-indigo-400 bg-slate-900/50'
-                  : 'border-transparent text-slate-500 hover:text-slate-350'
-              }`}
-            >
-              Notes
-            </button>
-            <button
-              onClick={() => setActiveTab('report')}
-              className={`flex-1 py-3 text-center font-bold tracking-wider uppercase border-b-2 transition-all ${
-                activeTab === 'report'
-                  ? 'border-indigo-500 text-indigo-400 bg-slate-900/50'
-                  : 'border-transparent text-slate-500 hover:text-slate-350'
-              }`}
-            >
-              Report
-            </button>
+        {/* ── Right dossier panel ── */}
+        <div style={{
+          display: 'flex', flexDirection: 'column',
+          background: '#080c10',
+          border: '1px solid var(--accent-primary)',
+          boxShadow: '0 0 6px rgba(0,255,194,0.15)',
+          minHeight: 0, overflow: 'hidden',
+          animation: 'slide-in-right 0.12s linear',
+        }}>
+          {/* Tab header */}
+          <div style={{
+            display: 'flex',
+            borderBottom: '1px solid var(--struct-line)',
+            background: '#030609',
+            flexShrink: 0,
+          }}>
+            {TABS.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(reverseTabMap[tab] as any)}
+                style={{
+                  flex: 1,
+                  padding: '9px 0',
+                  fontFamily: 'var(--font-heading)',
+                  fontSize: 9,
+                  fontWeight: 700,
+                  letterSpacing: '0.15em',
+                  textTransform: 'uppercase',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: activeDisplay === tab
+                    ? '2px solid var(--accent-primary)'
+                    : '2px solid transparent',
+                  color: activeDisplay === tab ? 'var(--accent-primary)' : 'var(--text-muted)',
+                  cursor: 'pointer',
+                  transition: 'color 0.1s, border-color 0.1s',
+                }}
+              >
+                {tab}
+              </button>
+            ))}
           </div>
 
-          {/* Active Panel View */}
-          <div className="flex-1 overflow-y-auto p-1 min-h-0">
-            {activeTab === 'graph' && <ProfileCard />}
-            {activeTab === 'timeline' && <TimelineView />}
-            {activeTab === 'notes' && caseId && <NotesPanel caseId={caseId} />}
-            {activeTab === 'report' && caseId && <ReportPanel caseId={caseId} />}
+          {/* Panel content */}
+          <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+            {activeDisplay === 'DOSSIER' && <DossierPanel />}
+            {activeDisplay === 'TIMELINE' && <TimelineView />}
+            {activeDisplay === 'NOTES' && caseId && <NotesPanel caseId={caseId} />}
+            {activeDisplay === 'REPORT' && caseId && <ReportPanel caseId={caseId} />}
           </div>
         </div>
       </div>

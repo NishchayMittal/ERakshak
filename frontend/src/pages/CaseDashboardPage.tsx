@@ -9,97 +9,128 @@ export default function CaseDashboardPage() {
   const { showToast } = useUIStore();
   const { user } = useAuth();
 
-  useEffect(() => {
-    loadCases();
-  }, [loadCases]);
+  useEffect(() => { loadCases(); }, [loadCases]);
 
   const handleCreateCase = () => {
-    // Local session simulation for adding a case
-    const newId = `case-00${cases.length + 1}`;
+    const newId = `CASE-${String(cases.length + 1).padStart(4, '0')}`;
     const newCase = {
       caseId: newId,
-      title: `Dossier #${cases.length + 1} — Custom Investigation`,
+      title: `Investigation #${cases.length + 1} — AD HOC`,
       investigatorId: user?.id || 'inv-042',
       status: 'active' as const,
       createdAt: new Date().toISOString(),
       lastActivity: new Date().toISOString(),
       tags: ['investigation', 'ad-hoc'],
-      entityCount: 0
+      entityCount: 0,
     };
-    
-    // Mutate state directly for session
-    useCaseStore.setState({
-      cases: [newCase, ...cases]
-    });
-    
-    showToast(`Case ${newId} initialized successfully`, 'success');
+    useCaseStore.setState({ cases: [newCase, ...cases] });
+    showToast(`${newId} INITIALIZED`, 'success');
   };
 
-  const activeCasesCount = cases.filter(c => c.status === 'active').length;
+  const activeCasesCount = cases.filter((c) => c.status === 'active').length;
 
   return (
-    <div className="space-y-6">
-      {/* Dashboard Stats / Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-900 border border-slate-800 rounded-lg p-6 cyber-grid">
-        <div>
-          <h1 className="text-xl font-bold tracking-wide text-slate-100">Investigative Case Files</h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Access and manage cyber investigation files assigned to badge <span className="font-mono text-indigo-400">{user?.badgeNumber}</span>.
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%' }}>
+
+      {/* ── Header ── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '14px 16px',
+        background: '#080c10',
+        border: '1px solid var(--struct-line)',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        {/* Subtle cyber-grid bg */}
+        <div className="cyber-grid" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <h1 style={{
+            margin: 0,
+            fontFamily: 'var(--font-heading)', fontSize: 16, fontWeight: 700,
+            color: 'var(--text-primary)', letterSpacing: '0.1em', textTransform: 'uppercase',
+          }}>
+            INVESTIGATIVE CASE FILES
+          </h1>
+          <p style={{
+            margin: '4px 0 0 0',
+            fontFamily: 'var(--font-mono)', fontSize: 9,
+            color: 'var(--text-muted)', letterSpacing: '0.08em',
+          }}>
+            ACCESS GRANTED // BADGE&nbsp;
+            <span style={{ color: 'var(--accent-primary)' }}>{user?.badgeNumber}</span>
           </p>
         </div>
-
         <button
           onClick={handleCreateCase}
-          className="self-start sm:self-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-semibold shadow hover:shadow-indigo-500/10 transition-all flex items-center gap-1.5 border border-indigo-500/30"
+          style={{
+            position: 'relative', zIndex: 1,
+            padding: '8px 16px',
+            background: 'none',
+            border: '1px solid var(--accent-primary)',
+            color: 'var(--accent-primary)',
+            fontFamily: 'var(--font-heading)', fontSize: 9,
+            fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase',
+            cursor: 'pointer',
+            boxShadow: '0 0 6px rgba(0,255,194,0.15)',
+            transition: 'background 0.1s, box-shadow 0.1s',
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0,255,194,0.08)';
+            (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 12px rgba(0,255,194,0.3)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.background = 'none';
+            (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 6px rgba(0,255,194,0.15)';
+          }}
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          <span>Initialize New Case</span>
+          + INITIALIZE CASE
         </button>
       </div>
 
-      {/* Metrics widgets */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="bg-slate-900 border border-slate-850 rounded-lg p-4 flex items-center justify-between">
-          <div>
-            <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Total Dossiers</div>
-            <div className="text-2xl font-bold text-slate-200 mt-1">{cases.length}</div>
+      {/* ── Metrics ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+        {[
+          { label: 'TOTAL DOSSIERS', value: cases.length, color: 'var(--accent-primary)' },
+          { label: 'ACTIVE STATUS', value: activeCasesCount, color: '#00C853' },
+          { label: 'AUDIT EVENTS', value: 114, color: 'var(--accent-secondary)' },
+        ].map((m) => (
+          <div
+            key={m.label}
+            style={{
+              padding: '12px 16px',
+              background: '#080c10',
+              border: '1px solid var(--struct-line)',
+              display: 'flex', flexDirection: 'column', gap: 4,
+              position: 'relative', overflow: 'hidden',
+            }}
+          >
+            <div style={{
+              fontFamily: 'var(--font-heading)', fontSize: 8,
+              color: 'var(--text-muted)', letterSpacing: '0.2em', textTransform: 'uppercase',
+            }}>
+              {m.label}
+            </div>
+            <div style={{
+              fontFamily: 'var(--font-mono)', fontSize: 26, fontWeight: 700,
+              color: m.color, textShadow: `0 0 12px ${m.color}40`,
+            }}>
+              {m.value}
+            </div>
+            {/* Accent corner */}
+            <div style={{
+              position: 'absolute', top: 0, right: 0,
+              width: 0, height: 0,
+              borderStyle: 'solid',
+              borderWidth: '0 28px 28px 0',
+              borderColor: `transparent ${m.color}20 transparent transparent`,
+            }} />
           </div>
-          <div className="p-2.5 bg-slate-950 border border-slate-800 rounded text-slate-400">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2z" />
-            </svg>
-          </div>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-850 rounded-lg p-4 flex items-center justify-between">
-          <div>
-            <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Active Status</div>
-            <div className="text-2xl font-bold text-emerald-400 mt-1">{activeCasesCount}</div>
-          </div>
-          <div className="p-2.5 bg-slate-950 border border-slate-800 rounded text-emerald-500">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-850 rounded-lg p-4 flex items-center justify-between">
-          <div>
-            <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Logged Audit Events</div>
-            <div className="text-2xl font-bold text-indigo-400 mt-1">114</div>
-          </div>
-          <div className="p-2.5 bg-slate-950 border border-slate-800 rounded text-indigo-400">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Case cards grid list */}
-      <CaseList cases={cases} loading={loading} onSelectCase={selectCase} />
+      {/* ── Case list ── */}
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        <CaseList cases={cases} loading={loading} onSelectCase={selectCase} />
+      </div>
     </div>
   );
 }

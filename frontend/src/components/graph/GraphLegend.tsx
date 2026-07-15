@@ -1,42 +1,103 @@
 import React from 'react';
 
-export default function GraphLegend() {
-  const legendItems = [
-    { label: 'Email Address', color: 'bg-indigo-500 border-indigo-400' },
-    { label: 'Phone Number', color: 'bg-emerald-500 border-emerald-400' },
-    { label: 'Domain Name', color: 'bg-purple-500 border-purple-400' },
-    { label: 'Username/Alias', color: 'bg-cyan-500 border-cyan-400' },
-    { label: 'Crypto Wallet', color: 'bg-amber-500 border-amber-400' },
-    { label: 'Individual Name', color: 'bg-rose-500 border-rose-400' },
-  ];
+const NODE_TYPES = [
+  { label: 'PERSON',   shape: 'circle',  color: 'var(--accent-primary)' },
+  { label: 'DOMAIN',   shape: 'diamond', color: 'var(--accent-primary)' },
+  { label: 'EMAIL',    shape: 'circle',  color: '#00E5FF' },
+  { label: 'USERNAME', shape: 'circle',  color: '#00E5FF' },
+  { label: 'PHONE',    shape: 'pentagon',color: 'var(--accent-secondary)' },
+  { label: 'WALLET',   shape: 'hex',     color: 'var(--accent-secondary)' },
+  { label: 'ORG',      shape: 'square',  color: 'var(--accent-primary)' },
+  { label: 'FLAGGED',  shape: 'triangle',color: 'var(--accent-threat)' },
+];
 
+const EDGE_TYPES = [
+  { label: 'VERIFIED LINK',    color: 'var(--accent-primary)' },
+  { label: 'MEDIUM RISK',      color: 'var(--accent-secondary)' },
+  { label: 'HIGH RISK / FLAGGED', color: 'var(--accent-threat)' },
+];
+
+function ShapeIcon({ shape, color }: { shape: string; color: string }) {
+  const size = 10;
+  if (shape === 'diamond') {
+    return (
+      <svg width={size + 2} height={size + 2} viewBox="0 0 12 12">
+        <polygon points="6,0 12,6 6,12 0,6" fill="none" stroke={color} strokeWidth="1.5" />
+      </svg>
+    );
+  }
+  if (shape === 'square') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 12 12">
+        <rect x="1" y="1" width="10" height="10" fill="none" stroke={color} strokeWidth="1.5" />
+      </svg>
+    );
+  }
+  if (shape === 'triangle') {
+    return (
+      <svg width={size + 2} height={size + 2} viewBox="0 0 12 12">
+        <polygon points="6,1 12,11 0,11" fill="none" stroke={color} strokeWidth="1.5" />
+      </svg>
+    );
+  }
+  // circle / pentagon / hex → circle for simplicity
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 space-y-3">
-      <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-        Graph Legends
-      </div>
+    <svg width={size} height={size} viewBox="0 0 12 12">
+      <circle cx="6" cy="6" r="5" fill="none" stroke={color} strokeWidth="1.5" />
+    </svg>
+  );
+}
 
-      {/* Entity Nodes */}
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        {legendItems.map((item) => (
-          <div key={item.label} className="flex items-center gap-2">
-            <span className={`w-3 h-3 rounded-full border ${item.color} flex-shrink-0`}></span>
-            <span className="text-slate-300 text-[11px]">{item.label}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="h-px bg-slate-800 my-2"></div>
-
-      {/* Edge Provenance info */}
-      <div className="text-[10px] text-slate-500 flex flex-col gap-1">
-        <div className="flex items-center justify-between">
-          <span>Solid Path:</span>
-          <span className="font-semibold text-slate-400">High Confidence (&gt;80%)</span>
+export default function GraphLegend() {
+  return (
+    <div style={{
+      padding: '8px 14px',
+      background: '#080c10',
+      border: '1px solid var(--struct-line)',
+      display: 'flex', alignItems: 'flex-start', gap: 24, flexWrap: 'wrap',
+    }}>
+      {/* Node types */}
+      <div>
+        <div style={{
+          fontFamily: 'var(--font-heading)', fontSize: 8, letterSpacing: '0.18em',
+          color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6,
+        }}>
+          NODE TYPES
         </div>
-        <div className="flex items-center justify-between">
-          <span>Dashed/Faded Path:</span>
-          <span className="font-semibold text-slate-400">Low Confidence (&lt;50%)</span>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px' }}>
+          {NODE_TYPES.map((t) => (
+            <div key={t.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <ShapeIcon shape={t.shape} color={t.color} />
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: 8,
+                color: 'var(--text-muted)', letterSpacing: '0.08em',
+              }}>{t.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Separator */}
+      <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--struct-line)', flexShrink: 0 }} />
+
+      {/* Edge types */}
+      <div>
+        <div style={{
+          fontFamily: 'var(--font-heading)', fontSize: 8, letterSpacing: '0.18em',
+          color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6,
+        }}>
+          EDGE RISK
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {EDGE_TYPES.map((e) => (
+            <div key={e.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 24, height: 1, background: e.color, boxShadow: `0 0 4px ${e.color}` }} />
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: 8,
+                color: 'var(--text-muted)', letterSpacing: '0.06em',
+              }}>{e.label}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>

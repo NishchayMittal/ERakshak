@@ -1,36 +1,249 @@
+/* Font Imports — must be first */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Chakra+Petch:wght@400;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  body {
-    @apply bg-slate-950 text-slate-100 font-sans antialiased overflow-x-hidden;
-  }
-  
-  /* Custom scrollbar styling for a tech/investigative feel */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  ::-webkit-scrollbar-track {
-    @apply bg-slate-900;
-  }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-slate-800 rounded hover:bg-slate-700 transition-colors;
-  }
+/* ========================================
+   e-RAKSHAK  —  Global Cyber-Security Theme
+   Black-ops forensics dashboard palette
+   ======================================== */
+
+/* ---- CSS Variables ---- */
+:root {
+  --bg-0: #000000;
+  --bg-1: #0D1117;
+  --bg-2: #131A22;
+  --bg-card: #0c1016;
+  --accent-primary: #00FFC2;
+  --accent-primary-dim: rgba(0, 255, 194, 0.12);
+  --accent-threat: #FF0044;
+  --accent-threat-dim: rgba(255, 0, 68, 0.12);
+  --accent-secondary: #FFB800;
+  --struct-line: #2A3038;
+  --text-primary: #E6EDF3;
+  --text-muted: #6E7681;
+  --font-heading: 'Space Grotesk', 'Chakra Petch', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
 }
 
-@layer utilities {
-  .cyber-grid {
-    background-image: radial-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px);
-    background-size: 24px 24px;
-  }
-  
-  .glow-shadow {
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.08);
-  }
-  
-  .glow-border {
-    border-color: rgba(99, 102, 241, 0.2);
-  }
+/* ---- Global Reset ---- */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: linear-gradient(160deg, var(--bg-0) 0%, var(--bg-1) 50%, var(--bg-2) 100%);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  overflow: hidden;
 }
+
+/* ---- Glow Border Utility ---- */
+.glow-border {
+  border: 1px solid var(--accent-primary) !important;
+  box-shadow: 0 0 6px rgba(0, 255, 194, 0.25), inset 0 0 6px rgba(0, 255, 194, 0.03);
+}
+
+.glow-border-threat {
+  border: 1px solid var(--accent-threat) !important;
+  box-shadow: 0 0 6px rgba(255, 0, 68, 0.25);
+}
+
+.glow-border-struct {
+  border: 1px solid var(--struct-line);
+}
+
+/* ---- Bracket Icon Frame (HUD-style) ---- */
+.bracket-frame {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bracket-frame::before,
+.bracket-frame::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-color: var(--accent-primary);
+  border-style: solid;
+}
+.bracket-frame::before {
+  top: 0; left: 0;
+  border-width: 1px 0 0 1px;
+}
+.bracket-frame::after {
+  bottom: 0; right: 0;
+  border-width: 0 1px 1px 0;
+}
+
+/* ---- Blinking Cursor ---- */
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.cursor-blink::after {
+  content: '_';
+  animation: blink 1s step-start infinite;
+  color: var(--accent-primary);
+  margin-left: 1px;
+}
+
+/* ---- CRT Scanlines ---- */
+.scanlines {
+  position: relative;
+}
+.scanlines::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.07) 2px,
+    rgba(0, 0, 0, 0.07) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ---- Cyber Grid Background ---- */
+.cyber-grid {
+  background-image:
+    repeating-linear-gradient(0deg, var(--struct-line) 0, var(--struct-line) 1px, transparent 1px, transparent 28px),
+    repeating-linear-gradient(90deg, var(--struct-line) 0, var(--struct-line) 1px, transparent 1px, transparent 28px);
+  opacity: 0.18;
+}
+
+/* ---- Glitch Animation ---- */
+@keyframes glitch {
+  0%   { clip-path: inset(20% 0 70% 0); transform: translate(-3px, 0); }
+  20%  { clip-path: inset(60% 0 10% 0); transform: translate(3px, 0); }
+  40%  { clip-path: inset(40% 0 40% 0); transform: translate(0, 0); }
+  60%  { clip-path: inset(80% 0 5%  0); transform: translate(-2px, 0); }
+  80%  { clip-path: inset(5%  0 80% 0); transform: translate(2px, 0); }
+  100% { clip-path: inset(0% 0 0% 0);  transform: translate(0, 0); }
+}
+
+/* ---- Status strip scroll ---- */
+@keyframes scroll-left {
+  from { transform: translateX(0%); }
+  to   { transform: translateX(-50%); }
+}
+.status-ticker {
+  display: inline-block;
+  white-space: nowrap;
+  animation: scroll-left 25s linear infinite;
+  will-change: transform;
+}
+
+/* ---- Node hover flash ---- */
+@keyframes node-flash {
+  0%   { box-shadow: 0 0 0px var(--accent-primary); }
+  50%  { box-shadow: 0 0 16px var(--accent-primary); }
+  100% { box-shadow: 0 0 0px var(--accent-primary); }
+}
+.node-flash {
+  animation: node-flash 0.3s linear;
+}
+
+/* ---- Risk gauge fill ---- */
+@keyframes gauge-fill {
+  from { width: 0%; }
+  to   { width: var(--gauge-pct, 0%); }
+}
+.gauge-bar {
+  animation: gauge-fill 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ---- Dossier panel slide in ---- */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.panel-slide-in {
+  animation: slide-in-right 0.12s linear forwards;
+}
+
+/* ---- Intro sequence animations ---- */
+@keyframes intro-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+@keyframes intro-type {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+@keyframes intro-log-scroll {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-60%); }
+}
+@keyframes intro-reticle-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes intro-reticle-spin-rev {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+@keyframes intro-pulse-ring {
+  0%   { transform: scale(0.6); opacity: 0.8; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+@keyframes intro-aperture-close {
+  0%   { clip-path: circle(60% at 50% 50%); opacity: 1; }
+  80%  { clip-path: circle(2%  at 50% 50%); opacity: 1; }
+  90%  { clip-path: circle(2%  at 50% 50%); opacity: 1; }
+  95%  { clip-path: circle(2%  at 50% 50%); opacity: 1; filter: brightness(8); }
+  100% { clip-path: circle(150% at 50% 50%); opacity: 1; filter: brightness(1); }
+}
+@keyframes intro-wordmark-glitch {
+  0%   { opacity: 0; letter-spacing: 0.5em; filter: blur(2px); }
+  30%  { opacity: 1; letter-spacing: 0.1em; filter: blur(0); }
+  45%  { opacity: 0.7; letter-spacing: 0.15em; filter: blur(1px); }
+  60%  { opacity: 1; letter-spacing: 0.05em; filter: blur(0); }
+  75%  { opacity: 0.9; letter-spacing: 0.08em; }
+  100% { opacity: 1; letter-spacing: 0.08em; filter: blur(0); }
+}
+@keyframes intro-stamp-in {
+  from { opacity: 0; transform: scaleX(0.4); letter-spacing: 1em; }
+  to   { opacity: 1; transform: scaleX(1);   letter-spacing: 0.25em; }
+}
+@keyframes intro-live-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+@keyframes intro-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes intro-flash-white {
+  0%   { background: transparent; }
+  50%  { background: rgba(0,255,194,0.95); }
+  100% { background: transparent; }
+}
+
+/* Red pulse dot on map */
+@keyframes map-pulse {
+  0%   { transform: scale(1); opacity: 1; }
+  70%  { transform: scale(2.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+/* ---- Threat bar flicker ---- */
+@keyframes threat-flicker {
+  0%, 92%, 94%, 100% { opacity: 1; }
+  93%                 { opacity: 0.6; }
+}
+.threat-flicker {
+  animation: threat-flicker 4s ease-in-out infinite;
+}
+
+/* ---- Scrollbar styling ---- */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-1); }
+::-webkit-scrollbar-thumb { background: var(--struct-line); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }

@@ -15,6 +15,7 @@ from app.auth import get_current_investigator
 from app.database import get_db
 from app.models import Case, Investigator, Identifier, Finding, CaseNote, LinkFeedback
 from app.schemas import CaseCreate, CaseOut, CaseUpdate, LinkFeedbackCreate, LinkFeedbackOut
+from app.correlation.matcher import trigger_background_retrain
 
 
 router = APIRouter(prefix="/cases", tags=["cases"])
@@ -581,6 +582,9 @@ def submit_link_feedback(
         case_id=case_id, 
         detail={"feedback_id": feedback.id, "source_id": payload.source_id, "target_id": payload.target_id, "status": payload.status}
     )
+
+    # Trigger model retraining in background thread
+    trigger_background_retrain(db)
 
     return feedback
 

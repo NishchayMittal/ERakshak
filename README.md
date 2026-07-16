@@ -78,7 +78,7 @@ The frontend is a React application.
    ```
 3. Start the React development server:
    ```bash
-   npm start
+   npm run dev
    ```
    *The frontend UI will automatically open in your browser at http://localhost:3000*
 

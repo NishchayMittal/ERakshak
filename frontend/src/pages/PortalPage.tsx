@@ -1,525 +1,750 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Terminal, Cpu, Globe, Activity, ChevronRight, AlertTriangle, Lock, User, Key, Server, Database } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useUIStore } from '../state/uiStore';
+import { useCaseStore } from '../state/caseStore';
+import * as THREE from 'three';
+import {
+  Folder,
+  Database,
+  Network,
+  FileText,
+  Settings,
+  ArrowRight,
+  Zap,
+  Play,
+  Pause,
+} from 'lucide-react';
 
-// Web Audio API Synthesizer for high-tech sound effects
-const playSynthSound = (type: 'click' | 'hover' | 'access_granted' | 'access_denied') => {
-  try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    
-    if (type === 'hover') {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(800, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + 0.15);
-      
-      gain.gain.setValueAtTime(0.02, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-      
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.15);
-    } else if (type === 'click') {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(1200, ctx.currentTime);
-      osc.frequency.setValueAtTime(600, ctx.currentTime + 0.05);
-      
-      gain.gain.setValueAtTime(0.05, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-      
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.1);
-    } else if (type === 'access_granted') {
-      const notes = [440, 554, 659, 880];
-      notes.forEach((freq, index) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(freq, ctx.currentTime + index * 0.08);
-        
-        gain.gain.setValueAtTime(0.03, ctx.currentTime + index * 0.08);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + index * 0.08 + 0.2);
-        
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(ctx.currentTime + index * 0.08);
-        osc.stop(ctx.currentTime + index * 0.08 + 0.2);
-      });
-    } else if (type === 'access_denied') {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(150, ctx.currentTime);
-      osc.frequency.linearRampToValueAtTime(80, ctx.currentTime + 0.3);
-      
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-      
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.3);
-    }
-  } catch (e) {
-    // Audio context initialization blocked/unavailable
-  }
+const cn = (...classes: any[]) => classes.filter(Boolean).join(' ');
+
+// ── THREE.JS DOTTED SURFACE BACKGROUND ──
+type DottedSurfaceProps = {
+  className?: string;
+  style?: React.CSSProperties;
 };
 
-const MOCK_TELEMETRY = [
-  'SYSTEM: Initializing e-Rakshak OSINT Gateway version 1.0.0...',
-  'CONNECTOR: WHOIS/RDAP resolver initialized successfully.',
-  'CONNECTOR: crt.sh certificate transparent crawler listening.',
-  'CONNECTOR: Sherlock usernames matcher registry linked [284 domains].',
-  'CORE: NetworkX MultiDiGraph link-analysis engine online.',
-  'SYSTEM: Secure audit logging active on SQLite core database.',
-  'THREAT: Monitoring active cybercrime nodes from regional feeds.',
-  'DB: Cached records indexed. 42 target directories matching threat database.',
-  'NET: Handshake established with central security registry.',
-  'INGEST: Ready to scan target usernames, domains, and crypto wallets.',
-];
+function DottedSurface({ className, style }: DottedSurfaceProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const animationFrameIdRef = useRef<number>(0);
 
-export default function PortalPage() {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [showLogin, setShowLogin] = useState(false);
-  const [username, setUsername] = useState('Leon Lobo');
-  const [password, setPassword] = useState('••••••••');
-  const { login, isAuthenticated } = useAuth();
-  const { showToast } = useUIStore();
-  const navigate = useNavigate();
-  
-  const [telemetryLogs, setTelemetryLogs] = useState<string[]>([MOCK_TELEMETRY[0], MOCK_TELEMETRY[1]]);
-  const [threatLevel, setThreatLevel] = useState('NORMAL');
-  const [stats, setStats] = useState({ nodes: 1204, links: 4892, alerts: 14 });
-
-  // Update telemetry logs dynamically
   useEffect(() => {
-    let index = 2;
-    const interval = setInterval(() => {
-      setTelemetryLogs((prev) => {
-        const next = [...prev, MOCK_TELEMETRY[index]];
-        if (next.length > 8) next.shift();
-        return next;
-      });
-      index = (index + 1) % MOCK_TELEMETRY.length;
-      
-      setStats((prev) => ({
-        nodes: prev.nodes + (Math.random() > 0.6 ? 1 : 0),
-        links: prev.links + (Math.random() > 0.5 ? 2 : -1),
-        alerts: prev.alerts + (Math.random() > 0.95 ? 1 : 0),
-      }));
-    }, 2800);
-    return () => clearInterval(interval);
-  }, []);
+    if (!containerRef.current) return;
 
-  // Cycle threat level for visual dynamic
-  useEffect(() => {
-    const levels = ['STABLE', 'MONITORING', 'ELEVATED', 'STABLE'];
-    let idx = 0;
-    const interval = setInterval(() => {
-      idx = (idx + 1) % levels.length;
-      setThreatLevel(levels[idx]);
-    }, 12000);
-    return () => clearInterval(interval);
-  }, []);
+    let isCancelled = false;
+    const SEPARATION = 150;
+    const AMOUNTX = 40;
+    const AMOUNTY = 60;
 
-  // Canvas particle nodes linkage animation
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    // Scene setup
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x000000, 2000, 10000);
 
-    let animationId: number;
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
+    const camera = new THREE.PerspectiveCamera(
+      60,
+      window.innerWidth / window.innerHeight,
+      1,
+      10000,
+    );
+    camera.position.set(0, 355, 1220);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: true,
+    });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(scene.fog.color, 0);
+
+    // Apply explicit full-container styles to the canvas element
+    renderer.domElement.style.position = 'absolute';
+    renderer.domElement.style.top = '0';
+    renderer.domElement.style.left = '0';
+    renderer.domElement.style.width = '100%';
+    renderer.domElement.style.height = '100%';
+    renderer.domElement.style.pointerEvents = 'none';
+
+    // Clear any previous canvas overlays to prevent duplicate static canvases
+    containerRef.current.innerHTML = '';
+    containerRef.current.appendChild(renderer.domElement);
+
+    const positions: number[] = [];
+    const colors: number[] = [];
+
+    const geometry = new THREE.BufferGeometry();
+
+    for (let ix = 0; ix < AMOUNTX; ix++) {
+      for (let iy = 0; iy < AMOUNTY; iy++) {
+        const x = ix * SEPARATION - (AMOUNTX * SEPARATION) / 2;
+        const y = 0;
+        const z = iy * SEPARATION - (AMOUNTY * SEPARATION) / 2;
+
+        positions.push(x, y, z);
+        // Cyan-green holographic dots
+        colors.push(0.0, 1.0, 0.76);
+      }
+    }
+
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(positions, 3),
+    );
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+    const positionAttribute = geometry.attributes.position as any;
+    positionAttribute.setUsage(THREE.DynamicDrawUsage);
+
+    const material = new THREE.PointsMaterial({
+      size: 6,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.65,
+      sizeAttenuation: true,
+    });
+
+    const points = new THREE.Points(geometry, material);
+    points.frustumCulled = false; // Always render points regardless of bounding volumes
+    scene.add(points);
+
+    const animate = () => {
+      if (isCancelled) return;
+
+      try {
+        animationFrameIdRef.current = requestAnimationFrame(animate);
+
+        const time = performance.now() * 0.001; // Current elapsed time in seconds
+        const positionsArr = positionAttribute.array as Float32Array;
+
+        let i = 0;
+        for (let ix = 0; ix < AMOUNTX; ix++) {
+          for (let iy = 0; iy < AMOUNTY; iy++) {
+            const index = i * 3;
+            // Larger height (120) and faster wave time speed (time * 8) for clear motion
+            positionsArr[index + 1] =
+              Math.sin((ix + time * 8) * 0.3) * 120 +
+              Math.sin((iy + time * 8) * 0.5) * 120;
+            i++;
+          }
+        }
+
+        positionAttribute.needsUpdate = true;
+        renderer.render(scene, camera);
+      } catch (err) {
+        console.error('ThreeJS Loop Error:', err);
+      }
+    };
 
     const handleResize = () => {
-      if (!canvas) return;
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
     };
+
     window.addEventListener('resize', handleResize);
-
-    const particles: Array<{
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      radius: number;
-      color: string;
-    }> = [];
-
-    const particleCount = Math.min(65, Math.floor((width * height) / 25000));
-
-    for (let i = 0; i < particleCount; i++) {
-      particles.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.45,
-        vy: (Math.random() - 0.5) * 0.45,
-        radius: Math.random() * 2.5 + 1.5,
-        color: Math.random() > 0.8 ? '#06b6d4' : '#6366f1',
-      });
-    }
-
-    let mouseX = -9999;
-    let mouseY = -9999;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-    };
-
-    const handleMouseLeave = () => {
-      mouseX = -9999;
-      mouseY = -9999;
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('mouseleave', handleMouseLeave);
-
-    const draw = () => {
-      ctx.clearRect(0, 0, width, height);
-
-      // Draw cyber radar-like circles in center background
-      ctx.strokeStyle = 'rgba(99, 102, 241, 0.03)';
-      ctx.lineWidth = 1;
-      const centerX = width / 2;
-      const centerY = height / 2;
-      [150, 300, 450, 600].forEach((r) => {
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
-        ctx.stroke();
-      });
-
-      // Update & Draw particles
-      particles.forEach((p) => {
-        p.x += p.vx;
-        p.y += p.vy;
-
-        // Bounce borders
-        if (p.x < 0 || p.x > width) p.vx *= -1;
-        if (p.y < 0 || p.y > height) p.vy *= -1;
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.fill();
-
-        // Connect to mouse
-        if (mouseX !== -9999 && mouseY !== -9999) {
-          const distMouse = Math.hypot(p.x - mouseX, p.y - mouseY);
-          if (distMouse < 160) {
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(mouseX, mouseY);
-            ctx.strokeStyle = `rgba(6, 182, 212, ${0.15 * (1 - distMouse / 160)})`;
-            ctx.lineWidth = 1.2;
-            ctx.stroke();
-          }
-        }
-      });
-
-      // Connect particles to each other
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const p1 = particles[i];
-          const p2 = particles[j];
-          const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
-
-          if (dist < 130) {
-            ctx.beginPath();
-            ctx.moveTo(p1.x, p1.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = `rgba(99, 102, 241, ${0.12 * (1 - dist / 130)})`;
-            ctx.lineWidth = 0.8;
-            ctx.stroke();
-          }
-        }
-      }
-
-      animationId = requestAnimationFrame(draw);
-    };
-
-    draw();
+    animate();
 
     return () => {
+      isCancelled = true;
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('mousemove', handleMouseMove);
-      if (canvas) canvas.removeEventListener('mouseleave', handleMouseLeave);
-      cancelAnimationFrame(animationId);
+      cancelAnimationFrame(animationFrameIdRef.current);
+
+      scene.traverse((object) => {
+        if (object instanceof THREE.Points) {
+          object.geometry.dispose();
+          if (Array.isArray(object.material)) {
+            object.material.forEach((m) => m.dispose());
+          } else {
+            object.material.dispose();
+          }
+        }
+      });
+
+      renderer.dispose();
+
+      if (containerRef.current && renderer.domElement) {
+        containerRef.current.removeChild(renderer.domElement);
+      }
     };
   }, []);
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username.trim()) {
-      playSynthSound('access_denied');
-      showToast('Investigator ID signature required', 'error');
-      return;
-    }
+  return (
+    <div
+      ref={containerRef}
+      className={className}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 0,
+        pointerEvents: 'none',
+        overflow: 'hidden',
+        ...style
+      }}
+    />
+  );
+}
 
-    login(username);
-    playSynthSound('access_granted');
-    showToast(`Session authorized. Welcome back, Agent ${username}`, 'success');
-    navigate('/cases');
+// ── CUSTOM HIGH-TECH UI BLOCKS ──
+function Badge({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '2px 8px',
+        fontSize: '8px',
+        fontFamily: 'var(--font-mono)',
+        fontWeight: 700,
+        letterSpacing: '0.1em',
+        border: '1px solid var(--struct-line)',
+        background: 'rgba(0,0,0,0.5)',
+        color: 'var(--accent-primary)',
+        textTransform: 'uppercase',
+        ...style
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function Button({ children, onClick, style }: { children: React.ReactNode; onClick?: (e: React.MouseEvent) => void; style?: React.CSSProperties }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        background: 'none',
+        border: '1px solid var(--accent-primary)',
+        color: 'var(--accent-primary)',
+        fontFamily: 'var(--font-heading)',
+        fontSize: '9px',
+        fontWeight: 700,
+        letterSpacing: '0.15em',
+        textTransform: 'uppercase',
+        padding: '6px 12px',
+        cursor: 'pointer',
+        boxShadow: '0 0 6px rgba(0,255,194,0.15)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '6px',
+        ...style
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <div
+      style={{
+        background: 'rgba(8, 12, 16, 0.95)',
+        border: '1px solid var(--struct-line)',
+        padding: '16px',
+        boxShadow: '0 0 16px rgba(0,0,0,0.8)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        ...style
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ── PORTAL PAGE RENDERER WITH RADIAL ORBITAL TIMELINE ──
+interface TimelineItem {
+  id: number;
+  title: string;
+  date: string;
+  content: string;
+  category: string;
+  icon: React.ElementType;
+  relatedIds: number[];
+  status: 'completed' | 'in-progress' | 'pending';
+  energy: number;
+}
+
+export default function PortalPage() {
+  const { activeCase, cases } = useCaseStore();
+  const navigate = useNavigate();
+
+  const activeCaseId = activeCase?.caseId || (cases.length > 0 ? cases[0].caseId : null);
+
+  const timelineData: TimelineItem[] = [
+    {
+      id: 1,
+      title: 'CASES DASHBOARD',
+      date: 'INITIALIZED',
+      content: 'Unified dossier manager for active intelligence files and ad-hoc profiles.',
+      category: 'CASES',
+      icon: Folder,
+      relatedIds: [2, 5],
+      status: 'completed',
+      energy: 100,
+    },
+    {
+      id: 2,
+      title: 'SEED INTAKE',
+      date: 'READY',
+      content: 'Seed identifiers registry for crawler engines and WHOIS search inlets.',
+      category: 'INTAKE',
+      icon: Database,
+      relatedIds: [1, 3],
+      status: activeCaseId ? 'completed' : 'pending',
+      energy: 80,
+    },
+    {
+      id: 3,
+      title: 'LINK ANALYSIS',
+      date: 'ACTIVE',
+      content: 'Cytoscape interactive node maps and XGBoost Jaro-Winkler similarities.',
+      category: 'INVESTIGATE',
+      icon: Network,
+      relatedIds: [2, 4],
+      status: activeCaseId ? 'in-progress' : 'pending',
+      energy: 65,
+    },
+    {
+      id: 4,
+      title: 'REPORT EXPORTER',
+      date: 'COMPLIANCE',
+      content: 'Narrative synthesis templates with telemetry diagnostic headers.',
+      category: 'EXPORT',
+      icon: FileText,
+      relatedIds: [3],
+      status: 'pending',
+      energy: 25,
+    },
+    {
+      id: 5,
+      title: 'NEURAL CONFIG',
+      date: 'ONLINE',
+      content: 'Model accuracy weights and booster feature parameters console.',
+      category: 'SETTINGS',
+      icon: Settings,
+      relatedIds: [1],
+      status: 'completed',
+      energy: 90,
+    },
+  ];
+
+  const [expandedItems, setExpandedItems] = useState<Record<number, boolean>>({});
+  const [rotationAngle, setRotationAngle] = useState<number>(0);
+  const [autoRotate, setAutoRotate] = useState<boolean>(true);
+  const [pulseEffect, setPulseEffect] = useState<Record<number, boolean>>({});
+  const [activeNodeId, setActiveNodeId] = useState<number | null>(null);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const orbitRef = useRef<HTMLDivElement>(null);
+  const nodeRefs = useRef<Record<number, HTMLDivElement | null>>({});
+
+  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === containerRef.current || e.target === orbitRef.current) {
+      setExpandedItems({});
+      setActiveNodeId(null);
+      setPulseEffect({});
+      setAutoRotate(true);
+    }
   };
 
-  const handleToggleLogin = () => {
-    playSynthSound('click');
-    if (isAuthenticated) {
-      navigate('/cases');
-    } else {
-      setShowLogin(!showLogin);
+  const getRelatedItems = (itemId: number): number[] => {
+    const currentItem = timelineData.find((item) => item.id === itemId);
+    return currentItem ? currentItem.relatedIds : [];
+  };
+
+  const centerViewOnNode = (nodeId: number) => {
+    if (!nodeRefs.current[nodeId]) return;
+    const nodeIndex = timelineData.findIndex((item) => item.id === nodeId);
+    const totalNodes = timelineData.length;
+    const targetAngle = (nodeIndex / totalNodes) * 360;
+    setRotationAngle(270 - targetAngle);
+  };
+
+  const toggleItem = (id: number) => {
+    setExpandedItems((prev) => {
+      const newState = { ...prev };
+      Object.keys(newState).forEach((key) => {
+        if (parseInt(key) !== id) {
+          newState[parseInt(key)] = false;
+        }
+      });
+
+      newState[id] = !prev[id];
+
+      if (!prev[id]) {
+        setActiveNodeId(id);
+        setAutoRotate(false);
+
+        const relatedItems = getRelatedItems(id);
+        const newPulseEffect: Record<number, boolean> = {};
+        relatedItems.forEach((relId) => {
+          newPulseEffect[relId] = true;
+        });
+        setPulseEffect(newPulseEffect);
+        centerViewOnNode(id);
+      } else {
+        setActiveNodeId(null);
+        setAutoRotate(true);
+        setPulseEffect({});
+      }
+
+      return newState;
+    });
+  };
+
+  useEffect(() => {
+    let rotationTimer: any;
+    if (autoRotate) {
+      rotationTimer = setInterval(() => {
+        setRotationAngle((prev) => (prev + 0.25) % 360);
+      }, 50);
     }
+    return () => clearInterval(rotationTimer);
+  }, [autoRotate]);
+
+  const calculateNodePosition = (index: number, total: number) => {
+    const angle = ((index / total) * 360 + rotationAngle) % 360;
+    const radius = 220;
+    const radian = (angle * Math.PI) / 180;
+
+    const x = radius * Math.cos(radian);
+    const y = radius * Math.sin(radian);
+
+    const zIndex = Math.round(100 + 50 * Math.cos(radian));
+    const opacity = Math.max(
+      0.4,
+      Math.min(1, 0.4 + 0.6 * ((1 + Math.sin(radian)) / 2))
+    );
+
+    return { x, y, angle, zIndex, opacity };
+  };
+
+  const isRelatedToActive = (itemId: number): boolean => {
+    if (!activeNodeId) return false;
+    return getRelatedItems(activeNodeId).includes(itemId);
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-950 text-slate-100 overflow-hidden font-mono flex flex-col justify-between">
-      {/* Background canvas */}
-      <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none" />
+    <div
+      ref={containerRef}
+      onClick={handleContainerClick}
+      style={{
+        width: '100vw',
+        height: '100vh',
+        background: '#000000',
+        color: '#ffffff',
+        overflow: 'hidden',
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        userSelect: 'none',
+      }}
+    >
+      {/* Three.js Holographic Background */}
+      <DottedSurface />
 
-      {/* Cyber Grid pattern */}
-      <div className="absolute inset-0 cyber-grid opacity-30 z-0 pointer-events-none" />
-      <div className="absolute inset-0 scanline opacity-[0.03] z-10 pointer-events-none" />
+      {/* Brand Header */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '30px',
+          zIndex: 10,
+          textAlign: 'center',
+          pointerEvents: 'none',
+        }}
+      >
+        <h1
+          style={{
+            margin: 0,
+            fontFamily: 'var(--font-heading)',
+            fontSize: '18px',
+            fontWeight: 700,
+            color: 'var(--accent-primary)',
+            letterSpacing: '0.3em',
+            textTransform: 'uppercase',
+            textShadow: '0 0 10px rgba(0,255,194,0.4)',
+          }}
+        >
+          e-RAKSHAK
+        </h1>
+        <p
+          style={{
+            margin: '4px 0 0 0',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '8px',
+            color: 'var(--text-muted)',
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
+          }}
+        >
+          Active Workspace Orbital Gateway
+        </p>
+      </div>
 
-      {/* Futuristic Header bar */}
-      <header className="relative z-20 border-b border-indigo-500/10 bg-slate-950/70 backdrop-blur-md px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="w-10 h-10 rounded border border-indigo-500/30 flex items-center justify-center bg-indigo-950/40 text-indigo-400 font-bold text-lg glow-shadow shadow-indigo-500/10">
-              eR
-            </div>
-            <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-950 status-dot"></div>
-          </div>
-          <div>
-            <h1 className="text-sm font-bold tracking-widest text-slate-200 uppercase">e-Rakshak Gateway</h1>
-            <p className="text-[10px] text-indigo-400 font-mono tracking-tight">OSINT CORRELATION & COGNITIVE HUD</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-6 text-xs text-slate-400">
-          <div className="hidden md:flex items-center gap-2">
-            <Database className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="text-slate-500">FEDERATION:</span>
-            <span className="text-emerald-400 font-semibold">ACTIVE</span>
-          </div>
-          <div className="hidden sm:flex items-center gap-2">
-            <Activity className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="text-slate-500">CORE SYNC:</span>
-            <span className="text-slate-200">100% SECURE</span>
-          </div>
-        </div>
-      </header>
-
-      {/* Main visual HUD container */}
-      <main className="flex-1 relative z-10 max-w-7xl w-full mx-auto px-6 py-8 flex flex-col lg:flex-row items-center justify-between gap-12">
-        {/* Left Side: Brand presentation & Stats */}
-        <div className="flex-1 space-y-8 text-left max-w-xl">
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-indigo-950/40 border border-indigo-500/20 text-indigo-300 rounded text-[10px] font-semibold tracking-wider uppercase">
-              <Shield className="w-3 h-3 text-indigo-400" />
-              National Intelligence Protocol
-            </div>
-            <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white leading-tight font-sans">
-              Trace Suspects. <br />
-              <span className="bg-gradient-to-r from-indigo-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent glitch-text">
-                Map Cybercrime.
-              </span>
-            </h2>
-            <p className="text-slate-400 text-xs leading-relaxed font-sans">
-              e-Rakshak is a secure federated Open-Source Intelligence (OSINT) utility built to ingest seed identities, query multiple intelligence connectors, transliterate scripts, and perform dynamic link-analysis maps under standard forensic audit logs.
-            </p>
-          </div>
-
-          {/* Stats HUD layout */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="cyber-panel border-indigo-500/10 p-3 bg-slate-900/40 corner-decor">
-              <div className="text-[9px] uppercase tracking-wider text-slate-500">Tracked Nodes</div>
-              <div className="text-lg font-bold text-slate-200 font-mono mt-1 glow-text-indigo">{stats.nodes}</div>
-            </div>
-            <div className="cyber-panel border-indigo-500/10 p-3 bg-slate-900/40 corner-decor">
-              <div className="text-[9px] uppercase tracking-wider text-slate-500">Correlated Links</div>
-              <div className="text-lg font-bold text-slate-200 font-mono mt-1 glow-text-cyan">{stats.links}</div>
-            </div>
-            <div className="cyber-panel border-indigo-500/10 p-3 bg-slate-900/40 corner-decor">
-              <div className="text-[9px] uppercase tracking-wider text-slate-500">System Threats</div>
-              <div className="text-lg font-bold text-rose-400 font-mono mt-1">{stats.alerts}</div>
-            </div>
-          </div>
-
-          {/* Action trigger button */}
-          <div className="pt-2">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onHoverStart={() => playSynthSound('hover')}
-              onClick={handleToggleLogin}
-              className="group relative px-8 py-3.5 overflow-hidden rounded bg-indigo-600 font-bold font-sans text-xs tracking-widest text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/35 transition-all flex items-center gap-2 border border-indigo-400/40"
-            >
-              <span>{isAuthenticated ? 'LAUNCH WORKSPACE' : 'INITIALIZE SYSTEM SESSION'}</span>
-              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent transition-transform duration-1000" />
-            </motion.button>
-          </div>
-        </div>
-
-        {/* Right Side: Embedded cyber system console details */}
-        <div className="w-full lg:w-96 space-y-6">
-          <div className="cyber-panel border-indigo-500/20 bg-slate-950/70 p-5 min-h-[220px] flex flex-col justify-between corner-decor">
-            {/* HUD Status Header */}
-            <div className="flex items-center justify-between border-b border-indigo-500/10 pb-3 mb-3">
-              <div className="flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-cyan-400 animate-pulse" />
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Terminal Telemetry</span>
-              </div>
-              <span className={`text-[9px] px-2 py-0.5 rounded font-bold ${
-                threatLevel === 'ELEVATED' 
-                  ? 'bg-rose-950/50 border border-rose-800 text-rose-400' 
-                  : 'bg-indigo-950/50 border border-indigo-800 text-indigo-400'
-              }`}>
-                THREAT LEVEL: {threatLevel}
-              </span>
-            </div>
-
-            {/* scrolling log lines */}
-            <div className="flex-1 font-mono text-[10px] space-y-2 text-slate-400">
-              {telemetryLogs.map((log, idx) => (
-                <div key={idx} className="flex gap-2 items-start overflow-hidden whitespace-nowrap text-ellipsis">
-                  <span className="text-indigo-500 flex-shrink-0">&gt;</span>
-                  <span className={log.startsWith('THREAT:') ? 'text-rose-400' : log.startsWith('SYSTEM:') ? 'text-cyan-400' : 'text-slate-300'}>
-                    {log}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="border-t border-indigo-500/10 pt-3 mt-3 flex items-center justify-between text-[9px] text-slate-500 font-mono">
-              <span>LATENCY: 12ms</span>
-              <span>SECURE CONTEXT: LOCAL_STAGING</span>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {/* Bottom Legal bar */}
-      <footer className="relative z-20 border-t border-indigo-500/10 bg-slate-950/60 backdrop-blur px-6 py-3 flex flex-col sm:flex-row justify-between items-center text-[10px] text-slate-500 font-mono gap-2">
-        <span>STRICTLY AUTHORIZED FORENSIC USE ONLY</span>
-        <span>COPYRIGHT © {new Date().getFullYear()} E-RAKSHAK PROJECT. ALL DIRECT ACTIONS LOGGED.</span>
-      </footer>
-
-      {/* Slide-In Authentication Drawer overlay */}
-      <AnimatePresence>
-        {showLogin && (
-          <>
-            {/* Backdrop cover */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              exit={{ opacity: 0 }}
-              onClick={handleToggleLogin}
-              className="fixed inset-0 bg-slate-950 z-40"
+      {/* Orbital Arena */}
+      <div style={{ position: 'relative', width: '100%', maxWidth: '800px', height: '100%', display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+        <div
+          ref={orbitRef}
+          style={{
+            position: 'absolute',
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transformStyle: 'preserve-3d',
+            perspective: '1000px',
+          }}
+        >
+          {/* Central Holographic Core */}
+          <div
+            style={{
+              position: 'absolute',
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, var(--accent-primary) 0%, rgba(0,255,194,0.1) 70%)',
+              boxShadow: '0 0 30px rgba(0,255,194,0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 10,
+            }}
+          >
+            {/* Pulsing ring */}
+            <div
+              className="animate-ping"
+              style={{
+                position: 'absolute',
+                inset: '-10px',
+                borderRadius: '50%',
+                border: '1px solid var(--accent-primary)',
+                opacity: 0.3,
+              }}
             />
+            <div
+              style={{
+                width: '12px',
+                height: '12px',
+                borderRadius: '50%',
+                background: '#ffffff',
+                boxShadow: '0 0 10px #ffffff',
+              }}
+            />
+          </div>
 
-            {/* Right Drawer form */}
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed right-0 top-0 bottom-0 w-full sm:w-[420px] bg-slate-950/95 border-l border-indigo-500/20 z-50 p-8 shadow-2xl flex flex-col justify-between"
-            >
-              <div>
-                {/* Header */}
-                <div className="flex justify-between items-center border-b border-indigo-500/10 pb-4 mb-8">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-indigo-400" />
-                    <span className="font-sans font-bold text-sm tracking-wider uppercase text-slate-100">SECURE SHELL GATEWAY</span>
-                  </div>
-                  <button 
-                    onClick={handleToggleLogin}
-                    className="text-slate-400 hover:text-white font-mono text-sm px-2 py-1 rounded bg-slate-900 border border-slate-800 hover:border-indigo-500/40"
+          {/* Orbital path guide */}
+          <div
+            style={{
+              position: 'absolute',
+              width: '440px',
+              height: '440px',
+              borderRadius: '50%',
+              border: '1px dashed rgba(0,255,194,0.15)',
+              pointerEvents: 'none',
+            }}
+          />
+
+          {/* Timeline Node Ring */}
+          {timelineData.map((item, index) => {
+            const position = calculateNodePosition(index, timelineData.length);
+            const isExpanded = expandedItems[item.id];
+            const isRelated = isRelatedToActive(item.id);
+            const isPulsing = pulseEffect[item.id];
+            const Icon = item.icon;
+
+            return (
+              <div
+                key={item.id}
+                ref={(el) => { nodeRefs.current[item.id] = el; }}
+                style={{
+                  position: 'absolute',
+                  transform: `translate(${position.x}px, ${position.y}px)`,
+                  zIndex: isExpanded ? 500 : position.zIndex,
+                  opacity: isExpanded ? 1 : position.opacity,
+                  transition: 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease',
+                  cursor: 'pointer',
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleItem(item.id);
+                }}
+              >
+                {/* Energy pulse aura */}
+                <div
+                  className={cn(isPulsing && 'animate-pulse')}
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: `${item.energy * 0.4 + 40}px`,
+                    height: `${item.energy * 0.4 + 40}px`,
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(0,255,194,0.1) 0%, rgba(0,255,194,0) 70%)',
+                    pointerEvents: 'none',
+                  }}
+                />
+
+                {/* Main Node Button */}
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    background: isExpanded
+                      ? 'var(--accent-primary)'
+                      : isRelated
+                      ? 'rgba(0,255,194,0.25)'
+                      : '#080c10',
+                    border: `1.5px solid ${
+                      isExpanded || isRelated
+                        ? 'var(--accent-primary)'
+                        : 'var(--struct-line)'
+                    }`,
+                    color: isExpanded ? '#000000' : 'var(--text-primary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                    boxShadow: isExpanded ? '0 0 15px rgba(0,255,194,0.6)' : 'none',
+                  }}
+                >
+                  <Icon size={15} />
+                </div>
+
+                {/* Node Title */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '44px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    fontFamily: 'var(--font-heading)',
+                    fontSize: '8px',
+                    fontWeight: 700,
+                    letterSpacing: '0.12em',
+                    color: isExpanded ? 'var(--accent-primary)' : 'var(--text-muted)',
+                    whiteSpace: 'nowrap',
+                    textTransform: 'uppercase',
+                    textAlign: 'center',
+                  }}
+                >
+                  {item.title}
+                </div>
+
+                {/* Expanded Card Details */}
+                {isExpanded && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      position: 'absolute',
+                      top: '70px',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      zIndex: 1000,
+                    }}
                   >
-                    ESC
-                  </button>
-                </div>
+                    <Card style={{ width: '250px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--struct-line)', paddingBottom: '8px' }}>
+                        <Badge>{item.status}</Badge>
+                        <span style={{ fontSize: '8px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                          {item.date}
+                        </span>
+                      </div>
 
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-base font-bold text-slate-200 font-sans">Authorize Investigator</h3>
-                    <p className="text-[11px] text-slate-400 font-sans mt-1">
-                      Enter your accredited investigator signature name to authenticate your cryptographically audited logs session.
-                    </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <h4 style={{ margin: 0, fontFamily: 'var(--font-heading)', fontSize: '11px', color: 'var(--text-primary)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                          {item.title}
+                        </h4>
+                        <p style={{ margin: 0, fontSize: '9px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', lineHeight: '1.3' }}>
+                          {item.content}
+                        </p>
+                      </div>
+
+                      {/* Energy / Activity Bar */}
+                      <div style={{ borderTop: '1px solid var(--struct-line)', paddingTop: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                            <Zap size={9} />
+                            STABILITY FACTOR
+                          </span>
+                          <span>{item.energy}%</span>
+                        </div>
+                        <div style={{ width: '100%', height: '2px', background: 'var(--struct-line)', borderRadius: '1px', overflow: 'hidden' }}>
+                          <div
+                            style={{
+                              height: '100%',
+                              background: 'var(--accent-primary)',
+                              width: `${item.energy}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Navigation Link Launcher */}
+                      <div style={{ borderTop: '1px solid var(--struct-line)', paddingTop: '8px' }}>
+                        <Button
+                          onClick={() => navigate('/login')}
+                          style={{
+                            width: '100%',
+                            background: 'var(--accent-primary)',
+                            color: '#000000',
+                            border: 'none',
+                          }}
+                        >
+                          <span>LAUNCH WORKSPACE</span>
+                          <ArrowRight size={10} />
+                        </Button>
+                      </div>
+                    </Card>
                   </div>
-
-                  <form onSubmit={handleLoginSubmit} className="space-y-5">
-                    <div className="space-y-2">
-                      <label className="block text-[10px] uppercase tracking-wider text-slate-400 font-bold">Investigator ID / Name</label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
-                        <input
-                          type="text"
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 rounded px-10 py-2.5 text-xs text-slate-200 font-mono outline-none transition-all"
-                          placeholder="e.g. Inv. Leon Lobo"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="block text-[10px] uppercase tracking-wider text-slate-400 font-bold">Investigative Passphrase</label>
-                      <div className="relative">
-                        <Key className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
-                        <input
-                          type="password"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 rounded px-10 py-2.5 text-xs text-slate-200 font-mono outline-none transition-all"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 text-[10px] text-emerald-400 bg-emerald-950/20 border border-emerald-800/20 p-2.5 rounded">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
-                      <span>GATEWAY: CONNECTED TO SECURE DB LOGS</span>
-                    </div>
-
-                    <motion.button
-                      type="submit"
-                      onHoverStart={() => playSynthSound('hover')}
-                      className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold font-sans text-xs tracking-wider rounded border border-indigo-400/40 shadow-lg hover:shadow-indigo-500/20 transition-all uppercase"
-                    >
-                      Authorize Session
-                    </motion.button>
-                  </form>
-                </div>
+                )}
               </div>
+            );
+          })}
+        </div>
+      </div>
 
-              {/* Warning note */}
-              <div className="border-t border-indigo-500/10 pt-4 text-[10px] text-slate-500 leading-relaxed font-sans">
-                <div className="flex gap-2 items-start">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-                  <span>
-                    Warning: Unauthorized access attempts are strictly prohibited. Audit logs trace IP routing and digital timestamps back to host nodes under Standard Cyber Audit Law.
-                  </span>
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+      {/* Manual rotation controls in bottom-right corner */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '24px',
+          right: '24px',
+          display: 'flex',
+          gap: '8px',
+          zIndex: 10,
+        }}
+      >
+        <button
+          onClick={() => setAutoRotate(!autoRotate)}
+          style={{
+            background: 'none',
+            border: '1px solid var(--struct-line)',
+            color: 'var(--text-muted)',
+            padding: '6px 8px',
+            fontSize: '9px',
+            fontFamily: 'var(--font-mono)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}
+        >
+          {autoRotate ? <Pause size={10} /> : <Play size={10} />}
+          <span>{autoRotate ? 'PAUSE ROTATION' : 'RESUME ROTATION'}</span>
+        </button>
+      </div>
     </div>
   );
 }

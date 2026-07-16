@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useUIStore } from '../../state/uiStore';
 import { useCaseStore } from '../../state/caseStore';
@@ -66,6 +66,8 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const params = useParams();
   const location = useLocation();
+
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const activeCaseId = params.caseId || activeCase?.caseId;
 
@@ -250,8 +252,8 @@ export default function Sidebar() {
                 {user.badgeNumber}
               </div>
             </div>
-            <button
-              onClick={() => { logout(); navigate('/login'); }}
+             <button
+              onClick={() => setShowLogoutConfirm(true)}
               title="Disconnect"
               style={{
                 background: 'none', border: '1px solid var(--struct-line)',
@@ -274,6 +276,56 @@ export default function Sidebar() {
           display: sidebarCollapsed ? 'block' : 'none',
         }} />
       </div>
+
+      {/* Disconnect Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
+          zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backdropFilter: 'blur(4px)',
+        }}>
+          <div style={{
+            background: '#080c10', border: '1px solid var(--struct-line)',
+            padding: 24, width: 300, display: 'flex', flexDirection: 'column', gap: 16,
+            boxShadow: '0 0 24px rgba(0,255,194,0.15)',
+          }}>
+            <div style={{ fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: 'var(--accent-primary)', letterSpacing: '0.15em' }}>
+              CONFIRM DISCONNECT
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}>
+              ARE YOU SURE YOU WANT TO TERMINATE THE ACTIVE INVESTIGATOR SESSION?
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, borderTop: '1px solid var(--struct-line)', paddingTop: 12 }}>
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                style={{
+                  background: 'none', border: '1px solid var(--struct-line)',
+                  color: 'var(--text-muted)', fontFamily: 'var(--font-heading)',
+                  fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
+                  padding: '6px 12px', cursor: 'pointer',
+                }}
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={() => {
+                  setShowLogoutConfirm(false);
+                  logout();
+                  navigate('/');
+                }}
+                style={{
+                  background: 'var(--accent-primary)', border: 'none',
+                  color: '#000000', fontFamily: 'var(--font-heading)',
+                  fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
+                  padding: '6px 12px', cursor: 'pointer',
+                }}
+              >
+                DISCONNECT
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

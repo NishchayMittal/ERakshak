@@ -33,6 +33,12 @@ const Icons = {
     </svg>
   ),
 
+  profile: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <path d="M10 11a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M3 17a7 7 0 0114 0" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  ),
   settings: (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
       <circle cx="10" cy="10" r="3.5" stroke="currentColor" strokeWidth="1.2" />
@@ -55,6 +61,7 @@ const NAV_ITEMS = [
   { key: 'cases', label: 'CASES', path: '/cases' },
   { key: 'intake', label: 'INTAKE', path: null },
   { key: 'investigate', label: 'INVESTIGATE', path: null },
+  { key: 'profile', label: 'PROFILE', path: '/profile' },
   { key: 'settings', label: 'SETTINGS', path: '/settings' },
 ];
 

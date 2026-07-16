@@ -13,8 +13,15 @@ export default function CaseDashboardPage() {
 
   const handleCreateCase = async () => {
     try {
-      const caseNumber = cases.length + 1;
-      const title = `Investigation #${caseNumber} — AD HOC`;
+      let caseNumber = cases.length + 1;
+      let title = `Investigation #${caseNumber} — AD HOC`;
+      
+      // Auto-increment the case number if the title already exists in the case list
+      while (cases.some((c) => c.title.toLowerCase() === title.toLowerCase())) {
+        caseNumber++;
+        title = `Investigation #${caseNumber} — AD HOC`;
+      }
+
       const newCase = await initializeNewCase(title, 'Ad-hoc initialized case file');
       showToast(`${newCase.caseId} INITIALIZED`, 'success');
     } catch (err) {

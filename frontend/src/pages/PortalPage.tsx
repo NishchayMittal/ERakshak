@@ -32,13 +32,13 @@ function DottedSurface({ className, style }: DottedSurfaceProps) {
     if (!containerRef.current) return;
 
     let isCancelled = false;
-    const SEPARATION = 150;
-    const AMOUNTX = 40;
-    const AMOUNTY = 60;
+    const SEPARATION = 100;
+    const AMOUNTX = 65;
+    const AMOUNTY = 95;
 
     // Scene setup
     const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0x000000, 2000, 10000);
+    scene.fog = new THREE.Fog(0x000000, 1000, 8000);
 
     const camera = new THREE.PerspectiveCamera(
       60,
@@ -46,8 +46,8 @@ function DottedSurface({ className, style }: DottedSurfaceProps) {
       1,
       10000,
     );
-    camera.position.set(0, 355, 1220);
-    camera.lookAt(0, 0, 0);
+    camera.position.set(0, 300, 1000);
+    camera.lookAt(0, -100, 0);
 
     const renderer = new THREE.WebGLRenderer({
       alpha: true,
@@ -120,10 +120,10 @@ function DottedSurface({ className, style }: DottedSurfaceProps) {
         for (let ix = 0; ix < AMOUNTX; ix++) {
           for (let iy = 0; iy < AMOUNTY; iy++) {
             const index = i * 3;
-            // Larger height (120) and faster wave time speed (time * 8) for clear motion
+            // Slightly rougher waves for high-fidelity fluid motion
             positionsArr[index + 1] =
-              Math.sin((ix + time * 8) * 0.3) * 120 +
-              Math.sin((iy + time * 8) * 0.5) * 120;
+              Math.sin((ix + time * 3) * 0.16) * 55 +
+              Math.sin((iy + time * 3) * 0.22) * 55;
             i++;
           }
         }

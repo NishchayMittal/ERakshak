@@ -17,6 +17,7 @@ export default function CaseCard({ caseItem, onSelect }: CaseCardProps) {
 
   const [isEditing, setIsEditing] = useState(false);
   const [newTitle, setNewTitle] = useState(caseItem.title);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleRename = async () => {
     if (!newTitle.trim()) return;
@@ -31,10 +32,6 @@ export default function CaseCard({ caseItem, onSelect }: CaseCardProps) {
   };
 
   const handleDelete = async () => {
-    const confirmed = window.confirm(
-      `Are you sure you want to permanently delete case "${caseItem.title}"?\nThis will destroy all ingested seeds and dossiers.`
-    );
-    if (!confirmed) return;
     try {
       await deleteCase(caseItem.caseId);
       showToast('CASE DELETED', 'success');
@@ -60,7 +57,7 @@ export default function CaseCard({ caseItem, onSelect }: CaseCardProps) {
               {caseItem.status}
             </span>
             <button
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               className="text-slate-500 hover:text-rose-500 p-0.5 transition-colors"
               title="Delete Case dossier"
             >
@@ -158,6 +155,57 @@ export default function CaseCard({ caseItem, onSelect }: CaseCardProps) {
           </Link>
         </div>
       </div>
+
+      {/* Custom Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
+          zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backdropFilter: 'blur(4px)',
+        }}>
+          <div style={{
+            background: '#080c10', border: '1px solid var(--struct-line)',
+            padding: 24, width: 345, display: 'flex', flexDirection: 'column', gap: 16,
+            boxShadow: '0 0 24px rgba(244,63,94,0.2)',
+          }}>
+            <div style={{ fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: 'var(--accent-threat)', letterSpacing: '0.15em' }}>
+              CONFIRM DOSSIER DELETION
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', lineHeight: '1.4' }}>
+              ARE YOU SURE YOU WANT TO PERMANENTLY DELETE CASE <span style={{ color: '#ffffff' }}>"{caseItem.title}"</span>?
+              <br/><br/>
+              THIS WILL IRREVERSIBLY ERASE ALL INGESTED IDENTIFIERS, CORRELATED SUSPECT PROFILES, AND NOTES.
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, borderTop: '1px solid var(--struct-line)', paddingTop: 12 }}>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                style={{
+                  background: 'none', border: '1px solid var(--struct-line)',
+                  color: 'var(--text-muted)', fontFamily: 'var(--font-heading)',
+                  fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
+                  padding: '6px 12px', cursor: 'pointer',
+                }}
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  handleDelete();
+                }}
+                style={{
+                  background: 'var(--accent-threat)', border: 'none',
+                  color: '#ffffff', fontFamily: 'var(--font-heading)',
+                  fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
+                  padding: '6px 12px', cursor: 'pointer',
+                }}
+              >
+                DELETE DOSSIER
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

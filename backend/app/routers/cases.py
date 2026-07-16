@@ -108,6 +108,7 @@ def get_case_graph(
 class IdentifierInputItem(BaseModel):
     type: str
     rawValue: str
+    metadata: dict | None = None
 
 
 class IdentifiersSubmitPayload(BaseModel):
@@ -126,6 +127,7 @@ async def submit_case_identifiers(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
 
     saved_findings = []
+    created_identifiers = []
     
     # Process each identifier in the payload
     for item in payload.identifiers:
@@ -147,11 +149,13 @@ async def submit_case_identifiers(
             confidence=1.0,
             source="manual_intake",
             case_id=case_id,
-            investigator_id=current_investigator.id
+            investigator_id=current_investigator.id,
+            identifier_metadata=item.metadata
         )
         db.add(db_id)
         db.commit()
         db.refresh(db_id)
+        created_identifiers.append(db_id)
 
         log_action(
             db,
@@ -163,6 +167,36 @@ async def submit_case_identifiers(
 
         from app.connectors.runner import run_connectors_and_pivot
         await run_connectors_and_pivot(db, db_id, current_investigator.id, depth=0)
+
+    # Pre-link multiple seeds together if 2+ given (join as confirmed root edges)
+    if len(created_identifiers) >= 2:
+        for idx_a in range(len(created_identifiers)):
+            for idx_b in range(idx_a + 1, len(created_identifiers)):
+                id_a = created_identifiers[idx_a]
+                id_b = created_identifiers[idx_b]
+                # Check if feedback already exists to avoid duplication
+                existing_fb = db.query(LinkFeedback).filter(
+                    LinkFeedback.case_id == case_id,
+                    LinkFeedback.source_id == id_a.id,
+                    LinkFeedback.target_id == id_b.id
+                ).first()
+                if not existing_fb:
+                    new_fb = LinkFeedback(
+                        case_id=case_id,
+                        source_id=id_a.id,
+                        target_id=id_b.id,
+                        status="confirmed",
+                        investigator_id=current_investigator.id
+                    )
+                    db.add(new_fb)
+                    db.commit()
+                    log_action(
+                        db,
+                        "link.prelink_seeds",
+                        investigator_id=current_investigator.id,
+                        case_id=case_id,
+                        detail={"source_id": id_a.id, "target_id": id_b.id, "status": "confirmed"}
+                    )
 
     is_ambiguous = any(item.type == "name" for item in payload.identifiers)
     fields_needed = ["city", "age", "employer"] if is_ambiguous else []

@@ -52,6 +52,16 @@ def serialize_graph(G: nx.MultiDiGraph) -> dict:
             else:
                 source_prov = "unknown"
 
+        # Map backend connector names to front-end filter keys
+        source_prov_map = {
+            "whois_rdap": "whois",
+            "crtsh": "crt.sh",
+            "wayback_cdx": "wayback",
+            "username_enumeration": "sherlock",
+            "breach_repository_demo": "breach_demo"
+        }
+        source_prov = source_prov_map.get(source_prov, source_prov)
+
         edges_list.append({
             "id": edge_id,
             "source": u,
@@ -97,9 +107,11 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
 
     # 1. Add identifier nodes
     id_map = {}
+    id_metadata = {}
     for identifier in identifiers:
         node_id = identifier.normalized_value
         id_map[identifier.id] = node_id
+        id_metadata[identifier.id] = identifier.identifier_metadata or {}
         if not G.has_node(node_id):
             G.add_node(
                 node_id,
@@ -120,6 +132,18 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
         result_type = finding.result_type
         result_val = finding.result_value
         confidence = finding.confidence
+
+        # Boost confidence based on name disambiguation anchors if present
+        metadata = id_metadata.get(finding.identifier_id) or {}
+        if metadata:
+            city_anchor = metadata.get("city")
+            employer_anchor = metadata.get("employer")
+            search_str = (result_val + " " + str(finding.raw_payload or "")).lower()
+            
+            if city_anchor and city_anchor.lower() in search_str:
+                confidence = min(1.0, confidence * 1.25)
+            if employer_anchor and employer_anchor.lower() in search_str:
+                confidence = min(1.0, confidence * 1.25)
 
         target_node_id = None
         target_type = "other"
@@ -249,7 +273,9 @@ def compile_evidence_pack(case_id: str, db: Session, investigator_id: str) -> di
             "type": f.result_type,
             "value": f.result_value,
             "confidence": f.confidence,
-            "raw_payload": f.raw_payload
+            "raw_payload": f.raw_payload,
+            "discoveredAt": f.discovered_at.isoformat() if f.discovered_at else None,
+            "discovered_at": f.discovered_at.isoformat() if f.discovered_at else None
         } for f in findings_query]
         
         identifiers_data.append({

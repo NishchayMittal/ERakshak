@@ -4,7 +4,7 @@ from app.models import IdentifierType
 class WhoisConnector(BaseConnector):
     name = "whois_rdap"
     applies_to = (IdentifierType.domain,)
-    timeout_seconds = 15.0
+    timeout_seconds = 6.0
 
     async def check_health(self) -> bool:
         import httpx
@@ -18,7 +18,6 @@ class WhoisConnector(BaseConnector):
     async def run(self, identifier_value: str) -> list[Finding]:
         domain = identifier_value.lstrip("@").strip().lower()
         url = f"https://rdap.org/domain/{domain}"
-        
         payload = await self._get_json(url)
         if not isinstance(payload, dict):
             return []
@@ -69,11 +68,10 @@ class WhoisConnector(BaseConnector):
                     return prop[3]
             return None
 
-        # 3. Parse Entities (Registrant Info)
-        entities = payload.get("entities", [])
-        for entity in entities:
+        # Recursive entity parser to fetch contact details from sub-entities
+        def parse_entity_recursive(entity):
             if not isinstance(entity, dict):
-                continue
+                return
             roles = entity.get("roles", [])
             vcard = entity.get("vcardArray")
             
@@ -85,7 +83,10 @@ class WhoisConnector(BaseConnector):
 
                 role_str = ", ".join(roles) if roles else "contact"
                 
-                if fn:
+                # Check for "redacted" or "privacy" to avoid pivoting on GDPR warnings
+                is_redacted = lambda val: any(x in str(val).lower() for x in ("redacted", "privacy", "select", "mask", "contact"))
+
+                if fn and not is_redacted(fn):
                     findings.append(
                         Finding(
                             connector_name=self.name,
@@ -95,7 +96,7 @@ class WhoisConnector(BaseConnector):
                             raw_payload=entity
                         )
                     )
-                if org:
+                if org and not is_redacted(org):
                     findings.append(
                         Finding(
                             connector_name=self.name,
@@ -105,25 +106,34 @@ class WhoisConnector(BaseConnector):
                             raw_payload=entity
                         )
                     )
-                if email:
+                if email and not is_redacted(email):
                     findings.append(
                         Finding(
                             connector_name=self.name,
                             result_type="registrant_email",
-                            result_value=email, # Raw email is crucial for correlation pivots!
+                            result_value=email.strip().lower(),
                             confidence=1.0,
                             raw_payload=entity
                         )
                     )
-                if tel:
+                if tel and not is_redacted(tel):
                     findings.append(
                         Finding(
                             connector_name=self.name,
                             result_type="registrant_phone",
-                            result_value=tel,
+                            result_value=tel.strip(),
                             confidence=0.9,
                             raw_payload=entity
                         )
                     )
+            
+            # Recurse into nested sub-entities (e.g. abuse contact under registrar)
+            for sub in entity.get("entities", []):
+                parse_entity_recursive(sub)
+
+        # 3. Parse Entities (Registrant Info)
+        entities = payload.get("entities", [])
+        for entity in entities:
+            parse_entity_recursive(entity)
 
         return findings

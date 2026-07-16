@@ -30,7 +30,9 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
     );
     const filteredEdges = graphData.edges.filter((edge) => {
       const matchesConfidence = edge.confidence >= confidenceThreshold;
-      const matchesSource = selectedSources.includes(edge.sourceProvenance);
+      const matchesSource = selectedSources.includes(edge.sourceProvenance) || 
+                            edge.sourceProvenance === 'correlation_engine' || 
+                            edge.sourceProvenance === 'manual_intake';
       const sourceExists = filteredNodes.some((n) => n.id === edge.source);
       const targetExists = filteredNodes.some((n) => n.id === edge.target);
       return matchesConfidence && matchesSource && sourceExists && targetExists;

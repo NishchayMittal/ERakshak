@@ -39,19 +39,22 @@ export default function TimelineView() {
   let events: Array<{ id: string; date: string; label: string; source: string; entityId: string }> = [];
 
   const activeIdentifier = evidencePack.identifiers.find(
-    (i) => i.id === selectedEntityId || i.normalizedValue.toLowerCase() === selectedEntityId.toLowerCase()
+    (i) => i.id === selectedEntityId || (i.normalizedValue || i.normalized_value || '').toLowerCase() === selectedEntityId.toLowerCase()
   );
 
   if (activeIdentifier) {
     events = activeIdentifier.findings
-      .filter((f) => f.discoveredAt)
-      .map((f) => ({
-        id: f.id,
-        date: f.discoveredAt ? f.discoveredAt.split('T')[0] : new Date().toISOString().split('T')[0],
-        label: f.rawPayload?.label || `${f.connector.toUpperCase()} — Detected ${f.type.replace(/_/g, ' ')}: ${f.value}`,
-        source: f.connector,
-        entityId: selectedEntityId,
-      }));
+      .filter((f) => f.discoveredAt || f.discovered_at)
+      .map((f) => {
+        const dAt = f.discoveredAt || f.discovered_at;
+        return {
+          id: f.id,
+          date: dAt ? dAt.split('T')[0] : new Date().toISOString().split('T')[0],
+          label: f.rawPayload?.label || `${f.connector.toUpperCase()} — Detected ${f.type.replace(/_/g, ' ')}: ${f.value}`,
+          source: f.connector,
+          entityId: selectedEntityId,
+        };
+      });
   } else {
     for (const ident of evidencePack.identifiers) {
       const match = ident.findings.find(
@@ -59,14 +62,17 @@ export default function TimelineView() {
       );
       if (match) {
         events = ident.findings
-          .filter((f) => f.value.toLowerCase() === match.value.toLowerCase() && f.discoveredAt)
-          .map((f) => ({
-            id: f.id,
-            date: f.discoveredAt ? f.discoveredAt.split('T')[0] : new Date().toISOString().split('T')[0],
-            label: f.rawPayload?.label || `${f.connector.toUpperCase()} — Detected ${f.type.replace(/_/g, ' ')}: ${f.value}`,
-            source: f.connector,
-            entityId: selectedEntityId,
-          }));
+          .filter((f) => f.value.toLowerCase() === match.value.toLowerCase() && (f.discoveredAt || f.discovered_at))
+          .map((f) => {
+            const dAt = f.discoveredAt || f.discovered_at;
+            return {
+              id: f.id,
+              date: dAt ? dAt.split('T')[0] : new Date().toISOString().split('T')[0],
+              label: f.rawPayload?.label || `${f.connector.toUpperCase()} — Detected ${f.type.replace(/_/g, ' ')}: ${f.value}`,
+              source: f.connector,
+              entityId: selectedEntityId,
+            };
+          });
         break;
       }
     }

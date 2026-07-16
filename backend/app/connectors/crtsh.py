@@ -7,8 +7,8 @@ from app.models import IdentifierType
 class CrtShConnector(BaseConnector):
     name = "crtsh"
     applies_to = (IdentifierType.domain,)
-    timeout_seconds = 20.0
-    max_retries = 2
+    timeout_seconds = 6.0
+    max_retries = 0
 
     async def check_health(self) -> bool:
         import httpx
@@ -20,7 +20,7 @@ class CrtShConnector(BaseConnector):
             return False
 
     async def run(self, identifier_value: str) -> list[Finding]:
-        domain = identifier_value.lstrip("@")
+        domain = identifier_value.lstrip("@").strip().lower()
         url = f"https://crt.sh/?q=%25.{quote_plus(domain)}&output=json"
         payload = await self._get_json(url)
         if not isinstance(payload, list):

@@ -64,6 +64,7 @@ class Identifier(Base):
     source: Mapped[str] = mapped_column(String, default="manual_intake", nullable=False)
     case_id: Mapped[str] = mapped_column(String, ForeignKey("cases.id"), nullable=False)
     investigator_id: Mapped[str] = mapped_column(String, ForeignKey("investigators.id"), nullable=False)
+    identifier_metadata: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     case = relationship("Case", back_populates="identifiers")

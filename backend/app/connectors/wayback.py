@@ -5,7 +5,7 @@ from app.models import IdentifierType
 class WaybackConnector(BaseConnector):
     name = "wayback_cdx"
     applies_to = (IdentifierType.domain,)
-    timeout_seconds = 15.0
+    timeout_seconds = 6.0
 
     async def check_health(self) -> bool:
         import httpx

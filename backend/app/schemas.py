@@ -59,6 +59,7 @@ class IdentifierBase(BaseModel):
     source: str = "manual_intake"
     case_id: str
     investigator_id: str
+    identifier_metadata: dict | None = None
 
 
 class IdentifierCreate(BaseModel):
@@ -67,6 +68,7 @@ class IdentifierCreate(BaseModel):
     case_id: str
     confidence: float = 1.0
     source: str = "manual_intake"
+    identifier_metadata: dict | None = None
 
 
 class IdentifierOut(IdentifierBase):

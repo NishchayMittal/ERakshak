@@ -62,8 +62,8 @@ def get_limiter_for_connector(connector_name: str) -> TokenBucketLimiter:
 class BaseConnector(ABC):
     name: str
     applies_to: tuple[IdentifierType, ...]
-    timeout_seconds: float = 15.0
-    max_retries: int = 2
+    timeout_seconds: float = 5.0
+    max_retries: int = 0
 
     @abstractmethod
     async def run(self, identifier_value: str) -> list[Finding]:

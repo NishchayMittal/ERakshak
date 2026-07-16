@@ -117,6 +117,8 @@ def canonicalize_findings(findings: list[Finding]) -> list[Finding]:
     return list(deduped_map.values())
 
 
+import json
+
 def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, str] | None:
     """
     Extracts a valid IdentifierType and value from a Finding if it represents a potential pivot.
@@ -124,40 +126,55 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
     """
     result_type = finding.result_type
     val = finding.result_value
+    payload = finding.raw_payload or {}
     
-    # 1. Map explicit result types
+    # Text to search for identifiers (includes result value and raw json payload)
+    search_text = f"{val} {json.dumps(payload) if isinstance(payload, (dict, list)) else str(payload)}"
+    
+    # 1. Look for email addresses in the finding text/payload
+    email_matches = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', search_text)
+    if email_matches:
+        return IdentifierType.email, email_matches[0].strip().lower()
+        
+    # 2. Look for phone numbers in E.164-like format (e.g., +919876543210)
+    phone_matches = re.findall(r'\+?[1-9]\d{9,14}', search_text)
+    if phone_matches:
+        return IdentifierType.phone, phone_matches[0].strip()
+            
+    # 3. Look for profile links to extract usernames
+    # Matches paths like github.com/username, reddit.com/user/username etc.
+    profile_matches = re.findall(r'https?://(?:www\.)?(?:github\.com|reddit\.com/user|linktr\.ee|hub\.docker\.com/u|pinterest\.com|steamcommunity\.com/id|archive\.org/details/@|slideshare\.net|roblox\.com/user\.aspx\?username|chess\.com/member|scribd\.com|letterboxd\.com)/([a-zA-Z0-9_.-]+)', search_text, re.IGNORECASE)
+    if profile_matches:
+        username = profile_matches[0].split('/')[0].strip()
+        if username and len(username) >= 3:
+            return IdentifierType.username, username
+
+    # 4. Map explicit result types
     if result_type == "registrant_email":
-        return IdentifierType.email, val
+        return IdentifierType.email, val.strip().lower()
         
     elif result_type == "registrant_phone":
-        return IdentifierType.phone, val
+        return IdentifierType.phone, val.strip()
         
     elif result_type == "registrant_name":
-        # WHOIS name e.g. "john doe (registrant)" -> extract "john doe"
+        # Extract registrant name. Filter out garbage text.
         name = val.split(" (")[0].strip()
-        if name:
+        if name and "profile" not in name.lower() and "leak" not in name.lower():
             return IdentifierType.name, name
             
     elif result_type == "face_similarity":
-        # Extract suspect name. If in payload, use that.
         name = None
-        if finding.raw_payload and isinstance(finding.raw_payload, dict):
-            name = finding.raw_payload.get("suspect_name")
+        if isinstance(payload, dict):
+            name = payload.get("suspect_name")
         if not name:
-            # e.g., "match: suspect alpha (developer profile) (similarity: 92.5%)"
             cleaned_val = val
             if cleaned_val.startswith("match: "):
                 cleaned_val = cleaned_val[7:]
             name = cleaned_val.split(" (similarity:")[0].split(" (")[0].strip()
-        if name:
+        if name and "profile" not in name.lower() and "leak" not in name.lower():
             return IdentifierType.name, name
             
     elif result_type == "subdomain":
         return IdentifierType.domain, clean_domain(val)
-        
-    # 2. Fallback check using detect_type on result_value
-    detected = detect_type(val)
-    if detected not in (IdentifierType.other, IdentifierType.photo):
-        return detected, val
         
     return None

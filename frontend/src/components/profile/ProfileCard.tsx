@@ -45,11 +45,11 @@ export default function ProfileCard() {
 
   // 1. Direct match on identifier values
   const activeIdentifier = evidencePack.identifiers.find(
-    (i) => i.id === selectedEntityId || i.normalizedValue.toLowerCase() === selectedEntityId.toLowerCase()
+    (i) => i.id === selectedEntityId || (i.normalizedValue || i.normalized_value || '').toLowerCase() === selectedEntityId.toLowerCase()
   );
 
   if (activeIdentifier) {
-    displayName = activeIdentifier.normalizedValue;
+    displayName = activeIdentifier.normalizedValue || activeIdentifier.normalized_value || '';
     attributes = activeIdentifier.findings.map((f) => ({
       key: f.type,
       value: f.value,

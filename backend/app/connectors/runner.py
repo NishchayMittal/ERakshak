@@ -6,7 +6,7 @@ from app.audit import log_action
 from app.connectors.base import registry
 from app.connectors.canonicalizer import canonicalize_findings, extract_identifier_from_finding
 from app.database import SessionLocal
-from app.models import Finding, Identifier
+from app.models import Finding, Identifier, IdentifierType
 from app.normalize import normalize
 
 logger = logging.getLogger(__name__)
@@ -22,6 +22,39 @@ async def run_connectors_and_pivot(
     Runs connectors for a given identifier, canonicalizes findings, saves them,
     and checks for pivot-back conditions (recursively up to depth 2).
     """
+    # Auto-pivot from email to username if depth is 0
+    if identifier.type == IdentifierType.email and depth == 0:
+        username_part = identifier.normalized_value.split("@")[0]
+        # Check if username exists as an identifier in this case
+        exists = db.query(Identifier).filter(
+            Identifier.case_id == identifier.case_id,
+            Identifier.type == IdentifierType.username,
+            Identifier.normalized_value == username_part
+        ).first()
+        if not exists:
+            # Create a pivot identifier for the username
+            new_uname = Identifier(
+                type=IdentifierType.username,
+                raw_value=username_part,
+                normalized_value=username_part,
+                confidence=0.9,
+                source="pivot:email_split",
+                case_id=identifier.case_id,
+                investigator_id=investigator_id
+            )
+            db.add(new_uname)
+            db.commit()
+            db.refresh(new_uname)
+            # Schedule connectors for it
+            asyncio.create_task(
+                run_connectors_and_pivot_background(
+                    identifier.case_id,
+                    new_uname.id,
+                    investigator_id,
+                    depth + 1
+                )
+            )
+
     connectors = registry.for_type(identifier.type)
     if not connectors:
         return []

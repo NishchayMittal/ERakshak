@@ -151,3 +151,21 @@ export async function updateInvestigatorProfile(fullName?: string, password?: st
   const res = await apiClient.patch('/auth/profile', payload);
   return res.data;
 }
+
+export async function renameCase(caseId: string, title: string): Promise<CaseSummary> {
+  if (isMockMode()) {
+    const updated = await mock.renameMockCase(caseId, title);
+    if (!updated) throw new Error('Case not found');
+    return updated;
+  }
+  const res = await apiClient.patch(`/cases/${caseId}`, { title });
+  return normalizeCaseSummary(res.data);
+}
+
+export async function deleteCase(caseId: string): Promise<void> {
+  if (isMockMode()) {
+    await mock.deleteMockCase(caseId);
+    return;
+  }
+  await apiClient.delete(`/cases/${caseId}`);
+}

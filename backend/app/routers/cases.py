@@ -13,7 +13,7 @@ from datetime import datetime
 from app.audit import log_action
 from app.auth import get_current_investigator
 from app.database import get_db
-from app.models import Case, Investigator, Identifier, Finding, CaseNote, LinkFeedback
+from app.models import Case, Investigator, Identifier, Finding, CaseNote, LinkFeedback, AuditLog
 from app.schemas import CaseCreate, CaseOut, CaseUpdate, LinkFeedbackCreate, LinkFeedbackOut, EvidencePackOut
 from app.correlation.matcher import trigger_background_retrain
 
@@ -574,3 +574,29 @@ def export_case_pdf(
     
     headers = {"Content-Disposition": f"attachment; filename=ERakshak_Dossier_{case_id}.pdf"}
     return StreamingResponse(buffer, headers=headers, media_type="application/pdf")
+
+
+@router.delete("/{case_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_case(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    # Delete all dependent data
+    identifier_ids = [i.id for i in db.query(Identifier).filter(Identifier.case_id == case_id).all()]
+    if identifier_ids:
+        db.query(Finding).filter(Finding.identifier_id.in_(identifier_ids)).delete(synchronize_session=False)
+
+    db.query(Identifier).filter(Identifier.case_id == case_id).delete(synchronize_session=False)
+    db.query(CaseNote).filter(CaseNote.case_id == case_id).delete(synchronize_session=False)
+    db.query(LinkFeedback).filter(LinkFeedback.case_id == case_id).delete(synchronize_session=False)
+    db.query(AuditLog).filter(AuditLog.case_id == case_id).delete(synchronize_session=False)
+
+    db.delete(case)
+    db.commit()
+
+    return None

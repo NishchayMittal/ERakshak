@@ -7,14 +7,17 @@ export interface EvidenceFinding {
   value: string;
   confidence: number;
   discoveredAt?: string;
+  discovered_at?: string;
   rawPayload?: any;
 }
 
 export interface EvidenceIdentifier {
   id: string;
   type: IdentifierType;
-  rawValue: string;
-  normalizedValue: string;
+  rawValue?: string;
+  raw_value?: string;
+  normalizedValue?: string;
+  normalized_value?: string;
   confidence: number;
   source: string;
   findings: EvidenceFinding[];

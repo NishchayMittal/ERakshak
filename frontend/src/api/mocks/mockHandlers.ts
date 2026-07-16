@@ -202,3 +202,16 @@ export function updateMockProfile(fullName: string): Promise<{ id: string; badge
     full_name: fullName
   });
 }
+
+export function renameMockCase(caseId: string, title: string): Promise<CaseSummary | undefined> {
+  const found = mockCasesStore.find(c => c.caseId === caseId);
+  if (found) {
+    found.title = title;
+  }
+  return delay(found);
+}
+
+export function deleteMockCase(caseId: string): Promise<{ ok: boolean }> {
+  mockCasesStore = mockCasesStore.filter(c => c.caseId !== caseId);
+  return delay({ ok: true });
+}

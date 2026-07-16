@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { CaseSummary, CaseNote } from '../types/case';
-import { getCaseList, getNotes, addNote, createCase } from '../api/endpoints';
+import { getCaseList, getNotes, addNote, createCase, renameCase, deleteCase } from '../api/endpoints';
 
 interface CaseState {
   cases: CaseSummary[];
@@ -12,6 +12,8 @@ interface CaseState {
   loadNotes: (caseId: string) => Promise<void>;
   addCaseNote: (caseId: string, authorId: string, text: string) => Promise<void>;
   initializeNewCase: (title: string, description?: string) => Promise<CaseSummary>;
+  renameCase: (caseId: string, title: string) => Promise<void>;
+  deleteCase: (caseId: string) => Promise<void>;
 }
 
 export const useCaseStore = create<CaseState>((set, get) => ({
@@ -71,6 +73,37 @@ export const useCaseStore = create<CaseState>((set, get) => ({
       throw err;
     } finally {
       set({ loading: false });
+    }
+  },
+  renameCase: async (caseId, title) => {
+    try {
+      const updatedCase = await renameCase(caseId, title);
+      set((state) => ({
+        cases: state.cases.map((c) => (c.caseId === caseId ? updatedCase : c)),
+        activeCase: state.activeCase?.caseId === caseId ? updatedCase : state.activeCase,
+      }));
+    } catch (err) {
+      console.error('Failed to rename case:', err);
+      throw err;
+    }
+  },
+  deleteCase: async (caseId) => {
+    try {
+      await deleteCase(caseId);
+      set((state) => {
+        const nextCases = state.cases.filter((c) => c.caseId !== caseId);
+        let nextActive = state.activeCase;
+        if (state.activeCase?.caseId === caseId) {
+          nextActive = nextCases.length > 0 ? nextCases[0] : null;
+        }
+        return {
+          cases: nextCases,
+          activeCase: nextActive,
+        };
+      });
+    } catch (err) {
+      console.error('Failed to delete case:', err);
+      throw err;
     }
   },
 }));

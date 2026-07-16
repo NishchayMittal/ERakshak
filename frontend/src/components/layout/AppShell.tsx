@@ -26,7 +26,7 @@ export default function AppShell() {
   // Authentication Guard
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate('/');
     }
   }, [isAuthenticated, navigate]);
 

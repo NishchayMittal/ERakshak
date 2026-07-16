@@ -5,26 +5,22 @@ import { useUIStore } from '../state/uiStore';
 import { useAuth } from '../hooks/useAuth';
 
 export default function CaseDashboardPage() {
-  const { cases, loading, loadCases, selectCase } = useCaseStore();
+  const { cases, loading, loadCases, selectCase, initializeNewCase } = useCaseStore();
   const { showToast } = useUIStore();
   const { user } = useAuth();
 
   useEffect(() => { loadCases(); }, [loadCases]);
 
-  const handleCreateCase = () => {
-    const newId = `CASE-${String(cases.length + 1).padStart(4, '0')}`;
-    const newCase = {
-      caseId: newId,
-      title: `Investigation #${cases.length + 1} — AD HOC`,
-      investigatorId: user?.id || 'inv-042',
-      status: 'active' as const,
-      createdAt: new Date().toISOString(),
-      lastActivity: new Date().toISOString(),
-      tags: ['investigation', 'ad-hoc'],
-      entityCount: 0,
-    };
-    useCaseStore.setState({ cases: [newCase, ...cases] });
-    showToast(`${newId} INITIALIZED`, 'success');
+  const handleCreateCase = async () => {
+    try {
+      const caseNumber = cases.length + 1;
+      const title = `Investigation #${caseNumber} — AD HOC`;
+      const newCase = await initializeNewCase(title, 'Ad-hoc initialized case file');
+      showToast(`${newCase.caseId} INITIALIZED`, 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to initialize case', 'error');
+    }
   };
 
   const activeCasesCount = cases.filter((c) => c.status === 'active').length;

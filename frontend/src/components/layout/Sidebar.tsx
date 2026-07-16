@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useNavigate, useParams } from 'react-router-dom';
+import { NavLink, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useUIStore } from '../../state/uiStore';
 import { useCaseStore } from '../../state/caseStore';
 import { useAuth } from '../../hooks/useAuth';
@@ -9,64 +9,52 @@ import { useGraphStore } from '../../state/graphStore';
 const Icons = {
   cases: (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <rect x="2" y="5" width="16" height="11" rx="0" stroke="currentColor" strokeWidth="1.2"/>
-      <path d="M6 5V3h8v2" stroke="currentColor" strokeWidth="1.2"/>
-      <line x1="2" y1="9" x2="18" y2="9" stroke="currentColor" strokeWidth="1"/>
+      <rect x="2" y="5" width="16" height="11" rx="0" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M6 5V3h8v2" stroke="currentColor" strokeWidth="1.2" />
+      <line x1="2" y1="9" x2="18" y2="9" stroke="currentColor" strokeWidth="1" />
     </svg>
   ),
-  entities: (
+  intake: (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <circle cx="10" cy="7" r="3" stroke="currentColor" strokeWidth="1.2"/>
-      <circle cx="4"  cy="15" r="2" stroke="currentColor" strokeWidth="1.2"/>
-      <circle cx="16" cy="15" r="2" stroke="currentColor" strokeWidth="1.2"/>
-      <line x1="10" y1="10" x2="4"  y2="13" stroke="currentColor" strokeWidth="0.9"/>
-      <line x1="10" y1="10" x2="16" y2="13" stroke="currentColor" strokeWidth="0.9"/>
+      <circle cx="10" cy="7" r="3" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="4" cy="15" r="2" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="16" cy="15" r="2" stroke="currentColor" strokeWidth="1.2" />
+      <line x1="10" y1="10" x2="4" y2="13" stroke="currentColor" strokeWidth="0.9" />
+      <line x1="10" y1="10" x2="16" y2="13" stroke="currentColor" strokeWidth="0.9" />
     </svg>
   ),
-  graph: (
+  investigate: (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <polygon points="10,2 18,16 2,16" stroke="currentColor" strokeWidth="1.2" fill="none"/>
-      <circle cx="10" cy="10" r="2" fill="currentColor"/>
+      <circle cx="10" cy="7" r="3" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="4" cy="15" r="2" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="16" cy="15" r="2" stroke="currentColor" strokeWidth="1.2" />
+      <line x1="10" y1="10" x2="4" y2="13" stroke="currentColor" strokeWidth="0.9" />
+      <line x1="10" y1="10" x2="16" y2="13" stroke="currentColor" strokeWidth="0.9" />
     </svg>
   ),
-  breach: (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <rect x="3" y="9" width="14" height="9" rx="0" stroke="currentColor" strokeWidth="1.2"/>
-      <path d="M7 9V6a3 3 0 116 0v3" stroke="currentColor" strokeWidth="1.2"/>
-      <circle cx="10" cy="13.5" r="1.5" fill="currentColor"/>
-    </svg>
-  ),
-  export: (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <rect x="3" y="3" width="10" height="13" rx="0" stroke="currentColor" strokeWidth="1.2"/>
-      <path d="M13 6h4v11H7v-3" stroke="currentColor" strokeWidth="1.2"/>
-      <path d="M10 10v-5l3 3" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="bevel"/>
-    </svg>
-  ),
+
   settings: (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <circle cx="10" cy="10" r="3.5" stroke="currentColor" strokeWidth="1.2"/>
-      <path d="M10 2v2.5M10 15.5v2.5M2 10h2.5M15.5 10h2.5M4.3 4.3l1.8 1.8M13.9 13.9l1.8 1.8M15.7 4.3L13.9 6.1M6.1 13.9l-1.8 1.8" stroke="currentColor" strokeWidth="1.2"/>
+      <circle cx="10" cy="10" r="3.5" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M10 2v2.5M10 15.5v2.5M2 10h2.5M15.5 10h2.5M4.3 4.3l1.8 1.8M13.9 13.9l1.8 1.8M15.7 4.3L13.9 6.1M6.1 13.9l-1.8 1.8" stroke="currentColor" strokeWidth="1.2" />
     </svg>
   ),
   collapse: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="square"/>
+      <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="square" />
     </svg>
   ),
   expand: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="square"/>
+      <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="square" />
     </svg>
   ),
 };
 
 const NAV_ITEMS = [
-  { key: 'cases',    label: 'CASES',    path: '/cases' },
-  { key: 'entities', label: 'ENTITIES', path: null },
-  { key: 'graph',    label: 'GRAPH',    path: null },
-  { key: 'breach',   label: 'BREACH',   path: null },
-  { key: 'export',   label: 'EXPORT',   path: null },
+  { key: 'cases', label: 'CASES', path: '/cases' },
+  { key: 'intake', label: 'INTAKE', path: null },
+  { key: 'investigate', label: 'INVESTIGATE', path: null },
   { key: 'settings', label: 'SETTINGS', path: '/settings' },
 ];
 
@@ -77,12 +65,19 @@ export default function Sidebar() {
   const { selectedEntityId } = useGraphStore();
   const navigate = useNavigate();
   const params = useParams();
+  const location = useLocation();
 
   const activeCaseId = params.caseId || activeCase?.caseId;
 
   const handleCaseChange = (caseId: string) => {
     selectCase(caseId);
-    navigate(`/cases/${caseId}/intake`);
+    if (params.caseId) {
+      const newPath = location.pathname.replace(params.caseId, caseId);
+      navigate(newPath);
+    } else {
+      // Fallback if not on a case-specific page
+      navigate(`/cases/${caseId}/intake`);
+    }
   };
 
   return (
@@ -145,18 +140,21 @@ export default function Sidebar() {
       <nav style={{ width: '100%', padding: '8px 0', flex: 1, overflow: 'hidden' }}>
         {NAV_ITEMS.map((item) => {
           const entityId = selectedEntityId || 'n1';
-          const to = item.path ?? (activeCaseId ? `/cases/${activeCaseId}/entities/${entityId}` : '/cases');
+          const to = item.key === 'intake'
+            ? (activeCaseId ? `/cases/${activeCaseId}/intake` : '/cases')
+            : (item.path ?? (activeCaseId ? `/cases/${activeCaseId}/entities/${entityId}` : '/cases'));
           return (
             <NavLink
               key={item.key}
               to={to}
+              end={item.key === 'cases'}
               onClick={(e) => {
                 if (!item.path && !activeCaseId) {
                   e.preventDefault();
                   showToast('Please select or initialize a case first', 'error');
                   return;
                 }
-                
+
                 // Select corresponding tab on the investigation workspace
                 if (item.key === 'export') {
                   useUIStore.setState({ activeTab: 'report' });
@@ -261,9 +259,9 @@ export default function Sidebar() {
               }}
             >
               <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-                <path d="M13 3h4v14h-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square"/>
-                <path d="M9 14l5-4-5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square"/>
-                <line x1="3" y1="10" x2="14" y2="10" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M13 3h4v14h-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" />
+                <path d="M9 14l5-4-5-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="square" />
+                <line x1="3" y1="10" x2="14" y2="10" stroke="currentColor" strokeWidth="1.5" />
               </svg>
             </button>
           </>

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Sliders, Cpu, Activity, Terminal, RefreshCw } from 'lucide-react';
+import { Cpu, Activity, Terminal, RefreshCw } from 'lucide-react';
 import { triggerModelRetrain } from '../api/endpoints';
 import { useUIStore } from '../state/uiStore';
 
@@ -85,126 +84,186 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto select-none">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, minHeight: 0, overflow: 'hidden', userSelect: 'none' }}>
+      
       {/* Header Panel */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-900/50 border border-indigo-500/10 rounded-lg p-6 cyber-panel corner-decor">
-        <div>
-          <h1 className="text-lg font-bold tracking-widest text-slate-100 uppercase font-mono flex items-center gap-2">
-            <Sliders className="w-5 h-5 text-indigo-400" />
-            Neural Link Configuration Settings
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '14px 16px',
+        background: '#080c10',
+        border: '1px solid var(--struct-line)',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div className="cyber-grid" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <h1 style={{
+            margin: 0,
+            fontFamily: 'var(--font-heading)', fontSize: 16, fontWeight: 700,
+            color: 'var(--text-primary)', letterSpacing: '0.1em', textTransform: 'uppercase',
+          }}>
+            NEURAL MODEL CONFIGURATION
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Audit link-matching accuracy ratios, adjust thresholds, and trigger manual XGBoost neural compiler retraining sessions.
+          <p style={{
+            margin: '4px 0 0 0',
+            fontFamily: 'var(--font-mono)', fontSize: 9,
+            color: 'var(--text-muted)', letterSpacing: '0.08em',
+          }}>
+            XGBOOST CLASSIFIER PARAMETERS & ACCURACY RATIOS
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="settings-grid">
         {/* Left Column: Config Panels */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Active Model Stats Card */}
-          <div className="cyber-panel border-indigo-500/10 p-5 bg-slate-900/30 space-y-5 corner-decor">
-            <div className="flex items-center gap-2 border-b border-indigo-500/10 pb-3">
-              <Cpu className="w-5 h-5 text-indigo-400" />
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono">Booster model parameters</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Booster params card */}
+          <div style={{
+            background: '#080c10',
+            border: '1px solid var(--struct-line)',
+            padding: 16,
+            display: 'flex', flexDirection: 'column', gap: 16,
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
+              color: 'var(--accent-primary)', letterSpacing: '0.15em', textTransform: 'uppercase',
+              borderBottom: '1px solid var(--struct-line)', paddingBottom: 8,
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              <Cpu className="w-4 h-4" />
+              BOOSTER MODEL PARAMETERS
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="bg-slate-950/60 border border-slate-850 p-3 rounded text-center">
-                <div className="text-[9px] uppercase tracking-wider text-slate-500 font-mono">Classifier</div>
-                <div className="text-sm font-bold text-slate-250 mt-1 font-mono">XGBoost</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+              {[
+                { label: 'Classifier', value: 'XGBoost' },
+                { label: 'Features', value: '4 Vectors' },
+                { label: 'Accuracy', value: `${currentAccuracy}%`, color: '#00C853' },
+                { label: 'Val Loss', value: currentLoss, color: 'var(--accent-primary)' },
+              ].map((p, idx) => (
+                <div key={idx} style={{
+                  background: 'rgba(0,0,0,0.2)', border: '1px solid var(--struct-line)',
+                  padding: 10, textAlign: 'center',
+                }}>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{p.label}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: p.color || 'var(--text-primary)', marginTop: 4 }}>{p.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Feature weights */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ fontFamily: 'var(--font-heading)', fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                ESTIMATED MODEL FEATURE CONTRIBUTIONS (SHAP)
               </div>
-              <div className="bg-slate-950/60 border border-slate-850 p-3 rounded text-center">
-                <div className="text-[9px] uppercase tracking-wider text-slate-500 font-mono">Features</div>
-                <div className="text-sm font-bold text-slate-250 mt-1 font-mono">4 Vectors</div>
-              </div>
-              <div className="bg-slate-950/60 border border-slate-850 p-3 rounded text-center">
-                <div className="text-[9px] uppercase tracking-wider text-slate-500 font-mono">Accuracy</div>
-                <div className="text-sm font-bold text-emerald-450 mt-1 font-mono">{currentAccuracy}%</div>
-              </div>
-              <div className="bg-slate-950/60 border border-slate-850 p-3 rounded text-center">
-                <div className="text-[9px] uppercase tracking-wider text-slate-500 font-mono">Val Loss</div>
-                <div className="text-sm font-bold text-indigo-400 mt-1 font-mono">{currentLoss}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {[
+                  { name: 'Individual Name Similarity (Jaro-Winkler)', val: '42%' },
+                  { name: 'Phone Number Registry Matches', val: '28%' },
+                  { name: 'Email Domain Co-occurrence', val: '18%' },
+                  { name: 'Username Alias Leaks', val: '12%' },
+                ].map((f, idx) => (
+                  <div key={idx} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    background: 'rgba(0,0,0,0.1)', border: '1px solid var(--struct-line)',
+                    padding: '8px 12px', fontFamily: 'var(--font-mono)', fontSize: 9,
+                  }}>
+                    <span style={{ color: 'var(--text-muted)' }}>{f.name}</span>
+                    <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>{f.val} WEIGHT</span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Feature Weights List */}
-            <div className="space-y-3">
-              <div className="text-[10px] uppercase font-bold text-slate-450 font-mono tracking-wider">Estimated Model Feature Contributions (SHAP)</div>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between items-center bg-slate-950/20 p-2 border border-slate-850/60 rounded">
-                  <span className="font-mono text-slate-350">Individual Name Similarity (Jaro-Winkler)</span>
-                  <span className="font-mono text-indigo-400 font-semibold">42% weight</span>
-                </div>
-                <div className="flex justify-between items-center bg-slate-950/20 p-2 border border-slate-850/60 rounded">
-                  <span className="font-mono text-slate-350">Phone Number Registry Matches</span>
-                  <span className="font-mono text-indigo-400 font-semibold">28% weight</span>
-                </div>
-                <div className="flex justify-between items-center bg-slate-950/20 p-2 border border-slate-850/60 rounded">
-                  <span className="font-mono text-slate-350">Email Domain Co-occurrence</span>
-                  <span className="font-mono text-indigo-400 font-semibold">18% weight</span>
-                </div>
-                <div className="flex justify-between items-center bg-slate-950/20 p-2 border border-slate-850/60 rounded">
-                  <span className="font-mono text-slate-350">Username Alias Leaks</span>
-                  <span className="font-mono text-indigo-400 font-semibold">12% weight</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Retrain Button container */}
-            <div className="pt-2 border-t border-indigo-500/10 flex justify-between items-center">
-              <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono">
-                <Activity className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
+            {/* Retrain Button footer container */}
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              borderTop: '1px solid var(--struct-line)', paddingTop: 12, marginTop: 8,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)' }}>
+                <Activity className="w-3.5 h-3.5 animate-pulse" style={{ color: '#00C853' }} />
                 <span>MODEL DESCRIPTOR: ONLINE</span>
               </div>
-              
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              <button
                 onClick={handleRetrain}
                 disabled={retraining}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold shadow hover:shadow-indigo-500/10 transition-all flex items-center gap-1.5 border border-indigo-400/40 font-mono uppercase tracking-wider disabled:opacity-50"
+                style={{
+                  background: 'none',
+                  border: '1px solid var(--accent-primary)',
+                  color: 'var(--accent-primary)',
+                  fontFamily: 'var(--font-heading)', fontSize: 9,
+                  fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase',
+                  padding: '8px 16px', cursor: 'pointer',
+                  opacity: retraining ? 0.5 : 1,
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  boxShadow: '0 0 6px rgba(0,255,194,0.15)',
+                  transition: 'background 0.1s, box-shadow 0.1s',
+                }}
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${retraining ? 'animate-spin' : ''}`} />
-                <span>{retraining ? 'Training weights...' : 'Trigger Model Retrain'}</span>
-              </motion.button>
+                <span>{retraining ? 'OPTIMIZING WEIGHTS...' : 'TRIGGER MODEL RETRAIN'}</span>
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Training Live Logs Terminal */}
-        <div className="lg:col-span-1 flex flex-col min-h-[300px]">
-          <div className="cyber-panel border-indigo-500/10 bg-slate-950/70 p-5 flex-1 flex flex-col justify-between corner-decor">
-            <div>
-              <div className="flex items-center gap-2 border-b border-indigo-500/10 pb-3 mb-3">
-                <Terminal className="w-4 h-4 text-cyan-400" />
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">Training console</span>
-              </div>
+        {/* Right Column: Console */}
+        <div style={{
+          background: '#080c10',
+          border: '1px solid var(--struct-line)',
+          padding: 16,
+          display: 'flex', flexDirection: 'column',
+          minHeight: 300,
+        }}>
+          <div style={{
+            fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
+            color: 'var(--accent-primary)', letterSpacing: '0.15em', textTransform: 'uppercase',
+            borderBottom: '1px solid var(--struct-line)', paddingBottom: 8,
+            display: 'flex', alignItems: 'center', gap: 8,
+            flexShrink: 0,
+          }}>
+            <Terminal className="w-4 h-4" />
+            TRAINING CONSOLE
+          </div>
 
-              <div className="font-mono text-[9px] space-y-2 text-slate-450 overflow-y-auto max-h-[360px]">
-                {activeLogs.length === 0 ? (
-                  <div className="text-center py-16 text-slate-600 uppercase">
-                    Terminal idle. Click "Trigger Model Retrain" to calibrate classifier weights.
-                  </div>
-                ) : (
-                  activeLogs.map((log, idx) => (
-                    <div key={idx} className="flex gap-1.5 items-start">
-                      <span className="text-indigo-500 select-none">&gt;</span>
-                      <span className={log.includes('accuracy:') ? 'text-emerald-400' : log.startsWith('SYSTEM:') ? 'text-cyan-400' : 'text-slate-350'}>
-                        {log}
-                      </span>
-                    </div>
-                  ))
-                )}
+          <div style={{
+            flex: 1, overflowY: 'auto',
+            fontFamily: 'var(--font-mono)', fontSize: 9,
+            padding: '12px 0',
+            lineHeight: '1.4',
+            color: 'var(--text-muted)',
+          }}>
+            {activeLogs.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                TERMINAL IDLE. CLICK "TRIGGER MODEL RETRAIN" TO COMPILATE WEIGHTS.
               </div>
-            </div>
+            ) : (
+              activeLogs.map((log, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: 6, marginBottom: 4, alignItems: 'flex-start' }}>
+                  <span style={{ color: 'var(--accent-primary)', userSelect: 'none' }}>&gt;</span>
+                  <span style={{
+                    color: log.includes('accuracy:')
+                      ? '#00C853'
+                      : log.startsWith('SYSTEM:')
+                      ? 'var(--accent-primary)'
+                      : 'var(--text-primary)',
+                  }}>
+                    {log}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
 
-            <div className="border-t border-indigo-500/10 pt-3 mt-3 text-[9px] text-slate-500 font-mono flex justify-between">
-              <span>ALGORITHM: XGBOOST</span>
-              <span className={retraining ? 'animate-pulse text-indigo-400' : ''}>
-                {retraining ? 'OPTIMIZING...' : 'STANDBY'}
-              </span>
-            </div>
+          <div style={{
+            borderTop: '1px solid var(--struct-line)', paddingTop: 12,
+            fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)',
+            display: 'flex', justifyContent: 'space-between',
+            flexShrink: 0,
+          }}>
+            <span>ALGORITHM: XGBOOST</span>
+            <span style={{ color: retraining ? 'var(--accent-primary)' : 'var(--text-muted)', fontWeight: retraining ? 700 : 'normal' }}>
+              {retraining ? 'OPTIMIZING...' : 'STANDBY'}
+            </span>
           </div>
         </div>
       </div>

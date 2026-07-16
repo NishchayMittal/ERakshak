@@ -247,3 +247,49 @@ html, body, #root {
 ::-webkit-scrollbar-track { background: var(--bg-1); }
 ::-webkit-scrollbar-thumb { background: var(--struct-line); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
+
+/* ---- Responsive HUD Workspace Grids ---- */
+.hud-grid-main {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 12px;
+  min-height: 0;
+  flex: 1;
+}
+
+@media (max-width: 900px) {
+  .hud-grid-main {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  min-height: 0;
+  flex: 1;
+}
+
+@media (max-width: 900px) {
+  .settings-grid {
+    grid-template-columns: 1fr !important;
+    overflow-y: auto;
+  }
+}
+
+.intake-grid {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: 16px;
+  min-height: 0;
+  flex: 1;
+}
+
+@media (max-width: 900px) {
+  .intake-grid {
+    grid-template-columns: 1fr !important;
+    overflow-y: auto;
+  }
+}

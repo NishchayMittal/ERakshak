@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useParams } from 'react-router-dom';
 import { useUIStore } from '../../state/uiStore';
 import { useCaseStore } from '../../state/caseStore';
 import { useAuth } from '../../hooks/useAuth';
+import { useGraphStore } from '../../state/graphStore';
 
 // Hard-edged SVG icons – no libraries needed
 const Icons = {
@@ -42,6 +43,12 @@ const Icons = {
       <path d="M10 10v-5l3 3" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="bevel"/>
     </svg>
   ),
+  settings: (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="10" r="3.5" stroke="currentColor" strokeWidth="1.2"/>
+      <path d="M10 2v2.5M10 15.5v2.5M2 10h2.5M15.5 10h2.5M4.3 4.3l1.8 1.8M13.9 13.9l1.8 1.8M15.7 4.3L13.9 6.1M6.1 13.9l-1.8 1.8" stroke="currentColor" strokeWidth="1.2"/>
+    </svg>
+  ),
   collapse: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="square"/>
@@ -60,12 +67,14 @@ const NAV_ITEMS = [
   { key: 'graph',    label: 'GRAPH',    path: null },
   { key: 'breach',   label: 'BREACH',   path: null },
   { key: 'export',   label: 'EXPORT',   path: null },
+  { key: 'settings', label: 'SETTINGS', path: '/settings' },
 ];
 
 export default function Sidebar() {
-  const { sidebarCollapsed, setSidebarCollapsed } = useUIStore();
+  const { sidebarCollapsed, setSidebarCollapsed, showToast } = useUIStore();
   const { cases, activeCase, selectCase } = useCaseStore();
   const { user, logout } = useAuth();
+  const { selectedEntityId } = useGraphStore();
   const navigate = useNavigate();
   const params = useParams();
 
@@ -135,11 +144,28 @@ export default function Sidebar() {
       {/* ── Nav Items ── */}
       <nav style={{ width: '100%', padding: '8px 0', flex: 1, overflow: 'hidden' }}>
         {NAV_ITEMS.map((item) => {
-          const to = item.path ?? (activeCaseId ? `/cases/${activeCaseId}/${item.key}` : '/cases');
+          const entityId = selectedEntityId || 'n1';
+          const to = item.path ?? (activeCaseId ? `/cases/${activeCaseId}/entities/${entityId}` : '/cases');
           return (
             <NavLink
               key={item.key}
               to={to}
+              onClick={(e) => {
+                if (!item.path && !activeCaseId) {
+                  e.preventDefault();
+                  showToast('Please select or initialize a case first', 'error');
+                  return;
+                }
+                
+                // Select corresponding tab on the investigation workspace
+                if (item.key === 'export') {
+                  useUIStore.setState({ activeTab: 'report' });
+                } else if (item.key === 'entities' || item.key === 'graph') {
+                  useUIStore.setState({ activeTab: 'graph' });
+                } else if (item.key === 'breach') {
+                  useUIStore.setState({ activeTab: 'timeline' });
+                }
+              }}
               style={({ isActive }) => ({
                 display: 'flex',
                 alignItems: 'center',

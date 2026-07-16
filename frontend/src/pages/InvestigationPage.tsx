@@ -50,7 +50,7 @@ export default function InvestigationPage() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 12, overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, gap: 12, overflow: 'hidden' }}>
 
       {/* ── Action header ── */}
       <div style={{
@@ -77,11 +77,7 @@ export default function InvestigationPage() {
       <GraphFilterBar />
 
       {/* ── Main Workspace ── */}
-      <div style={{
-        flex: 1, display: 'grid',
-        gridTemplateColumns: '1fr 320px',
-        gap: 12, minHeight: 0, overflow: 'hidden',
-      }}>
+      <div className="hud-grid-main">
 
         {/* ── Graph canvas ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minHeight: 0, overflow: 'hidden' }}>

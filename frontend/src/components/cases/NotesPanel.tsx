@@ -39,19 +39,48 @@ export default function NotesPanel({ caseId }: NotesPanelProps) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
+    <div style={{ padding: '0 0 12px 0', display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Header */}
-      <div className="p-4 border-b border-slate-800 bg-slate-950/20">
-        <h3 className="font-bold text-slate-200 text-xs uppercase tracking-wider">Investigative Audit Notes</h3>
-        <p className="text-[10px] text-slate-500 mt-0.5">Logs and observation summaries for this case.</p>
+      <div style={{
+        padding: '10px 14px',
+        borderBottom: '1px solid var(--struct-line)',
+        background: '#030609',
+        flexShrink: 0,
+      }}>
+        <div style={{
+          fontFamily: 'var(--font-heading)', fontSize: 10,
+          color: 'var(--accent-primary)', letterSpacing: '0.2em',
+          textTransform: 'uppercase', fontWeight: 700,
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          <span style={{ fontSize: 14, color: 'var(--accent-primary)', lineHeight: 1 }}>⌐</span>
+          AUDIT NOTES
+          <span style={{ fontSize: 14, color: 'var(--accent-primary)', lineHeight: 1, transform: 'scaleX(-1)', display: 'inline-block' }}>⌐</span>
+        </div>
+        <div style={{
+          fontFamily: 'var(--font-mono)', fontSize: 8,
+          color: 'var(--text-muted)', marginTop: 4, letterSpacing: '0.08em',
+        }}>
+          LOGS AND OBSERVED SIGNAL TRAILS ENUMERATED BY INVESTIGATORS
+        </div>
       </div>
 
-      {/* Tags Display */}
+      {/* Case Tags */}
       {activeCase && (
-        <div className="px-4 py-2 bg-slate-950/40 border-b border-slate-800/60 flex items-center gap-1.5 flex-wrap">
-          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wide">Case Tags:</span>
-          {activeCase.tags.map(t => (
-            <span key={t} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">
+        <div style={{
+          padding: '8px 14px',
+          background: 'rgba(0,0,0,0.15)',
+          borderBottom: '1px solid var(--struct-line)',
+          display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
+          flexShrink: 0,
+        }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', textTransform: 'uppercase' }}>TAGS:</span>
+          {activeCase.tags.map((t) => (
+            <span key={t} style={{
+              fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--accent-primary)',
+              background: 'rgba(0,255,194,0.05)', border: '1px solid rgba(0,255,194,0.15)',
+              padding: '2px 6px',
+            }}>
               #{t}
             </span>
           ))}
@@ -59,46 +88,81 @@ export default function NotesPanel({ caseId }: NotesPanelProps) {
       )}
 
       {/* Notes List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[350px]">
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
         {notes.length === 0 ? (
-          <div className="py-12 text-center text-xs text-slate-600">
-            No notes logged yet. Author notes to document the link audit trail.
+          <div style={{
+            fontFamily: 'var(--font-mono)', fontSize: 9,
+            color: 'var(--text-muted)', padding: '24px 0', textAlign: 'center',
+            letterSpacing: '0.1em',
+          }}>
+            NO DOSSIER NOTES RECORDED
           </div>
         ) : (
           notes.map((note) => (
-            <div key={note.id} className="bg-slate-950/50 border border-slate-800/60 rounded p-3 text-xs">
-              <div className="flex justify-between items-center text-[10px] text-slate-500 mb-1.5 font-mono">
-                <span className="font-semibold text-indigo-400">{note.authorId}</span>
-                <span>{new Date(note.createdAt).toLocaleTimeString()}</span>
+            <div key={note.id} style={{
+              background: '#0D1117',
+              border: '1px solid var(--struct-line)',
+              padding: '10px',
+              marginBottom: '10px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontFamily: 'var(--font-mono)', fontSize: 8 }}>
+                <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>{note.authorId}</span>
+                <span style={{ color: 'var(--text-muted)' }}>{new Date(note.createdAt).toLocaleTimeString()}</span>
               </div>
-              <p className="text-slate-300 leading-relaxed break-words">{note.text}</p>
+              <p style={{
+                margin: 0,
+                fontFamily: 'var(--font-mono)', fontSize: 9,
+                color: 'var(--text-primary)',
+                lineHeight: '1.4',
+                wordBreak: 'break-all',
+              }}>
+                {note.text}
+              </p>
             </div>
           ))
         )}
       </div>
 
-      {/* Write form */}
-      <form onSubmit={handleSubmit} className="p-3 border-t border-slate-800 bg-slate-950/20 space-y-2">
+      {/* Write Form */}
+      <form onSubmit={handleSubmit} style={{ padding: '8px 14px 0 14px', borderTop: '1px solid var(--struct-line)', display: 'flex', flexDirection: 'column', gap: 8 }}>
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 min-h-[64px] resize-none placeholder:text-slate-700"
+          style={{
+            width: '100%',
+            background: '#0D1117',
+            border: '1px solid var(--struct-line)',
+            color: 'var(--text-primary)',
+            padding: 8,
+            fontSize: 9,
+            fontFamily: 'var(--font-mono)',
+            outline: 'none',
+            resize: 'none',
+            minHeight: 50,
+          }}
           placeholder="Log findings, e.g. Domain registered to privacy proxy..."
           required
-        ></textarea>
+        />
         
-        <div className="flex justify-between items-center">
-          <span className="text-[10px] text-slate-600 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
-            Signing as {user?.name || 'Leon Lobo'}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)' }}>
+            SIGNING AS: <span style={{ color: 'var(--text-primary)' }}>{user?.name || 'Leon Lobo'}</span>
           </span>
           
           <button
             type="submit"
             disabled={submitting}
-            className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium rounded text-[11px] transition-colors"
+            style={{
+              background: 'none',
+              border: '1px solid var(--accent-primary)',
+              color: 'var(--accent-primary)',
+              fontFamily: 'var(--font-heading)', fontSize: 9,
+              fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+              padding: '6px 12px', cursor: 'pointer',
+              opacity: submitting ? 0.5 : 1,
+            }}
           >
-            {submitting ? 'Logging...' : 'Log Note'}
+            {submitting ? 'LOGGING...' : 'LOG NOTE'}
           </button>
         </div>
       </form>

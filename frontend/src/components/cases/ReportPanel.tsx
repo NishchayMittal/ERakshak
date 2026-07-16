@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { FileText, RefreshCw, Cpu, Activity, ShieldAlert, Sparkles, Terminal } from 'lucide-react';
+import { RefreshCw, ShieldAlert, Sparkles } from 'lucide-react';
 import { getNarrative } from '../../api/endpoints';
 import { useUIStore } from '../../state/uiStore';
 
@@ -62,8 +61,14 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
       // Heading 3
       if (trimmed.startsWith('### ')) {
         return (
-          <h3 key={idx} className="text-xs font-bold text-indigo-400 border-b border-indigo-500/10 pb-1.5 mt-5 mb-2.5 tracking-wider uppercase font-mono flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+          <h3 key={idx} style={{
+            fontFamily: 'var(--font-heading)', fontSize: 10, fontWeight: 700,
+            color: 'var(--accent-primary)', borderBottom: '1px solid var(--struct-line)',
+            paddingBottom: 6, marginTop: 16, marginBottom: 10,
+            letterSpacing: '0.1em', textTransform: 'uppercase',
+            display: 'flex', alignItems: 'center', gap: 6,
+          }}>
+            <Sparkles className="w-3 h-3" style={{ color: 'var(--accent-primary)' }} />
             {trimmed.slice(4)}
           </h3>
         );
@@ -72,7 +77,11 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
       // Heading 4
       if (trimmed.startsWith('#### ')) {
         return (
-          <h4 key={idx} className="text-[11px] font-bold text-slate-200 mt-4 mb-2 tracking-wider font-mono uppercase">
+          <h4 key={idx} style={{
+            fontFamily: 'var(--font-heading)', fontSize: 9, fontWeight: 700,
+            color: 'var(--text-primary)', marginTop: 14, marginBottom: 8,
+            letterSpacing: '0.08em', textTransform: 'uppercase',
+          }}>
             {trimmed.slice(5)}
           </h4>
         );
@@ -81,20 +90,33 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
       // Bullet Lists
       if (trimmed.startsWith('- ')) {
         return (
-          <li key={idx} className="ml-4 list-none relative pl-4 text-xs text-slate-350 py-1 leading-relaxed font-sans">
-            <span className="absolute left-0 top-2.5 w-1.5 h-1.5 bg-indigo-500 rounded-full"></span>
+          <li key={idx} style={{
+            marginLeft: 14, listStyleType: 'none', position: 'relative',
+            paddingLeft: 12, fontSize: 9, fontFamily: 'var(--font-mono)',
+            color: 'var(--text-primary)', padding: '2px 0',
+            lineHeight: 1.4,
+          }}>
+            <span style={{
+              position: 'absolute', left: 0, top: 6,
+              width: 5, height: 5, borderRadius: '50%',
+              background: 'var(--accent-primary)',
+            }} />
             {parseInlineStyles(trimmed.slice(2))}
           </li>
         );
       }
 
       if (!trimmed) {
-        return <div key={idx} className="h-2" />;
+        return <div key={idx} style={{ height: 6 }} />;
       }
 
       // Normal paragraph
       return (
-        <p key={idx} className="text-xs text-slate-350 leading-relaxed mb-3 font-sans">
+        <p key={idx} style={{
+          fontFamily: 'var(--font-mono)', fontSize: 9,
+          color: 'var(--text-primary)', lineHeight: 1.4,
+          marginBottom: 10,
+        }}>
           {parseInlineStyles(trimmed)}
         </p>
       );
@@ -107,7 +129,11 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
     return parts.map((part, index) => {
       if (index % 2 === 1) {
         return (
-          <strong key={index} className="font-bold text-slate-200 font-mono bg-indigo-500/10 px-1 rounded border border-indigo-500/10">
+          <strong key={index} style={{
+            fontWeight: 750, color: 'var(--accent-primary)',
+            fontFamily: 'var(--font-mono)', background: 'rgba(0,255,194,0.05)',
+            padding: '1px 3px', border: '1px solid rgba(0,255,194,0.15)',
+          }}>
             {part}
           </strong>
         );
@@ -117,81 +143,101 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
   };
 
   return (
-    <div className="flex flex-col h-full min-h-0 bg-slate-900/30 border border-slate-850 rounded-lg p-4 select-none relative overflow-hidden">
-      <div className="absolute inset-0 opacity-5 pointer-events-none cyber-grid-dense"></div>
+    <div style={{ padding: '0 0 12px 0', display: 'flex', flexDirection: 'column', height: '100%' }}>
       
       {/* Panel Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-indigo-500/10 mb-4 relative z-10">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded bg-indigo-900/40 border border-indigo-700/50 flex items-center justify-center text-indigo-400">
-            <FileText className="w-4 h-4" />
-          </div>
-          <div>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">LLM Dossier Synthesis</h2>
-            <p className="text-[9px] text-slate-500 font-mono mt-0.5">Claude 3.5 Sonnet Bounded Report</p>
-          </div>
+      <div style={{
+        padding: '10px 14px',
+        borderBottom: '1px solid var(--struct-line)',
+        background: '#030609',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexShrink: 0,
+      }}>
+        <div style={{
+          fontFamily: 'var(--font-heading)', fontSize: 10,
+          color: 'var(--accent-primary)', letterSpacing: '0.2em',
+          textTransform: 'uppercase', fontWeight: 700,
+          display: 'flex', alignItems: 'center', gap: 8,
+        }}>
+          <span style={{ fontSize: 14, color: 'var(--accent-primary)', lineHeight: 1 }}>⌐</span>
+          LLM DOSSIER SYNTHESIS
+          <span style={{ fontSize: 14, color: 'var(--accent-primary)', lineHeight: 1, transform: 'scaleX(-1)', display: 'inline-block' }}>⌐</span>
         </div>
-
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+        <button
           onClick={loadReport}
           disabled={loading}
-          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold rounded border border-indigo-400/40 flex items-center gap-1.5 transition-all disabled:opacity-50 font-mono uppercase tracking-wider shadow"
+          style={{
+            background: 'none',
+            border: '1px solid var(--accent-primary)',
+            color: 'var(--accent-primary)',
+            fontFamily: 'var(--font-heading)', fontSize: 8,
+            fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+            padding: '4px 8px', cursor: 'pointer',
+            opacity: loading ? 0.5 : 1,
+            display: 'flex', alignItems: 'center', gap: 4,
+          }}
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>{loading ? 'Generating...' : 'Regenerate'}</span>
-        </motion.button>
+          <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+          <span>{loading ? 'RUNNING...' : 'REGENERATE'}</span>
+        </button>
       </div>
 
       {/* Model Telemetry Banner */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 bg-slate-950/50 border border-slate-850 p-2.5 rounded mb-4 text-[9px] font-mono relative z-10">
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px 12px',
+        padding: '8px 14px',
+        background: 'rgba(0,0,0,0.15)',
+        borderBottom: '1px solid var(--struct-line)',
+        fontFamily: 'var(--font-mono)', fontSize: 8,
+        flexShrink: 0,
+      }}>
         <div>
-          <span className="text-slate-550 block">PROVIDER:</span>
-          <span className="text-slate-350 font-semibold uppercase">Anthropic Claude</span>
+          <span style={{ color: 'var(--text-muted)' }}>PROVIDER:</span>{' '}
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>OLLAMA (LOCAL COMPILER)</span>
         </div>
         <div>
-          <span className="text-slate-550 block">TEMPERATURE:</span>
-          <span className="text-indigo-400 font-semibold">0.25 (BOUNDED)</span>
+          <span style={{ color: 'var(--text-muted)' }}>TEMPERATURE:</span>{' '}
+          <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>0.25 (BOUNDED)</span>
         </div>
         <div>
-          <span className="text-slate-550 block">CONTEXT VECTORS:</span>
-          <span className="text-slate-350 font-semibold">Evidence Pack JSON</span>
+          <span style={{ color: 'var(--text-muted)' }}>CONTEXT VECTORS:</span>{' '}
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>EVIDENCE PACK</span>
         </div>
         <div>
-          <span className="text-slate-550 block">COMPILATION STATUS:</span>
-          <span className="text-emerald-500 font-semibold flex items-center gap-1">
-            <Activity className="w-3 h-3 animate-pulse" /> SIGNED
-          </span>
+          <span style={{ color: 'var(--text-muted)' }}>STATUS:</span>{' '}
+          <span style={{ color: '#00C853', fontWeight: 600 }}>SIGNED</span>
         </div>
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto pr-1 min-h-0 relative z-10 max-h-[300px]">
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
         {loading ? (
-          <div className="flex flex-col items-center justify-center h-48 text-slate-400 gap-3 border border-indigo-500/10 bg-slate-950/20 rounded">
-            <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-[10px] font-mono animate-pulse uppercase tracking-wider text-indigo-400">Running Narrative Compiler...</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10 }}>
+            <div style={{ width: 24, height: 24, border: '2px solid var(--accent-primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--accent-primary)', animation: 'blink 1.5s step-start infinite' }}>RUNNING NARRATIVE COMPILER...</span>
           </div>
         ) : report ? (
-          <div className="font-sans leading-relaxed text-slate-300 select-text p-1.5">
+          <div style={{ userSelect: 'text' }}>
             {renderMarkdown(report)}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-48 text-[10px] text-slate-600 font-mono uppercase gap-2 border border-slate-850 bg-slate-950/10 rounded">
-            <ShieldAlert className="w-5 h-5 text-slate-700" />
-            <span>No report cached. Click Regenerate.</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 8 }}>
+            <ShieldAlert className="w-5 h-5" style={{ color: 'var(--text-muted)' }} />
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)' }}>NO REPORT CACHED. CLICK REGENERATE.</span>
           </div>
         )}
       </div>
 
       {/* Cryptographic Footprint footer */}
-      <div className="mt-4 pt-3 border-t border-indigo-500/10 text-[8px] text-slate-550 font-mono flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-1.5">
-          <Terminal className="w-3.5 h-3.5 text-indigo-500" />
-          <span>CRYPTOGRAPHIC HASH: SHA-256/DOSS-SYNTH-2026</span>
-        </div>
-        <span className="text-emerald-600 uppercase font-bold">ALIGNED</span>
+      <div style={{
+        padding: '8px 14px 0 14px',
+        borderTop: '1px solid var(--struct-line)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)',
+        flexShrink: 0,
+      }}>
+        <span>HASH: SHA-256/DOSS-SYNTH-2026</span>
+        <span style={{ color: '#00C853', fontWeight: 700 }}>ALIGNED</span>
       </div>
     </div>
   );

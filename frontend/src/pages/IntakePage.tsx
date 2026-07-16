@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Play, Cpu, Server, Terminal, Search, Database, CheckCircle2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Play, Cpu, Database, Terminal } from 'lucide-react';
 import IdentifierForm from '../components/intake/IdentifierForm';
 import IdentifierChip from '../components/intake/IdentifierChip';
 import DisambiguationModal from '../components/intake/DisambiguationModal';
@@ -55,7 +54,6 @@ export default function IntakePage() {
   const [pipelineProgress, setPipelineProgress] = useState<number | null>(null);
   const [activePhase, setActivePhase] = useState(0);
   const [liveLogs, setLiveLogs] = useState<string[]>([]);
-  const [savedApiResponse, setSavedApiResponse] = useState<any>(null);
 
   useEffect(() => {
     if (caseId) {
@@ -163,170 +161,228 @@ export default function IntakePage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto select-none">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, minHeight: 0, overflow: 'hidden', userSelect: 'none' }}>
       {/* Header Info */}
-      <div className="flex items-center justify-between">
-        <div>
-          <Link to="/cases" className="text-xs text-slate-500 hover:text-slate-350 flex items-center gap-1.5 mb-1.5 transition-colors uppercase font-mono">
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Back to dossiers</span>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '14px 16px',
+        background: '#080c10',
+        border: '1px solid var(--struct-line)',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div className="cyber-grid" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <Link to="/cases" style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            fontFamily: 'var(--font-mono)', fontSize: 9,
+            color: 'var(--text-muted)', textDecoration: 'none', letterSpacing: '0.05em',
+            textTransform: 'uppercase', marginBottom: 4,
+          }}>
+            <ArrowLeft className="w-3 h-3" />
+            BACK TO CASES
           </Link>
-          <h1 className="text-lg font-bold tracking-widest text-slate-100 font-mono uppercase glow-text-indigo">Seed Ingestion Inlets</h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Feed investigator intelligence keys into the parser to concurrently sweep certificates, DNS profiles, usernames, and breach footprints.
+          <h1 style={{
+            margin: 0,
+            fontFamily: 'var(--font-heading)', fontSize: 16, fontWeight: 700,
+            color: 'var(--text-primary)', letterSpacing: '0.1em', textTransform: 'uppercase',
+          }}>
+            SEED INGESTION INLETS
+          </h1>
+          <p style={{
+            margin: '4px 0 0 0',
+            fontFamily: 'var(--font-mono)', fontSize: 9,
+            color: 'var(--text-muted)', letterSpacing: '0.08em',
+          }}>
+            DISPATCH INVESTIGATION KEYS INTO Crawlers AND OSINT PLUGINS
           </p>
         </div>
       </div>
 
-      <AnimatePresence mode="wait">
-        {pipelineProgress !== null ? (
-          // Ingestion pipeline active screen
-          <motion.div 
-            key="loader"
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            className="grid grid-cols-1 md:grid-cols-12 gap-6"
-          >
-            {/* Left Column: Progress checklist */}
-            <div className="md:col-span-7 bg-slate-900/40 border border-indigo-500/10 rounded-lg p-5 cyber-panel corner-decor flex flex-col justify-between min-h-[360px]">
-              <div>
-                <div className="flex items-center gap-2 border-b border-indigo-500/10 pb-3 mb-4">
-                  <Cpu className="w-4 h-4 text-indigo-400 animate-spin" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-350 font-mono">Active Correlators</span>
-                </div>
-
-                <div className="space-y-4">
-                  {PIPELINE_PHASES.map((p, idx) => {
-                    const isDone = activePhase > idx;
-                    const isActive = activePhase === idx;
-                    return (
-                      <div key={idx} className={`flex items-start gap-3 transition-colors duration-200 ${
-                        isDone ? 'text-indigo-400' : isActive ? 'text-cyan-400' : 'text-slate-600'
-                      }`}>
-                        <div className="mt-0.5">
-                          {isDone ? (
-                            <CheckCircle2 className="w-4.5 h-4.5 text-indigo-400" />
-                          ) : isActive ? (
-                            <div className="w-4 h-4 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />
-                          ) : (
-                            <div className="w-4.5 h-4.5 rounded-full border border-slate-700 bg-slate-950 flex items-center justify-center text-[9px] font-mono font-bold">
-                              {idx + 1}
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold tracking-wider font-mono uppercase">{p.label}</div>
-                          <div className="text-[10px] text-slate-500 font-sans mt-0.5">{p.detail}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Progress bar container */}
-              <div className="space-y-2 pt-4 border-t border-indigo-500/10 mt-4">
-                <div className="flex justify-between items-center text-[10px] font-mono text-slate-400">
-                  <span>PIPELINE DISPATCHED</span>
-                  <span className="text-cyan-400 font-bold">{pipelineProgress}%</span>
-                </div>
-                <div className="w-full bg-slate-950 h-2.5 rounded border border-indigo-500/15 overflow-hidden p-0.5">
-                  <motion.div 
-                    style={{ width: `${pipelineProgress}%` }}
-                    className="h-full bg-gradient-to-r from-indigo-500 via-cyan-500 to-emerald-400 rounded-sm"
-                  />
-                </div>
-              </div>
+      {pipelineProgress !== null ? (
+        // Ingestion pipeline active screen
+        <div className="intake-grid">
+          {/* Left Column: Progress checklist */}
+          <div style={{
+            background: '#080c10',
+            border: '1px solid var(--struct-line)',
+            padding: 16,
+            display: 'flex', flexDirection: 'column',
+            minHeight: 360,
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
+              color: 'var(--accent-primary)', letterSpacing: '0.15em', textTransform: 'uppercase',
+              borderBottom: '1px solid var(--struct-line)', paddingBottom: 8,
+              display: 'flex', alignItems: 'center', gap: 8,
+              marginBottom: 16,
+            }}>
+              <Cpu className="w-4 h-4 animate-spin" />
+              ACTIVE CORRELATORS
             </div>
 
-            {/* Right Column: Scrolling logs */}
-            <div className="md:col-span-5 flex flex-col gap-6">
-              {/* Telemetry log window */}
-              <div className="cyber-panel border-indigo-500/10 bg-slate-950/60 p-5 flex-1 min-h-[220px] flex flex-col justify-between corner-decor">
-                <div className="flex items-center gap-2 border-b border-indigo-500/10 pb-3 mb-3">
-                  <Terminal className="w-4 h-4 text-cyan-400" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-300 font-mono">Crawler Logs</span>
-                </div>
-
-                <div className="flex-1 font-mono text-[9px] space-y-2 text-slate-450 overflow-y-auto max-h-[200px]">
-                  {liveLogs.map((log, idx) => (
-                    <div key={idx} className="flex gap-1.5 items-start">
-                      <span className="text-indigo-500 select-none">&gt;</span>
-                      <span className="text-slate-350">{log}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
+              {PIPELINE_PHASES.map((p, idx) => {
+                const isDone = activePhase > idx;
+                const isActive = activePhase === idx;
+                const color = isDone ? 'var(--accent-primary)' : isActive ? 'var(--accent-primary)' : 'var(--text-muted)';
+                return (
+                  <div key={idx} style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 10,
+                    color, transition: 'color 0.2s',
+                  }}>
+                    <div style={{ marginTop: 2 }}>
+                      {isDone ? (
+                        <span style={{ color: '#00C853', fontWeight: 'bold', fontSize: 10 }}>✓</span>
+                      ) : isActive ? (
+                        <div style={{ width: 12, height: 12, border: '2px solid var(--accent-primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                      ) : (
+                        <div style={{
+                          width: 12, height: 12, border: '1px solid var(--struct-line)',
+                          background: '#030609', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 7, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)',
+                        }}>
+                          {idx + 1}
+                        </div>
+                      )}
                     </div>
+                    <div>
+                      <div style={{ fontFamily: 'var(--font-heading)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{p.label}</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', marginTop: 2 }}>{p.detail}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Progress bar */}
+            <div style={{ borderTop: '1px solid var(--struct-line)', paddingTop: 16, marginTop: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', marginBottom: 6 }}>
+                <span>PIPELINE DISPATCHED</span>
+                <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{pipelineProgress}%</span>
+              </div>
+              <div style={{ background: '#030609', height: 10, border: '1px solid var(--struct-line)', padding: 1, position: 'relative', overflow: 'hidden' }}>
+                <div style={{ width: `${pipelineProgress}%`, height: '100%', background: 'var(--accent-primary)', boxShadow: '0 0 4px var(--accent-primary)', transition: 'width 0.1s linear' }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Scrolling logs */}
+          <div style={{
+            background: '#080c10',
+            border: '1px solid var(--struct-line)',
+            padding: 16,
+            display: 'flex', flexDirection: 'column',
+            minHeight: 360,
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
+              color: 'var(--accent-primary)', letterSpacing: '0.15em', textTransform: 'uppercase',
+              borderBottom: '1px solid var(--struct-line)', paddingBottom: 8,
+              display: 'flex', alignItems: 'center', gap: 8,
+              marginBottom: 16,
+            }}>
+              <Terminal className="w-4 h-4" />
+              CRAWLER LOGS
+            </div>
+
+            <div style={{
+              flex: 1, overflowY: 'auto',
+              fontFamily: 'var(--font-mono)', fontSize: 9,
+              lineHeight: '1.4',
+              color: 'var(--text-primary)',
+            }}>
+              {liveLogs.map((log, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: 6, marginBottom: 4, alignItems: 'flex-start' }}>
+                  <span style={{ color: 'var(--accent-primary)', userSelect: 'none' }}>&gt;</span>
+                  <span>{log}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{
+              borderTop: '1px solid var(--struct-line)', paddingTop: 12,
+              fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)',
+              display: 'flex', justifyContent: 'space-between',
+            }}>
+              <span>SYNC_GATE: PORT 8000</span>
+              <span className="animate-pulse" style={{ color: 'var(--accent-primary)' }}>PARSING SEEDS...</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // Ingestion forms screen
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, overflowY: 'auto', minHeight: 0 }}>
+          {/* Input form */}
+          <IdentifierForm onAdd={handleAddSeed} />
+
+          {/* Ingestion Board */}
+          <div style={{
+            background: '#080c10',
+            border: '1px solid var(--struct-line)',
+            padding: 16,
+          }}>
+            <div style={{
+              fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
+              color: 'var(--accent-primary)', letterSpacing: '0.15em', textTransform: 'uppercase',
+              borderBottom: '1px solid var(--struct-line)', paddingBottom: 8,
+              display: 'flex', alignItems: 'center', gap: 8,
+              marginBottom: 16,
+            }}>
+              <Database className="w-4.5 h-4.5 text-indigo-400" />
+              Ingest Queue ({seeds.length})
+            </div>
+            
+            {seeds.length === 0 ? (
+              <div style={{
+                fontFamily: 'var(--font-mono)', fontSize: 9,
+                color: 'var(--text-muted)', padding: '48px 0', textAlign: 'center',
+                letterSpacing: '0.1em', background: '#0D1117', border: '1px dashed var(--struct-line)',
+              }}>
+                SEED POOL EMPTY. REGISTER IDENTIFIER KEYS ABOVE TO DISPATCH CRAWLERS.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {seeds.map((s) => (
+                    <IdentifierChip 
+                      key={s.id} 
+                      id={s.id} 
+                      type={s.type} 
+                      rawValue={s.value} 
+                      onDelete={handleDeleteSeed} 
+                    />
                   ))}
                 </div>
 
-                <div className="border-t border-indigo-500/10 pt-3 mt-3 text-[9px] text-slate-500 font-mono text-center flex justify-between">
-                  <span>SYNC_GATE: PORT 8000</span>
-                  <span className="animate-pulse">PARSING SEEDS...</span>
+                <div style={{
+                  display: 'flex', justifyContent: 'flex-end',
+                  borderTop: '1px solid var(--struct-line)', paddingTop: 12,
+                }}>
+                  <button
+                    type="button"
+                    onClick={handleRunAnalysis}
+                    disabled={submitting}
+                    style={{
+                      background: 'none',
+                      border: '1px solid var(--accent-primary)',
+                      color: 'var(--accent-primary)',
+                      fontFamily: 'var(--font-heading)', fontSize: 9,
+                      fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase',
+                      padding: '8px 16px', cursor: 'pointer',
+                      opacity: submitting ? 0.5 : 1,
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      boxShadow: '0 0 6px rgba(0,255,194,0.15)',
+                    }}
+                  >
+                    <Play className="w-4 h-4 fill-current" />
+                    <span>DISPATCH CRAWL PIPELINE</span>
+                  </button>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        ) : (
-          // Ingestion forms screen
-          <motion.div 
-            key="form"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="space-y-6"
-          >
-            {/* Input form */}
-            <IdentifierForm onAdd={handleAddSeed} />
-
-            {/* Ingestion Board */}
-            <div className="bg-slate-900/40 border border-indigo-500/10 rounded-lg p-5 cyber-panel corner-decor">
-              <div className="flex justify-between items-center border-b border-indigo-500/10 pb-3 mb-4">
-                <h3 className="font-bold text-slate-200 text-xs tracking-wider uppercase font-mono flex items-center gap-1.5">
-                  <Database className="w-4.5 h-4.5 text-indigo-400" />
-                  Ingest Queue ({seeds.length})
-                </h3>
-              </div>
-              
-              {seeds.length === 0 ? (
-                <div className="py-12 text-center text-xs text-slate-550 border border-dashed border-indigo-500/10 rounded-lg bg-slate-950/20 font-mono">
-                  SEED POOL EMPTY. ADD IDENTIFIER KEYS TO DISPATCH CRAWLERS.
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* List of Chips */}
-                  <div className="flex flex-wrap gap-2.5">
-                    <AnimatePresence>
-                      {seeds.map((s) => (
-                        <IdentifierChip 
-                          key={s.id} 
-                          id={s.id} 
-                          type={s.type} 
-                          rawValue={s.value} 
-                          onDelete={handleDeleteSeed} 
-                        />
-                      ))}
-                    </AnimatePresence>
-                  </div>
-
-                  {/* Run Button */}
-                  <div className="pt-4 border-t border-indigo-500/10 flex justify-end">
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      type="button"
-                      onClick={handleRunAnalysis}
-                      disabled={submitting}
-                      className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold shadow hover:shadow-indigo-500/15 transition-all flex items-center gap-2 border border-indigo-400/45 disabled:opacity-55 tracking-wider uppercase font-mono"
-                    >
-                      <Play className="w-4 h-4 fill-white" />
-                      <span>Dispatch Crawl Pipeline</span>
-                    </motion.button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Disambiguation Modal Popup */}
       <DisambiguationModal

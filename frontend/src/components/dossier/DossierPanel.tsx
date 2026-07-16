@@ -71,7 +71,13 @@ function RiskGauge({ pct }: { pct: number }) {
 }
 
 // Field row with optional redaction blur
-function Field({ label, value, redacted = false }: { label: string; value: string; redacted?: boolean }) {
+interface FieldProps {
+  label: string;
+  value: string;
+  redacted?: boolean;
+}
+
+function Field({ label, value, redacted = false }: FieldProps) {
   const [revealed, setRevealed] = useState(!redacted);
 
   return (
@@ -87,7 +93,7 @@ function Field({ label, value, redacted = false }: { label: string; value: strin
         {label}
       </div>
       <div
-        onClick={() => redacted && setRevealed(v => !v)}
+        onClick={() => redacted && setRevealed((v) => !v)}
         style={{
           fontFamily: 'var(--font-mono)', fontSize: 10,
           color: 'var(--text-primary)',
@@ -106,19 +112,19 @@ function Field({ label, value, redacted = false }: { label: string; value: strin
 }
 
 export default function DossierPanel() {
-  const { profileData, loading } = useGraphStore();
+  const { evidencePack, selectedEntityId, loading } = useGraphStore();
 
   if (loading) {
     return (
       <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {[1,2,3,4].map(i => (
+        {[1, 2, 3, 4].map((i) => (
           <div key={i} style={{ height: 36, background: 'var(--bg-1)', border: '1px solid var(--struct-line)', animation: 'blink 1.5s step-start infinite' }} />
         ))}
       </div>
     );
   }
 
-  if (!profileData) {
+  if (!selectedEntityId || !evidencePack) {
     return (
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
@@ -140,11 +146,49 @@ export default function DossierPanel() {
     );
   }
 
+  // Resolve matching attributes from Evidence Pack
+  let displayName = selectedEntityId;
+  let attributes: Array<{ key: string; value: string; source: string; confidence: number }> = [];
+
+  // 1. Direct match on identifier values
+  const activeIdentifier = evidencePack.identifiers.find(
+    (i) => i.id === selectedEntityId || i.normalizedValue.toLowerCase() === selectedEntityId.toLowerCase()
+  );
+
+  if (activeIdentifier) {
+    displayName = activeIdentifier.normalizedValue;
+    attributes = activeIdentifier.findings.map((f) => ({
+      key: f.type,
+      value: f.value,
+      source: f.connector,
+      confidence: f.confidence,
+    }));
+  } else {
+    // 2. Search inside child findings values
+    for (const ident of evidencePack.identifiers) {
+      const match = ident.findings.find(
+        (f) => f.value.toLowerCase() === selectedEntityId.toLowerCase() || f.id === selectedEntityId
+      );
+      if (match) {
+        displayName = match.value;
+        attributes = ident.findings
+          .filter((f) => f.value.toLowerCase() === match.value.toLowerCase())
+          .map((f) => ({
+            key: f.type,
+            value: f.value,
+            source: f.connector,
+            confidence: f.confidence,
+          }));
+        break;
+      }
+    }
+  }
+
   // Derive a fake risk score from the attribute count (demo)
-  const riskPct = Math.min(95, 30 + profileData.attributes.length * 8);
+  const riskPct = Math.min(95, 30 + attributes.length * 8);
 
   // Separate redacted vs normal fields for demo
-  const fields = profileData.attributes.map((attr, i) => ({
+  const fields = attributes.map((attr, i) => ({
     label: attr.key,
     value: attr.value,
     redacted: i > 2, // blur after first 3 attributes
@@ -174,8 +218,9 @@ export default function DossierPanel() {
         <div style={{
           fontFamily: 'var(--font-mono)', fontSize: 11,
           color: 'var(--text-primary)', marginTop: 4, fontWeight: 600,
+          wordBreak: 'break-all',
         }}>
-          {profileData.displayName}
+          {displayName}
         </div>
         <div style={{
           fontFamily: 'var(--font-mono)', fontSize: 8,

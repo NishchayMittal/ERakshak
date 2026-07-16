@@ -53,7 +53,7 @@ export default function AppShell() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'auto 1fr',
+          gridTemplateColumns: 'auto minmax(0, 1fr)',
           gridTemplateRows: 'auto 1fr auto',
           height: '100vh',
           background: 'linear-gradient(160deg, #000 0%, #0D1117 50%, #131A22 100%)',
@@ -71,19 +71,19 @@ export default function AppShell() {
           <TopBar />
         </div>
 
-        {/* ── Main Content (Outlet) ── */}
         <main
           style={{
             gridColumn: '2', gridRow: '2',
-            overflow: 'auto',
             position: 'relative',
             background: 'transparent',
-            padding: '20px 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
           }}
         >
           {/* Subtle cyber-grid background */}
           <div className="cyber-grid" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
-          <div style={{ position: 'relative', zIndex: 1, height: '100%' }}>
+          <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, padding: '16px 20px', boxSizing: 'border-box' }}>
             <Outlet />
           </div>
         </main>

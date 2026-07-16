@@ -30,7 +30,7 @@ export default function CaseDashboardPage() {
   const activeCasesCount = cases.filter((c) => c.status === 'active').length;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1, minHeight: 0, overflow: 'hidden' }}>
 
       {/* ── Header ── */}
       <div style={{
@@ -128,7 +128,7 @@ export default function CaseDashboardPage() {
       </div>
 
       {/* ── Case list ── */}
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
         <CaseList cases={cases} loading={loading} onSelectCase={selectCase} />
       </div>
     </div>

@@ -7,7 +7,7 @@ class BreachDemoConnector(BaseConnector):
     name = "breach_repository_demo"
     applies_to = (IdentifierType.email, IdentifierType.phone, IdentifierType.username)
 
-    async def run(self, identifier_value: str) -> list[Finding]:
+    async def run(self, identifier_value: str, metadata: dict | None = None) -> list[Finding]:
         # Construct path to mock breaches JSON file
         resources_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "resources"))
         json_path = os.path.join(resources_dir, "mock_breaches.json")

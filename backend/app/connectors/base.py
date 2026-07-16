@@ -66,7 +66,7 @@ class BaseConnector(ABC):
     max_retries: int = 0
 
     @abstractmethod
-    async def run(self, identifier_value: str) -> list[Finding]:
+    async def run(self, identifier_value: str, metadata: dict | None = None) -> list[Finding]:
         raise NotImplementedError
 
     async def check_health(self) -> bool:

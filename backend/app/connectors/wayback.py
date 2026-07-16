@@ -16,14 +16,17 @@ class WaybackConnector(BaseConnector):
         except Exception:
             return False
 
-    async def run(self, identifier_value: str) -> list[Finding]:
+    async def run(self, identifier_value: str, metadata: dict | None = None) -> list[Finding]:
         domain = identifier_value.lstrip("@").strip().lower()
         url = "https://web.archive.org/cdx/search/cdx"
         params = {
             "url": domain,
+            "matchType": "domain",      # official: match all pages under this domain
             "output": "json",
             "limit": "10",
-            "fl": "timestamp,original,mimetype,statuscode"
+            "collapse": "timestamp:4",  # collapse to one result per year (first 4 digits)
+            "fl": "timestamp,original,mimetype,statuscode",
+            "filter": "statuscode:200", # only successful snapshots
         }
 
         payload = await self._get_json(url, params=params)

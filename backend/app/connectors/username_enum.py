@@ -3,76 +3,71 @@ import httpx
 from app.connectors.base import BaseConnector, Finding
 from app.models import IdentifierType
 
+# Each site entry defines:
+#   uri_check   - URL template with {account}
+#   e_code      - HTTP status of a FOUND user (None = any 2xx)
+#   not_found   - body substrings that signal user absence (for 200-always SPAs)
+#   api_check   - if True, uses JSON API URL instead of HTML page
+#   profile_url - override URL to show the user (when api url differs from profile url)
 SITES = [
     {
         "name": "GitHub",
         "uri_check": "https://github.com/{account}",
-        "e_code": 200
+        "e_code": 200,
+        "not_found": [],  # returns 404 for nonexistent
     },
     {
         "name": "Reddit",
-        "uri_check": "https://www.reddit.com/user/{account}",
-        "e_code": 200
+        # Use JSON API — always returns 200 but body contains error:404 for missing users
+        "uri_check": "https://www.reddit.com/user/{account}/about.json",
+        "profile_url": "https://www.reddit.com/user/{account}",
+        "e_code": 200,
+        "not_found": ['"error": 404', '"error":404', 'doesnt exist', 'does not exist'],
     },
     {
         "name": "Linktree",
         "uri_check": "https://linktr.ee/{account}",
-        "e_code": 200
+        "e_code": 200,
+        "not_found": ["page not found", "doesn't exist", "no user"],
     },
     {
         "name": "DockerHub",
-        "uri_check": "https://hub.docker.com/u/{account}",
-        "e_code": 200
-    },
-    {
-        "name": "Pinterest",
-        "uri_check": "https://www.pinterest.com/{account}/",
-        "e_code": 200
-    },
-    {
-        "name": "Steam",
-        "uri_check": "https://steamcommunity.com/id/{account}",
-        "e_code": 200
-    },
-    {
-        "name": "Archive.org",
-        "uri_check": "https://archive.org/details/@{account}",
-        "e_code": 200
-    },
-    {
-        "name": "SlideShare",
-        "uri_check": "https://www.slideshare.net/{account}",
-        "e_code": 200
-    },
-    {
-        "name": "Roblox",
-        "uri_check": "https://www.roblox.com/user.aspx?username={account}",
-        "e_code": 200
+        # Docker Hub API — returns 404 JSON for missing users
+        "uri_check": "https://hub.docker.com/v2/users/{account}/",
+        "profile_url": "https://hub.docker.com/u/{account}",
+        "e_code": 200,
+        "not_found": [],  # returns 404 for nonexistent
     },
     {
         "name": "Chess.com",
-        "uri_check": "https://www.chess.com/member/{account}",
-        "e_code": 200
-    },
-    {
-        "name": "Scribd",
-        "uri_check": "https://www.scribd.com/{account}",
-        "e_code": 200
+        # Chess.com has an open REST API — returns 200+JSON or 404
+        "uri_check": "https://api.chess.com/pub/player/{account}",
+        "profile_url": "https://www.chess.com/member/{account}",
+        "e_code": 200,
+        "not_found": [],  # returns 404 for nonexistent
     },
     {
         "name": "Letterboxd",
         "uri_check": "https://letterboxd.com/{account}/",
-        "e_code": 200
-    }
+        "e_code": 200,
+        "not_found": ["there's no one here", "page not found", "sorry"],
+    },
+    {
+        "name": "Scribd",
+        "uri_check": "https://www.scribd.com/{account}",
+        "e_code": 200,
+        "not_found": ["page not found", "doesn't exist", "sorry, the page"],
+    },
 ]
+
 
 class UsernameEnumConnector(BaseConnector):
     name = "username_enumeration"
     applies_to = (IdentifierType.username,)
-    timeout_seconds = 5.0
+    timeout_seconds = 6.0
+    max_retries = 0
 
     async def check_health(self) -> bool:
-        import httpx
         try:
             async with httpx.AsyncClient(timeout=3.0) as client:
                 res = await client.head("https://github.com/", follow_redirects=True)
@@ -80,56 +75,67 @@ class UsernameEnumConnector(BaseConnector):
         except Exception:
             return False
 
-    async def run(self, identifier_value: str) -> list[Finding]:
+    async def run(self, identifier_value: str, metadata: dict | None = None) -> list[Finding]:
         username = identifier_value.lstrip("@").strip()
         if not username:
             return []
 
-        # Concurrency limit for username checks
-        sem = asyncio.Semaphore(3)
+        # Concurrency limit — 4 simultaneous requests max
+        sem = asyncio.Semaphore(4)
         from app.connectors.base import get_limiter_for_connector
         limiter = get_limiter_for_connector(self.name)
 
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/124.0.0.0 Safari/537.36"
+            ),
+            "Accept": "text/html,application/json,*/*",
+        }
+
         async def check_site(client: httpx.AsyncClient, site: dict) -> Finding | None:
             url = site["uri_check"].format(account=username)
-            # Use headers to look like a browser and avoid bot blockers
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            }
-            backoff = 0.5
-            for attempt in range(self.max_retries + 1):
-                try:
-                    async with sem:
-                        # Apply category rate limiting
-                        await limiter.acquire()
-                        response = await client.get(url, headers=headers, timeout=self.timeout_seconds, follow_redirects=True)
-                        response.raise_for_status()
-                        
-                        if response.status_code == site["e_code"]:
-                            # Basic check for some sites that return 200 but contain "not found" text
-                            text = response.text.lower()
-                            if "user not found" in text or "page not found" in text or "profile not found" in text:
-                                return None
-                            return Finding(
-                                connector_name=self.name,
-                                result_type="social_profile",
-                                result_value=f"{site['name']} Profile: {url}",
-                                confidence=0.85,
-                                raw_payload={
-                                    "site_name": site["name"],
-                                    "profile_url": url,
-                                    "status_code": response.status_code
-                                }
-                            )
-                        return None
-                except Exception:
-                    if attempt >= self.max_retries:
-                        return None
-                    await asyncio.sleep(backoff)
-                    backoff *= 2
-            return None
+            try:
+                async with sem:
+                    await limiter.acquire()
+                    response = await client.get(
+                        url,
+                        headers=headers,
+                        timeout=self.timeout_seconds,
+                        follow_redirects=True
+                    )
 
-        # Run concurrent checks
+                # Step 1: if the status code is not the expected found-code, skip
+                if response.status_code != site["e_code"]:
+                    return None
+
+                # Step 2: check body for known "not found" signals specific to this site
+                body_lower = response.text.lower()
+                for nf_pattern in site.get("not_found", []):
+                    if nf_pattern.lower() in body_lower:
+                        return None
+
+                # Step 3: profile page exists — return a verified finding
+                # If the site uses a different API URL vs profile URL, use the profile_url
+                profile_tpl = site.get("profile_url", site["uri_check"])
+                profile_url = profile_tpl.format(account=username)
+
+                return Finding(
+                    connector_name=self.name,
+                    result_type="social_profile",
+                    result_value=f"{site['name']} Profile: {profile_url}",
+                    confidence=0.9,
+                    raw_payload={
+                        "site_name": site["name"],
+                        "profile_url": profile_url,
+                        "status_code": response.status_code,
+                        "verified": True,
+                    }
+                )
+            except Exception:
+                return None
+
         async with httpx.AsyncClient() as client:
             tasks = [check_site(client, site) for site in SITES]
             results = await asyncio.gather(*tasks)

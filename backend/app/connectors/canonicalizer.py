@@ -141,12 +141,34 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
     if phone_matches:
         return IdentifierType.phone, phone_matches[0].strip()
             
-    # 3. Look for profile links to extract usernames
+    # 3. Check raw_payload for a direct username field (set by NameSearchConnector, UsernameEnumConnector)
+    if isinstance(payload, dict) and payload.get("username"):
+        uname = str(payload["username"]).strip().lstrip("@")
+        if uname and len(uname) >= 2:
+            return IdentifierType.username, uname
+
+    # 4. Look for profile links to extract usernames
     # Matches paths like github.com/username, reddit.com/user/username etc.
-    profile_matches = re.findall(r'https?://(?:www\.)?(?:github\.com|reddit\.com/user|linktr\.ee|hub\.docker\.com/u|pinterest\.com|steamcommunity\.com/id|archive\.org/details/@|slideshare\.net|roblox\.com/user\.aspx\?username|chess\.com/member|scribd\.com|letterboxd\.com)/([a-zA-Z0-9_.-]+)', search_text, re.IGNORECASE)
+    profile_matches = re.findall(
+        r'https?://(?:www\.)?(?:'
+        r'github\.com'
+        r'|reddit\.com/user'
+        r'|linktr\.ee'
+        r'|hub\.docker\.com/v2/users'
+        r'|hub\.docker\.com/u'
+        r'|api\.chess\.com/pub/player'
+        r'|chess\.com/member'
+        r'|keybase\.io'
+        r'|scribd\.com'
+        r'|letterboxd\.com'
+        r'|twitter\.com'
+        r'|news\.ycombinator\.com/user\?id='
+        r')/([a-zA-Z0-9_.-]+)',
+        search_text, re.IGNORECASE
+    )
     if profile_matches:
-        username = profile_matches[0].split('/')[0].strip()
-        if username and len(username) >= 3:
+        username = profile_matches[0].split('/')[0].split('?')[0].strip()
+        if username and len(username) >= 2:
             return IdentifierType.username, username
 
     # 4. Map explicit result types

@@ -62,7 +62,10 @@ async def run_connectors_and_pivot(
     # 1. Run connectors concurrently
     async def invoke(connector):
         try:
-            raw_res = await connector.run(identifier.normalized_value)
+            raw_res = await connector.run(
+                identifier.normalized_value,
+                metadata=identifier.identifier_metadata or {}
+            )
             return connector, raw_res
         except Exception as e:
             logger.error(f"Error running connector {connector.name}: {e}")

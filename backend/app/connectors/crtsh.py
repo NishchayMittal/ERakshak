@@ -19,15 +19,17 @@ class CrtShConnector(BaseConnector):
         except Exception:
             return False
 
-    async def run(self, identifier_value: str) -> list[Finding]:
+    async def run(self, identifier_value: str, metadata: dict | None = None) -> list[Finding]:
         domain = identifier_value.lstrip("@").strip().lower()
         url = f"https://crt.sh/?q=%25.{quote_plus(domain)}&output=json"
         payload = await self._get_json(url)
         if not isinstance(payload, list):
             return []
 
+        MAX_SUBDOMAINS = 50   # cap to avoid flooding the graph
         seen: set[str] = set()
-        findings: list[Finding] = []
+        candidates: list[str] = []
+
         for row in payload:
             if not isinstance(row, dict):
                 continue
@@ -41,13 +43,18 @@ class CrtShConnector(BaseConnector):
                 if host in seen:
                     continue
                 seen.add(host)
-                findings.append(
-                    Finding(
-                        connector_name=self.name,
-                        result_type="subdomain",
-                        result_value=host,
-                        confidence=0.7,
-                        raw_payload=row,
-                    )
-                )
+                candidates.append(host)
+
+        # Sort alphabetically so results are deterministic and meaningful
+        candidates.sort()
+
+        findings: list[Finding] = []
+        for host in candidates[:MAX_SUBDOMAINS]:
+            findings.append(Finding(
+                connector_name=self.name,
+                result_type="subdomain",
+                result_value=host,
+                confidence=0.7,
+                raw_payload={"domain": domain},
+            ))
         return findings

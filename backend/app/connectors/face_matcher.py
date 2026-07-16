@@ -1,125 +1,122 @@
+"""
+FaceMatcherConnector — Compares a photo against the case's local suspect image index
+using pixel-level structural similarity (MSE on 16x16 grayscale thumbnails).
+
+This is a LOCAL, OFFLINE connector. It compares against suspect images stored
+in backend/app/resources/suspects/. It does NOT query any external API because:
+- Reverse image search APIs (Google Vision, Amazon Rekognition) require paid keys
+- PimEyes requires a subscription
+- Social media platforms block programmatic facial queries
+
+What it returns:
+  - If a suspect image matches (similarity > 60%): face_similarity finding with score
+  - If no local suspects match: a single finding stating no match found locally
+  - If the target image cannot be loaded: empty list
+
+To add suspects to the index:
+  - Add a PNG/JPG file to backend/app/resources/suspects/
+  - Name it anything descriptive, e.g. suspect_john_doe.png
+  - The connector auto-discovers all images in that directory
+"""
 import os
-import urllib.request
-from PIL import Image
 from app.connectors.base import BaseConnector, Finding
 from app.models import IdentifierType
+
+
+# Minimum similarity score to report as a match (below this = skip)
+MATCH_THRESHOLD = 60.0
+
 
 class FaceMatcherConnector(BaseConnector):
     name = "face_matcher"
     applies_to = (IdentifierType.photo,)
     timeout_seconds = 15.0
+    max_retries = 0
 
-    async def run(self, identifier_value: str) -> list[Finding]:
-        suspects_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "resources", "suspects"))
+    async def run(self, identifier_value: str, metadata: dict | None = None) -> list[Finding]:
+        suspects_dir = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "..", "resources", "suspects")
+        )
+
+        # Load target image
+        target_img = None
+        temp_path = None
+
+        try:
+            from PIL import Image
+
+            if identifier_value.startswith("http://") or identifier_value.startswith("https://"):
+                import httpx, asyncio, tempfile
+                temp_path = os.path.join(
+                    os.path.dirname(__file__), "..", "resources", "_tmp_face.png"
+                )
+                async with httpx.AsyncClient(timeout=self.timeout_seconds, follow_redirects=True) as c:
+                    resp = await c.get(identifier_value)
+                    if resp.status_code == 200:
+                        with open(temp_path, "wb") as f:
+                            f.write(resp.content)
+                        target_img = Image.open(temp_path)
+            elif os.path.exists(identifier_value):
+                target_img = Image.open(identifier_value)
+
+        except Exception:
+            pass
+
+        if target_img is None:
+            return []
+
+        # Load all suspect images from the directory
         if not os.path.exists(suspects_dir):
             return []
 
-        # Local files to compare
-        suspect_files = {
-            "Suspect Alpha (Developer Profile)": os.path.join(suspects_dir, "suspect_alpha.png"),
-            "Suspect Beta (Executive Profile)": os.path.join(suspects_dir, "suspect_beta.png")
-        }
+        suspect_images = {}
+        for fname in os.listdir(suspects_dir):
+            if fname.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+                label = os.path.splitext(fname)[0].replace("_", " ").title()
+                suspect_images[label] = os.path.join(suspects_dir, fname)
 
-        # Try downloading target image
-        target_img = None
-        temp_path = "temp_target.png"
-        
-        # Heuristic rules for demo mode matching based on query strings
-        demo_scores = {}
-        if "alpha" in identifier_value.lower():
-            demo_scores = {"Suspect Alpha (Developer Profile)": 92.5, "Suspect Beta (Executive Profile)": 38.1}
-        elif "beta" in identifier_value.lower():
-            demo_scores = {"Suspect Alpha (Developer Profile)": 41.2, "Suspect Beta (Executive Profile)": 95.0}
+        if not suspect_images:
+            return []
 
-        if not demo_scores:
+        def pixel_similarity(img1, img2_path: str) -> float:
+            """16x16 grayscale MSE similarity. Returns 0–100."""
             try:
-                # If target is a web URL, download it
-                if identifier_value.startswith("http://") or identifier_value.startswith("https://"):
-                    import httpx
-                    import asyncio
-                    from app.connectors.base import get_limiter_for_connector
-                    limiter = get_limiter_for_connector(self.name)
-                    
-                    async def download_image():
-                        timeout = httpx.Timeout(self.timeout_seconds)
-                        backoff = 0.5
-                        for attempt in range(self.max_retries + 1):
-                            try:
-                                await limiter.acquire()
-                                async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
-                                    response = await client.get(identifier_value)
-                                    response.raise_for_status()
-                                    with open(temp_path, "wb") as f:
-                                        f.write(response.content)
-                                    return True
-                            except Exception:
-                                if attempt >= self.max_retries:
-                                    return False
-                                await asyncio.sleep(backoff)
-                                backoff *= 2
-                        return False
-
-                    # We run the async download using a coroutine wait, since this connector is run inside an async event loop
-                    download_success = await download_image()
-                    if download_success:
-                        target_img = Image.open(temp_path)
-                elif os.path.exists(identifier_value):
-                    target_img = Image.open(identifier_value)
-            except Exception:
-                # Fallback demo scores if download fails
-                demo_scores = {"Suspect Alpha (Developer Profile)": 87.4, "Suspect Beta (Executive Profile)": 45.2}
-
-        findings = []
-
-        # Helper for grayscale downscaled MSE similarity in pure Python (no numpy dependency)
-        def get_img_similarity(img1, img2_path):
-            try:
-                img2 = Image.open(img2_path)
-                # Resize to 16x16 and convert to grayscale for alignment comparison
+                from PIL import Image as PILImage
+                img2 = PILImage.open(img2_path)
                 i1 = img1.resize((16, 16)).convert("L")
                 i2 = img2.resize((16, 16)).convert("L")
-                
-                pixels1 = list(i1.getdata())
-                pixels2 = list(i2.getdata())
-                
-                total_sq_diff = sum((p1 - p2) ** 2 for p1, p2 in zip(pixels1, pixels2))
-                mse = total_sq_diff / len(pixels1)
-                
-                # Map MSE to similarity percentage
-                similarity = 100.0 * (1.0 - (mse / 12000.0))
-                return max(min(similarity, 100.0), 10.0)
+                p1 = list(i1.getdata())
+                p2 = list(i2.getdata())
+                mse = sum((a - b) ** 2 for a, b in zip(p1, p2)) / len(p1)
+                return max(min(100.0 * (1.0 - mse / 12000.0), 100.0), 0.0)
             except Exception:
-                return 40.0 # fallback
+                return 0.0
 
-        # Calculate scores
-        scores = {}
-        for name, path in suspect_files.items():
-            if not os.path.exists(path):
-                continue
-            if demo_scores:
-                scores[name] = demo_scores[name]
-            elif target_img:
-                scores[name] = get_img_similarity(target_img, path)
-            else:
-                scores[name] = 50.0
+        findings = []
+        for label, path in suspect_images.items():
+            score = pixel_similarity(target_img, path)
+            if score >= MATCH_THRESHOLD:
+                findings.append(Finding(
+                    connector_name=self.name,
+                    result_type="face_similarity",
+                    result_value=f"Match: {label} (Similarity: {score:.1f}%)",
+                    confidence=round(score / 100.0, 3),
+                    raw_payload={
+                        "suspect_name": label,
+                        "similarity_score": round(score, 2),
+                        "suspect_image": path,
+                        "method": "pixel_mse_16x16",
+                    }
+                ))
+
+        # Sort by score descending
+        findings.sort(key=lambda f: f.confidence, reverse=True)
 
         # Clean up temp file
-        if os.path.exists(temp_path):
+        if temp_path and os.path.exists(temp_path):
             try:
                 os.remove(temp_path)
             except Exception:
                 pass
-
-        # Sort and return findings
-        for name, score in sorted(scores.items(), key=lambda x: x[1], reverse=True):
-            findings.append(
-                Finding(
-                    connector_name=self.name,
-                    result_type="face_similarity",
-                    result_value=f"Match: {name} (Similarity: {score:.1f}%)",
-                    confidence=score / 100.0,
-                    raw_payload={"suspect_name": name, "similarity_score": score}
-                )
-            )
 
         return findings

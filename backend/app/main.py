@@ -8,6 +8,9 @@ from app.connectors.wayback import WaybackConnector
 from app.connectors.username_enum import UsernameEnumConnector
 from app.connectors.breach_demo import BreachDemoConnector
 from app.connectors.face_matcher import FaceMatcherConnector
+from app.connectors.name_search import NameSearchConnector
+from app.connectors.phone_lookup import PhoneLookupConnector
+from app.connectors.wallet_lookup import WalletLookupConnector
 from app.database import Base, engine
 from app.routers import auth as auth_router
 from app.routers import cases as cases_router
@@ -36,6 +39,9 @@ registry.register(WaybackConnector())
 registry.register(UsernameEnumConnector())
 registry.register(BreachDemoConnector())
 registry.register(FaceMatcherConnector())
+registry.register(NameSearchConnector())
+registry.register(PhoneLookupConnector())
+registry.register(WalletLookupConnector())
 
 
 @app.on_event("startup")

@@ -81,7 +81,7 @@ class BaseConnector(ABC):
                 # Apply rate limiting before the call
                 await limiter.acquire()
                 async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
-                    response = await client.get(url, params=params)
+                    response = await client.get(url, params=params, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) e-Rakshak/1.0"})
                     response.raise_for_status()
                     return response.json()
             except (httpx.HTTPError, ValueError):

@@ -41,6 +41,9 @@ app.include_router(identifiers_router.router)
 app.include_router(model_router.router)
 app.include_router(ws_router.router)
 
+from app.connectors.ocr_extractor import OcrExtractorConnector
+from app.connectors.bucket_enum import BucketEnumConnector
+
 registry.register(CrtShConnector())
 registry.register(WhoisConnector())
 registry.register(WaybackConnector())
@@ -56,6 +59,35 @@ registry.register(IpGeolocConnector())
 registry.register(ShodanIdbConnector())
 registry.register(GravatarEmailConnector())
 registry.register(PgpLookupConnector())
+registry.register(OcrExtractorConnector())
+registry.register(BucketEnumConnector())
+
+
+async def retention_cleanup_loop():
+    from app.database import SessionLocal
+    from app.models import Case, Identifier, Finding, AuditLog, CaseNote, LinkFeedback
+    from datetime import datetime, timezone
+    import asyncio
+    
+    while True:
+        try:
+            db = SessionLocal()
+            now = datetime.now(timezone.utc)
+            expired_cases = db.query(Case).filter(Case.expires_at != None, Case.expires_at <= now).all()
+            for case in expired_cases:
+                identifier_ids = [i.id for i in db.query(Identifier).filter(Identifier.case_id == case.id).all()]
+                if identifier_ids:
+                    db.query(Finding).filter(Finding.identifier_id.in_(identifier_ids)).delete(synchronize_session=False)
+                db.query(Identifier).filter(Identifier.case_id == case.id).delete(synchronize_session=False)
+                db.query(CaseNote).filter(CaseNote.case_id == case.id).delete(synchronize_session=False)
+                db.query(LinkFeedback).filter(LinkFeedback.case_id == case.id).delete(synchronize_session=False)
+                db.query(AuditLog).filter(AuditLog.case_id == case.id).delete(synchronize_session=False)
+                db.delete(case)
+            db.commit()
+            db.close()
+        except Exception:
+            pass
+        await asyncio.sleep(3600)
 
 
 @app.on_event("startup")
@@ -64,6 +96,7 @@ def on_startup() -> None:
     import asyncio
     from app.routers.ws import redis_listener
     asyncio.create_task(redis_listener())
+    asyncio.create_task(retention_cleanup_loop())
 
 
 @app.get("/health")

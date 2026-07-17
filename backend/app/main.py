@@ -22,6 +22,7 @@ from app.routers import auth as auth_router
 from app.routers import cases as cases_router
 from app.routers import identifiers as identifiers_router
 from app.routers import model as model_router
+from app.routers import ws as ws_router
 
 
 app = FastAPI(title="e-Rakshak API", version="0.1.0")
@@ -38,6 +39,7 @@ app.include_router(auth_router.router)
 app.include_router(cases_router.router)
 app.include_router(identifiers_router.router)
 app.include_router(model_router.router)
+app.include_router(ws_router.router)
 
 registry.register(CrtShConnector())
 registry.register(WhoisConnector())
@@ -59,6 +61,9 @@ registry.register(PgpLookupConnector())
 @app.on_event("startup")
 def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
+    import asyncio
+    from app.routers.ws import redis_listener
+    asyncio.create_task(redis_listener())
 
 
 @app.get("/health")

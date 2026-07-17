@@ -54,7 +54,7 @@ def create_identifier(
     return identifier
 
 
-@router.post("/{identifier_id}/run-connectors", response_model=list[FindingOut])
+@router.post("/{identifier_id}/run-connectors")
 async def run_connectors(
     identifier_id: str,
     db: Session = Depends(get_db),
@@ -69,9 +69,9 @@ async def run_connectors(
     if not identifier:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Identifier not found")
 
-    from app.connectors.runner import run_connectors_and_pivot
-    saved_findings = await run_connectors_and_pivot(db, identifier, current_investigator.id, depth=0)
-    return saved_findings
+    from app.worker import task_run_connectors_and_pivot
+    task_run_connectors_and_pivot.delay(identifier.case_id, identifier.id, current_investigator.id, 0)
+    return {"status": "queued", "message": "Connectors are running in the background"}
 
 
 @router.get("/{identifier_id}/findings", response_model=list[FindingOut])

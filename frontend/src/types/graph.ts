@@ -6,6 +6,7 @@ export interface GraphNode {
   sourceCount: number;
   pivot?: boolean;
   expandInvestigation?: boolean;
+  timestamp?: string;
 }
 
 export interface GraphEdge {
@@ -17,6 +18,7 @@ export interface GraphEdge {
   sourceProvenance: string;
   matchType?: 'baseline' | 'xgboost' | 'confirmed' | 'rejected';
   shapFeatures?: Record<string, number>;
+  timestamp?: string;
 }
 
 export interface GraphData {

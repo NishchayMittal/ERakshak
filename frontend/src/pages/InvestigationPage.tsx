@@ -11,6 +11,7 @@ import DossierPanel from '../components/dossier/DossierPanel';
 import { useGraphStore } from '../state/graphStore';
 import { useUIStore } from '../state/uiStore';
 import { useCaseStore } from '../state/caseStore';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 const TABS = ['DOSSIER', 'TIMELINE', 'NOTES', 'REPORT'] as const;
 type Tab = typeof TABS[number];
@@ -21,6 +22,9 @@ export default function InvestigationPage() {
   const { loadEntityGraph, clearGraph } = useGraphStore();
   const { activeTab, setActiveTab } = useUIStore();
   const { selectCase } = useCaseStore();
+  
+  // Connect to websocket for live updates
+  useWebSocket(caseId);
 
   useEffect(() => {
     if (caseId && entityId) {

@@ -1,9 +1,15 @@
 services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
   api:
     build:
       context: ./backend
     environment:
       DATABASE_URL: sqlite:////app/erakshak.db
+      REDIS_URL: redis://redis:6379/0
       JWT_SECRET: change-me
       JWT_ALGORITHM: HS256
       JWT_EXPIRE_MINUTES: 480
@@ -11,6 +17,21 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
+    depends_on:
+      - redis
+
+  worker:
+    build:
+      context: ./backend
+    command: celery -A app.worker.celery_app worker --loglevel=info
+    environment:
+      DATABASE_URL: sqlite:////app/erakshak.db
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - redis
+      - api
 
   frontend:
     build:

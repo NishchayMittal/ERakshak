@@ -9,10 +9,12 @@ interface GraphState {
   selectedEntityId: string | null;
   confidenceThreshold: number; // 0 to 1
   selectedSources: string[]; // e.g., ['whois', 'crt.sh', 'wayback', 'sherlock', 'breach_demo']
+  timelineMaxTime: number | null;
   loading: boolean;
   
   setConfidenceThreshold: (val: number) => void;
   toggleSourceFilter: (source: string) => void;
+  setTimelineMaxTime: (val: number | null) => void;
   setSelectedEntityId: (entityId: string | null) => void;
   loadEntityGraph: (caseId: string, entityId: string) => Promise<void>;
   clearGraph: () => void;
@@ -28,6 +30,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
     'dns_resolver', 'github_commit_email', 'phone_lookup',
     'wallet_lookup', 'face_matcher', 'breach_lookup'
   ],
+  timelineMaxTime: null,
   loading: false,
 
   setConfidenceThreshold: (val) => set({ confidenceThreshold: val }),
@@ -39,6 +42,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
       set({ selectedSources: [...active, source] });
     }
   },
+  setTimelineMaxTime: (val) => set({ timelineMaxTime: val }),
   setSelectedEntityId: (entityId) => set({ selectedEntityId: entityId }),
   loadEntityGraph: async (caseId, entityId) => {
     set({ loading: true, selectedEntityId: entityId });
@@ -68,5 +72,5 @@ export const useGraphStore = create<GraphState>((set, get) => ({
       set({ loading: false });
     }
   },
-  clearGraph: () => set({ graphData: null, evidencePack: null, selectedEntityId: null }),
+  clearGraph: () => set({ graphData: null, evidencePack: null, selectedEntityId: null, timelineMaxTime: null }),
 }));

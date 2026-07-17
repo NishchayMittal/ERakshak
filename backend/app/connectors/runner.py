@@ -2,6 +2,9 @@ import asyncio
 import logging
 from sqlalchemy.orm import Session
 
+import os
+import json
+import redis.asyncio as redis_async
 from app.audit import log_action
 from app.connectors.base import registry
 from app.connectors.canonicalizer import canonicalize_findings, extract_identifier_from_finding
@@ -83,6 +86,16 @@ def _create_pivot_identifier(
         },
     )
     return new_ident
+
+async def publish_update(case_id: str, action: str, detail: dict):
+    try:
+        redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+        r = await redis_async.from_url(redis_url)
+        message = {"action": action, "case_id": case_id, "detail": detail}
+        await r.publish(f"case_updates:{case_id}", json.dumps(message))
+        await r.aclose()
+    except Exception as e:
+        logger.error(f"Failed to publish update: {e}")
 
 
 async def run_connectors_and_pivot(
@@ -202,6 +215,14 @@ async def run_connectors_and_pivot(
                 "result_count": len(canonicalized_results),
             },
         )
+        
+        # Publish to WebSockets
+        if connector_db_findings:
+            await publish_update(
+                identifier.case_id,
+                "findings_discovered",
+                {"identifier_id": identifier.id, "count": len(connector_db_findings)}
+            )
 
     # ─── Pivot-Back Loop: extract new identifiers from findings ───
     if depth < 2:
@@ -230,13 +251,13 @@ async def run_connectors_and_pivot(
             )
             if new_ident:
                 pivots_created += 1
-                pivot_tasks.append(asyncio.create_task(
-                    run_connectors_and_pivot_background(
-                        identifier.case_id, new_ident.id,
-                        investigator_id, depth + 1,
-                    )
-                ))
-
+                from app.worker import task_run_connectors_and_pivot
+                task_run_connectors_and_pivot.delay(
+                    identifier.case_id,
+                    new_ident.id,
+                    investigator_id,
+                    depth + 1
+                )
     return db_findings
 
 

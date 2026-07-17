@@ -4,6 +4,7 @@ import cytoscape from 'cytoscape';
 import cola from 'cytoscape-cola';
 import { useGraphStore } from '../../state/graphStore';
 import { graphStyles } from './graphStyles';
+import TimelineSlider from './TimelineSlider';
 
 // Register cytoscape-cola layout algorithm
 try {
@@ -17,7 +18,7 @@ interface GraphViewProps {
 }
 
 export default function GraphView({ onSelectNode }: GraphViewProps) {
-  const { graphData, confidenceThreshold, selectedSources } = useGraphStore();
+  const { graphData, confidenceThreshold, selectedSources, timelineMaxTime } = useGraphStore();
   const cyRef = useRef<cytoscape.Core | null>(null);
   const reticleRef = useRef<HTMLDivElement | null>(null);
 
@@ -25,17 +26,24 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
   const elements = useMemo(() => {
     if (!graphData) return [];
 
+    const isVisibleInTime = (timestamp?: string) => {
+      if (!timestamp || timelineMaxTime === null) return true;
+      const time = new Date(timestamp).getTime();
+      return !isNaN(time) && time <= timelineMaxTime;
+    };
+
     const filteredNodes = graphData.nodes.filter(
-      (node) => node.confidence >= confidenceThreshold
+      (node) => node.confidence >= confidenceThreshold && isVisibleInTime(node.timestamp)
     );
     const filteredEdges = graphData.edges.filter((edge) => {
       const matchesConfidence = edge.confidence >= confidenceThreshold;
       const matchesSource = selectedSources.includes(edge.sourceProvenance) || 
                             edge.sourceProvenance === 'correlation_engine' || 
                             edge.sourceProvenance === 'manual_intake';
+      const matchesTime = isVisibleInTime(edge.timestamp);
       const sourceExists = filteredNodes.some((n) => n.id === edge.source);
       const targetExists = filteredNodes.some((n) => n.id === edge.target);
-      return matchesConfidence && matchesSource && sourceExists && targetExists;
+      return matchesConfidence && matchesSource && matchesTime && sourceExists && targetExists;
     });
 
     const cyNodes = filteredNodes.map((n) => ({
@@ -55,7 +63,7 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
     }));
 
     return [...cyNodes, ...cyEdges];
-  }, [graphData, confidenceThreshold, selectedSources]);
+  }, [graphData, confidenceThreshold, selectedSources, timelineMaxTime]);
 
   // Re-run layout when element count changes
   useEffect(() => {
@@ -193,6 +201,9 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
           layout={{ name: 'cola' } as any}
         />
       )}
+
+      {/* Timeline Slider Overlay */}
+      <TimelineSlider />
     </div>
   );
 }

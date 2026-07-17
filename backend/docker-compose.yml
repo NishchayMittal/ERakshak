@@ -13,17 +13,39 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
   api:
     build: .
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     environment:
       DATABASE_URL: postgresql+psycopg://erakshak:erakshak_dev@db:5432/erakshak
+      REDIS_URL: redis://redis:6379/0
       JWT_SECRET: change-me
       JWT_ALGORITHM: HS256
       JWT_EXPIRE_MINUTES: 480
     ports:
       - "8000:8000"
+    volumes:
+      - ./:/app
+
+  worker:
+    build: .
+    command: celery -A app.worker.celery_app worker --loglevel=info
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql+psycopg://erakshak:erakshak_dev@db:5432/erakshak
+      REDIS_URL: redis://redis:6379/0
     volumes:
       - ./:/app

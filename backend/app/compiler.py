@@ -34,7 +34,8 @@ def serialize_graph(G: nx.MultiDiGraph) -> dict:
             "confidence": float(data.get("confidence", 1.0)),
             "sourceCount": source_count,
             "pivot": is_pivot,
-            "expand_investigation": is_pivot
+            "expand_investigation": is_pivot,
+            "timestamp": data.get("timestamp", "")
         })
 
     edges_list = []
@@ -75,7 +76,8 @@ def serialize_graph(G: nx.MultiDiGraph) -> dict:
             "relationType": relation_type,
             "confidence": float(data.get("confidence", 1.0)),
             "sourceProvenance": source_prov,
-            "shapFeatures": data.get("shapFeatures") or data.get("shap_features", {})
+            "shapFeatures": data.get("shapFeatures") or data.get("shap_features", {}),
+            "timestamp": data.get("timestamp", "")
         })
 
     return {
@@ -126,6 +128,7 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
                 node_class="identifier",
                 id=identifier.id,
                 confidence=identifier.confidence,
+                timestamp=identifier.timestamp.isoformat(),
             )
 
     # 2. Add finding nodes and edges
@@ -138,6 +141,7 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
         result_type = finding.result_type
         result_val = finding.result_value
         confidence = finding.confidence
+        timestamp_str = finding.discovered_at.isoformat()
 
         # Boost confidence based on name disambiguation anchors if present
         metadata = id_metadata.get(finding.identifier_id) or {}
@@ -207,6 +211,7 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
                         node_class="finding",
                         id=finding.id,
                         confidence=1.0,
+                        timestamp=timestamp_str,
                     )
                 G.add_edge(
                     parent_node_id,
@@ -214,6 +219,7 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
                     label="leak_ip",
                     source=source_connector,
                     confidence=1.0,
+                    timestamp=timestamp_str,
                 )
         elif result_type == "archived_page":
             payload = finding.raw_payload or {}
@@ -231,6 +237,7 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
                     node_class="finding",
                     id=finding.id,
                     confidence=float(confidence),
+                    timestamp=timestamp_str,
                 )
             G.add_edge(
                 parent_node_id,
@@ -238,6 +245,7 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
                 label=edge_label,
                 source=source_connector,
                 confidence=float(confidence),
+                timestamp=timestamp_str,
             )
 
     # 3. Add correlated edges from correlation engine
@@ -252,7 +260,8 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
                 relationType=link["relationType"],
                 sourceProvenance=link["sourceProvenance"],
                 confidence=link["confidence"],
-                shap_features=link.get("shapFeatures") or link.get("shap_features", {})
+                shap_features=link.get("shapFeatures") or link.get("shap_features", {}),
+                timestamp=link.get("timestamp") or __import__('datetime').datetime.utcnow().isoformat()
             )
 
     # 4. Pivot detection (high degree)

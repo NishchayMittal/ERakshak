@@ -373,7 +373,7 @@ export default function DossierPanel() {
   const fields = attributes.map((attr, i) => ({
     label: attr.key,
     value: attr.value,
-    redacted: i > 2, // blur after first 3 attributes
+    redacted: false,
     payload: attr.payload,
   }));
 
@@ -461,7 +461,7 @@ export default function DossierPanel() {
         color: 'var(--text-muted)', letterSpacing: '0.08em',
         flexShrink: 0,
       }}>
-        REDACTED FIELDS: CLICK TO REVEAL // AUDIT LOGGED
+        DOSSIER STATUS: COMPLETE // DATA INTEGRITY SIGNED
       </div>
 
       {/* Breach Leak Details Inspection Modal */}

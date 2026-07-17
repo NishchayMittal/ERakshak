@@ -26,7 +26,7 @@ async def redis_listener():
     except asyncio.CancelledError:
         pass
     except Exception as e:
-        logger.error(f"Redis listener failed: {e}")
+        logger.info(f"Local Environment: Redis is offline ({e}). WebSocket manager will operate in local fallback memory mode.")
 
 @router.websocket("/ws/cases/{case_id}")
 async def websocket_endpoint(websocket: WebSocket, case_id: str):

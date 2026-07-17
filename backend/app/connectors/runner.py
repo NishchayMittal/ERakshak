@@ -88,14 +88,16 @@ def _create_pivot_identifier(
     return new_ident
 
 async def publish_update(case_id: str, action: str, detail: dict):
+    message = {"action": action, "case_id": case_id, "detail": detail}
     try:
         redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
         r = await redis_async.from_url(redis_url)
-        message = {"action": action, "case_id": case_id, "detail": detail}
         await r.publish(f"case_updates:{case_id}", json.dumps(message))
         await r.aclose()
     except Exception as e:
-        logger.error(f"Failed to publish update: {e}")
+        logger.info(f"Local Environment: Redis offline. Broadcasting case update in-memory to WebSockets.")
+        from app.ws_manager import manager
+        await manager.broadcast_to_case(case_id, message)
 
 
 async def run_connectors_and_pivot(
@@ -251,8 +253,8 @@ async def run_connectors_and_pivot(
             )
             if new_ident:
                 pivots_created += 1
-                from app.worker import task_run_connectors_and_pivot
-                task_run_connectors_and_pivot.delay(
+                from app.worker import dispatch_task
+                dispatch_task(
                     identifier.case_id,
                     new_ident.id,
                     investigator_id,

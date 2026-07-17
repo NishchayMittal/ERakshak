@@ -165,8 +165,8 @@ async def submit_case_identifiers(
             detail={"identifier_id": db_id.id, "type": db_id.type.value, "normalized_value": db_id.normalized_value},
         )
 
-        from app.worker import task_run_connectors_and_pivot
-        task_run_connectors_and_pivot.delay(case_id, db_id.id, current_investigator.id, 0)
+        from app.worker import dispatch_task
+        dispatch_task(case_id, db_id.id, current_investigator.id, 0)
 
     # Pre-link multiple seeds together if 2+ given (join as confirmed root edges)
     if len(created_identifiers) >= 2:

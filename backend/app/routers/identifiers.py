@@ -69,8 +69,8 @@ async def run_connectors(
     if not identifier:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Identifier not found")
 
-    from app.worker import task_run_connectors_and_pivot
-    task_run_connectors_and_pivot.delay(identifier.case_id, identifier.id, current_investigator.id, 0)
+    from app.worker import dispatch_task
+    dispatch_task(identifier.case_id, identifier.id, current_investigator.id, 0)
     return {"status": "queued", "message": "Connectors are running in the background"}
 
 

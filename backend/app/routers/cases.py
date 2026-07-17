@@ -533,13 +533,11 @@ def export_case_pdf(
     parsed_narrative = re.sub(r'### (.*)', r'<b>\1</b>', parsed_narrative)
     parsed_narrative = parsed_narrative.replace('- ', '• ')
     parsed_narrative = parsed_narrative.replace('> [!WARNING]', '<b>[WARNING]</b>')
-    parsed_narrative = parsed_narrative.replace('> ', '<i>') # basic italic quote block
     
     for line in parsed_narrative.split('\n'):
         if line.strip():
-            # close italic tag if line started with italic
-            if line.startswith('<i>'):
-                line = line + '</i>'
+            if line.startswith('> '):
+                line = '<i>' + line[2:] + '</i>'
             story.append(Paragraph(line, meta_style))
             story.append(Spacer(1, 4))
 

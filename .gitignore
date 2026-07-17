@@ -32,3 +32,4 @@ yarn-debug.log*
 *.njsproj
 *.sln
 *.sw?
+*.pem

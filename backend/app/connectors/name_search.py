@@ -63,14 +63,22 @@ class NameSearchConnector(BaseConnector):
             }
         ) as client:
             gh_task = self._search_github(client, name, location, employer)
-            kb_task = self._search_keybase(client, name)
-            results = await asyncio.gather(gh_task, kb_task, return_exceptions=True)
+            ddg_task = self._search_duckduckgo(client, name, location, employer)
+            results = await asyncio.gather(gh_task, ddg_task, return_exceptions=True)
 
         for r in results:
             if isinstance(r, list):
                 findings.extend(r)
 
-        return findings
+        # Deduplicate by result_value
+        seen = set()
+        deduped = []
+        for f in findings:
+            if f.result_value not in seen:
+                seen.add(f.result_value)
+                deduped.append(f)
+
+        return deduped
 
     # ------------------------------------------------------------------ #
     # GitHub Search                                                         #
@@ -101,6 +109,12 @@ class NameSearchConnector(BaseConnector):
                 "https://api.github.com/search/users",
                 params={"q": query, "per_page": 5},
             )
+            if resp.status_code == 403:
+                # Rate limited — try without location/company to reduce query complexity
+                resp = await client.get(
+                    "https://api.github.com/search/users",
+                    params={"q": name, "per_page": 3},
+                )
             if resp.status_code == 422:
                 # Query too strict — retry without company qualifier
                 q_fallback = " ".join(p for p in q_parts if not p.startswith("company:"))
@@ -118,7 +132,10 @@ class NameSearchConnector(BaseConnector):
         items = data.get("items", [])
         findings: list[Finding] = []
 
-        for item in items[:5]:
+        # Pinpoint heuristic: If no anchors provided, cap at top 2 to reduce noise.
+        limit = 5 if (location or employer) else 2
+
+        for item in items[:limit]:
             login = item.get("login", "")
             if not login:
                 continue
@@ -186,136 +203,100 @@ class NameSearchConnector(BaseConnector):
         return findings
 
     # ------------------------------------------------------------------ #
-    # Keybase Search                                                        #
+    # DuckDuckGo Instant Answer — free, no auth, no rate limit            #
     # ------------------------------------------------------------------ #
-    async def _search_keybase(
+    async def _search_duckduckgo(
         self,
         client: httpx.AsyncClient,
         name: str,
+        location: str,
+        employer: str,
     ) -> list[Finding]:
         """
-        Search Keybase for the person's name.
-        Each Keybase result includes cryptographically verified proof links to
-        GitHub, Twitter, Reddit, HackerNews — these become pivot usernames.
+        Use DuckDuckGo Instant Answer API to find the person's social profiles.
+        This is completely free, no API key, no rate limit.
+
+        Strategy: build targeted queries like:
+          '{name} site:github.com'
+          '{name} site:linkedin.com'
+          '{name} site:twitter.com'
+        and extract profile links from the abstract or related topics.
         """
-        try:
-            resp = await client.get(
-                "https://keybase.io/_/api/1.0/user/search.json",
-                params={"q": name, "num_wanted": 5},
-            )
-            if resp.status_code != 200:
-                return []
-            data = resp.json()
-        except Exception:
-            return []
+        import re
+
+        # Build a contextual name query
+        context = ""
+        if employer:
+            context = f" {employer}"
+        elif location:
+            context = f" {location}"
 
         findings: list[Finding] = []
-        components_list = data.get("list", [])
+        seen_urls: set[str] = set()
 
-        for entry in components_list[:5]:
-            components = entry.get("components", {})
-            kb_username = components.get("username", {}).get("val", "")
-            full_name = components.get("full_name", {}).get("val", "")
+        # Platforms to search via DDG (site: queries)
+        platforms = [
+            ("github.com", "github", "GitHub"),
+            ("linkedin.com/in", "linkedin", "LinkedIn"),
+            ("twitter.com", "twitter", "Twitter/X"),
+        ]
 
-            if not kb_username:
-                continue
-
-            # Only include if display name fuzzy-matches the search name
-            if full_name:
-                name_lower = name.lower()
-                full_lower = full_name.lower()
-                # At least one word of the name must appear in keybase display name
-                name_words = [w for w in name_lower.split() if len(w) > 2]
-                if not any(w in full_lower for w in name_words):
+        for site_query, site_key, site_label in platforms:
+            query = f'{name}{context} site:{site_query}'
+            try:
+                resp = await client.get(
+                    "https://api.duckduckgo.com/",
+                    params={"q": query, "format": "json", "no_html": "1", "skip_disambig": "1"},
+                    headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0"},
+                )
+                if resp.status_code != 200:
                     continue
 
-            profile_url = f"https://keybase.io/{kb_username}"
-            findings.append(Finding(
-                connector_name=self.name,
-                result_type="social_profile",
-                result_value=f"Keybase Profile: {profile_url}",
-                confidence=0.8,
-                raw_payload={
-                    "site": "keybase",
-                    "username": kb_username,
-                    "display_name": full_name,
-                    "profile_url": profile_url,
-                    "verified": True,
-                }
-            ))
+                data = resp.json()
+                
+                # Check AbstractURL — DDG's top result URL
+                abstract_url = data.get("AbstractURL", "")
+                abstract_text = data.get("Abstract", "")
+                
+                if abstract_url and site_query.split("/")[0] in abstract_url:
+                    if abstract_url not in seen_urls:
+                        seen_urls.add(abstract_url)
+                        findings.append(Finding(
+                            connector_name=self.name,
+                            result_type="social_profile",
+                            result_value=f"{site_label} Profile: {abstract_url}",
+                            confidence=0.75,
+                            raw_payload={
+                                "site": site_key,
+                                "profile_url": abstract_url,
+                                "abstract": abstract_text[:200],
+                                "source": "duckduckgo_instant",
+                            }
+                        ))
 
-            # Extract verified proof accounts — each is a real linked identity
-            proofs = components.get("websites", [])
-            # GitHub proof
-            gh = components.get("github", {})
-            if isinstance(gh, dict) and gh.get("val"):
-                gh_login = gh["val"]
-                findings.append(Finding(
-                    connector_name=self.name,
-                    result_type="social_profile",
-                    result_value=f"GitHub Profile: https://github.com/{gh_login}",
-                    confidence=0.95,
-                    raw_payload={
-                        "site": "github",
-                        "username": gh_login,
-                        "profile_url": f"https://github.com/{gh_login}",
-                        "source": "keybase_proof",
-                        "verified": True,
-                    }
-                ))
+                # Also check RelatedTopics for profile links
+                for topic in data.get("RelatedTopics", [])[:3]:
+                    if not isinstance(topic, dict):
+                        continue
+                    first_url = topic.get("FirstURL", "")
+                    text = topic.get("Text", "")
+                    if first_url and site_query.split("/")[0] in first_url:
+                        if first_url not in seen_urls:
+                            seen_urls.add(first_url)
+                            findings.append(Finding(
+                                connector_name=self.name,
+                                result_type="social_profile",
+                                result_value=f"{site_label} Profile: {first_url}",
+                                confidence=0.65,
+                                raw_payload={
+                                    "site": site_key,
+                                    "profile_url": first_url,
+                                    "text": text[:200],
+                                    "source": "duckduckgo_related",
+                                }
+                            ))
 
-            # Twitter proof
-            tw = components.get("twitter", {})
-            if isinstance(tw, dict) and tw.get("val"):
-                tw_handle = tw["val"]
-                findings.append(Finding(
-                    connector_name=self.name,
-                    result_type="social_profile",
-                    result_value=f"Twitter/X Profile: https://twitter.com/{tw_handle}",
-                    confidence=0.95,
-                    raw_payload={
-                        "site": "twitter",
-                        "username": tw_handle,
-                        "profile_url": f"https://twitter.com/{tw_handle}",
-                        "source": "keybase_proof",
-                        "verified": True,
-                    }
-                ))
-
-            # Reddit proof
-            rd = components.get("reddit", {})
-            if isinstance(rd, dict) and rd.get("val"):
-                rd_handle = rd["val"]
-                findings.append(Finding(
-                    connector_name=self.name,
-                    result_type="social_profile",
-                    result_value=f"Reddit Profile: https://www.reddit.com/user/{rd_handle}",
-                    confidence=0.95,
-                    raw_payload={
-                        "site": "reddit",
-                        "username": rd_handle,
-                        "profile_url": f"https://www.reddit.com/user/{rd_handle}",
-                        "source": "keybase_proof",
-                        "verified": True,
-                    }
-                ))
-
-            # HackerNews proof
-            hn = components.get("hackernews", {})
-            if isinstance(hn, dict) and hn.get("val"):
-                hn_handle = hn["val"]
-                findings.append(Finding(
-                    connector_name=self.name,
-                    result_type="social_profile",
-                    result_value=f"HackerNews Profile: https://news.ycombinator.com/user?id={hn_handle}",
-                    confidence=0.95,
-                    raw_payload={
-                        "site": "hackernews",
-                        "username": hn_handle,
-                        "profile_url": f"https://news.ycombinator.com/user?id={hn_handle}",
-                        "source": "keybase_proof",
-                        "verified": True,
-                    }
-                ))
+            except Exception:
+                continue
 
         return findings

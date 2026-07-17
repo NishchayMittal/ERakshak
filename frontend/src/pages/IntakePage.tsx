@@ -82,14 +82,7 @@ export default function IntakePage() {
   };
 
   // Simulated visual intake pipeline sequence
-  const handleRunAnalysis = async () => {
-    if (seeds.length === 0) {
-      showToast('Please register at least one seed identifier first', 'error');
-      return;
-    }
-
-    if (!caseId) return;
-
+  const executePipeline = async (metadataAnchors?: { city: string; age: string; employer: string }) => {
     setSubmitting(true);
     setPipelineProgress(0);
     setActivePhase(0);
@@ -101,11 +94,18 @@ export default function IntakePage() {
 
     // Trigger API request immediately in the background
     const apiCallPromise = (async () => {
-      const payload = seeds.map(s => ({
-        type: s.type,
-        rawValue: s.value,
-      }));
-      return submitIdentifiers(caseId, payload);
+      const payload = seeds.map(s => {
+        const item: any = { type: s.type, rawValue: s.value };
+        if (s.type === 'name' && metadataAnchors) {
+          item.metadata = { 
+            location: metadataAnchors.city, 
+            employer: metadataAnchors.employer, 
+            age: metadataAnchors.age 
+          };
+        }
+        return item;
+      });
+      return submitIdentifiers(caseId!, payload);
     })();
 
     // Animation interval (4.8 seconds total duration)
@@ -130,18 +130,13 @@ export default function IntakePage() {
         clearInterval(interval);
         
         try {
-          const res = await apiCallPromise;
+          await apiCallPromise;
           setPipelineProgress(null);
           setSubmitting(false);
 
-          if (res.ambiguous) {
-            const nameSeed = seeds.find(s => s.type === 'name');
-            setAmbiguousName(nameSeed ? nameSeed.value : 'submitted name');
-            setIsDisambiguateOpen(true);
-          } else {
-            showToast('OSINT source connectors compiled. Correlation map compiled.', 'success');
-            navigate(`/cases/${caseId}/entities/n1`);
-          }
+          showToast('OSINT source connectors compiled. Correlation map compiled.', 'success');
+          const firstSeed = seeds[0] ? encodeURIComponent(seeds[0].value.trim().toLowerCase()) : 'n1';
+          navigate(`/cases/${caseId}/entities/${firstSeed}`);
         } catch (err) {
           console.error(err);
           setPipelineProgress(null);
@@ -152,12 +147,32 @@ export default function IntakePage() {
     }, 240);
   };
 
+  const handleRunAnalysis = async () => {
+    if (seeds.length === 0) {
+      showToast('Please register at least one seed identifier first', 'error');
+      return;
+    }
+
+    if (!caseId) return;
+
+    // Intercept if there's a name identifier to collect anchors FIRST
+    const nameSeed = seeds.find(s => s.type === 'name');
+    if (nameSeed) {
+      setAmbiguousName(nameSeed.value);
+      setIsDisambiguateOpen(true);
+      return;
+    }
+
+    // Otherwise, execute pipeline normally without metadata
+    executePipeline();
+  };
+
   const handleDisambiguationSubmit = (anchors: { city: string; age: string; employer: string }) => {
     setIsDisambiguateOpen(false);
     showToast(`Anchors registered: [${anchors.city}, ${anchors.employer}]. Correlation pipeline active.`, 'success');
-    if (caseId) {
-      navigate(`/cases/${caseId}/entities/n1`);
-    }
+    
+    // Execute pipeline with the collected anchors
+    executePipeline(anchors);
   };
 
   return (

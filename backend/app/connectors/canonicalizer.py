@@ -147,6 +147,12 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
         if uname and len(uname) >= 2:
             return IdentifierType.username, uname
 
+    # 3b. Check for commit_email findings → pivot to email
+    if result_type == "commit_email" and isinstance(payload, dict):
+        email = payload.get("email", "")
+        if email and "@" in email:
+            return IdentifierType.email, email.strip().lower()
+
     # 4. Look for profile links to extract usernames
     # Matches paths like github.com/username, reddit.com/user/username etc.
     profile_matches = re.findall(
@@ -154,14 +160,10 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
         r'github\.com'
         r'|reddit\.com/user'
         r'|linktr\.ee'
-        r'|hub\.docker\.com/v2/users'
-        r'|hub\.docker\.com/u'
-        r'|api\.chess\.com/pub/player'
-        r'|chess\.com/member'
         r'|keybase\.io'
-        r'|scribd\.com'
-        r'|letterboxd\.com'
         r'|twitter\.com'
+        r'|instagram\.com'
+        r'|patreon\.com'
         r'|news\.ycombinator\.com/user\?id='
         r')/([a-zA-Z0-9_.-]+)',
         search_text, re.IGNORECASE

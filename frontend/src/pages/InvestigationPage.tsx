@@ -31,7 +31,7 @@ export default function InvestigationPage() {
   }, [caseId, entityId, loadEntityGraph, clearGraph, selectCase]);
 
   const handleSelectNode = (selectedNodeId: string) => {
-    if (caseId) navigate(`/cases/${caseId}/entities/${selectedNodeId}`);
+    if (caseId) navigate(`/cases/${caseId}/entities/${encodeURIComponent(selectedNodeId)}`);
   };
 
   // Map uiStore tab keys to display tabs

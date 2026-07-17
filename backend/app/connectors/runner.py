@@ -11,60 +11,131 @@ from app.normalize import normalize
 
 logger = logging.getLogger(__name__)
 
+# Common email prefixes to probe when a domain is searched
+DOMAIN_EMAIL_PROBES = ("admin", "info", "contact", "support", "hello", "webmaster")
+
+# Maximum number of pivoted identifiers per depth level (prevents explosion)
+MAX_PIVOTS_PER_LEVEL = 10
+
+
+def _identifier_exists(db: Session, case_id: str, id_type: IdentifierType, normalized: str) -> bool:
+    """Check if an identifier already exists in this case."""
+    return db.query(Identifier).filter(
+        Identifier.case_id == case_id,
+        Identifier.type == id_type,
+        Identifier.normalized_value == normalized
+    ).first() is not None
+
+
+def _create_pivot_identifier(
+    db: Session,
+    case_id: str,
+    investigator_id: str,
+    id_type: IdentifierType,
+    raw_value: str,
+    normalized_value: str,
+    confidence: float,
+    source: str,
+    metadata: dict | None = None,
+) -> Identifier | None:
+    """Create a new pivoted identifier if it doesn't already exist. Returns None if duplicate."""
+    if _identifier_exists(db, case_id, id_type, normalized_value):
+        return None
+
+    new_ident = Identifier(
+        type=id_type,
+        raw_value=raw_value,
+        normalized_value=normalized_value,
+        confidence=confidence,
+        source=source,
+        case_id=case_id,
+        investigator_id=investigator_id,
+        identifier_metadata=metadata,
+    )
+    db.add(new_ident)
+    db.commit()
+    db.refresh(new_ident)
+
+    log_action(
+        db,
+        "identifier.create",
+        investigator_id=investigator_id,
+        case_id=case_id,
+        detail={
+            "identifier_id": new_ident.id,
+            "type": new_ident.type.value,
+            "normalized_value": new_ident.normalized_value,
+            "source": new_ident.source,
+        },
+    )
+    return new_ident
+
 
 async def run_connectors_and_pivot(
     db: Session,
     identifier: Identifier,
     investigator_id: str,
-    depth: int = 0
+    depth: int = 0,
 ) -> list[Finding]:
     """
     Runs connectors for a given identifier, canonicalizes findings, saves them,
     and checks for pivot-back conditions (recursively up to depth 2).
-    """
-    # Auto-pivot from email to username if depth is 0
-    if identifier.type == IdentifierType.email and depth == 0:
-        username_part = identifier.normalized_value.split("@")[0]
-        # Check if username exists as an identifier in this case
-        exists = db.query(Identifier).filter(
-            Identifier.case_id == identifier.case_id,
-            Identifier.type == IdentifierType.username,
-            Identifier.normalized_value == username_part
-        ).first()
-        if not exists:
-            # Create a pivot identifier for the username
-            new_uname = Identifier(
-                type=IdentifierType.username,
-                raw_value=username_part,
-                normalized_value=username_part,
-                confidence=0.9,
-                source="pivot:email_split",
-                case_id=identifier.case_id,
-                investigator_id=investigator_id
-            )
-            db.add(new_uname)
-            db.commit()
-            db.refresh(new_uname)
-            # Schedule connectors for it
-            asyncio.create_task(
-                run_connectors_and_pivot_background(
-                    identifier.case_id,
-                    new_uname.id,
-                    investigator_id,
-                    depth + 1
-                )
-            )
 
+    Smart Cross-Type Pivoting chains:
+      Domain  →  WHOIS email  →  breach lookup + username scan
+      Domain  →  DNS A record →  (future: IP geolocation, Shodan)
+      Username →  GitHub commit email  →  breach lookup
+      Email   →  username split  →  username enumeration
+      Domain  →  common email probes (admin@, info@) → breach lookup
+    """
+    pivot_tasks: list[asyncio.Task] = []
+
+    # ─── Cross-type pivot: Email → Username (works at ALL depths now) ───
+    if identifier.type == IdentifierType.email:
+        username_part = identifier.normalized_value.split("@")[0]
+        if len(username_part) >= 3:
+            new_uname = _create_pivot_identifier(
+                db, identifier.case_id, investigator_id,
+                IdentifierType.username, username_part, username_part,
+                confidence=0.9, source="pivot:email_split",
+            )
+            if new_uname:
+                pivot_tasks.append(asyncio.create_task(
+                    run_connectors_and_pivot_background(
+                        identifier.case_id, new_uname.id,
+                        investigator_id, depth + 1,
+                    )
+                ))
+
+    # ─── Cross-type pivot: Domain → Common Email Probes ───
+    # Only at depth 0 to avoid unbounded expansion
+    if identifier.type == IdentifierType.domain and depth == 0:
+        domain = identifier.normalized_value
+        for prefix in DOMAIN_EMAIL_PROBES:
+            probe_email = f"{prefix}@{domain}"
+            new_email = _create_pivot_identifier(
+                db, identifier.case_id, investigator_id,
+                IdentifierType.email, probe_email, probe_email,
+                confidence=0.6, source="pivot:domain_email_probe",
+            )
+            if new_email:
+                pivot_tasks.append(asyncio.create_task(
+                    run_connectors_and_pivot_background(
+                        identifier.case_id, new_email.id,
+                        investigator_id, depth + 1,
+                    )
+                ))
+
+    # ─── Run connectors for this identifier ───
     connectors = registry.for_type(identifier.type)
     if not connectors:
         return []
 
-    # 1. Run connectors concurrently
     async def invoke(connector):
         try:
             raw_res = await connector.run(
                 identifier.normalized_value,
-                metadata=identifier.identifier_metadata or {}
+                metadata=identifier.identifier_metadata or {},
             )
             return connector, raw_res
         except Exception as e:
@@ -73,12 +144,11 @@ async def run_connectors_and_pivot(
 
     results = await asyncio.gather(*(invoke(c) for c in connectors))
 
-    # 2. Canonicalize and save findings
+    # ─── Canonicalize and save findings ───
     db_findings: list[Finding] = []
     for connector, raw_results in results:
-        # Canonicalize raw results
         canonicalized_results = canonicalize_findings(raw_results)
-        
+
         connector_db_findings = []
         for res in canonicalized_results:
             finding = Finding(
@@ -92,11 +162,11 @@ async def run_connectors_and_pivot(
             db.add(finding)
             connector_db_findings.append(finding)
             db_findings.append(finding)
-            
+
         db.commit()
         for f in connector_db_findings:
             db.refresh(f)
-            
+
         log_action(
             db,
             "connector.run",
@@ -105,65 +175,44 @@ async def run_connectors_and_pivot(
             detail={
                 "identifier_id": identifier.id,
                 "connector": connector.name,
-                "result_count": len(canonicalized_results)
+                "result_count": len(canonicalized_results),
             },
         )
 
-    # 3. Pivot-Back Loop Check (Recursion depth limit of 2)
+    # ─── Pivot-Back Loop: extract new identifiers from findings ───
     if depth < 2:
+        pivots_created = 0
         for f in db_findings:
-            # Check high confidence: confidence >= 0.7
-            if f.confidence >= 0.7:
-                pivot = extract_identifier_from_finding(f)
-                if pivot:
-                    p_type, p_value = pivot
-                    p_normalized = normalize(p_value, p_type)
-                    
-                    # Check if it already exists as an identifier in this case
-                    exists = db.query(Identifier).filter(
-                        Identifier.case_id == identifier.case_id,
-                        Identifier.type == p_type,
-                        Identifier.normalized_value == p_normalized
-                    ).first()
-                    
-                    if not exists:
-                        # Insert new identifier
-                        new_ident = Identifier(
-                            type=p_type,
-                            raw_value=p_value,
-                            normalized_value=p_normalized,
-                            confidence=f.confidence,
-                            source=f"pivot:{f.connector_name}",
-                            case_id=identifier.case_id,
-                            investigator_id=investigator_id
-                        )
-                        db.add(new_ident)
-                        db.commit()
-                        db.refresh(new_ident)
-                        
-                        log_action(
-                            db,
-                            "identifier.create",
-                            investigator_id=investigator_id,
-                            case_id=identifier.case_id,
-                            detail={
-                                "identifier_id": new_ident.id,
-                                "type": new_ident.type.value,
-                                "normalized_value": new_ident.normalized_value,
-                                "source": new_ident.source
-                            },
-                        )
-                        
-                        # Asynchronously trigger connectors for the new identifier (depth + 1)
-                        asyncio.create_task(
-                            run_connectors_and_pivot_background(
-                                identifier.case_id,
-                                new_ident.id,
-                                investigator_id,
-                                depth + 1
-                            )
-                        )
-                        
+            if pivots_created >= MAX_PIVOTS_PER_LEVEL:
+                break
+            if f.confidence < 0.7:
+                continue
+
+            pivot = extract_identifier_from_finding(f)
+            if not pivot:
+                continue
+
+            p_type, p_value = pivot
+            try:
+                p_normalized = normalize(p_value, p_type)
+            except Exception:
+                continue
+
+            new_ident = _create_pivot_identifier(
+                db, identifier.case_id, investigator_id,
+                p_type, p_value, p_normalized,
+                confidence=f.confidence,
+                source=f"pivot:{f.connector_name}",
+            )
+            if new_ident:
+                pivots_created += 1
+                pivot_tasks.append(asyncio.create_task(
+                    run_connectors_and_pivot_background(
+                        identifier.case_id, new_ident.id,
+                        investigator_id, depth + 1,
+                    )
+                ))
+
     return db_findings
 
 
@@ -171,7 +220,7 @@ async def run_connectors_and_pivot_background(
     case_id: str,
     identifier_id: str,
     investigator_id: str,
-    depth: int
+    depth: int,
 ):
     """
     Background runner that creates a new database session and executes the
@@ -181,7 +230,7 @@ async def run_connectors_and_pivot_background(
     try:
         identifier = db.query(Identifier).filter(
             Identifier.id == identifier_id,
-            Identifier.case_id == case_id
+            Identifier.case_id == case_id,
         ).first()
         if identifier:
             await run_connectors_and_pivot(db, identifier, investigator_id, depth)

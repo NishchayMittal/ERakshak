@@ -70,27 +70,69 @@ function RiskGauge({ pct }: { pct: number }) {
   );
 }
 
-// Field row with optional redaction blur
+// Field row with optional redaction blur and detail view callback
 interface FieldProps {
   label: string;
   value: string;
   redacted?: boolean;
+  payload?: any;
+  onViewDetails?: (payload: any) => void;
 }
 
-function Field({ label, value, redacted = false }: FieldProps) {
+function Field({ label, value, redacted = false, payload, onViewDetails }: FieldProps) {
   const [revealed, setRevealed] = useState(!redacted);
+  
+  const isLeak = label.toLowerCase() === 'leak_record';
 
   return (
     <div style={{
-      padding: '6px 0',
+      padding: '8px 0',
       borderBottom: '1px solid var(--struct-line)',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 4
     }}>
       <div style={{
-        fontFamily: 'var(--font-heading)', fontSize: 8,
-        color: 'var(--text-muted)', letterSpacing: '0.15em',
-        textTransform: 'uppercase', marginBottom: 2,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
       }}>
-        {label}
+        <div style={{
+          fontFamily: 'var(--font-heading)', fontSize: 8,
+          color: 'var(--text-muted)', letterSpacing: '0.15em',
+          textTransform: 'uppercase',
+        }}>
+          {label.replace(/_/g, ' ')}
+        </div>
+        
+        {isLeak && payload && onViewDetails && (
+          <button
+            onClick={() => onViewDetails(payload)}
+            style={{
+              background: 'rgba(244,63,94,0.1)',
+              border: '1px solid rgba(244,63,94,0.3)',
+              color: 'var(--accent-threat)',
+              fontFamily: 'var(--font-heading)',
+              fontSize: 7,
+              fontWeight: 700,
+              letterSpacing: '0.15em',
+              padding: '2px 6px',
+              cursor: 'pointer',
+              borderRadius: 2,
+              transition: 'all 0.1s linear',
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'var(--accent-threat)';
+              e.currentTarget.style.color = '#ffffff';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(244,63,94,0.1)';
+              e.currentTarget.style.color = 'var(--accent-threat)';
+            }}
+          >
+            VIEW DETAILS
+          </button>
+        )}
       </div>
       <div
         onClick={() => redacted && setRevealed((v) => !v)}
@@ -102,6 +144,7 @@ function Field({ label, value, redacted = false }: FieldProps) {
           userSelect: 'none',
           transition: 'filter 0.2s',
           letterSpacing: '0.02em',
+          wordBreak: 'break-word',
         }}
         title={redacted && !revealed ? 'Click to reveal' : undefined}
       >
@@ -111,8 +154,137 @@ function Field({ label, value, redacted = false }: FieldProps) {
   );
 }
 
+function LeakRecordField({ value, payload }: { value: string; payload: any }) {
+  const [expanded, setExpanded] = useState(false);
+  
+  const breach = payload.breach || "Unknown";
+  const year = payload.xposed_date || "Unknown";
+  const fields = payload.xposed_fields || [];
+  const risk = payload.password_risk || "unknown";
+  const desc = payload.description || "";
+  const domain = payload.domain || "";
+  const records = payload.exposed_records_count || 0;
+  const samples = payload.leak_samples || [];
+
+  return (
+    <div style={{
+      padding: '10px 0',
+      borderBottom: '1px solid var(--struct-line)',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 6
+    }}>
+      {/* Header row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{
+            fontFamily: 'var(--font-heading)', fontSize: 9, fontWeight: 700,
+            color: 'var(--accent-threat)', letterSpacing: '0.05em',
+            background: 'rgba(244,63,94,0.15)', padding: '2px 6px',
+            border: '1px solid rgba(244,63,94,0.3)', borderRadius: 2
+          }}>
+            BREACH: {breach.toUpperCase()}
+          </span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)' }}>
+            ({year})
+          </span>
+        </div>
+        {risk !== 'unknown' && (
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: 7, fontWeight: 700,
+            color: risk === 'plaintext' ? '#FF3B30' : risk === 'easytocrack' ? '#FF9500' : '#4CD964',
+            border: `1px solid ${risk === 'plaintext' ? 'rgba(255,59,48,0.3)' : risk === 'easytocrack' ? 'rgba(255,149,0,0.3)' : 'rgba(76,217,100,0.3)'}`,
+            padding: '1px 4px', borderRadius: 2, textTransform: 'uppercase',
+            background: risk === 'plaintext' ? 'rgba(255,59,48,0.05)' : risk === 'easytocrack' ? 'rgba(255,149,0,0.05)' : 'rgba(76,217,100,0.05)'
+          }}>
+            {risk} PW
+          </span>
+        )}
+      </div>
+
+      {/* Exposed Fields (Tags) */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 2 }}>
+        {fields.map((field: string) => (
+          <span key={field} style={{
+            fontFamily: 'var(--font-mono)', fontSize: 8,
+            padding: '2px 4px', background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.06)', color: 'var(--text-primary)',
+            borderRadius: 2
+          }}>
+            {field}
+          </span>
+        ))}
+      </div>
+
+      {/* Collapsible description / extra stats */}
+      {desc && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 2 }}>
+          <div 
+            onClick={() => setExpanded(!expanded)}
+            style={{
+              fontFamily: 'var(--font-heading)', fontSize: 8, color: 'var(--accent-primary)',
+              cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2,
+              userSelect: 'none'
+            }}
+          >
+            {expanded ? '▼ Hide Context' : '▶ View Breach Context & Info'}
+          </div>
+          
+          {expanded && (
+            <div style={{
+              fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)',
+              lineHeight: 1.3, background: '#04070a', border: '1px solid var(--struct-line)',
+              padding: 8, borderRadius: 2, wordBreak: 'break-word',
+              display: 'flex', flexDirection: 'column', gap: 6
+            }}>
+              <div>{desc}</div>
+
+              {/* Decrypted Raw Leak Samples */}
+              {samples.length > 0 && (
+                <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--accent-threat)', letterSpacing: '0.05em', borderBottom: '1px solid rgba(244,63,94,0.2)', paddingBottom: 2 }}>
+                    RAW COMPROMISED RECORD SAMPLES (OSINT DUMP)
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {samples.map((s: any, idx: number) => (
+                      <div key={idx} style={{
+                        background: 'rgba(255,255,255,0.02)', padding: 6, border: '1px solid rgba(255,255,255,0.04)',
+                        display: 'flex', flexDirection: 'column', gap: 2, fontFamily: 'var(--font-mono)', fontSize: 8
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#ffffff' }}>Email: {s.email}</span>
+                          <span style={{ color: 'var(--text-muted)' }}>IP: {s.ip_address}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: '#ff4d4d' }}>PWD: {s.password}</span>
+                          <span style={{ color: '#ffffff' }}>Phone: {s.phone}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 4, display: 'flex', justifyContent: 'space-between', fontSize: 8 }}>
+                <span>Records: {Number(records).toLocaleString()}</span>
+                {domain && (
+                  <a href={`https://${domain}`} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>
+                    {domain} ↗
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 export default function DossierPanel() {
   const { evidencePack, selectedEntityId, loading } = useGraphStore();
+  const [selectedBreach, setSelectedBreach] = useState<any>(null);
 
   if (loading) {
     return (
@@ -162,22 +334,32 @@ export default function DossierPanel() {
       value: f.value,
       source: f.connector,
       confidence: f.confidence,
+      payload: f.raw_payload || f.rawPayload || {},
     }));
   } else {
-    // 2. Search inside child findings values
+    // 2. Search inside child findings values or payloads
     for (const ident of evidencePack.identifiers) {
       const match = ident.findings.find(
-        (f) => f.value.toLowerCase() === selectedEntityId.toLowerCase() || f.id === selectedEntityId
+        (f) =>
+          f.value.toLowerCase() === selectedEntityId.toLowerCase() ||
+          f.id === selectedEntityId ||
+          (f.type === 'leak_record' && (f.raw_payload?.breach || '').toLowerCase() === selectedEntityId.toLowerCase())
       );
       if (match) {
-        displayName = match.value;
+        displayName = (match.type === 'leak_record' && match.raw_payload?.breach) 
+          ? `Breach: ${match.raw_payload.breach}` 
+          : match.value;
         attributes = ident.findings
-          .filter((f) => f.value.toLowerCase() === match.value.toLowerCase())
+          .filter((f) =>
+            f.value.toLowerCase() === match.value.toLowerCase() ||
+            (f.type === 'leak_record' && f.raw_payload?.breach === match.raw_payload?.breach)
+          )
           .map((f) => ({
             key: f.type,
             value: f.value,
             source: f.connector,
             confidence: f.confidence,
+            payload: f.raw_payload || f.rawPayload || {},
           }));
         break;
       }
@@ -192,6 +374,7 @@ export default function DossierPanel() {
     label: attr.key,
     value: attr.value,
     redacted: i > 2, // blur after first 3 attributes
+    payload: attr.payload,
   }));
 
   return (
@@ -246,9 +429,27 @@ export default function DossierPanel() {
             NO ATTRIBUTES INDEXED
           </div>
         ) : (
-          fields.map((f, i) => (
-            <Field key={`${f.label}-${i}`} label={f.label} value={f.value} redacted={f.redacted} />
-          ))
+          fields.map((f, i) => {
+            if (f.label.toLowerCase() === 'leak_record' && f.payload && f.payload.breach) {
+              return (
+                <LeakRecordField
+                  key={`${f.label}-${i}`}
+                  value={f.value}
+                  payload={f.payload}
+                />
+              );
+            }
+            return (
+              <Field
+                key={`${f.label}-${i}`}
+                label={f.label}
+                value={f.value}
+                redacted={f.redacted}
+                payload={f.payload}
+                onViewDetails={setSelectedBreach}
+              />
+            );
+          })
         )}
       </div>
 
@@ -262,6 +463,97 @@ export default function DossierPanel() {
       }}>
         REDACTED FIELDS: CLICK TO REVEAL // AUDIT LOGGED
       </div>
+
+      {/* Breach Leak Details Inspection Modal */}
+      {selectedBreach && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
+          zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backdropFilter: 'blur(4px)',
+        }}>
+          <div style={{
+            background: '#080c10', border: '1px solid var(--accent-threat)',
+            padding: 20, width: 420, display: 'flex', flexDirection: 'column', gap: 14,
+            boxShadow: '0 0 24px rgba(244,63,94,0.25)',
+            animation: 'scale-up 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--struct-line)', paddingBottom: 8 }}>
+              <div>
+                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: 'var(--accent-threat)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+                  BREACH REPORT: {selectedBreach.breach}
+                </div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', marginTop: 2 }}>
+                  TARGET EMAIL: {selectedBreach.email}
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedBreach(null)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Grid Metrics */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, background: '#030609', border: '1px solid var(--struct-line)', padding: 10 }}>
+              <div>
+                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>DATE OF EXPOSURE</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 650, color: '#ffffff', marginTop: 2 }}>{selectedBreach.xposed_date}</div>
+              </div>
+              <div>
+                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>RECORDS EXPOSED</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 650, color: '#ffffff', marginTop: 2 }}>{Number(selectedBreach.exposed_records_count || 0).toLocaleString()}</div>
+              </div>
+              <div>
+                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>ASSOCIATED DOMAIN</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 650, color: '#ffffff', marginTop: 2 }}>
+                  {selectedBreach.domain ? <a href={`https://${selectedBreach.domain}`} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>{selectedBreach.domain}</a> : 'N/A'}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>PASSWORD SECURITY</div>
+                <div style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700,
+                  color: selectedBreach.password_risk === 'plaintext' ? '#FF3B30' : selectedBreach.password_risk === 'easytocrack' ? '#FF9500' : '#4CD964',
+                  marginTop: 2, textTransform: 'uppercase'
+                }}>
+                  {selectedBreach.password_risk}
+                </div>
+              </div>
+            </div>
+
+            {/* Exposed Fields */}
+            <div>
+              <div style={{ fontFamily: 'var(--font-heading)', fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: 6 }}>EXPOSED DATA CLASSES</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {(selectedBreach.xposed_fields || []).map((field: string) => (
+                  <span key={field} style={{
+                    fontFamily: 'var(--font-mono)', fontSize: 8,
+                    padding: '2px 6px', background: 'rgba(255,255,255,0.05)',
+                    border: '1px solid var(--struct-line)', color: 'var(--text-primary)',
+                    borderRadius: 2
+                  }}>
+                    {field}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <div style={{ fontFamily: 'var(--font-heading)', fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: 4 }}>BREACH CONTEXT</div>
+              <div style={{
+                fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-primary)',
+                lineHeight: 1.4, background: '#030609', border: '1px solid var(--struct-line)',
+                padding: 10, overflowY: 'auto', maxHeight: 80, wordBreak: 'break-word'
+              }}>
+                {selectedBreach.description || 'No description summary available.'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

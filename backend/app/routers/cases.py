@@ -219,7 +219,7 @@ def get_entity_graph(
     return get_case_graph(case_id, db, current_investigator)
 
 
-@router.get("/{case_id}/entities/{entity_id}/profile")
+@router.get("/{case_id}/entity/profile")
 def get_entity_profile(
     case_id: str,
     entity_id: str,
@@ -264,7 +264,7 @@ def get_entity_profile(
     }
 
 
-@router.get("/{case_id}/entities/{entity_id}/timeline")
+@router.get("/{case_id}/entity/timeline")
 def get_entity_timeline(
     case_id: str,
     entity_id: str,

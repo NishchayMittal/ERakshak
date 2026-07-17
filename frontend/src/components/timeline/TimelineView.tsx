@@ -58,11 +58,18 @@ export default function TimelineView() {
   } else {
     for (const ident of evidencePack.identifiers) {
       const match = ident.findings.find(
-        (f) => f.value.toLowerCase() === selectedEntityId.toLowerCase() || f.id === selectedEntityId
+        (f) =>
+          f.value.toLowerCase() === selectedEntityId.toLowerCase() ||
+          f.id === selectedEntityId ||
+          (f.type === 'leak_record' && (f.rawPayload?.breach || '').toLowerCase() === selectedEntityId.toLowerCase())
       );
       if (match) {
         events = ident.findings
-          .filter((f) => f.value.toLowerCase() === match.value.toLowerCase() && (f.discoveredAt || f.discovered_at))
+          .filter((f) =>
+            f.value.toLowerCase() === match.value.toLowerCase() ||
+            (f.type === 'leak_record' && f.rawPayload?.breach === match.rawPayload?.breach)
+          )
+          .filter((f) => f.discoveredAt || f.discovered_at)
           .map((f) => {
             const dAt = f.discoveredAt || f.discovered_at;
             return {

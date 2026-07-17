@@ -2,11 +2,16 @@ import React from 'react';
 import { useGraphStore } from '../../state/graphStore';
 
 const sources = [
-  { id: 'whois',       label: 'WHOIS/RDAP' },
-  { id: 'crt.sh',     label: 'CRT.SH' },
-  { id: 'wayback',    label: 'WAYBACK' },
-  { id: 'sherlock',   label: 'SHERLOCK' },
-  { id: 'breach_demo', label: 'BREACH DB' },
+  { id: 'whois',               label: 'WHOIS/RDAP' },
+  { id: 'dns_resolver',        label: 'DNS' },
+  { id: 'crt.sh',             label: 'CRT.SH' },
+  { id: 'wayback',            label: 'WAYBACK' },
+  { id: 'sherlock',           label: 'SHERLOCK' },
+  { id: 'github_commit_email', label: 'GIT COMMITS' },
+  { id: 'breach_lookup',       label: 'BREACH SCAN' },
+  { id: 'phone_lookup',        label: 'PHONE SCAN' },
+  { id: 'wallet_lookup',       label: 'CRYPTO' },
+  { id: 'face_matcher',        label: 'FACE MATCH' },
 ];
 
 export default function GraphFilterBar() {

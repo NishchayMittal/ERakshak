@@ -46,19 +46,19 @@ export async function createCase(title: string, description?: string): Promise<C
 
 export async function getGraph(caseId: string, entityId: string): Promise<GraphData> {
   if (isMockMode()) return mock.getMockGraph(caseId, entityId);
-  const res = await apiClient.get(`/cases/${caseId}/entities/${entityId}/graph`);
+  const res = await apiClient.get(`/cases/${caseId}/graph`);
   return res.data;
 }
 
 export async function getProfile(caseId: string, entityId: string): Promise<ProfileData> {
   if (isMockMode()) return mock.getMockProfile(caseId, entityId);
-  const res = await apiClient.get(`/cases/${caseId}/entities/${entityId}/profile`);
+  const res = await apiClient.get(`/cases/${caseId}/entity/profile?entity_id=${encodeURIComponent(entityId)}`);
   return res.data;
 }
 
 export async function getTimeline(caseId: string, entityId: string): Promise<TimelineEntry[]> {
   if (isMockMode()) return mock.getMockTimeline(caseId, entityId);
-  const res = await apiClient.get(`/cases/${caseId}/entities/${entityId}/timeline`);
+  const res = await apiClient.get(`/cases/${caseId}/entity/timeline?entity_id=${encodeURIComponent(entityId)}`);
   return res.data;
 }
 

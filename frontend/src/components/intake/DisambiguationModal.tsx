@@ -72,7 +72,6 @@ export default function DisambiguationModal({ isOpen, onClose, onSubmit, ambiguo
                       onChange={(e) => setCity(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/50 rounded px-10 py-2.5 text-xs text-slate-200 font-mono outline-none"
                       placeholder="e.g. Ahmedabad, Mumbai"
-                      required
                     />
                   </div>
                 </div>

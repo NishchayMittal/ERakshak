@@ -58,7 +58,13 @@ def serialize_graph(G: nx.MultiDiGraph) -> dict:
             "crtsh": "crt.sh",
             "wayback_cdx": "wayback",
             "username_enumeration": "sherlock",
-            "breach_repository_demo": "breach_demo"
+            "breach_lookup": "breach_lookup",
+            "dns_resolver": "dns_resolver",
+            "github_commit_email": "github_commit_email",
+            "phone_lookup": "phone_lookup",
+            "wallet_lookup": "wallet_lookup",
+            "face_matcher": "face_matcher",
+            "breach_repository_demo": "breach_lookup",
         }
         source_prov = source_prov_map.get(source_prov, source_prov)
 
@@ -178,7 +184,14 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
             target_node_id = result_val.split("Match: ")[1].split(" (Similarity:")[0].strip()
             target_type = "person"
         elif result_type == "leak_record":
-            breach_name = result_val.split(" (Hint:")[0].strip()
+            payload = finding.raw_payload or {}
+            breach_name = payload.get("breach")
+            if not breach_name:
+                if "Compromised in " in result_val:
+                    breach_name = result_val.split("Compromised in ")[1].split(" (")[0].strip()
+                else:
+                    breach_name = result_val.split(" (")[0].strip()
+            
             target_node_id = breach_name
             target_type = "username"
             

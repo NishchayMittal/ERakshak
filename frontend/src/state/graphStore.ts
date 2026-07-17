@@ -23,7 +23,11 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   evidencePack: null,
   selectedEntityId: null,
   confidenceThreshold: 0.0,
-  selectedSources: ['whois', 'crt.sh', 'wayback', 'sherlock', 'breach_demo'],
+  selectedSources: [
+    'whois', 'crt.sh', 'wayback', 'sherlock', 'breach_demo',
+    'dns_resolver', 'github_commit_email', 'phone_lookup',
+    'wallet_lookup', 'face_matcher', 'breach_lookup'
+  ],
   loading: false,
 
   setConfidenceThreshold: (val) => set({ confidenceThreshold: val }),
@@ -43,9 +47,20 @@ export const useGraphStore = create<GraphState>((set, get) => ({
         getGraph(caseId, entityId),
         getEvidencePack(caseId),
       ]);
+      
+      // Auto-resolve 'n1' or nonexistent entityId to the first available node in the graph
+      let resolvedEntityId = entityId;
+      if (graph && graph.nodes && graph.nodes.length > 0) {
+        const hasSelected = graph.nodes.some((n) => n.id === entityId);
+        if (!hasSelected || entityId === 'n1') {
+          resolvedEntityId = graph.nodes[0].id;
+        }
+      }
+
       set({
         graphData: graph,
         evidencePack: evidence,
+        selectedEntityId: resolvedEntityId,
       });
     } catch (err) {
       console.error('Failed to load entity graph data:', err);

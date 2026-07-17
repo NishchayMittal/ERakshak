@@ -48,6 +48,7 @@ class Case(Base):
     status: Mapped[str] = mapped_column(String, default="open", nullable=False)
     lead_investigator_id: Mapped[str] = mapped_column(String, ForeignKey("investigators.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     lead_investigator = relationship("Investigator", back_populates="led_cases")
     identifiers = relationship("Identifier", back_populates="case")
@@ -97,6 +98,8 @@ class AuditLog(Base):
     action: Mapped[str] = mapped_column(String, nullable=False)
     detail: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    signature: Mapped[str | None] = mapped_column(String, nullable=True)
 
     investigator = relationship("Investigator", back_populates="audit_logs")
     case = relationship("Case", back_populates="audit_logs")

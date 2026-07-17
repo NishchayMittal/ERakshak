@@ -453,7 +453,10 @@ def export_case_json(
     db: Session = Depends(get_db),
     current_investigator: Investigator = Depends(get_current_investigator)
 ):
-    return compile_evidence_pack(case_id, db, current_investigator.id)
+    evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
+    from app.crypto import sign_payload
+    evidence_pack["digital_signature"] = sign_payload(evidence_pack)
+    return evidence_pack
 
 
 @router.get("/{case_id}/export/csv")
@@ -567,6 +570,15 @@ def export_case_pdf(
     else:
         story.append(Paragraph("No notes added to this case yet.", meta_style))
 
+    story.append(Spacer(1, 20))
+    story.append(Paragraph(f"<b>Digital Signature (e-Rakshak Audit)</b>", styles['Heading2']))
+    story.append(Spacer(1, 8))
+    
+    from app.crypto import sign_payload
+    sig = sign_payload(evidence_pack)
+    sig_style = ParagraphStyle('SigStyle', parent=styles['Normal'], fontName='Courier', fontSize=7)
+    story.append(Paragraph(sig, sig_style))
+
     doc.build(story)
     buffer.seek(0)
     
@@ -598,3 +610,25 @@ def delete_case(
     db.commit()
 
     return None
+
+class RetentionPayload(BaseModel):
+    days: int
+
+@router.patch("/{case_id}/retention", response_model=CaseOut)
+def set_retention(
+    case_id: str,
+    payload: RetentionPayload,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+        
+    from datetime import datetime, timedelta, timezone
+    case.expires_at = datetime.now(timezone.utc) + timedelta(days=payload.days)
+    db.commit()
+    db.refresh(case)
+    
+    log_action(db, "case.set_retention", investigator_id=current_investigator.id, case_id=case.id, detail={"days": payload.days, "expires_at": case.expires_at.isoformat()})
+    return case

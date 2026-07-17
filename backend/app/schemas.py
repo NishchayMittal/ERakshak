@@ -174,4 +174,5 @@ class EvidencePackOut(BaseModel):
     identifiers: list[EvidenceIdentifierOut]
     notes: list[CaseNoteOut]
     graph: EvidenceGraph
+    digital_signature: str | None = None
 

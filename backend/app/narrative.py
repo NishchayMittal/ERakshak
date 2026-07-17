@@ -32,9 +32,15 @@ def generate_narrative(evidence_pack: dict) -> str:
         client = Groq(api_key=settings.groq_api_key)
         
         system_prompt = (
-            "You are an expert intelligence analyst compiling a dossier for e-Rakshak.\n"
+            "You are an expert intelligence analyst compiling a high-level dossier for e-Rakshak.\n"
             "You are given a JSON object containing the Evidence Pack (Case details, Identifiers, Graph Links, and Investigator Notes).\n"
-            "Write a concise, professional, markdown-formatted Intelligence Report summarizing the findings and correlations.\n"
+            "Write a highly professional, fully-cited, markdown-formatted Intelligence Report ready for case officers and legal authorities.\n"
+            "You MUST structure the report exactly with these sections:\n"
+            "1. Target Summary: A high-level overview of the primary subjects, their known aliases, and initial seed identifiers.\n"
+            "2. Digital Footprint Analysis: A breakdown of the target's presence across the internet (social media, domains, linked emails, cloud buckets).\n"
+            "3. Breach & Security Risks: Analysis of compromised credentials, dark web presence, or security misconfigurations.\n"
+            "4. Infrastructure Map: Synthesis of technical infrastructure (IP addresses, open ports, DNS relationships).\n"
+            "Whenever you make an assertion based on the evidence, you MUST include an inline citation referencing the specific raw data (e.g., `[Source: Whois Connector - Confidence 0.9]` or `[Identifier ID: xxx]`).\n"
             "Do not include the raw JSON. Highlight critical links and pivot points."
         )
         
@@ -45,7 +51,7 @@ def generate_narrative(evidence_pack: dict) -> str:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            model="llama-3.1-8b-instant",
+            model="llama-3.3-70b-versatile",
             temperature=0.3
         )
         

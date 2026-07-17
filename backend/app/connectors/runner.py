@@ -14,6 +14,20 @@ logger = logging.getLogger(__name__)
 # Common email prefixes to probe when a domain is searched
 DOMAIN_EMAIL_PROBES = ("admin", "info", "contact", "support", "hello", "webmaster")
 
+
+async def _verify_gravatar_email(email: str) -> bool:
+    """Passively checks if an email is registered on Gravatar."""
+    import hashlib
+    import httpx
+    md5 = hashlib.md5(email.encode('utf-8')).hexdigest()
+    url = f"https://www.gravatar.com/avatar/{md5}?d=404"
+    try:
+        async with httpx.AsyncClient(timeout=3.0, follow_redirects=True) as client:
+            res = await client.head(url)
+            return res.status_code == 200
+    except Exception:
+        return False
+
 # Maximum number of pivoted identifiers per depth level (prevents explosion)
 MAX_PIVOTS_PER_LEVEL = 10
 
@@ -111,20 +125,30 @@ async def run_connectors_and_pivot(
     # Only at depth 0 to avoid unbounded expansion
     if identifier.type == IdentifierType.domain and depth == 0:
         domain = identifier.normalized_value
-        for prefix in DOMAIN_EMAIL_PROBES:
-            probe_email = f"{prefix}@{domain}"
-            new_email = _create_pivot_identifier(
-                db, identifier.case_id, investigator_id,
-                IdentifierType.email, probe_email, probe_email,
-                confidence=0.6, source="pivot:domain_email_probe",
-            )
-            if new_email:
-                pivot_tasks.append(asyncio.create_task(
-                    run_connectors_and_pivot_background(
-                        identifier.case_id, new_email.id,
-                        investigator_id, depth + 1,
-                    )
-                ))
+        
+        # Concurrently verify which email probes actually exist on Gravatar
+        async def verify_probe(prefix: str):
+            email = f"{prefix}@{domain}"
+            active = await _verify_gravatar_email(email)
+            return prefix, active
+
+        probe_statuses = await asyncio.gather(*(verify_probe(p) for p in DOMAIN_EMAIL_PROBES))
+
+        for prefix, is_active in probe_statuses:
+            if is_active:
+                probe_email = f"{prefix}@{domain}"
+                new_email = _create_pivot_identifier(
+                    db, identifier.case_id, investigator_id,
+                    IdentifierType.email, probe_email, probe_email,
+                    confidence=0.85, source="pivot:domain_email_inference",
+                )
+                if new_email:
+                    pivot_tasks.append(asyncio.create_task(
+                        run_connectors_and_pivot_background(
+                            identifier.case_id, new_email.id,
+                            investigator_id, depth + 1,
+                        )
+                    ))
 
     # ─── Run connectors for this identifier ───
     connectors = registry.for_type(identifier.type)

@@ -19,6 +19,8 @@ export default function IdentifierChip({ id, type, rawValue, onDelete }: Identif
     domain: 'bg-purple-950/40 border-purple-800/40 text-purple-300',
     wallet: 'bg-amber-950/40 border-amber-800/40 text-amber-300',
     photo: 'bg-teal-950/40 border-teal-800/40 text-teal-300',
+    ip: 'bg-orange-950/40 border-orange-800/40 text-orange-300',
+    other: 'bg-slate-950/40 border-slate-800/40 text-slate-350',
   };
 
   return (

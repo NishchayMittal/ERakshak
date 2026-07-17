@@ -10,6 +10,7 @@ DOMAIN_RE = re.compile(r"^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$")
 USERNAME_RE = re.compile(r"^@?[A-Za-z0-9_.]{3,64}$")
 ETH_RE = re.compile(r"^0x[a-fA-F0-9]{40}$")
 BTC_RE = re.compile(r"^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$")
+IP_RE = re.compile(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$")
 
 
 def detect_type(raw_value: str) -> IdentifierType:
@@ -20,6 +21,9 @@ def detect_type(raw_value: str) -> IdentifierType:
 
     if EMAIL_RE.match(value):
         return IdentifierType.email
+
+    if IP_RE.match(value):
+        return IdentifierType.ip
 
     try:
         parsed = phonenumbers.parse(value, "IN")
@@ -47,6 +51,9 @@ def normalize(raw_value: str, id_type: IdentifierType) -> str:
     value = raw_value.strip()
     if id_type in {IdentifierType.email, IdentifierType.domain, IdentifierType.username}:
         return value.lower().lstrip("@") if id_type == IdentifierType.username else value.lower()
+
+    if id_type == IdentifierType.ip:
+        return value.strip()
 
     if id_type == IdentifierType.phone:
         parsed = phonenumbers.parse(value, "IN")

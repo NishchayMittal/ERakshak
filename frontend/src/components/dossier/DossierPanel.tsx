@@ -320,7 +320,7 @@ export default function DossierPanel() {
 
   // Resolve matching attributes from Evidence Pack
   let displayName = selectedEntityId;
-  let attributes: Array<{ key: string; value: string; source: string; confidence: number }> = [];
+  let attributes: Array<{ key: string; value: string; source: string; confidence: number; payload?: any }> = [];
 
   // 1. Direct match on identifier values
   const activeIdentifier = evidencePack.identifiers.find(

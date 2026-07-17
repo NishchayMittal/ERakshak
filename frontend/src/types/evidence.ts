@@ -9,6 +9,7 @@ export interface EvidenceFinding {
   discoveredAt?: string;
   discovered_at?: string;
   rawPayload?: any;
+  raw_payload?: any;
 }
 
 export interface EvidenceIdentifier {

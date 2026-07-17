@@ -21,6 +21,7 @@ class IdentifierType(str, Enum):
     name = "name"
     photo = "photo"
     other = "other"
+    ip = "ip"
 
 
 class Investigator(Base):

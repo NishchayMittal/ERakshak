@@ -18,6 +18,8 @@ export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
       setType('email');
     } else if (/^\+?\d[\d-\s()]{7,}\d$/.test(trimmed)) {
       setType('phone');
+    } else if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(trimmed)) {
+      setType('ip');
     } else if (/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(trimmed) || trimmed.includes('.') && !trimmed.includes(' ')) {
       setType('domain');
     } else if (/^(0x)?[0-9a-fA-F]{40}$/.test(trimmed) || /^[139][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(trimmed)) {
@@ -72,6 +74,7 @@ export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
             <option value="name">Individual Name</option>
             <option value="username">Username / Alias</option>
             <option value="domain">Domain Name / URL</option>
+            <option value="ip">IP Address</option>
             <option value="wallet">Crypto Wallet Address</option>
             <option value="photo">Photo / Face URL</option>
           </select>

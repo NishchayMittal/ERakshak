@@ -103,18 +103,82 @@ def canonicalize_findings(findings: list[Finding]) -> list[Finding]:
             )
         )
         
-    # 2. Duplicate removal: group by (connector_name, result_type, result_value)
-    # and keep the one with the highest confidence score.
-    deduped_map: dict[tuple[str, str, str], Finding] = {}
+    # --- Result Confidence Scoring (Post-Processing) ---
+    # Apply context scoring to individual findings
     for pf in processed_findings:
-        key = (pf.connector_name, pf.result_type, pf.result_value)
+        connector = pf.connector_name
+        rtype = pf.result_type
+        rval = pf.result_value
+        payload = pf.raw_payload or {}
+
+        # GitHub Profile boost
+        if "github.com" in rval or (isinstance(payload, dict) and payload.get("site") == "github"):
+            repos = payload.get("public_repos") or len(payload.get("repos", []))
+            followers = payload.get("followers", 0)
+            if repos > 0 or followers > 0:
+                pf.confidence = min(1.0, pf.confidence + 0.1)
+
+        # Keybase Profile boost
+        elif "keybase.io" in rval or (isinstance(payload, dict) and payload.get("site_name") == "Keybase"):
+            pf.confidence = min(0.98, pf.confidence + 0.1)
+
+        # Empty Patreon/Linktree check
+        elif ("patreon.com" in rval or "linktr.ee" in rval) and isinstance(payload, dict):
+            if not payload.get("bio") and not payload.get("display_name"):
+                pf.confidence = max(0.5, pf.confidence - 0.2)
+
+    # Count breach lookup exposures
+    breach_findings = [f for f in processed_findings if f.connector_name == "breach_lookup"]
+    if len(breach_findings) > 5:
+        for f in breach_findings:
+            f.confidence = 1.0  # Flag high risk
+
+    # 2. Global cross-connector duplicate removal: group by (result_type, result_value)
+    # and keep the one with the highest confidence score, merging sources and payloads.
+    deduped_map: dict[tuple[str, str], Finding] = {}
+    for pf in processed_findings:
+        key = (pf.result_type, pf.result_value)
         if key in deduped_map:
-            if pf.confidence > deduped_map[key].confidence:
-                deduped_map[key] = pf
+            existing = deduped_map[key]
+            # Merge connector names
+            connectors = set(existing.connector_name.split(", "))
+            connectors.add(pf.connector_name)
+            existing.connector_name = ", ".join(sorted(connectors))
+            # Keep max confidence
+            existing.confidence = max(existing.confidence, pf.confidence)
+            # Merge payloads
+            if pf.raw_payload:
+                if not existing.raw_payload:
+                    existing.raw_payload = {}
+                existing.raw_payload = {**existing.raw_payload, **pf.raw_payload}
         else:
             deduped_map[key] = pf
             
     return list(deduped_map.values())
+
+
+def is_public_ip(ip: str) -> bool:
+    """Checks if an IPv4 address is a valid public IP."""
+    try:
+        parts = list(map(int, ip.split('.')))
+        if len(parts) != 4:
+            return False
+        # Private ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, 169.254.0.0/16
+        if parts[0] == 10:
+            return False
+        if parts[0] == 172 and (16 <= parts[1] <= 31):
+            return False
+        if parts[0] == 192 and parts[1] == 168:
+            return False
+        if parts[0] == 127:
+            return False
+        if parts[0] == 169 and parts[1] == 254:
+            return False
+        if parts[0] >= 224:
+            return False
+        return True
+    except Exception:
+        return False
 
 
 import json
@@ -131,30 +195,47 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
     # Text to search for identifiers (includes result value and raw json payload)
     search_text = f"{val} {json.dumps(payload) if isinstance(payload, (dict, list)) else str(payload)}"
     
-    # 1. Look for email addresses in the finding text/payload
+    # 1. Look for IP A-records first to trigger IP pivots
+    if result_type == "dns_a_record":
+        ips = [ip.strip() for ip in val.split(",") if ip.strip()]
+        for ip in ips:
+            if is_public_ip(ip):
+                return IdentifierType.ip, ip
+
+    # 1b. Look for general IPv4 matches (excluding private/loopback)
+    ip_matches = re.findall(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', search_text)
+    if ip_matches:
+        for ip in ip_matches:
+            if is_public_ip(ip):
+                return IdentifierType.ip, ip
+
+    # 2. Look for email addresses in the finding text/payload
     email_matches = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', search_text)
     if email_matches:
         return IdentifierType.email, email_matches[0].strip().lower()
         
-    # 2. Look for phone numbers in E.164-like format (e.g., +919876543210)
-    phone_matches = re.findall(r'\+?[1-9]\d{9,14}', search_text)
-    if phone_matches:
-        return IdentifierType.phone, phone_matches[0].strip()
+    # 3. Look for phone numbers in E.164-like format (e.g., +919876543210)
+    if "wayback" not in finding.connector_name.lower():
+        phone_matches = re.findall(r'\+?[1-9]\d{9,14}', search_text)
+        if phone_matches:
+            val_match = phone_matches[0].strip()
+            # Exclude year/timestamp prefixes like 1999... or 2005...
+            if not (len(val_match) >= 12 and (val_match.startswith("19") or val_match.startswith("20"))):
+                return IdentifierType.phone, val_match
             
-    # 3. Check raw_payload for a direct username field (set by NameSearchConnector, UsernameEnumConnector)
+    # 4. Check raw_payload for a direct username field
     if isinstance(payload, dict) and payload.get("username"):
         uname = str(payload["username"]).strip().lstrip("@")
         if uname and len(uname) >= 2:
             return IdentifierType.username, uname
 
-    # 3b. Check for commit_email findings → pivot to email
+    # 4b. Check for commit_email findings → pivot to email
     if result_type == "commit_email" and isinstance(payload, dict):
         email = payload.get("email", "")
         if email and "@" in email:
             return IdentifierType.email, email.strip().lower()
 
-    # 4. Look for profile links to extract usernames
-    # Matches paths like github.com/username, reddit.com/user/username etc.
+    # 5. Look for profile links to extract usernames
     profile_matches = re.findall(
         r'https?://(?:www\.)?(?:'
         r'github\.com'
@@ -173,7 +254,7 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
         if username and len(username) >= 2:
             return IdentifierType.username, username
 
-    # 4. Map explicit result types
+    # 6. Map explicit result types
     if result_type == "registrant_email":
         return IdentifierType.email, val.strip().lower()
         
@@ -181,7 +262,6 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
         return IdentifierType.phone, val.strip()
         
     elif result_type == "registrant_name":
-        # Extract registrant name. Filter out garbage text.
         name = val.split(" (")[0].strip()
         if name and "profile" not in name.lower() and "leak" not in name.lower():
             return IdentifierType.name, name

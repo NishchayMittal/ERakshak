@@ -13,6 +13,10 @@ from app.connectors.phone_lookup import PhoneLookupConnector
 from app.connectors.wallet_lookup import WalletLookupConnector
 from app.connectors.dns_resolver import DnsResolverConnector
 from app.connectors.github_commits import GithubCommitEmailConnector
+from app.connectors.ip_geoloc import IpGeolocConnector
+from app.connectors.shodan_idb import ShodanIdbConnector
+from app.connectors.gravatar_email import GravatarEmailConnector
+from app.connectors.pgp_lookup import PgpLookupConnector
 from app.database import Base, engine
 from app.routers import auth as auth_router
 from app.routers import cases as cases_router
@@ -46,6 +50,10 @@ registry.register(PhoneLookupConnector())
 registry.register(WalletLookupConnector())
 registry.register(DnsResolverConnector())
 registry.register(GithubCommitEmailConnector())
+registry.register(IpGeolocConnector())
+registry.register(ShodanIdbConnector())
+registry.register(GravatarEmailConnector())
+registry.register(PgpLookupConnector())
 
 
 @app.on_event("startup")

@@ -39,8 +39,14 @@ const MOCK_PIPELINE_LOGS = [
   'SYSTEM: Audit event logged to SQLite. Link weight compile finished.'
 ];
 
-export default function IntakePage() {
-  const { caseId } = useParams<{ caseId: string }>();
+interface IntakePageProps {
+  caseId?: string;
+  onPipelineComplete?: (firstSeed: string) => void;
+}
+
+export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: IntakePageProps = {}) {
+  const params = useParams<{ caseId: string }>();
+  const caseId = propCaseId || params.caseId;
   const navigate = useNavigate();
   const { activeCase, selectCase } = useCaseStore();
   const { showToast } = useUIStore();
@@ -98,9 +104,9 @@ export default function IntakePage() {
         const item: any = { type: s.type, rawValue: s.value };
         if (s.type === 'name' && metadataAnchors) {
           item.metadata = { 
-            location: metadataAnchors.city, 
-            employer: metadataAnchors.employer, 
-            age: metadataAnchors.age 
+            city: metadataAnchors.city,
+            age: metadataAnchors.age,
+            employer: metadataAnchors.employer
           };
         }
         return item;
@@ -136,7 +142,11 @@ export default function IntakePage() {
 
           showToast('OSINT source connectors compiled. Correlation map compiled.', 'success');
           const firstSeed = seeds[0] ? encodeURIComponent(seeds[0].value.trim().toLowerCase()) : 'n1';
-          navigate(`/cases/${caseId}/entities/${firstSeed}`);
+          if (onPipelineComplete) {
+            onPipelineComplete(firstSeed);
+          } else {
+            navigate(`/cases/${caseId}/entities/${firstSeed}`);
+          }
         } catch (err) {
           console.error(err);
           setPipelineProgress(null);

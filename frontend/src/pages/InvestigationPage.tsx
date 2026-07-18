@@ -16,8 +16,26 @@ import { useWebSocket } from '../hooks/useWebSocket';
 const TABS = ['DOSSIER', 'TIMELINE', 'NOTES', 'REPORT'] as const;
 type Tab = typeof TABS[number];
 
-export default function InvestigationPage() {
-  const { caseId, entityId } = useParams<{ caseId: string; entityId: string }>();
+interface InvestigationPageProps {
+  caseId?: string;
+  entityId?: string;
+  onSelectNode?: (entityId: string) => void;
+}
+
+export default function InvestigationPage({ caseId: propCaseId, entityId: propEntityId, onSelectNode }: InvestigationPageProps = {}) {
+  const params = useParams<{ caseId: string; entityId: string }>();
+  const caseId = propCaseId || params.caseId;
+
+  const [localEntityId, setLocalEntityId] = React.useState<string | undefined>(propEntityId);
+  
+  useEffect(() => {
+    if (propEntityId) {
+      setLocalEntityId(propEntityId);
+    }
+  }, [propEntityId]);
+
+  const entityId = localEntityId || params.entityId;
+
   const navigate = useNavigate();
   const { loadEntityGraph, clearGraph } = useGraphStore();
   const { activeTab, setActiveTab } = useUIStore();
@@ -35,7 +53,12 @@ export default function InvestigationPage() {
   }, [caseId, entityId, loadEntityGraph, clearGraph, selectCase]);
 
   const handleSelectNode = (selectedNodeId: string) => {
-    if (caseId) navigate(`/cases/${caseId}/entities/${encodeURIComponent(selectedNodeId)}`);
+    if (onSelectNode) {
+      onSelectNode(selectedNodeId);
+      setLocalEntityId(selectedNodeId);
+    } else if (caseId) {
+      navigate(`/cases/${caseId}/entities/${encodeURIComponent(selectedNodeId)}`);
+    }
   };
 
   // Map uiStore tab keys to display tabs

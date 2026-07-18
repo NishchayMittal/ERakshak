@@ -44,55 +44,63 @@ export default function AppShell() {
     setShowIntro(false);
   };
 
+  const isDesktopMode = location.pathname.startsWith('/cases');
+
   return (
     <>
       {/* Intro Sequence overlay */}
       {showIntro && <IntroSequence onComplete={handleIntroComplete} />}
 
-      {/* Main App Layout – grid: sidebar | [topbar / content / statusbar] */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'auto minmax(0, 1fr)',
-          gridTemplateRows: 'auto 1fr auto',
-          height: '100vh',
-          background: 'linear-gradient(160deg, #000 0%, #0D1117 50%, #131A22 100%)',
-          overflow: 'hidden',
-          fontFamily: 'var(--font-mono)',
-        }}
-      >
-        {/* ── Left Sidebar ── */}
-        <div style={{ gridColumn: '1', gridRow: '1 / 4' }}>
-          <Sidebar />
+      {isDesktopMode ? (
+        <div className="w-screen h-screen overflow-hidden bg-black relative">
+          <Outlet />
         </div>
-
-        {/* ── Top Bar ── */}
-        <div style={{ gridColumn: '2', gridRow: '1' }}>
-          <TopBar />
-        </div>
-
-        <main
+      ) : (
+        /* Main App Layout – grid: sidebar | [topbar / content / statusbar] */
+        <div
           style={{
-            gridColumn: '2', gridRow: '2',
-            position: 'relative',
-            background: 'transparent',
-            display: 'flex',
-            flexDirection: 'column',
+            display: 'grid',
+            gridTemplateColumns: 'auto minmax(0, 1fr)',
+            gridTemplateRows: 'auto 1fr auto',
+            height: '100vh',
+            background: 'linear-gradient(160deg, #000 0%, #0D1117 50%, #131A22 100%)',
             overflow: 'hidden',
+            fontFamily: 'var(--font-mono)',
           }}
         >
-          {/* Subtle cyber-grid background */}
-          <div className="cyber-grid" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
-          <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, padding: '16px 20px', boxSizing: 'border-box' }}>
-            <Outlet />
+          {/* ── Left Sidebar ── */}
+          <div style={{ gridColumn: '1', gridRow: '1 / 4' }}>
+            <Sidebar />
           </div>
-        </main>
 
-        {/* ── Status Bar ── */}
-        <div style={{ gridColumn: '2', gridRow: '3' }}>
-          <StatusBar />
+          {/* ── Top Bar ── */}
+          <div style={{ gridColumn: '2', gridRow: '1' }}>
+            <TopBar />
+          </div>
+
+          <main
+            style={{
+              gridColumn: '2', gridRow: '2',
+              position: 'relative',
+              background: 'transparent',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Subtle cyber-grid background */}
+            <div className="cyber-grid" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
+            <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, padding: '16px 20px', boxSizing: 'border-box' }}>
+              <Outlet />
+            </div>
+          </main>
+
+          {/* ── Status Bar ── */}
+          <div style={{ gridColumn: '2', gridRow: '3' }}>
+            <StatusBar />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Global Toast ── */}
       {toast && (

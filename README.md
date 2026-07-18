@@ -31,10 +31,23 @@ The system is composed of two main parts:
 - **Node.js 18+** (For the frontend)
 - **Git**
 - **Ollama** (Optional, for generating AI PDF dossiers completely for free)
+- **Redis** (If running locally without Docker)
+- **Docker & Docker Compose** (Highly Recommended for easiest setup)
 
-### 2. Backend Setup
-The backend is a FastAPI Python application.
+### 2. Recommended Setup: Docker Compose
+The easiest way to run the entire stack (API, Frontend, Redis, and Celery Worker) is using Docker.
 
+1. Build and start all services from the root directory:
+   ```bash
+   docker compose up --build
+   ```
+2. The services will be available at:
+   - **Frontend:** http://localhost:5173
+   - **Backend API:** http://localhost:8000
+
+### 3. Local Setup (Without Docker)
+
+#### Backend & Worker Setup
 1. Open a terminal and navigate to the `backend` directory:
    ```bash
    cd backend
@@ -58,17 +71,23 @@ The backend is a FastAPI Python application.
    DATABASE_URL="sqlite:///./erakshak.db"
    JWT_SECRET="your-super-secret-key-here"
    OLLAMA_BASE_URL="http://localhost:11434"
+   REDIS_URL="redis://localhost:6379/0"
    ```
-5. Start the backend server:
+5. Start **Redis** locally on port 6379.
+6. Start the Celery worker (in a new terminal, with the virtual environment activated):
    ```bash
+   cd backend
+   celery -A app.worker.celery_app worker --loglevel=info
+   ```
+7. Start the backend API (in a new terminal, with the virtual environment activated):
+   ```bash
+   cd backend
    uvicorn app.main:app --reload
    ```
    *The backend API will now be running at http://127.0.0.1:8000*
 
-### 3. Frontend Setup
-The frontend is a React application.
-
-1. Open a **new** terminal (keep the backend running in the first one) and navigate to the `frontend` directory:
+#### Frontend Setup
+1. Open a **new** terminal and navigate to the `frontend` directory:
    ```bash
    cd frontend
    ```
@@ -80,7 +99,7 @@ The frontend is a React application.
    ```bash
    npm run dev
    ```
-   *The frontend UI will automatically open in your browser at http://localhost:3000*
+   *The frontend UI will automatically open in your browser at http://localhost:5173*
 
 ### 4. Setting up the Local AI (Ollama)
 e-Rakshak uses a local, 100% free AI model to generate intelligent summaries for your PDF dossiers without requiring paid API keys.

@@ -31,7 +31,8 @@ import {
   CheckCircle,
   Link,
   ThumbsUp,
-  ThumbsDown
+  ThumbsDown,
+  Edit
 } from 'lucide-react';
 import {
   triggerModelRetrain,
@@ -97,7 +98,7 @@ const MOCK_HUD_LOGS = [
 const detectSeedType = (val: string): string => {
   const trimmed = val.trim();
   if (!trimmed) return 'email';
-  
+
   if (trimmed.includes('@')) {
     return 'email';
   } else if (/^\+?\d[\d-\s()]{7,}\d$/.test(trimmed)) {
@@ -121,7 +122,7 @@ export default function CaseDashboardPage() {
   const { showToast } = useUIStore();
   const { user, logout } = useAuth();
   const { loadEntityGraph, graphData, clearGraph } = useGraphStore();
-  
+
   const [windows, setWindows] = useState<WindowState[]>([]);
   const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
   const [maxZIndex, setMaxZIndex] = useState(10);
@@ -210,16 +211,17 @@ export default function CaseDashboardPage() {
   const [lastAccessedCaseId, setLastAccessedCaseId] = useState<string | null>(() => {
     return localStorage.getItem('er_last_accessed_case') || null;
   });
+  const [explorerSearchQuery, setExplorerSearchQuery] = useState('');
   const desktopRef = useRef<HTMLDivElement>(null);
 
   const handleZoom = (e: React.WheelEvent, caseId: string) => {
     // Zoom around center point of canvas (350, 200) with increased speed
     const zoomIntensity = 0.15;
     const currentZoom = caseZoom[caseId] || 1.0;
-    const nextZoom = e.deltaY < 0 
+    const nextZoom = e.deltaY < 0
       ? Math.min(3.0, currentZoom + zoomIntensity)
       : Math.max(0.3, currentZoom - zoomIntensity);
-    
+
     setCaseZoom(prev => ({
       ...prev,
       [caseId]: nextZoom
@@ -470,7 +472,7 @@ export default function CaseDashboardPage() {
   const loadGraphForCase = async (caseId: string, entityId: string) => {
     try {
       await loadEntityGraph(caseId, entityId);
-      
+
       // Auto positions nodes in a circle mapping
       const currentGraph = useGraphStore.getState().graphData;
       if (currentGraph && currentGraph.nodes) {
@@ -521,10 +523,10 @@ export default function CaseDashboardPage() {
     if (!lastAccessedCaseId) return;
     const zoomIntensity = 0.15;
     const currentZoom = caseZoom[lastAccessedCaseId] || 1.0;
-    const nextZoom = e.deltaY < 0 
+    const nextZoom = e.deltaY < 0
       ? Math.min(3.0, currentZoom + zoomIntensity)
       : Math.max(0.3, currentZoom - zoomIntensity);
-    
+
     setCaseZoom(prev => ({
       ...prev,
       [lastAccessedCaseId]: nextZoom
@@ -615,7 +617,7 @@ export default function CaseDashboardPage() {
           {nodes.map((n, idx) => {
             const pos = casePositions[n.id] || { x: 350, y: 200 };
             const isSeed = n.type === 'email' || n.type === 'phone' || n.type === 'username';
-            
+
             return (
               <g
                 key={n.id}
@@ -691,7 +693,7 @@ export default function CaseDashboardPage() {
       // Scale mouse movement by the zoom level to match target cursor position precisely
       const dx = (moveEvent.clientX - startX) / zoom;
       const dy = (moveEvent.clientY - startY) / zoom;
-      
+
       setNodePositionsPerCase(prev => ({
         ...prev,
         [caseId]: {
@@ -717,7 +719,7 @@ export default function CaseDashboardPage() {
   const addCaseSeed = (caseId: string) => {
     const input = caseSeedsInput[caseId] || { type: 'email', value: '' };
     if (!input.value.trim()) return;
-    
+
     const existing = casePendingSeeds[caseId] || [];
     if (existing.some(s => s.type === input.type && s.value.toLowerCase() === input.value.toLowerCase())) {
       showToast('Identifier already added', 'info');
@@ -756,7 +758,7 @@ export default function CaseDashboardPage() {
 
     // Prepare API call
     const apiPromise = submitIdentifiers(caseId, seeds.map(s => ({ type: s.type, rawValue: s.value })));
-    
+
     let progress = 0;
     const stages = [
       'INGEST: Translating native scripts...',
@@ -844,7 +846,7 @@ export default function CaseDashboardPage() {
   const handleRetrain = async () => {
     setRetrainProgress(0);
     setRetrainLogs(['BOOTSTRAP: Accessing database transaction nodes...']);
-    
+
     const apiPromise = triggerModelRetrain();
 
     let p = 0;
@@ -922,7 +924,7 @@ export default function CaseDashboardPage() {
           backgroundSize: '40px 40px'
         }}
       />
-      <div 
+      <div
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[750px] h-[750px] rounded-full filter blur-[150px] pointer-events-none opacity-20"
         style={{
           background: currentWallpaper.accentGlow,
@@ -958,7 +960,7 @@ export default function CaseDashboardPage() {
 
       {/* Wallpaper backdrop click catcher */}
       {showWallpaperMenu && (
-        <div 
+        <div
           className="fixed inset-0 z-[999]"
           onClick={() => setShowWallpaperMenu(false)}
         />
@@ -1024,7 +1026,7 @@ export default function CaseDashboardPage() {
         {/* Dynamic Case Folders */}
         {sortedCases.map(c => {
           const isAnalysisOpen = windows.some(w => w.id === `workspace-${c.caseId}`);
-          
+
           return (
             <div
               key={c.caseId}
@@ -1068,7 +1070,7 @@ export default function CaseDashboardPage() {
 
       {/* RIGHT SIDE WIDGETS HUD (Custom panels) */}
       <div className="absolute top-12 right-6 bottom-20 w-[420px] flex flex-col gap-4 pointer-events-none z-10 select-none">
-        
+
         {/* Animated Cyber Link graph */}
         <div className="w-full bg-black/40 border border-white/5 backdrop-blur-md rounded-xl p-3 flex flex-col gap-2 pointer-events-auto">
           <div className="flex items-center justify-between border-b border-white/5 pb-1">
@@ -1160,13 +1162,34 @@ export default function CaseDashboardPage() {
               onDoubleClick={() => toggleMaximize(win.id)}
               className={`h-7 px-3 flex items-center justify-between cursor-move select-none border-b ${isFocused ? 'bg-[#39ff14]/5 border-[#39ff14]/20 text-[#39ff14]' : 'bg-[#04080e]/40 border-white/5 text-gray-400'}`}
             >
-              <div className="flex items-center gap-2">
-                <Folder size={12} />
+              <div className="flex items-center gap-2 pointer-events-auto">
+                <Folder size={12} className="flex-shrink-0" />
                 <span className="text-[9px] font-bold tracking-wider uppercase truncate max-w-[400px]">
-                  {win.title}
+                  {(() => {
+                    if (win.type === 'case_workspace' && win.caseId) {
+                      const targetCase = cases.find(c => c.caseId === win.caseId);
+                      return targetCase ? `Case Workspace: ${targetCase.title}` : win.title;
+                    }
+                    return win.title;
+                  })()}
                 </span>
+                {win.type === 'case_workspace' && win.caseId && (
+                  <button
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const targetCase = cases.find(c => c.caseId === win.caseId);
+                      const title = targetCase ? targetCase.title : win.title.replace('Case Workspace: ', '');
+                      handleTriggerRename(win.caseId!, title);
+                    }}
+                    className="p-1 text-gray-400 hover:text-[#39ff14] hover:bg-white/5 transition rounded flex items-center justify-center"
+                    title="Rename Dossier"
+                  >
+                    <Edit size={10} />
+                  </button>
+                )}
               </div>
-              
+
               {/* Window controls */}
               <div className="flex items-center gap-1.5 pointer-events-auto">
                 <button
@@ -1188,7 +1211,7 @@ export default function CaseDashboardPage() {
 
             {/* Window Content */}
             <div className="flex-1 overflow-hidden relative flex flex-col p-4">
-              
+
               {/* 1. CASE WORKSPACE WINDOW (COMPLETE REVAMP) */}
               {win.type === 'case_workspace' && win.caseId && (() => {
                 const caseId = win.caseId;
@@ -1196,7 +1219,7 @@ export default function CaseDashboardPage() {
                 const activeEntity = activeEntityPerCase[caseId] || 'n1';
                 const zoom = caseZoom[caseId] || 1.0;
                 const pan = casePan[caseId] || { x: 0, y: 0 };
-                
+
                 // Fetch graph data
                 const currentGraph = graphData;
 
@@ -1225,7 +1248,7 @@ export default function CaseDashboardPage() {
 
                     {/* Tab contents */}
                     <div className="flex-1 overflow-hidden min-h-0 flex flex-col">
-                      
+
                       {/* Intake Tab */}
                       {tab === 'intake' && (
                         <div className="flex flex-col gap-4 flex-grow overflow-y-auto pr-1">
@@ -1233,7 +1256,7 @@ export default function CaseDashboardPage() {
                             {/* Input Form */}
                             <div className="bg-black/35 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
                               <h4 className="text-[10px] font-bold text-[#39ff14] border-b border-white/5 pb-1">INJECT SEARCH SEEDS</h4>
-                              
+
                               <div className="flex flex-col gap-1">
                                 <span className="text-[8px] text-gray-500 font-bold">IDENTIFIER VECTOR TYPE</span>
                                 <select
@@ -1268,9 +1291,9 @@ export default function CaseDashboardPage() {
                                       const autoType = detectSeedType(val);
                                       setCaseSeedsInput(prev => ({
                                         ...prev,
-                                        [caseId]: { 
+                                        [caseId]: {
                                           type: autoType,
-                                          value: val 
+                                          value: val
                                         }
                                       }));
                                     }}
@@ -1340,14 +1363,14 @@ export default function CaseDashboardPage() {
                       {tab === 'graph' && (
                         <div className="flex flex-1 min-height-0 overflow-hidden relative">
                           <div className="flex-grow bg-black/40 rounded-xl border border-white/5 relative overflow-hidden">
-                            
+
                             {/* Drag instructions overlay */}
                             <div className="absolute top-2 left-2 pointer-events-none text-[7.5px] text-gray-600 font-mono uppercase bg-black/60 px-2 py-1 border border-white/5">
                               DRAG NODES TO REORGANIZE // DOUBLE CLICK TO EDIT RELATION
                             </div>
 
                             {/* Network Canvas */}
-                            <svg 
+                            <svg
                               className="w-full h-full cursor-grab active:cursor-grabbing"
                               onWheel={(e) => handleZoom(e, caseId)}
                               onMouseDown={(e) => handleSvgMouseDown(e, caseId)}
@@ -1450,7 +1473,7 @@ export default function CaseDashboardPage() {
                               <span className="text-[8px] text-gray-400 font-mono">SELECTED VECTOR:</span>
                               <span className="text-[9px] font-bold text-[#39ff14] truncate font-mono uppercase bg-white/5 p-1">{activeEntity}</span>
                               <div className="h-[1px] bg-white/5" />
-                              
+
                               <button
                                 onClick={() => handleFeedback(caseId, activeEntity, 'target_match', 'confirmed')}
                                 className="w-full py-1 text-[8px] font-bold border border-[#39ff14] hover:bg-[#39ff14]/10 text-[#39ff14] flex items-center justify-center gap-1.5 uppercase"
@@ -1578,7 +1601,7 @@ export default function CaseDashboardPage() {
 
                   <div className="bg-black/35 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
                     <h4 className="text-[9px] font-bold text-[#39ff14] uppercase">MODEL TRAINING LOGS</h4>
-                    
+
                     <div className="h-32 bg-black border border-white/5 rounded p-2.5 font-mono text-[8px] text-gray-400 overflow-y-auto flex flex-col gap-0.5">
                       {retrainLogs.length === 0 ? (
                         <span className="text-gray-600 italic">No retraining logs compiled.</span>
@@ -1691,19 +1714,39 @@ export default function CaseDashboardPage() {
 
               {/* 4. DOSSIER EXPLORER */}
               {win.type === 'cases_explorer' && (
-                <div className="flex flex-col gap-4 h-full overflow-y-auto pr-1">
+                <div className="flex flex-col gap-3 h-full overflow-y-auto pr-1">
                   <div className="flex items-center justify-between border-b border-white/5 pb-2">
                     <span className="text-[10px] font-bold text-gray-300 uppercase">File Path: C://cases/list</span>
                     <button
                       onClick={handleCreateCase}
                       className="text-[8px] font-bold border border-[#39ff14]/50 hover:bg-[#39ff14]/10 text-[#39ff14] px-2 py-1 uppercase"
                     >
-                      + Initial File
+                      + Initialize File
                     </button>
                   </div>
-                  
+
+                  {/* Search Bar */}
+                  <div className="flex items-center gap-2 bg-black/40 border border-white/10 px-2.5 py-1 rounded focus-within:border-[#39ff14] transition-all w-full pointer-events-auto flex-shrink-0">
+                    <Search size={10} className="text-gray-500" />
+                    <input
+                      type="text"
+                      placeholder="SEARCH CASE FILES..."
+                      value={explorerSearchQuery}
+                      onChange={(e) => setExplorerSearchQuery(e.target.value)}
+                      className="bg-transparent border-none text-gray-200 placeholder-gray-600 text-[9px] font-mono outline-none w-full uppercase"
+                    />
+                    {explorerSearchQuery && (
+                      <button
+                        onClick={() => setExplorerSearchQuery('')}
+                        className="text-gray-500 hover:text-gray-350 text-[8px] font-bold"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-2 gap-3">
-                    {cases.map(c => (
+                    {cases.filter(c => c.title.toLowerCase().includes(explorerSearchQuery.toLowerCase())).map(c => (
                       <div
                         key={c.caseId}
                         onClick={() => {
@@ -1894,7 +1937,7 @@ export default function CaseDashboardPage() {
             </div>
             <div className="font-mono text-[10px] text-gray-400 leading-relaxed">
               ARE YOU SURE YOU WANT TO PERMANENTLY DELETE CASE <span className="text-white font-bold">"{deleteConfirmCase.title}"</span>?
-              <br/><br/>
+              <br /><br />
               THIS WILL IRREVERSIBLY ERASE ALL INGESTED IDENTIFIERS, CORRELATED SUSPECT PROFILES, AND NOTES.
             </div>
             <div className="flex justify-end gap-2.5 pt-3 border-t border-white/5 mt-2">

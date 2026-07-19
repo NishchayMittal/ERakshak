@@ -26,6 +26,60 @@ class WhoisConnector(BaseConnector):
         url = f"https://rdap.org/domain/{domain}"
         payload = await self._get_json(url)
         if not isinstance(payload, dict):
+            # Pathway 2: Active socket WHOIS on port 43 (queries the TLD registry server directly)
+            import socket
+            import re
+            tld = domain.split(".")[-1]
+            server_map = {
+                "com": "whois.verisign-grs.com",
+                "org": "whois.pir.org",
+                "net": "whois.verisign-grs.com",
+                "in": "whois.registry.in",
+                "co": "whois.nic.co",
+                "io": "whois.nic.io",
+                "dev": "whois.nic.google",
+                "app": "whois.nic.google"
+            }
+            server = server_map.get(tld, "whois.iana.org")
+            raw_text = ""
+            try:
+                # Run sync in thread pool to avoid blocking async loop
+                def get_whois():
+                    s = socket.create_connection((server, 43), timeout=3.0)
+                    s.sendall(f"{domain}\r\n".encode("utf-8"))
+                    res = b""
+                    while True:
+                        data = s.recv(4096)
+                        if not data:
+                            break
+                        res += data
+                    s.close()
+                    return res.decode("utf-8", errors="ignore")
+                
+                import asyncio
+                loop = asyncio.get_event_loop()
+                raw_text = await loop.run_in_executor(None, get_whois)
+            except Exception:
+                pass
+            
+            if raw_text:
+                findings = []
+                # Regex parsing registrar
+                reg_match = re.search(r"(?:Registrar|Sponsoring Registrar):\s*(.*)", raw_text, re.IGNORECASE)
+                if reg_match:
+                    findings.append(Finding(self.name, "registrar", reg_match.group(1).strip(), 0.9, {"socket": True}))
+                # Regex creation date
+                created_match = re.search(r"(?:Creation Date|Created On):\s*(.*)", raw_text, re.IGNORECASE)
+                if created_match:
+                    findings.append(Finding(self.name, "domain_event", f"Registration: {created_match.group(1).strip()[:10]}", 0.9, {"socket": True}))
+                # Regex expiry date
+                expiry_match = re.search(r"(?:Registry Expiry Date|Expiration Date):\s*(.*)", raw_text, re.IGNORECASE)
+                if expiry_match:
+                    findings.append(Finding(self.name, "domain_event", f"Expiration: {expiry_match.group(1).strip()[:10]}", 0.9, {"socket": True}))
+                
+                if findings:
+                    return findings
+
             return []
 
         findings = []

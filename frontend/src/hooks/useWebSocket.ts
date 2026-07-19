@@ -31,14 +31,9 @@ export function useWebSocket(caseId: string | undefined) {
       try {
         const data = JSON.parse(event.data);
         console.log('WebSocket update received:', data);
-        if (data.action === 'findings_discovered') {
-          // If we have an entity selected, reload the graph to fetch new findings
-          if (selectedEntityId) {
-            loadEntityGraph(caseId, selectedEntityId);
-          } else {
-            // If the user is just viewing the case graph, we'll reload using a case graph load function
-            // (assuming one exists, but for now we reload the entity graph if one is selected)
-          }
+        if (data.action === 'pipeline_completed') {
+          // Ingestion pipeline is fully completed: reload all findings and nodes at once
+          loadEntityGraph(caseId, selectedEntityId || 'n1');
         }
       } catch (err) {
         console.error('WebSocket message parsing error:', err);

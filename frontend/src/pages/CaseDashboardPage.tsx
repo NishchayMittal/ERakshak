@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useCaseStore } from '../state/caseStore';
+import type { GraphData } from '../types/graph';
 import { useUIStore } from '../state/uiStore';
 import { useAuth } from '../hooks/useAuth';
 import { useGraphStore } from '../state/graphStore';
+import { useWebSocket } from '../hooks/useWebSocket';
 import {
   Folder,
   Database,
@@ -129,6 +131,41 @@ export default function CaseDashboardPage() {
   const [customWallpaper, setCustomWallpaper] = useState<string | null>(null);
   const [showWallpaperMenu, setShowWallpaperMenu] = useState(false);
 
+  const activeCaseId = windows.find(w => w.id === activeWindowId && w.type === 'case_workspace')?.caseId;
+  useWebSocket(activeCaseId);
+
+  useEffect(() => {
+    if (graphData && activeCaseId) {
+      setGraphDataPerCase(prev => ({
+        ...prev,
+        [activeCaseId]: graphData
+      }));
+      
+      if (graphData.nodes) {
+        const cx = 350;
+        const cy = 200;
+        const radius = 130;
+        setNodePositionsPerCase(prev => {
+          const existing = prev[activeCaseId] || {};
+          const nextPos = { ...existing };
+          graphData.nodes.forEach((n, idx) => {
+            if (!nextPos[n.id]) {
+              const angle = (idx / graphData.nodes.length) * 2 * Math.PI;
+              nextPos[n.id] = {
+                x: cx + radius * Math.cos(angle),
+                y: cy + radius * Math.sin(angle)
+              };
+            }
+          });
+          return {
+            ...prev,
+            [activeCaseId]: nextPos
+          };
+        });
+      }
+    }
+  }, [graphData, activeCaseId]);
+
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; caseId: string; title: string } | null>(null);
   const [renameCaseState, setRenameCaseState] = useState<{ id: string; title: string; newTitle: string } | null>(null);
   const [deleteConfirmCase, setDeleteConfirmCase] = useState<{ id: string; title: string } | null>(null);
@@ -200,6 +237,8 @@ export default function CaseDashboardPage() {
   const [caseReportNarrative, setCaseReportNarrative] = useState<Record<string, string>>({});
   const [caseZoom, setCaseZoom] = useState<Record<string, number>>({});
   const [casePan, setCasePan] = useState<Record<string, { x: number; y: number }>>({});
+  const [graphDataPerCase, setGraphDataPerCase] = useState<Record<string, GraphData>>({});
+  const [dossierSearchQuery, setDossierSearchQuery] = useState<Record<string, string>>({});
   const [caseOrder, setCaseOrder] = useState<string[]>(() => {
     const saved = localStorage.getItem('erakshak_case_order');
     return saved ? JSON.parse(saved) : [];
@@ -456,33 +495,66 @@ export default function CaseDashboardPage() {
     document.addEventListener('mouseup', handleMouseUp);
   };
 
+  const getNodeAbbreviation = (caseId: string, nodeId: string) => {
+    const graph = graphDataPerCase[caseId];
+    if (!graph || !graph.nodes) return nodeId;
+    const idx = graph.nodes.findIndex((n: any) => n.id === nodeId);
+    return idx !== -1 ? `N${idx + 1}` : nodeId;
+  };
+
+  const handleGoToNode = (caseId: string, nodeId: string) => {
+    setActiveEntityPerCase(prev => ({
+      ...prev,
+      [caseId]: nodeId
+    }));
+
+    setWindows(prev => prev.map(w => w.id === `workspace-${caseId}` ? { ...w, activeTab: 'graph' } : w));
+
+    const nodePos = nodePositionsPerCase[caseId]?.[nodeId];
+    if (nodePos) {
+      setCasePan(prev => ({
+        ...prev,
+        [caseId]: {
+          x: 350 - nodePos.x,
+          y: 200 - nodePos.y
+        }
+      }));
+    }
+  };
+
   const loadGraphForCase = async (caseId: string, entityId: string) => {
     try {
       await loadEntityGraph(caseId, entityId);
       
-      // Auto positions nodes in a circle mapping
       const currentGraph = useGraphStore.getState().graphData;
-      if (currentGraph && currentGraph.nodes) {
-        const cx = 350;
-        const cy = 200;
-        const radius = 130;
-        setNodePositionsPerCase(prev => {
-          const existing = prev[caseId] || {};
-          const nextPos = { ...existing };
-          currentGraph.nodes.forEach((n, idx) => {
-            if (!nextPos[n.id]) {
-              const angle = (idx / currentGraph.nodes.length) * 2 * Math.PI;
-              nextPos[n.id] = {
-                x: cx + radius * Math.cos(angle),
-                y: cy + radius * Math.sin(angle)
-              };
-            }
+      if (currentGraph) {
+        setGraphDataPerCase(prev => ({
+          ...prev,
+          [caseId]: currentGraph
+        }));
+
+        if (currentGraph.nodes) {
+          const cx = 350;
+          const cy = 200;
+          const radius = 130;
+          setNodePositionsPerCase(prev => {
+            const existing = prev[caseId] || {};
+            const nextPos = { ...existing };
+            currentGraph.nodes.forEach((n, idx) => {
+              if (!nextPos[n.id]) {
+                const angle = (idx / currentGraph.nodes.length) * 2 * Math.PI;
+                nextPos[n.id] = {
+                  x: cx + radius * Math.cos(angle),
+                  y: cy + radius * Math.sin(angle)
+                };
+              }
+            });
+            return {
+              ...prev,
+              [caseId]: nextPos
+            };
           });
-          return {
-            ...prev,
-            [caseId]: nextPos
-          };
-        });
+        }
       }
 
       setActiveEntityPerCase(prev => ({
@@ -752,6 +824,7 @@ export default function CaseDashboardPage() {
         background: customWallpaper || currentWallpaper.value,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
         transition: 'background 0.5s ease',
         fontFamily: 'var(--font-mono)'
       }}
@@ -1187,131 +1260,162 @@ export default function CaseDashboardPage() {
                       {/* Network Matrix drag and drop tab */}
                       {tab === 'graph' && (
                         <div className="flex flex-1 min-height-0 overflow-hidden relative">
-                          <div className="flex-grow bg-black/40 rounded-xl border border-white/5 relative overflow-hidden">
+                          <div className="flex-grow bg-[#0c1220] border border-[#39ff14]/30 rounded-xl relative overflow-hidden shadow-inner flex flex-col">
                             
                             {/* Drag instructions overlay */}
-                            <div className="absolute top-2 left-2 pointer-events-none text-[7.5px] text-gray-600 font-mono uppercase bg-black/60 px-2 py-1 border border-white/5">
-                              DRAG NODES TO REORGANIZE // DOUBLE CLICK TO EDIT RELATION
+                            <div className="absolute top-2 left-2 pointer-events-none text-[7px] text-[#39ff14] font-mono uppercase bg-black/85 px-2 py-1 border border-[#39ff14]/20 z-10 tracking-wider">
+                              DRAG NODES TO REORGANIZE | DOUBLE-CLICK TO VIEW PROFILE DOSSIER | PAN NETWORK CANVAS BY DRAGGING WITH RIGHT CLICK
                             </div>
 
                             {/* Network Canvas */}
-                            <svg 
-                              className="w-full h-full cursor-grab active:cursor-grabbing"
-                              onWheel={(e) => handleZoom(e, caseId)}
-                              onMouseDown={(e) => handleSvgMouseDown(e, caseId)}
-                              onContextMenu={(e) => e.preventDefault()}
-                            >
-                              <defs>
-                                <filter id="glow-violet" x="-20%" y="-20%" width="140%" height="140%">
-                                  <feGaussianBlur stdDeviation="4" result="blur" />
-                                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                                </filter>
-                              </defs>
-                              <g transform={`translate(${350 * (1 - zoom) + pan.x}, ${200 * (1 - zoom) + pan.y}) scale(${zoom})`}>
-                                {/* Draw edges */}
-                                {currentGraph && currentGraph.edges && currentGraph.edges.map((e, idx) => {
-                                  const posSource = nodePositionsPerCase[caseId]?.[e.source] || { x: 200, y: 150 };
-                                  const posTarget = nodePositionsPerCase[caseId]?.[e.target] || { x: 400, y: 150 };
+                            {(() => {
+                              const caseGraph = graphDataPerCase[caseId] || graphData;
+                              if (!caseGraph || !caseGraph.nodes || caseGraph.nodes.length === 0) {
+                                return (
+                                  <div className="flex-1 flex flex-col items-center justify-center text-[9px] text-[#39ff14]/60 font-mono tracking-widest gap-2">
+                                    <span className="animate-pulse">AWAITING CORRELATION SEED INPUT IN CMD_INTAKE...</span>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <svg 
+                                  className="w-full h-full cursor-grab active:cursor-grabbing"
+                                  onWheel={(e) => handleZoom(e, caseId)}
+                                  onMouseDown={(e) => handleSvgMouseDown(e, caseId)}
+                                  onContextMenu={(e) => e.preventDefault()}
+                                >
+                                  <defs>
+                                    <filter id="glow-violet" x="-20%" y="-20%" width="140%" height="140%">
+                                      <feGaussianBlur stdDeviation="4" result="blur" />
+                                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                    </filter>
+                                    <pattern id={`matrix-grid-${caseId}`} width="25" height="25" patternUnits="userSpaceOnUse">
+                                      <path d="M 25 0 L 0 0 0 25" fill="none" stroke="rgba(57, 255, 20, 0.04)" strokeWidth="0.5" />
+                                    </pattern>
+                                  </defs>
+                                  <rect width="100%" height="100%" fill={`url(#matrix-grid-${caseId})`} />
+                                  <g transform={`translate(${350 * (1 - zoom) + pan.x}, ${200 * (1 - zoom) + pan.y}) scale(${zoom})`}>
+                                    {/* Draw edges */}
+                                    {caseGraph.edges && caseGraph.edges.map((e: any, idx: number) => {
+                                      const posSource = nodePositionsPerCase[caseId]?.[e.source] || { x: 200, y: 150 };
+                                      const posTarget = nodePositionsPerCase[caseId]?.[e.target] || { x: 400, y: 150 };
 
-                                  return (
-                                    <g key={idx}>
-                                      <line
-                                        x1={posSource.x}
-                                        y1={posSource.y}
-                                        x2={posTarget.x}
-                                        y2={posTarget.y}
-                                        stroke={isFocused ? '#39ff14' : '#a855f7'}
-                                        strokeWidth={e.confidence * 2 + 1}
-                                        opacity={0.35}
-                                        strokeDasharray={e.confidence < 0.6 ? '4 4' : 'none'}
-                                      />
-                                      <text
-                                        x={(posSource.x + posTarget.x) / 2}
-                                        y={(posSource.y + posTarget.y) / 2 - 4}
-                                        fill="#8295B4"
-                                        fontSize="7.5"
-                                        textAnchor="middle"
-                                        fontFamily="monospace"
-                                      >
-                                        {e.relationType} ({(e.confidence * 100).toFixed(0)}%)
-                                      </text>
-                                    </g>
-                                  );
-                                })}
+                                      return (
+                                        <g key={idx}>
+                                          <line
+                                            x1={posSource.x}
+                                            y1={posSource.y}
+                                            x2={posTarget.x}
+                                            y2={posTarget.y}
+                                            stroke={activeEntity === e.source || activeEntity === e.target ? '#39ff14' : '#a855f7'}
+                                            strokeWidth={e.confidence * 2 + 1}
+                                            opacity={0.35}
+                                            strokeDasharray={e.confidence < 0.6 ? '4 4' : 'none'}
+                                          />
+                                          <text
+                                            x={(posSource.x + posTarget.x) / 2}
+                                            y={(posSource.y + posTarget.y) / 2 - 4}
+                                            fill="#8295B4"
+                                            fontSize="7"
+                                            textAnchor="middle"
+                                            fontFamily="monospace"
+                                          >
+                                            {e.relationType} ({(e.confidence * 100).toFixed(0)}%)
+                                          </text>
+                                        </g>
+                                      );
+                                    })}
 
-                                {/* Draw nodes */}
-                                {currentGraph && currentGraph.nodes && currentGraph.nodes.map((n) => {
-                                  const pos = nodePositionsPerCase[caseId]?.[n.id] || { x: 300, y: 180 };
-                                  const isActive = activeEntity === n.id;
-                                  const isSeed = n.type === 'email' || n.type === 'phone' || n.type === 'username';
+                                    {/* Draw nodes */}
+                                    {caseGraph.nodes && caseGraph.nodes.map((n: any) => {
+                                      const pos = nodePositionsPerCase[caseId]?.[n.id] || { x: 300, y: 180 };
+                                      const isActive = activeEntity === n.id;
+                                      const isSeed = n.type === 'email' || n.type === 'phone' || n.type === 'username';
+                                      const nodeNumber = getNodeAbbreviation(caseId, n.id);
 
-                                  return (
-                                    <g
-                                      key={n.id}
-                                      onMouseDown={(e) => handleNodeDrag(e, caseId, n.id)}
-                                      onClick={() => loadGraphForCase(caseId, n.id)}
-                                      className="cursor-pointer select-none"
-                                    >
-                                      <circle
-                                        cx={pos.x}
-                                        cy={pos.y}
-                                        r={isActive ? 14 : 10}
-                                        fill={isActive ? '#39ff14' : isSeed ? '#a855f7' : '#09152b'}
-                                        stroke={isActive ? '#ffffff' : '#39ff14'}
-                                        strokeWidth={isActive ? 2 : 1}
-                                        filter={isActive ? 'url(#glow-violet)' : 'none'}
-                                      />
-                                      {isActive && (
-                                        <circle
-                                          cx={pos.x}
-                                          cy={pos.y}
-                                          r={22}
-                                          fill="none"
-                                          stroke="#39ff14"
-                                          strokeWidth="0.5"
-                                          className="animate-ping [animation-duration:4s]"
-                                        />
-                                      )}
-                                      <text
-                                        x={pos.x}
-                                        y={pos.y + 24}
-                                        fill={isActive ? '#39ff14' : '#ffffff'}
-                                        fontSize="8"
-                                        fontWeight={isActive ? 'bold' : 'normal'}
-                                        textAnchor="middle"
-                                        fontFamily="monospace"
-                                        className="uppercase"
-                                      >
-                                        {n.label}
-                                      </text>
-                                    </g>
-                                  );
-                                })}
-                              </g>
-                            </svg>
+                                      return (
+                                        <g
+                                          key={n.id}
+                                          onMouseDown={(e) => handleNodeDrag(e, caseId, n.id)}
+                                          onClick={() => {
+                                            setActiveEntityPerCase(prev => ({
+                                              ...prev,
+                                              [caseId]: n.id
+                                            }));
+                                          }}
+                                          onDoubleClick={() => {
+                                            // Open dossier tab and load node info
+                                            loadGraphForCase(caseId, n.id);
+                                            setWindows(prev => prev.map(w => w.id === `workspace-${caseId}` ? { ...w, activeTab: 'dossier' } : w));
+                                          }}
+                                          className="cursor-pointer select-none"
+                                        >
+                                          <circle
+                                            cx={pos.x}
+                                            cy={pos.y}
+                                            r={isActive ? 14 : 11}
+                                            fill={isActive ? '#39ff14' : isSeed ? '#a855f7' : '#09152b'}
+                                            stroke={isActive ? '#ffffff' : '#39ff14'}
+                                            strokeWidth={isActive ? 2 : 1.2}
+                                            filter="none"
+                                          />
+                                          <text
+                                            x={pos.x}
+                                            y={pos.y + 3}
+                                            fill={isActive ? '#000000' : '#ffffff'}
+                                            fontSize="7.5"
+                                            fontWeight="bold"
+                                            textAnchor="middle"
+                                            fontFamily="monospace"
+                                          >
+                                            {nodeNumber}
+                                          </text>
+                                        </g>
+                                      );
+                                    })}
+                                  </g>
+                                </svg>
+                              );
+                            })()}
                           </div>
 
                           {/* Mini side action node menu */}
-                          <div className="w-56 bg-black/35 border border-white/5 rounded-xl ml-3 p-3 flex flex-col gap-3">
-                            <span className="text-[8.5px] text-gray-500 font-bold border-b border-white/5 pb-1">NODE MANAGEMENT</span>
-                            <div className="flex flex-col gap-2">
-                              <span className="text-[8px] text-gray-400 font-mono">SELECTED VECTOR:</span>
-                              <span className="text-[9px] font-bold text-[#39ff14] truncate font-mono uppercase bg-white/5 p-1">{activeEntity}</span>
-                              <div className="h-[1px] bg-white/5" />
-                              
-                              <button
-                                onClick={() => handleFeedback(caseId, activeEntity, 'target_match', 'confirmed')}
-                                className="w-full py-1 text-[8px] font-bold border border-[#39ff14] hover:bg-[#39ff14]/10 text-[#39ff14] flex items-center justify-center gap-1.5 uppercase"
-                              >
-                                <ThumbsUp size={10} /> Confirm Match
-                              </button>
-                              <button
-                                onClick={() => handleFeedback(caseId, activeEntity, 'target_match', 'rejected')}
-                                className="w-full py-1 text-[8px] font-bold border border-red-500 hover:bg-red-500/10 text-red-400 flex items-center justify-center gap-1.5 uppercase"
-                              >
-                                <ThumbsDown size={10} /> Reject Match
-                              </button>
-                            </div>
+                          <div className="w-64 bg-black/35 border border-white/5 rounded-xl ml-3 p-3 flex flex-col gap-3">
+                            <span className="text-[8.5px] text-gray-500 font-bold border-b border-white/5 pb-1 uppercase tracking-wider">Node Details</span>
+                            {(() => {
+                              const caseGraph = graphDataPerCase[caseId] || graphData;
+                              const nodeInfo = caseGraph?.nodes?.find((n: any) => n.id === activeEntity);
+                              if (!nodeInfo) {
+                                return (
+                                  <div className="text-[8px] text-gray-500 italic">No node selected. Click a node in the graph matrix to explore its details.</div>
+                                );
+                              }
+                              return (
+                                <div className="flex flex-col gap-2.5 text-[8px] flex-1">
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-gray-500 font-mono font-semibold">NODE ID</span>
+                                    <span className="text-[9px] font-bold text-[#39ff14] truncate font-mono uppercase bg-white/5 p-1">{getNodeAbbreviation(caseId, nodeInfo.id)}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-gray-500 font-mono font-semibold">VALUE / DETAIL</span>
+                                    <span className="text-gray-200 font-mono break-all bg-white/5 p-1 select-text">{nodeInfo.label}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-gray-500 font-mono font-semibold">IDENTIFIER TYPE</span>
+                                    <span className="text-gray-200 font-mono uppercase bg-white/5 p-1">{nodeInfo.type}</span>
+                                  </div>
+                                  <div className="flex flex-col gap-0.5">
+                                    <span className="text-gray-500 font-mono font-semibold">CONFIDENCE VALUE</span>
+                                    <div className="flex items-center gap-2 bg-white/5 p-1">
+                                      <span className="text-[#39ff14] font-bold">{(nodeInfo.confidence * 100).toFixed(0)}%</span>
+                                      <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+                                        <div className="h-full bg-[#39ff14]" style={{ width: `${nodeInfo.confidence * 100}%` }} />
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
                         </div>
                       )}
@@ -1321,20 +1425,63 @@ export default function CaseDashboardPage() {
                         <div className="flex flex-grow overflow-hidden relative min-h-0">
                           {/* Left column case summary profile feeds */}
                           <div className="w-64 bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col gap-2.5 overflow-y-auto pr-1 flex-shrink-0">
-                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest border-b border-white/5 pb-1">TRACE MATRICES</span>
-                            {currentGraph && currentGraph.nodes && currentGraph.nodes.map(n => (
-                              <div
-                                key={n.id}
-                                onClick={() => loadGraphForCase(caseId, n.id)}
-                                className={`p-2.5 rounded border transition-colors cursor-pointer flex items-center gap-3 ${activeEntity === n.id ? 'bg-[#39ff14]/10 border-[#39ff14]/30' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
-                              >
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#a855f7]" />
-                                <div className="flex flex-col truncate">
-                                  <span className="text-[8px] font-bold text-white truncate font-mono uppercase">{n.label}</span>
-                                  <span className="text-[7.5px] text-gray-500 uppercase mt-0.5">{n.type}</span>
+                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest border-b border-white/5 pb-1 flex-shrink-0">TRACE MATRICES</span>
+                            
+                            {/* Search box */}
+                            <div className="mb-2 flex-shrink-0">
+                              <input
+                                type="text"
+                                placeholder="Filter nodes / details..."
+                                value={dossierSearchQuery[caseId] || ''}
+                                onChange={(e) => setDossierSearchQuery(prev => ({
+                                  ...prev,
+                                  [caseId]: e.target.value
+                                }))}
+                                className="w-full bg-black/60 border border-white/10 text-gray-200 text-[9px] px-2 py-1.5 focus:border-[#39ff14] outline-none font-mono"
+                              />
+                            </div>
+
+                            {(() => {
+                              const caseGraph = graphDataPerCase[caseId] || graphData;
+                              const query = (dossierSearchQuery[caseId] || '').toLowerCase().trim();
+                              const filteredNodes = caseGraph?.nodes?.filter((n: any) => 
+                                n.label.toLowerCase().includes(query) || 
+                                n.id.toLowerCase().includes(query) || 
+                                n.type.toLowerCase().includes(query) ||
+                                getNodeAbbreviation(caseId, n.id).toLowerCase().includes(query)
+                              ) || [];
+
+                              if (filteredNodes.length === 0) {
+                                return <span className="text-[8px] text-gray-600 font-mono italic">No matching traces found.</span>;
+                              }
+
+                              return filteredNodes.map((n: any) => (
+                                <div
+                                  key={n.id}
+                                  onClick={() => loadGraphForCase(caseId, n.id)}
+                                  className={`p-2.5 rounded border transition-colors cursor-pointer flex flex-col gap-1.5 ${activeEntity === n.id ? 'bg-[#39ff14]/10 border-[#39ff14]/30' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#a855f7]" />
+                                    <span className="text-[8px] font-bold text-white truncate font-mono uppercase">
+                                      {getNodeAbbreviation(caseId, n.id)}: {n.label}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-[7.5px] font-mono">
+                                    <span className="text-gray-500 uppercase">{n.type}</span>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleGoToNode(caseId, n.id);
+                                      }}
+                                      className="text-[#39ff14] hover:text-white px-1.5 py-0.5 border border-[#39ff14]/30 hover:border-[#39ff14] bg-[#39ff14]/5 transition uppercase font-bold"
+                                    >
+                                      Go to Node
+                                    </button>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ));
+                            })()}
                           </div>
 
                           {/* Right column dossier detailed profile telemetry card */}

@@ -281,6 +281,12 @@ async def run_connectors_and_pivot_background(
         ).first()
         if identifier:
             await run_connectors_and_pivot(db, identifier, investigator_id, depth)
+            if depth == 0:
+                await publish_update(
+                    case_id,
+                    "pipeline_completed",
+                    {"identifier_id": identifier_id}
+                )
     except Exception as e:
         logger.error(f"Error in background pivot pipeline: {e}")
     finally:

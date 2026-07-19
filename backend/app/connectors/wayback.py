@@ -30,40 +30,66 @@ class WaybackConnector(BaseConnector):
         }
 
         payload = await self._get_json(url, params=params)
-        if not isinstance(payload, list) or len(payload) <= 1:
-            return []
-
         findings = []
-        # First row is headers: ["timestamp", "original", "mimetype", "statuscode"]
-        for row in payload[1:]:
-            if not isinstance(row, list) or len(row) < 4:
-                continue
-            timestamp, original, mimetype, statuscode = row[0], row[1], row[2], row[3]
-            
-            # Format timestamp to readable date: yyyyMMddhhmmss -> yyyy-MM-dd hh:mm:ss
-            formatted_date = timestamp
-            try:
-                dt = datetime.strptime(timestamp, "%Y%m%d%H%M%S")
-                formatted_date = dt.strftime("%Y-%m-%d %H:%M:%S")
-            except Exception:
-                pass
 
-            archive_url = f"https://web.archive.org/web/{timestamp}/{original}"
+        # Pathway 1: Parse Wayback results
+        if isinstance(payload, list) and len(payload) > 1:
+            for row in payload[1:]:
+                if not isinstance(row, list) or len(row) < 4:
+                    continue
+                timestamp, original, mimetype, statuscode = row[0], row[1], row[2], row[3]
+                
+                formatted_date = timestamp
+                try:
+                    dt = datetime.strptime(timestamp, "%Y%m%d%H%M%S")
+                    formatted_date = dt.strftime("%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    pass
 
-            findings.append(
-                Finding(
-                    connector_name=self.name,
-                    result_type="archived_page",
-                    result_value=f"Snapshot ({formatted_date}): {original} [{statuscode}]",
-                    confidence=1.0,
-                    raw_payload={
-                        "timestamp": timestamp,
-                        "original_url": original,
-                        "mimetype": mimetype,
-                        "statuscode": statuscode,
-                        "archive_url": archive_url
-                    }
+                archive_url = f"https://web.archive.org/web/{timestamp}/{original}"
+
+                findings.append(
+                    Finding(
+                        connector_name=self.name,
+                        result_type="archived_page",
+                        result_value=f"Snapshot ({formatted_date}): {original} [{statuscode}]",
+                        confidence=1.0,
+                        raw_payload={
+                            "timestamp": timestamp,
+                            "original_url": original,
+                            "mimetype": mimetype,
+                            "statuscode": statuscode,
+                            "archive_url": archive_url
+                        }
+                    )
                 )
-            )
+
+        # Pathway 2: Active robots.txt path extraction
+        import httpx
+        try:
+            async with httpx.AsyncClient(timeout=3.0, follow_redirects=True) as client:
+                res = await client.get(f"https://{domain}/robots.txt", headers={"User-Agent": "Mozilla/5.0"})
+                if res.status_code == 200:
+                    paths = set()
+                    for line in res.text.splitlines():
+                        if line.lower().startswith(("disallow:", "allow:")):
+                            parts = line.split(":", 1)
+                            if len(parts) > 1:
+                                path = parts[1].strip()
+                                if path and not path.startswith(("*", "/*")) and len(path) > 1:
+                                    paths.add(path)
+                    
+                    for p in sorted(list(paths))[:10]:
+                        findings.append(
+                            Finding(
+                                connector_name=self.name,
+                                result_type="discovered_path",
+                                result_value=f"Active Path: https://{domain}{p}",
+                                confidence=0.9,  # High confidence since it is live from the host
+                                raw_payload={"domain": domain, "robots_txt": True}
+                            )
+                        )
+        except Exception:
+            pass
 
         return findings

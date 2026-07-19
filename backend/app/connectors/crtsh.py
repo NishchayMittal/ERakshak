@@ -20,41 +20,63 @@ class CrtShConnector(BaseConnector):
             return False
 
     async def run(self, identifier_value: str, metadata: dict | None = None) -> list[Finding]:
+        import socket
+        import asyncio
+        
         domain = identifier_value.lstrip("@").strip().lower()
+        
+        async def verify_host(host: str) -> bool:
+            try:
+                loop = asyncio.get_event_loop()
+                await loop.getaddrinfo(host, None, family=socket.AF_INET)
+                return True
+            except Exception:
+                return False
+
+        # Active Brute-Force candidates list
+        common_prefixes = ["www", "mail", "api", "admin", "dev", "auth", "support", "blog", "portal", "test", "shop", "status", "git"]
+        brute_candidates = [f"{prefix}.{domain}" for prefix in common_prefixes]
+
         url = f"https://crt.sh/?q=%25.{quote_plus(domain)}&output=json"
         payload = await self._get_json(url)
-        if not isinstance(payload, list):
-            return []
-
-        MAX_SUBDOMAINS = 50   # cap to avoid flooding the graph
-        seen: set[str] = set()
-        candidates: list[str] = []
-
-        for row in payload:
-            if not isinstance(row, dict):
-                continue
-            name_value = row.get("name_value")
-            if not isinstance(name_value, str):
-                continue
-            for candidate in name_value.splitlines():
-                host = candidate.strip().lower().lstrip("*.")
-                if not host or host == domain or not host.endswith(domain):
+        
+        candidates = []
+        seen = set()
+        
+        if isinstance(payload, list):
+            for row in payload:
+                if not isinstance(row, dict):
                     continue
-                if host in seen:
+                name_value = row.get("name_value")
+                if not isinstance(name_value, str):
                     continue
-                seen.add(host)
-                candidates.append(host)
+                for candidate in name_value.splitlines():
+                    host = candidate.strip().lower().lstrip("*.")
+                    if not host or host == domain or not host.endswith(domain):
+                        continue
+                    if host in seen:
+                        continue
+                    seen.add(host)
+                    candidates.append(host)
+        else:
+            # Passive API fails: Fallback to checking active brute candidates
+            candidates = brute_candidates
 
-        # Sort alphabetically so results are deterministic and meaningful
-        candidates.sort()
+        # Verify all candidates concurrently via active DNS resolution
+        verification_results = await asyncio.gather(*(verify_host(host) for host in candidates))
+        verified_hosts = [host for host, is_valid in zip(candidates, verification_results) if is_valid]
 
-        findings: list[Finding] = []
-        for host in candidates[:MAX_SUBDOMAINS]:
+        # Sort alphabetically so results are deterministic
+        verified_hosts.sort()
+
+        MAX_SUBDOMAINS = 50
+        findings = []
+        for host in verified_hosts[:MAX_SUBDOMAINS]:
             findings.append(Finding(
                 connector_name=self.name,
                 result_type="subdomain",
                 result_value=host,
-                confidence=0.7,
-                raw_payload={"domain": domain},
+                confidence=0.9,  # High confidence since it is verified alive
+                raw_payload={"domain": domain, "resolved": True},
             ))
         return findings

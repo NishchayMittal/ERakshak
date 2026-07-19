@@ -227,6 +227,36 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
             if orig_url:
                 target_node_id = orig_url.strip()
                 target_type = "domain"
+        elif result_type in ("dns_a_record", "dns_aaaa_record", "nameservers"):
+            vals = [v.strip() for v in result_val.split(",") if v.strip()]
+            for val in vals:
+                if not G.has_node(val):
+                    G.add_node(
+                        val,
+                        label=val,
+                        type="domain",
+                        node_class="finding",
+                        id=f"{finding.id}_{val}",
+                        confidence=float(confidence),
+                        timestamp=timestamp_str,
+                    )
+                G.add_edge(
+                    parent_node_id,
+                    val,
+                    label=result_type,
+                    source=source_connector,
+                    confidence=float(confidence),
+                    timestamp=timestamp_str,
+                )
+        elif result_type == "dns_mx_record":
+            target_node_id = result_val.split(" - ")[-1].split(" (")[0].strip()
+            target_type = "domain"
+        elif result_type == "registrar":
+            target_node_id = result_val.strip()
+            target_type = "domain"
+        elif result_type == "discovered_path":
+            target_node_id = result_val.replace("Active Path: ", "").strip()
+            target_type = "domain"
 
         if target_node_id:
             if not G.has_node(target_node_id):

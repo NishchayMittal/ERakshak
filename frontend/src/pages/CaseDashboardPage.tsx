@@ -198,7 +198,55 @@ export default function CaseDashboardPage() {
   const [caseIngestProgress, setCaseIngestProgress] = useState<Record<string, number | null>>({});
   const [caseIngestLogs, setCaseIngestLogs] = useState<Record<string, string[]>>({});
   const [caseReportNarrative, setCaseReportNarrative] = useState<Record<string, string>>({});
+  const [caseZoom, setCaseZoom] = useState<Record<string, number>>({});
+  const [casePan, setCasePan] = useState<Record<string, { x: number; y: number }>>({});
   const desktopRef = useRef<HTMLDivElement>(null);
+
+  const handleZoom = (e: React.WheelEvent, caseId: string) => {
+    // Zoom around center point of canvas (350, 200) with increased speed
+    const zoomIntensity = 0.15;
+    const currentZoom = caseZoom[caseId] || 1.0;
+    const nextZoom = e.deltaY < 0 
+      ? Math.min(3.0, currentZoom + zoomIntensity)
+      : Math.max(0.3, currentZoom - zoomIntensity);
+    
+    setCaseZoom(prev => ({
+      ...prev,
+      [caseId]: nextZoom
+    }));
+  };
+
+  const handleSvgMouseDown = (e: React.MouseEvent, caseId: string) => {
+    // Pan only on right click (button 2)
+    if (e.button !== 2) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initPan = casePan[caseId] || { x: 0, y: 0 };
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+
+      setCasePan(prev => ({
+        ...prev,
+        [caseId]: {
+          x: initPan.x + dx,
+          y: initPan.y + dy
+        }
+      }));
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
 
   useEffect(() => {
     loadCases();
@@ -377,20 +425,23 @@ export default function CaseDashboardPage() {
         const cx = 350;
         const cy = 200;
         const radius = 130;
-        const posRecord: Record<string, { x: number; y: number }> = {};
-        
-        currentGraph.nodes.forEach((n, idx) => {
-          const angle = (idx / currentGraph.nodes.length) * 2 * Math.PI;
-          posRecord[n.id] = {
-            x: cx + radius * Math.cos(angle),
-            y: cy + radius * Math.sin(angle)
+        setNodePositionsPerCase(prev => {
+          const existing = prev[caseId] || {};
+          const nextPos = { ...existing };
+          currentGraph.nodes.forEach((n, idx) => {
+            if (!nextPos[n.id]) {
+              const angle = (idx / currentGraph.nodes.length) * 2 * Math.PI;
+              nextPos[n.id] = {
+                x: cx + radius * Math.cos(angle),
+                y: cy + radius * Math.sin(angle)
+              };
+            }
+          });
+          return {
+            ...prev,
+            [caseId]: nextPos
           };
         });
-
-        setNodePositionsPerCase(prev => ({
-          ...prev,
-          [caseId]: posRecord
-        }));
       }
 
       setActiveEntityPerCase(prev => ({
@@ -435,10 +486,12 @@ export default function CaseDashboardPage() {
     const startX = e.clientX;
     const startY = e.clientY;
     const initPos = nodePositionsPerCase[caseId]?.[nodeId] || { x: 350, y: 200 };
+    const zoom = caseZoom[caseId] || 1.0;
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
-      const dx = moveEvent.clientX - startX;
-      const dy = moveEvent.clientY - startY;
+      // Scale mouse movement by the zoom level to match target cursor position precisely
+      const dx = (moveEvent.clientX - startX) / zoom;
+      const dy = (moveEvent.clientY - startY) / zoom;
       
       setNodePositionsPerCase(prev => ({
         ...prev,
@@ -939,6 +992,8 @@ export default function CaseDashboardPage() {
                 const caseId = win.caseId;
                 const tab = win.activeTab || 'intake';
                 const activeEntity = activeEntityPerCase[caseId] || 'n1';
+                const zoom = caseZoom[caseId] || 1.0;
+                const pan = casePan[caseId] || { x: 0, y: 0 };
                 
                 // Fetch graph data
                 const currentGraph = graphData;
@@ -1090,92 +1145,99 @@ export default function CaseDashboardPage() {
                             </div>
 
                             {/* Network Canvas */}
-                            <svg className="w-full h-full cursor-grab active:cursor-grabbing">
+                            <svg 
+                              className="w-full h-full cursor-grab active:cursor-grabbing"
+                              onWheel={(e) => handleZoom(e, caseId)}
+                              onMouseDown={(e) => handleSvgMouseDown(e, caseId)}
+                              onContextMenu={(e) => e.preventDefault()}
+                            >
                               <defs>
                                 <filter id="glow-violet" x="-20%" y="-20%" width="140%" height="140%">
                                   <feGaussianBlur stdDeviation="4" result="blur" />
                                   <feComposite in="SourceGraphic" in2="blur" operator="over" />
                                 </filter>
                               </defs>
-                              {/* Draw edges */}
-                              {currentGraph && currentGraph.edges && currentGraph.edges.map((e, idx) => {
-                                const posSource = nodePositionsPerCase[caseId]?.[e.source] || { x: 200, y: 150 };
-                                const posTarget = nodePositionsPerCase[caseId]?.[e.target] || { x: 400, y: 150 };
+                              <g transform={`translate(${350 * (1 - zoom) + pan.x}, ${200 * (1 - zoom) + pan.y}) scale(${zoom})`}>
+                                {/* Draw edges */}
+                                {currentGraph && currentGraph.edges && currentGraph.edges.map((e, idx) => {
+                                  const posSource = nodePositionsPerCase[caseId]?.[e.source] || { x: 200, y: 150 };
+                                  const posTarget = nodePositionsPerCase[caseId]?.[e.target] || { x: 400, y: 150 };
 
-                                return (
-                                  <g key={idx}>
-                                    <line
-                                      x1={posSource.x}
-                                      y1={posSource.y}
-                                      x2={posTarget.x}
-                                      y2={posTarget.y}
-                                      stroke={isFocused ? '#39ff14' : '#a855f7'}
-                                      strokeWidth={e.confidence * 2 + 1}
-                                      opacity={0.35}
-                                      strokeDasharray={e.confidence < 0.6 ? '4 4' : 'none'}
-                                    />
-                                    <text
-                                      x={(posSource.x + posTarget.x) / 2}
-                                      y={(posSource.y + posTarget.y) / 2 - 4}
-                                      fill="#8295B4"
-                                      fontSize="7.5"
-                                      textAnchor="middle"
-                                      fontFamily="monospace"
+                                  return (
+                                    <g key={idx}>
+                                      <line
+                                        x1={posSource.x}
+                                        y1={posSource.y}
+                                        x2={posTarget.x}
+                                        y2={posTarget.y}
+                                        stroke={isFocused ? '#39ff14' : '#a855f7'}
+                                        strokeWidth={e.confidence * 2 + 1}
+                                        opacity={0.35}
+                                        strokeDasharray={e.confidence < 0.6 ? '4 4' : 'none'}
+                                      />
+                                      <text
+                                        x={(posSource.x + posTarget.x) / 2}
+                                        y={(posSource.y + posTarget.y) / 2 - 4}
+                                        fill="#8295B4"
+                                        fontSize="7.5"
+                                        textAnchor="middle"
+                                        fontFamily="monospace"
+                                      >
+                                        {e.relationType} ({(e.confidence * 100).toFixed(0)}%)
+                                      </text>
+                                    </g>
+                                  );
+                                })}
+
+                                {/* Draw nodes */}
+                                {currentGraph && currentGraph.nodes && currentGraph.nodes.map((n) => {
+                                  const pos = nodePositionsPerCase[caseId]?.[n.id] || { x: 300, y: 180 };
+                                  const isActive = activeEntity === n.id;
+                                  const isSeed = n.type === 'email' || n.type === 'phone' || n.type === 'username';
+
+                                  return (
+                                    <g
+                                      key={n.id}
+                                      onMouseDown={(e) => handleNodeDrag(e, caseId, n.id)}
+                                      onClick={() => loadGraphForCase(caseId, n.id)}
+                                      className="cursor-pointer select-none"
                                     >
-                                      {e.relationType} ({(e.confidence * 100).toFixed(0)}%)
-                                    </text>
-                                  </g>
-                                );
-                              })}
-
-                              {/* Draw nodes */}
-                              {currentGraph && currentGraph.nodes && currentGraph.nodes.map((n) => {
-                                const pos = nodePositionsPerCase[caseId]?.[n.id] || { x: 300, y: 180 };
-                                const isActive = activeEntity === n.id;
-                                const isSeed = n.type === 'email' || n.type === 'phone' || n.type === 'username';
-
-                                return (
-                                  <g
-                                    key={n.id}
-                                    onMouseDown={(e) => handleNodeDrag(e, caseId, n.id)}
-                                    onClick={() => loadGraphForCase(caseId, n.id)}
-                                    className="cursor-pointer select-none"
-                                  >
-                                    <circle
-                                      cx={pos.x}
-                                      cy={pos.y}
-                                      r={isActive ? 14 : 10}
-                                      fill={isActive ? '#39ff14' : isSeed ? '#a855f7' : '#09152b'}
-                                      stroke={isActive ? '#ffffff' : '#39ff14'}
-                                      strokeWidth={isActive ? 2 : 1}
-                                      filter={isActive ? 'url(#glow-violet)' : 'none'}
-                                    />
-                                    {isActive && (
                                       <circle
                                         cx={pos.x}
                                         cy={pos.y}
-                                        r={22}
-                                        fill="none"
-                                        stroke="#39ff14"
-                                        strokeWidth="0.5"
-                                        className="animate-ping [animation-duration:4s]"
+                                        r={isActive ? 14 : 10}
+                                        fill={isActive ? '#39ff14' : isSeed ? '#a855f7' : '#09152b'}
+                                        stroke={isActive ? '#ffffff' : '#39ff14'}
+                                        strokeWidth={isActive ? 2 : 1}
+                                        filter={isActive ? 'url(#glow-violet)' : 'none'}
                                       />
-                                    )}
-                                    <text
-                                      x={pos.x}
-                                      y={pos.y + 24}
-                                      fill={isActive ? '#39ff14' : '#ffffff'}
-                                      fontSize="8"
-                                      fontWeight={isActive ? 'bold' : 'normal'}
-                                      textAnchor="middle"
-                                      fontFamily="monospace"
-                                      className="uppercase"
-                                    >
-                                      {n.label}
-                                    </text>
-                                  </g>
-                                );
-                              })}
+                                      {isActive && (
+                                        <circle
+                                          cx={pos.x}
+                                          cy={pos.y}
+                                          r={22}
+                                          fill="none"
+                                          stroke="#39ff14"
+                                          strokeWidth="0.5"
+                                          className="animate-ping [animation-duration:4s]"
+                                        />
+                                      )}
+                                      <text
+                                        x={pos.x}
+                                        y={pos.y + 24}
+                                        fill={isActive ? '#39ff14' : '#ffffff'}
+                                        fontSize="8"
+                                        fontWeight={isActive ? 'bold' : 'normal'}
+                                        textAnchor="middle"
+                                        fontFamily="monospace"
+                                        className="uppercase"
+                                      >
+                                        {n.label}
+                                      </text>
+                                    </g>
+                                  );
+                                })}
+                              </g>
                             </svg>
                           </div>
 

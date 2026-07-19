@@ -107,22 +107,50 @@ export default function AppShell() {
         <div
           onClick={clearToast}
           style={{
-            position: 'fixed', bottom: 20, right: 20, zIndex: 10000,
+            position: 'fixed', bottom: 24, right: 24, zIndex: 100000,
             display: 'flex', alignItems: 'center', gap: 10,
-            padding: '10px 16px',
-            background: 'var(--bg-card)',
-            border: `1px solid ${toast.type === 'error' ? 'var(--accent-threat)' : toast.type === 'success' ? 'var(--accent-primary)' : 'var(--accent-secondary)'}`,
-            boxShadow: `0 0 12px ${toast.type === 'error' ? 'rgba(255,0,68,0.3)' : 'rgba(0,255,194,0.25)'}`,
-            cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 12,
-            color: 'var(--text-primary)', letterSpacing: '0.03em',
+            padding: '12px 18px',
+            background: 'rgba(4, 8, 14, 0.95)',
+            border: `1px solid ${
+              toast.type === 'error'
+                ? '#ff3b30'
+                : toast.type === 'success'
+                ? '#39ff14'
+                : '#a855f7'
+            }`,
+            boxShadow: `0 0 16px ${
+              toast.type === 'error'
+                ? 'rgba(255,59,48,0.2)'
+                : toast.type === 'success'
+                ? 'rgba(57,255,20,0.2)'
+                : 'rgba(168,85,247,0.2)'
+            }`,
+            cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10,
+            color: 'var(--text-primary)', letterSpacing: '0.08em',
+            backdropFilter: 'blur(12px)',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
           }}
         >
           <span style={{
             width: 6, height: 6, borderRadius: '50%',
-            background: toast.type === 'error' ? 'var(--accent-threat)' : toast.type === 'success' ? 'var(--accent-primary)' : 'var(--accent-secondary)',
+            background:
+              toast.type === 'error'
+                ? '#ff3b30'
+                : toast.type === 'success'
+                ? '#39ff14'
+                : '#a855f7',
+            boxShadow: `0 0 6px ${
+              toast.type === 'error'
+                ? '#ff3b30'
+                : toast.type === 'success'
+                ? '#39ff14'
+                : '#a855f7'
+            }`,
           }} />
           {toast.message}
-          <span style={{ marginLeft: 8, opacity: 0.5 }}>✕</span>
+          <span style={{ marginLeft: 12, opacity: 0.5, fontSize: 8 }}>✕</span>
         </div>
       )}
     </>

@@ -200,6 +200,12 @@ export default function CaseDashboardPage() {
   const [caseReportNarrative, setCaseReportNarrative] = useState<Record<string, string>>({});
   const [caseZoom, setCaseZoom] = useState<Record<string, number>>({});
   const [casePan, setCasePan] = useState<Record<string, { x: number; y: number }>>({});
+  const [caseOrder, setCaseOrder] = useState<string[]>(() => {
+    const saved = localStorage.getItem('erakshak_case_order');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [draggedCaseId, setDraggedCaseId] = useState<string | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const desktopRef = useRef<HTMLDivElement>(null);
 
   const handleZoom = (e: React.WheelEvent, caseId: string) => {
@@ -246,6 +252,40 @@ export default function CaseDashboardPage() {
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const sortedCases = [...cases].sort((a, b) => {
+    const indexA = caseOrder.indexOf(a.caseId);
+    const indexB = caseOrder.indexOf(b.caseId);
+    if (indexA === -1 && indexB === -1) return 0;
+    if (indexA === -1) return 1;
+    if (indexB === -1) return -1;
+    return indexA - indexB;
+  });
+
+  const handleDragStartCase = (e: React.DragEvent, caseId: string) => {
+    setDraggedCaseId(caseId);
+    e.dataTransfer.setData('text/plain', caseId);
+  };
+
+  const handleDropCase = (e: React.DragEvent, targetCaseId: string) => {
+    e.preventDefault();
+    const sourceCaseId = draggedCaseId || e.dataTransfer.getData('text/plain');
+    if (!sourceCaseId || sourceCaseId === targetCaseId) return;
+
+    const currentOrder = sortedCases.map(c => c.caseId);
+    const sourceIndex = currentOrder.indexOf(sourceCaseId);
+    const targetIndex = currentOrder.indexOf(targetCaseId);
+
+    if (sourceIndex !== -1 && targetIndex !== -1) {
+      const nextOrder = [...currentOrder];
+      nextOrder.splice(sourceIndex, 1);
+      nextOrder.splice(targetIndex, 0, sourceCaseId);
+
+      setCaseOrder(nextOrder);
+      localStorage.setItem('erakshak_case_order', JSON.stringify(nextOrder));
+    }
+    setDraggedCaseId(null);
   };
 
   useEffect(() => {
@@ -800,27 +840,32 @@ export default function CaseDashboardPage() {
       )}
 
       {/* Desktop Folders Grid (Left) */}
-      <div className="absolute top-12 left-6 bottom-20 w-[320px] grid grid-cols-3 grid-rows-[repeat(auto-fill,90px)] gap-4 pointer-events-none z-10 pr-4">
+      <div className="absolute top-12 left-6 bottom-20 w-[420px] grid grid-cols-3 grid-rows-[repeat(auto-fill,120px)] gap-4 pointer-events-none z-10 pr-4">
         {/* Initialize Case Icon */}
         <div
           onClick={handleCreateCase}
-          className="flex flex-col items-center justify-center p-2 rounded border border-dashed border-[#39ff14]/30 bg-[#39ff14]/5 hover:bg-[#39ff14]/15 hover:border-[#39ff14] group transition-all duration-150 cursor-pointer pointer-events-auto text-center h-[82px]"
+          className="flex flex-col items-center justify-center p-2 rounded border border-dashed border-[#39ff14]/30 bg-[#39ff14]/5 hover:bg-[#39ff14]/15 hover:border-[#39ff14] group transition-all duration-150 cursor-pointer pointer-events-auto text-center h-[110px]"
         >
-          <div className="w-8 h-8 flex items-center justify-center text-[#39ff14]">
-            <Plus size={20} className="group-hover:scale-110 transition-transform" />
+          <div className="w-10 h-10 flex items-center justify-center text-[#39ff14]">
+            <Plus size={32} className="group-hover:scale-110 transition-transform" />
           </div>
-          <span className="mt-1 text-[8px] font-bold text-gray-300 tracking-wider group-hover:text-white uppercase line-clamp-2 leading-tight">
+          <span className="mt-1 text-[11px] font-bold text-gray-300 tracking-wider group-hover:text-white uppercase line-clamp-2 leading-tight">
             INITIALIZE
           </span>
         </div>
 
         {/* Dynamic Case Folders */}
-        {cases.map(c => {
+        {sortedCases.map(c => {
           const isAnalysisOpen = windows.some(w => w.id === `workspace-${c.caseId}`);
           
           return (
             <div
               key={c.caseId}
+              draggable={true}
+              onDragStart={(e) => handleDragStartCase(e, c.caseId)}
+              onDragEnd={() => setDraggedCaseId(null)}
+              onDragOver={(e) => { e.preventDefault(); }}
+              onDrop={(e) => handleDropCase(e, c.caseId)}
               onClick={() =>
                 openWindow(
                   `workspace-${c.caseId}`,
@@ -830,7 +875,7 @@ export default function CaseDashboardPage() {
                 )
               }
               onContextMenu={(e) => handleContextMenu(e, c.caseId, c.title)}
-              className={`flex flex-col items-center justify-center p-2 rounded border group transition-all duration-150 cursor-pointer pointer-events-auto relative text-center select-none h-[82px] ${isAnalysisOpen ? 'bg-[#39ff14]/10 border-[#39ff14]/40' : 'bg-black/25 border-white/5 hover:bg-[#39ff14]/5 hover:border-[#39ff14]/20'}`}
+              className={`flex flex-col items-center justify-center p-2 rounded border group transition-all duration-150 cursor-grab active:cursor-grabbing pointer-events-auto relative text-center select-none h-[110px] ${isAnalysisOpen ? 'bg-[#39ff14]/10 border-[#39ff14]/40' : 'bg-black/25 border-white/5 hover:bg-[#39ff14]/5 hover:border-[#39ff14]/20'}`}
             >
               <button
                 onClick={(e) => {
@@ -843,10 +888,10 @@ export default function CaseDashboardPage() {
                 <X size={10} />
               </button>
 
-              <div className={`w-8 h-8 flex items-center justify-center ${isAnalysisOpen ? 'text-[#39ff14]' : 'text-[#a855f7] group-hover:text-[#39ff14]'} transition-colors`}>
-                <Folder size={24} className="group-hover:scale-105 transition-transform" />
+              <div className={`w-10 h-10 flex items-center justify-center ${isAnalysisOpen ? 'text-[#39ff14]' : 'text-[#a855f7] group-hover:text-[#39ff14]'} transition-colors`}>
+                <Folder size={36} className="group-hover:scale-105 transition-transform" />
               </div>
-              <span className="mt-1 text-[8px] font-semibold text-gray-300 group-hover:text-white tracking-wider line-clamp-2 uppercase leading-tight">
+              <span className="mt-1 text-[11px] font-semibold text-gray-300 group-hover:text-white tracking-wider line-clamp-2 uppercase leading-tight">
                 {c.title.replace('Investigation', 'FILE')}
               </span>
             </div>
@@ -1560,12 +1605,7 @@ export default function CaseDashboardPage() {
 
         {/* Disconnect */}
         <button
-          onClick={() => {
-            if (confirm('Are you sure you want to terminate active investigator session?')) {
-              logout();
-              window.location.href = '/';
-            }
-          }}
+          onClick={() => setShowLogoutConfirm(true)}
           title="Disconnect Investigator Session"
           className="w-10 h-10 rounded-xl hover:bg-red-500/10 active:bg-red-500/20 transition-colors flex items-center justify-center text-gray-500 hover:text-red-400"
         >
@@ -1672,6 +1712,37 @@ export default function CaseDashboardPage() {
                 className="px-3.5 py-1.5 bg-red-500/10 border border-red-500 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase"
               >
                 DELETE DOSSIER
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-black/80 z-[99999] flex items-center justify-center backdrop-blur-sm">
+          <div className="bg-[#04080e]/95 border border-red-500 p-6 w-[360px] flex flex-col gap-4 shadow-2xl shadow-red-500/5 backdrop-blur-xl">
+            <div className="font-mono text-[10px] font-bold text-red-500 tracking-widest uppercase pb-2 border-b border-white/5">
+              CONFIRM DISCONNECT
+            </div>
+            <div className="font-mono text-[10px] text-gray-400 leading-relaxed">
+              ARE YOU SURE YOU WANT TO TERMINATE THE ACTIVE INVESTIGATOR SESSION?
+            </div>
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-white/5 mt-2">
+              <button
+                onClick={() => setShowLogoutConfirm(false)}
+                className="px-3.5 py-1.5 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase bg-transparent"
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={() => {
+                  setShowLogoutConfirm(false);
+                  logout();
+                  window.location.href = '/';
+                }}
+                className="px-3.5 py-1.5 bg-red-500/10 border border-red-500 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase"
+              >
+                DISCONNECT
               </button>
             </div>
           </div>

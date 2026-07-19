@@ -298,6 +298,22 @@ export default function CaseDashboardPage() {
     loadCases();
   }, [loadCases]);
 
+  useEffect(() => {
+    if (cases.length > 0) {
+      setCaseOrder(prev => {
+        const caseIds = cases.map(c => c.caseId);
+        let next = prev.filter(id => caseIds.includes(id));
+        const missing = caseIds.filter(id => !next.includes(id));
+        if (missing.length > 0 || next.length !== prev.length) {
+          const updated = [...next, ...missing];
+          localStorage.setItem('erakshak_case_order', JSON.stringify(updated));
+          return updated;
+        }
+        return prev;
+      });
+    }
+  }, [cases]);
+
   // Simulated widget intervals
   useEffect(() => {
     const timer = setInterval(() => {
@@ -1008,64 +1024,69 @@ export default function CaseDashboardPage() {
         </div>
       )}
 
-      {/* Desktop Folders Grid (Horizontal - Wrapped, 8 per line max) */}
-      <div className="absolute top-12 left-6 right-[460px] grid grid-cols-8 gap-3 pointer-events-none z-10 pb-2">
-        {/* Initialize Case Icon */}
-        <div
-          onClick={handleCreateCase}
-          className="flex flex-col items-center justify-center p-2 rounded border border-dashed border-[#39ff14]/30 bg-[#39ff14]/5 hover:bg-[#39ff14]/15 hover:border-[#39ff14] group transition-all duration-150 cursor-pointer pointer-events-auto text-center h-[110px] w-full max-w-[120px] mx-auto flex-shrink-0"
-        >
-          <div className="w-10 h-10 flex items-center justify-center text-[#39ff14]">
-            <Plus size={32} className="group-hover:scale-110 transition-transform" />
-          </div>
-          <span className="mt-1 text-[11px] font-bold text-gray-300 tracking-wider group-hover:text-white uppercase line-clamp-2 leading-tight">
-            INITIALIZE
-          </span>
-        </div>
-
-        {/* Dynamic Case Folders */}
-        {sortedCases.map(c => {
-          const isAnalysisOpen = windows.some(w => w.id === `workspace-${c.caseId}`);
-
-          return (
-            <div
-              key={c.caseId}
-              draggable={true}
-              onDragStart={(e) => handleDragStartCase(e, c.caseId)}
-              onDragEnd={() => setDraggedCaseId(null)}
-              onDragOver={(e) => { e.preventDefault(); }}
-              onDrop={(e) => handleDropCase(e, c.caseId)}
-              onClick={() =>
-                openWindow(
-                  `workspace-${c.caseId}`,
-                  `Case Workspace: ${c.title}`,
-                  'case_workspace',
-                  { caseId: c.caseId }
-                )
-              }
-              onContextMenu={(e) => handleContextMenu(e, c.caseId, c.title)}
-              className={`flex flex-col items-center justify-center p-2 rounded border group transition-all duration-150 cursor-grab active:cursor-grabbing pointer-events-auto relative text-center select-none h-[110px] w-full max-w-[120px] mx-auto flex-shrink-0 ${isAnalysisOpen ? 'bg-[#39ff14]/10 border-[#39ff14]/40' : 'bg-black/25 border-white/5 hover:bg-[#39ff14]/5 hover:border-[#39ff14]/20'}`}
-            >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteCase(e, c.caseId, c.title);
-                }}
-                className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity p-0.5"
-                title="Archive case file"
-              >
-                <X size={10} />
-              </button>
-
-              <div className={`w-10 h-10 flex items-center justify-center ${isAnalysisOpen ? 'text-[#39ff14]' : 'text-[#a855f7] group-hover:text-[#39ff14]'} transition-colors`}>
-                <Folder size={36} className="group-hover:scale-105 transition-transform" />
-              </div>
-              <span className="mt-1 text-[11px] font-semibold text-gray-300 group-hover:text-white tracking-wider line-clamp-2 uppercase leading-tight">
-                {c.title.replace('Investigation', 'FILE')}
-              </span>
+      {/* Scrollable Desktop Area for Folders */}
+      <div 
+        className="absolute top-12 bottom-20 left-6 right-[460px] overflow-y-auto pointer-events-auto z-10 pr-2 custom-desktop-scrollbar"
+        style={{ scrollbarWidth: 'thin' }}
+      >
+        <div className="grid grid-cols-8 gap-3 pb-6">
+          {/* Initialize Case Icon */}
+          <div
+            onClick={handleCreateCase}
+            className="flex flex-col items-center justify-center p-2 rounded border border-dashed border-[#39ff14]/30 bg-[#39ff14]/5 hover:bg-[#39ff14]/15 hover:border-[#39ff14] group transition-all duration-150 cursor-pointer pointer-events-auto text-center h-[110px] w-full max-w-[120px] mx-auto flex-shrink-0"
+          >
+            <div className="w-10 h-10 flex items-center justify-center text-[#39ff14]">
+              <Plus size={32} className="group-hover:scale-110 transition-transform" />
             </div>
-          );
-        })}
+            <span className="mt-1 text-[11px] font-bold text-gray-300 tracking-wider group-hover:text-white uppercase line-clamp-2 leading-tight">
+              INITIALIZE
+            </span>
+          </div>
+
+          {/* Dynamic Case Folders */}
+          {sortedCases.map(c => {
+            const isAnalysisOpen = windows.some(w => w.id === `workspace-${c.caseId}`);
+
+            return (
+              <div
+                key={c.caseId}
+                draggable={true}
+                onDragStart={(e) => handleDragStartCase(e, c.caseId)}
+                onDragEnd={() => setDraggedCaseId(null)}
+                onDragOver={(e) => { e.preventDefault(); }}
+                onDrop={(e) => handleDropCase(e, c.caseId)}
+                onClick={() =>
+                  openWindow(
+                    `workspace-${c.caseId}`,
+                    `Case Workspace: ${c.title}`,
+                    'case_workspace',
+                    { caseId: c.caseId }
+                  )
+                }
+                onContextMenu={(e) => handleContextMenu(e, c.caseId, c.title)}
+                className={`flex flex-col items-center justify-center p-2 rounded border group transition-all duration-150 cursor-grab active:cursor-grabbing pointer-events-auto relative text-center select-none h-[110px] w-full max-w-[120px] mx-auto flex-shrink-0 ${isAnalysisOpen ? 'bg-[#39ff14]/10 border-[#39ff14]/40' : 'bg-black/25 border-white/5 hover:bg-[#39ff14]/5 hover:border-[#39ff14]/20'}`}
+              >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteCase(e, c.caseId, c.title);
+                  }}
+                  className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity p-0.5"
+                  title="Archive case file"
+                >
+                  <X size={10} />
+                </button>
+
+                <div className={`w-10 h-10 flex items-center justify-center ${isAnalysisOpen ? 'text-[#39ff14]' : 'text-[#a855f7] group-hover:text-[#39ff14]'} transition-colors`}>
+                  <Folder size={36} className="group-hover:scale-105 transition-transform" />
+                </div>
+                <span className="mt-1 text-[11px] font-semibold text-gray-300 group-hover:text-white tracking-wider line-clamp-2 uppercase leading-tight">
+                  {c.title.replace('Investigation', 'FILE')}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* RIGHT SIDE WIDGETS HUD (Custom panels) */}

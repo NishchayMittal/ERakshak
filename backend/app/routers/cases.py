@@ -447,6 +447,18 @@ def get_case_narrative(
 
 from app.compiler import compile_evidence_pack
 
+@router.get("/{case_id}/evidence", response_model=EvidencePackOut)
+def get_case_evidence_pack(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
+    from app.crypto import sign_payload
+    evidence_pack["digital_signature"] = sign_payload(evidence_pack)
+    return evidence_pack
+
+
 @router.get("/{case_id}/export/json", response_model=EvidencePackOut)
 def export_case_json(
     case_id: str,

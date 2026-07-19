@@ -94,6 +94,28 @@ const MOCK_HUD_LOGS = [
   'SECURE: Session token encrypted on active badge.'
 ];
 
+const detectSeedType = (val: string): string => {
+  const trimmed = val.trim();
+  if (!trimmed) return 'email';
+  
+  if (trimmed.includes('@')) {
+    return 'email';
+  } else if (/^\+?\d[\d-\s()]{7,}\d$/.test(trimmed)) {
+    return 'phone';
+  } else if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(trimmed)) {
+    return 'ip';
+  } else if (/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(trimmed) || (trimmed.includes('.') && !trimmed.includes(' '))) {
+    return 'domain';
+  } else if (/^(0x)?[0-9a-fA-F]{40}$/.test(trimmed) || /^[139][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(trimmed)) {
+    return 'wallet';
+  } else if (trimmed.includes(' ') && trimmed.length > 3) {
+    return 'name';
+  } else if (trimmed.length > 2) {
+    return 'username';
+  }
+  return 'email';
+};
+
 export default function CaseDashboardPage() {
   const { cases, loading, loadCases, selectCase, initializeNewCase, deleteCase, renameCase } = useCaseStore();
   const { showToast } = useUIStore();
@@ -966,10 +988,14 @@ export default function CaseDashboardPage() {
                                   className="bg-black border border-white/10 text-gray-300 text-[9px] p-1.5 focus:border-[#39ff14] outline-none"
                                 >
                                   <option value="email">EMAIL ADDRESS</option>
-                                  <option value="username">SOCIAL USERNAME</option>
                                   <option value="phone">PHONE NUMBER</option>
-                                  <option value="wallet">CRYPTO WALLET</option>
+                                  <option value="name">INDIVIDUAL NAME</option>
+                                  <option value="username">SOCIAL USERNAME</option>
                                   <option value="domain">DOMAINS</option>
+                                  <option value="ip">IP ADDRESS</option>
+                                  <option value="wallet">CRYPTO WALLET</option>
+                                  <option value="photo">PHOTO / FACE URL</option>
+                                  <option value="other">OTHER / FALLBACK</option>
                                 </select>
                               </div>
 
@@ -980,10 +1006,17 @@ export default function CaseDashboardPage() {
                                     type="text"
                                     placeholder="Enter target detail..."
                                     value={caseSeedsInput[caseId]?.value || ''}
-                                    onChange={(e) => setCaseSeedsInput(prev => ({
-                                      ...prev,
-                                      [caseId]: { ...(prev[caseId] || { type: 'email' }), value: e.target.value }
-                                    }))}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      const autoType = detectSeedType(val);
+                                      setCaseSeedsInput(prev => ({
+                                        ...prev,
+                                        [caseId]: { 
+                                          type: autoType,
+                                          value: val 
+                                        }
+                                      }));
+                                    }}
                                     onKeyDown={(e) => e.key === 'Enter' && addCaseSeed(caseId)}
                                     className="flex-1 bg-black border border-white/10 text-gray-200 text-[9px] px-2.5 py-1.5 focus:border-[#39ff14] outline-none"
                                   />

@@ -77,6 +77,7 @@ export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
             <option value="ip">IP Address</option>
             <option value="wallet">Crypto Wallet Address</option>
             <option value="photo">Photo / Face URL</option>
+            <option value="other">Other / Fallback</option>
           </select>
         </div>
 

@@ -9,8 +9,10 @@ import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, accuracy_score
 
-CSV_PATH = "backend/app/resources/synthetic_pairs.csv"
-MODEL_PATH = "backend/app/resources/xgboost_model.json"
+current_dir = os.path.dirname(os.path.abspath(__file__))
+app_dir = os.path.dirname(current_dir)
+CSV_PATH = os.path.join(app_dir, "resources", "synthetic_pairs.csv")
+MODEL_PATH = os.path.join(app_dir, "resources", "xgboost_model.json")
 
 FEATURE_COLS = [
     "name_similarity",

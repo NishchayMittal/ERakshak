@@ -257,4 +257,7 @@ def generate_large_dataset(output_path: str):
     print(f"Generated {len(all_pairs)} synthetic pairs at {output_path} ({len(positives)} matches, {len(negatives)} non-matches).")
 
 if __name__ == "__main__":
-    generate_large_dataset("backend/app/resources/synthetic_pairs.csv")
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    app_dir = os.path.dirname(current_dir)
+    default_output_path = os.path.join(app_dir, "resources", "synthetic_pairs.csv")
+    generate_large_dataset(default_output_path)

@@ -11,8 +11,10 @@ from app.normalize import normalize
 
 logger = logging.getLogger(__name__)
 
-# CSV path
-SYNTHETIC_CSV_PATH = "backend/app/resources/synthetic_pairs.csv"
+current_dir = os.path.dirname(os.path.abspath(__file__))
+app_dir = os.path.dirname(current_dir)
+SYNTHETIC_CSV_PATH = os.path.join(app_dir, "resources", "synthetic_pairs.csv")
+DEFAULT_MODEL_PATH = os.path.join(app_dir, "resources", "xgboost_model.json")
 
 # Default m and u probabilities if training data is missing or empty
 DEFAULT_M = {
@@ -186,7 +188,7 @@ def get_model() -> FellegiSunterModel:
 
 
 class XGBoostModel:
-    def __init__(self, model_path: str = "backend/app/resources/xgboost_model.json"):
+    def __init__(self, model_path: str = DEFAULT_MODEL_PATH):
         self.model_path = model_path
         self.model = None
         self.explainer = None
@@ -495,7 +497,7 @@ def run_retrain_flow(bind):
         logger.info(f"Loaded {len(feedback_vectors)} real-world feedbacks. Proceeding with retraining...")
 
         # Load original synthetic pairs
-        CSV_PATH = "backend/app/resources/synthetic_pairs.csv"
+        CSV_PATH = SYNTHETIC_CSV_PATH
         X_combined = []
         y_combined = []
 
@@ -531,7 +533,7 @@ def run_retrain_flow(bind):
         model.fit(X_combined, y_combined)
 
         # Save and reload model
-        MODEL_PATH = "backend/app/resources/xgboost_model.json"
+        MODEL_PATH = DEFAULT_MODEL_PATH
         os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
         model.save_model(MODEL_PATH)
         logger.info(f"Retrained XGBoost model saved successfully.")

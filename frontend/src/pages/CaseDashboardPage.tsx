@@ -848,17 +848,17 @@ export default function CaseDashboardPage() {
         </div>
       )}
 
-      {/* Desktop Folders Grid (Left) */}
-      <div className="absolute top-12 left-6 bottom-20 w-[420px] grid grid-cols-3 grid-rows-[repeat(auto-fill,120px)] gap-4 pointer-events-none z-10 pr-4">
+      {/* Desktop Folders Row (Horizontal - Wrapped) */}
+      <div className="absolute top-12 left-6 right-[460px] flex flex-wrap gap-4 pointer-events-none z-10 pb-2">
         {/* Initialize Case Icon */}
         <div
           onClick={handleCreateCase}
-          className="flex flex-col items-center justify-center p-2 rounded border border-dashed border-[#39ff14]/30 bg-[#39ff14]/5 hover:bg-[#39ff14]/15 hover:border-[#39ff14] group transition-all duration-150 cursor-pointer pointer-events-auto text-center h-[110px]"
+          className="flex flex-col items-center justify-center p-2 rounded border border-dashed border-[#39ff14]/30 bg-[#39ff14]/5 hover:bg-[#39ff14]/15 hover:border-[#39ff14] group transition-all duration-150 cursor-pointer pointer-events-auto text-center h-[130px] w-[130px] flex-shrink-0"
         >
-          <div className="w-10 h-10 flex items-center justify-center text-[#39ff14]">
-            <Plus size={32} className="group-hover:scale-110 transition-transform" />
+          <div className="w-12 h-12 flex items-center justify-center text-[#39ff14]">
+            <Plus size={38} className="group-hover:scale-110 transition-transform" />
           </div>
-          <span className="mt-1 text-[11px] font-bold text-gray-300 tracking-wider group-hover:text-white uppercase line-clamp-2 leading-tight">
+          <span className="mt-1 text-[12px] font-bold text-gray-300 tracking-wider group-hover:text-white uppercase line-clamp-2 leading-tight">
             INITIALIZE
           </span>
         </div>
@@ -884,7 +884,7 @@ export default function CaseDashboardPage() {
                 )
               }
               onContextMenu={(e) => handleContextMenu(e, c.caseId, c.title)}
-              className={`flex flex-col items-center justify-center p-2 rounded border group transition-all duration-150 cursor-grab active:cursor-grabbing pointer-events-auto relative text-center select-none h-[110px] ${isAnalysisOpen ? 'bg-[#39ff14]/10 border-[#39ff14]/40' : 'bg-black/25 border-white/5 hover:bg-[#39ff14]/5 hover:border-[#39ff14]/20'}`}
+              className={`flex flex-col items-center justify-center p-2 rounded border group transition-all duration-150 cursor-grab active:cursor-grabbing pointer-events-auto relative text-center select-none h-[130px] w-[130px] flex-shrink-0 ${isAnalysisOpen ? 'bg-[#39ff14]/10 border-[#39ff14]/40' : 'bg-black/25 border-white/5 hover:bg-[#39ff14]/5 hover:border-[#39ff14]/20'}`}
             >
               <button
                 onClick={(e) => {
@@ -897,10 +897,10 @@ export default function CaseDashboardPage() {
                 <X size={10} />
               </button>
 
-              <div className={`w-10 h-10 flex items-center justify-center ${isAnalysisOpen ? 'text-[#39ff14]' : 'text-[#a855f7] group-hover:text-[#39ff14]'} transition-colors`}>
-                <Folder size={36} className="group-hover:scale-105 transition-transform" />
+              <div className={`w-12 h-12 flex items-center justify-center ${isAnalysisOpen ? 'text-[#39ff14]' : 'text-[#a855f7] group-hover:text-[#39ff14]'} transition-colors`}>
+                <Folder size={42} className="group-hover:scale-105 transition-transform" />
               </div>
-              <span className="mt-1 text-[11px] font-semibold text-gray-300 group-hover:text-white tracking-wider line-clamp-2 uppercase leading-tight">
+              <span className="mt-1 text-[12px] font-semibold text-gray-300 group-hover:text-white tracking-wider line-clamp-2 uppercase leading-tight">
                 {c.title.replace('Investigation', 'FILE')}
               </span>
             </div>

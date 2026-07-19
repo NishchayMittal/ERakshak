@@ -207,6 +207,9 @@ export default function CaseDashboardPage() {
   const [draggedCaseId, setDraggedCaseId] = useState<string | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showProfilePassInput, setShowProfilePassInput] = useState(false);
+  const [lastAccessedCaseId, setLastAccessedCaseId] = useState<string | null>(() => {
+    return localStorage.getItem('er_last_accessed_case') || null;
+  });
   const desktopRef = useRef<HTMLDivElement>(null);
 
   const handleZoom = (e: React.WheelEvent, caseId: string) => {
@@ -352,6 +355,10 @@ export default function CaseDashboardPage() {
         if (w.id === id) {
           const nextZ = maxZIndex + 1;
           setMaxZIndex(nextZ);
+          if (w.type === 'case_workspace' && w.caseId) {
+            setLastAccessedCaseId(w.caseId);
+            localStorage.setItem('er_last_accessed_case', w.caseId);
+          }
           return { ...w, zIndex: nextZ, isMinimized: false };
         }
         return w;
@@ -387,6 +394,10 @@ export default function CaseDashboardPage() {
 
     setWindows(prev => [...prev, newWin]);
     setActiveWindowId(id);
+    if (type === 'case_workspace' && extraProps.caseId) {
+      setLastAccessedCaseId(extraProps.caseId);
+      localStorage.setItem('er_last_accessed_case', extraProps.caseId);
+    }
 
     // If opening a case workspace, fetch its graph immediately
     if (type === 'case_workspace' && extraProps.caseId) {
@@ -492,6 +503,153 @@ export default function CaseDashboardPage() {
     } catch (err) {
       console.error('Failed to load case graph:', err);
     }
+  };
+
+  useEffect(() => {
+    if (lastAccessedCaseId) {
+      loadGraphForCase(lastAccessedCaseId, 'n1').catch(err => {
+        console.warn("Failed to prefetch graph for last accessed case:", err);
+      });
+    } else if (cases.length > 0) {
+      const firstCaseId = cases[0].caseId;
+      setLastAccessedCaseId(firstCaseId);
+      localStorage.setItem('er_last_accessed_case', firstCaseId);
+    }
+  }, [lastAccessedCaseId, cases]);
+
+  const handleMatrixWheel = (e: React.WheelEvent) => {
+    if (!lastAccessedCaseId) return;
+    const zoomIntensity = 0.15;
+    const currentZoom = caseZoom[lastAccessedCaseId] || 1.0;
+    const nextZoom = e.deltaY < 0 
+      ? Math.min(3.0, currentZoom + zoomIntensity)
+      : Math.max(0.3, currentZoom - zoomIntensity);
+    
+    setCaseZoom(prev => ({
+      ...prev,
+      [lastAccessedCaseId]: nextZoom
+    }));
+  };
+
+  const handleMatrixMouseDown = (e: React.MouseEvent) => {
+    if (!lastAccessedCaseId) return;
+    if (e.button !== 2) return; // Right click only
+    e.preventDefault();
+    e.stopPropagation();
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initPan = casePan[lastAccessedCaseId] || { x: 0, y: 0 };
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+
+      setCasePan(prev => ({
+        ...prev,
+        [lastAccessedCaseId]: {
+          x: initPan.x + dx,
+          y: initPan.y + dy
+        }
+      }));
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const renderMatrixGraph = () => {
+    if (!lastAccessedCaseId || !graphData || !graphData.nodes || graphData.nodes.length === 0) {
+      return (
+        <svg className="w-full h-full" viewBox="0 0 380 120">
+          <text x="190" y="65" fill="#39ff14" fontSize="8" textAnchor="middle" fontFamily="var(--font-mono)" className="animate-pulse">
+            AWAITING CASE MATRIX...
+          </text>
+        </svg>
+      );
+    }
+
+    const casePositions = nodePositionsPerCase[lastAccessedCaseId] || {};
+    const nodes = graphData.nodes;
+    const edges = graphData.edges || [];
+    const zoom = caseZoom[lastAccessedCaseId] || 1.0;
+    const pan = casePan[lastAccessedCaseId] || { x: 0, y: 0 };
+
+    return (
+      <svg
+        className="w-full h-full cursor-grab active:cursor-grabbing pointer-events-auto"
+        viewBox="0 0 380 120"
+        onWheel={handleMatrixWheel}
+        onMouseDown={handleMatrixMouseDown}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        <g transform={`translate(190, 60) translate(${pan.x}, ${pan.y}) scale(${zoom}) translate(-350, -200)`}>
+          {/* Draw Edges */}
+          {edges.map((e, idx) => {
+            const fromNode = nodes.find(n => n.id === e.source);
+            const toNode = nodes.find(n => n.id === e.target);
+            if (!fromNode || !toNode) return null;
+            const fromPos = casePositions[fromNode.id] || { x: 350, y: 200 };
+            const toPos = casePositions[toNode.id] || { x: 350, y: 200 };
+
+            return (
+              <line
+                key={idx}
+                x1={fromPos.x}
+                y1={fromPos.y}
+                x2={toPos.x}
+                y2={toPos.y}
+                stroke="rgba(57,255,20,0.2)"
+                strokeWidth="1.2"
+                strokeDasharray={idx % 2 === 0 ? "2 2" : "none"}
+              />
+            );
+          })}
+
+          {/* Draw Nodes */}
+          {nodes.map((n, idx) => {
+            const pos = casePositions[n.id] || { x: 350, y: 200 };
+            const isSeed = n.type === 'email' || n.type === 'phone' || n.type === 'username';
+            
+            return (
+              <g
+                key={n.id}
+                onMouseDown={(e) => handleNodeDrag(e, lastAccessedCaseId, n.id)}
+                className="cursor-pointer select-none"
+              >
+                <circle
+                  cx={pos.x}
+                  cy={pos.y}
+                  r={isSeed ? 6 : 4}
+                  fill={isSeed ? '#39ff14' : '#a855f7'}
+                  stroke={isSeed ? '#ffffff' : '#39ff14'}
+                  strokeWidth={0.8}
+                />
+                {n.label && (
+                  <text
+                    x={pos.x}
+                    y={pos.y + 12}
+                    fill="#88f255"
+                    fontSize="8"
+                    textAnchor="middle"
+                    fontFamily="var(--font-mono)"
+                    fontWeight="bold"
+                    style={{ pointerEvents: 'none' }}
+                  >
+                    {n.label.substring(0, 10).toUpperCase()}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </g>
+      </svg>
+    );
   };
 
   const handleCreateCase = async () => {
@@ -848,17 +1006,17 @@ export default function CaseDashboardPage() {
         </div>
       )}
 
-      {/* Desktop Folders Row (Horizontal - Wrapped) */}
-      <div className="absolute top-12 left-6 right-[460px] flex flex-wrap gap-4 pointer-events-none z-10 pb-2">
+      {/* Desktop Folders Grid (Horizontal - Wrapped, 8 per line max) */}
+      <div className="absolute top-12 left-6 right-[460px] grid grid-cols-8 gap-3 pointer-events-none z-10 pb-2">
         {/* Initialize Case Icon */}
         <div
           onClick={handleCreateCase}
-          className="flex flex-col items-center justify-center p-2 rounded border border-dashed border-[#39ff14]/30 bg-[#39ff14]/5 hover:bg-[#39ff14]/15 hover:border-[#39ff14] group transition-all duration-150 cursor-pointer pointer-events-auto text-center h-[130px] w-[130px] flex-shrink-0"
+          className="flex flex-col items-center justify-center p-2 rounded border border-dashed border-[#39ff14]/30 bg-[#39ff14]/5 hover:bg-[#39ff14]/15 hover:border-[#39ff14] group transition-all duration-150 cursor-pointer pointer-events-auto text-center h-[110px] w-full max-w-[120px] mx-auto flex-shrink-0"
         >
-          <div className="w-12 h-12 flex items-center justify-center text-[#39ff14]">
-            <Plus size={38} className="group-hover:scale-110 transition-transform" />
+          <div className="w-10 h-10 flex items-center justify-center text-[#39ff14]">
+            <Plus size={32} className="group-hover:scale-110 transition-transform" />
           </div>
-          <span className="mt-1 text-[12px] font-bold text-gray-300 tracking-wider group-hover:text-white uppercase line-clamp-2 leading-tight">
+          <span className="mt-1 text-[11px] font-bold text-gray-300 tracking-wider group-hover:text-white uppercase line-clamp-2 leading-tight">
             INITIALIZE
           </span>
         </div>
@@ -884,23 +1042,23 @@ export default function CaseDashboardPage() {
                 )
               }
               onContextMenu={(e) => handleContextMenu(e, c.caseId, c.title)}
-              className={`flex flex-col items-center justify-center p-2 rounded border group transition-all duration-150 cursor-grab active:cursor-grabbing pointer-events-auto relative text-center select-none h-[130px] w-[130px] flex-shrink-0 ${isAnalysisOpen ? 'bg-[#39ff14]/10 border-[#39ff14]/40' : 'bg-black/25 border-white/5 hover:bg-[#39ff14]/5 hover:border-[#39ff14]/20'}`}
+              className={`flex flex-col items-center justify-center p-2 rounded border group transition-all duration-150 cursor-grab active:cursor-grabbing pointer-events-auto relative text-center select-none h-[110px] w-full max-w-[120px] mx-auto flex-shrink-0 ${isAnalysisOpen ? 'bg-[#39ff14]/10 border-[#39ff14]/40' : 'bg-black/25 border-white/5 hover:bg-[#39ff14]/5 hover:border-[#39ff14]/20'}`}
             >
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDeleteCase(e, c.caseId, c.title);
                 }}
-                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity p-0.5"
+                className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity p-0.5"
                 title="Archive case file"
               >
                 <X size={10} />
               </button>
 
-              <div className={`w-12 h-12 flex items-center justify-center ${isAnalysisOpen ? 'text-[#39ff14]' : 'text-[#a855f7] group-hover:text-[#39ff14]'} transition-colors`}>
-                <Folder size={42} className="group-hover:scale-105 transition-transform" />
+              <div className={`w-10 h-10 flex items-center justify-center ${isAnalysisOpen ? 'text-[#39ff14]' : 'text-[#a855f7] group-hover:text-[#39ff14]'} transition-colors`}>
+                <Folder size={36} className="group-hover:scale-105 transition-transform" />
               </div>
-              <span className="mt-1 text-[12px] font-semibold text-gray-300 group-hover:text-white tracking-wider line-clamp-2 uppercase leading-tight">
+              <span className="mt-1 text-[11px] font-semibold text-gray-300 group-hover:text-white tracking-wider line-clamp-2 uppercase leading-tight">
                 {c.title.replace('Investigation', 'FILE')}
               </span>
             </div>
@@ -917,21 +1075,15 @@ export default function CaseDashboardPage() {
             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
               <Network size={12} className="text-[#39ff14]" /> Cyber Link Matrix
             </span>
-            <span className="text-[7.5px] text-[#39ff14] font-semibold uppercase animate-pulse">Mesh online</span>
+            <span className="text-[7.5px] text-[#39ff14] font-semibold uppercase tracking-wider">
+              {(() => {
+                const lastAccessedCase = cases.find(c => c.caseId === lastAccessedCaseId);
+                return lastAccessedCase ? lastAccessedCase.title.replace('Investigation', 'FILE').toUpperCase() : 'NO ACTIVE MESH';
+              })()}
+            </span>
           </div>
           <div className="w-full h-32 flex items-center justify-center relative overflow-hidden bg-black/20 rounded">
-            <svg className="w-full h-full" viewBox="0 0 380 120">
-              <line x1="50" y1="30" x2="140" y2="70" stroke="rgba(57,255,20,0.15)" strokeWidth="1.2" strokeDasharray="3 3" />
-              <line x1="140" y1="70" x2="220" y2="40" stroke="rgba(168,85,247,0.3)" strokeWidth="1.2" />
-              <line x1="140" y1="70" x2="310" y2="90" stroke="rgba(236,72,153,0.2)" strokeWidth="1" />
-              
-              <circle cx="50" cy="30" r="4.5" fill="#a855f7" />
-              <circle cx="140" cy="70" r="6" fill="#39ff14" />
-              <circle cx="220" cy="40" r="4" fill="#a855f7" />
-              <circle cx="310" cy="90" r="4" fill="#a855f7" />
-              
-              <text x="140" y="86" fill="#39ff14" fontSize="7.5" textAnchor="middle" fontWeight="bold">MATRIX_NODE</text>
-            </svg>
+            {renderMatrixGraph()}
           </div>
         </div>
 

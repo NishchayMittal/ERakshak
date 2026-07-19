@@ -469,18 +469,19 @@ export default function DossierPanel() {
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
           zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          backdropFilter: 'blur(4px)',
+          backdropFilter: 'blur(6px)',
         }}>
           <div style={{
-            background: '#080c10', border: '1px solid var(--accent-threat)',
+            background: 'rgba(4, 8, 14, 0.95)', border: '1px solid #ff3b30',
             padding: 20, width: 420, display: 'flex', flexDirection: 'column', gap: 14,
-            boxShadow: '0 0 24px rgba(244,63,94,0.25)',
+            boxShadow: '0 0 24px rgba(255,59,48,0.15)',
+            backdropFilter: 'blur(12px)',
             animation: 'scale-up 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)',
           }}>
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--struct-line)', paddingBottom: 8 }}>
               <div>
-                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: 'var(--accent-threat)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: '#ff3b30', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
                   BREACH REPORT: {selectedBreach.breach}
                 </div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', marginTop: 2 }}>
@@ -496,7 +497,7 @@ export default function DossierPanel() {
             </div>
 
             {/* Grid Metrics */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, background: '#030609', border: '1px solid var(--struct-line)', padding: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, background: '#000000', border: '1px solid var(--struct-line)', padding: 10 }}>
               <div>
                 <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>DATE OF EXPOSURE</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 650, color: '#ffffff', marginTop: 2 }}>{selectedBreach.xposed_date}</div>
@@ -508,7 +509,7 @@ export default function DossierPanel() {
               <div>
                 <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>ASSOCIATED DOMAIN</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 650, color: '#ffffff', marginTop: 2 }}>
-                  {selectedBreach.domain ? <a href={`https://${selectedBreach.domain}`} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>{selectedBreach.domain}</a> : 'N/A'}
+                  {selectedBreach.domain ? <a href={`https://${selectedBreach.domain}`} target="_blank" rel="noreferrer" style={{ color: '#39ff14', textDecoration: 'none' }}>{selectedBreach.domain}</a> : 'N/A'}
                 </div>
               </div>
               <div>
@@ -545,7 +546,7 @@ export default function DossierPanel() {
               <div style={{ fontFamily: 'var(--font-heading)', fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: 4 }}>BREACH CONTEXT</div>
               <div style={{
                 fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-primary)',
-                lineHeight: 1.4, background: '#030609', border: '1px solid var(--struct-line)',
+                lineHeight: 1.4, background: '#000000', border: '1px solid var(--struct-line)',
                 padding: 10, overflowY: 'auto', maxHeight: 80, wordBreak: 'break-word'
               }}>
                 {selectedBreach.description || 'No description summary available.'}

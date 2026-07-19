@@ -248,6 +248,25 @@ html, body, #root {
 ::-webkit-scrollbar-thumb { background: var(--struct-line); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent-primary); }
 
+/* Custom Desktop Scrollbar */
+.custom-desktop-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(57, 255, 20, 0.25) transparent;
+}
+.custom-desktop-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-desktop-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-desktop-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(57, 255, 20, 0.25);
+  border-radius: 4px;
+}
+.custom-desktop-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(57, 255, 20, 0.6);
+}
+
 /* ---- Responsive HUD Workspace Grids ---- */
 .hud-grid-main {
   display: grid;

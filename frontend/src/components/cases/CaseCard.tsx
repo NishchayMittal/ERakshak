@@ -161,18 +161,19 @@ export default function CaseCard({ caseItem, onSelect }: CaseCardProps) {
         <div style={{
           position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
           zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          backdropFilter: 'blur(4px)',
+          backdropFilter: 'blur(6px)',
         }}>
           <div style={{
-            background: '#080c10', border: '1px solid var(--struct-line)',
+            background: 'rgba(4, 8, 14, 0.95)', border: '1px solid #ff3b30',
             padding: 24, width: 345, display: 'flex', flexDirection: 'column', gap: 16,
-            boxShadow: '0 0 24px rgba(244,63,94,0.2)',
+            boxShadow: '0 0 24px rgba(255,59,48,0.15)',
+            backdropFilter: 'blur(12px)',
           }}>
-            <div style={{ fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: 'var(--accent-threat)', letterSpacing: '0.15em' }}>
+            <div style={{ fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: '#ff3b30', letterSpacing: '0.15em' }}>
               CONFIRM DOSSIER DELETION
             </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', lineHeight: '1.4' }}>
-              ARE YOU SURE YOU WANT TO PERMANENTLY DELETE CASE <span style={{ color: '#ffffff' }}>"{caseItem.title}"</span>?
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#9ca3af', lineHeight: '1.4' }}>
+              ARE YOU SURE YOU WANT TO PERMANENTLY DELETE CASE <span style={{ color: '#ffffff', fontWeight: 'bold' }}>"{caseItem.title}"</span>?
               <br/><br/>
               THIS WILL IRREVERSIBLY ERASE ALL INGESTED IDENTIFIERS, CORRELATED SUSPECT PROFILES, AND NOTES.
             </div>
@@ -180,10 +181,10 @@ export default function CaseCard({ caseItem, onSelect }: CaseCardProps) {
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 style={{
-                  background: 'none', border: '1px solid var(--struct-line)',
-                  color: 'var(--text-muted)', fontFamily: 'var(--font-heading)',
+                  background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#9ca3af', fontFamily: 'var(--font-mono)',
                   fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
-                  padding: '6px 12px', cursor: 'pointer',
+                  padding: '6px 12px', cursor: 'pointer', textTransform: 'uppercase',
                 }}
               >
                 CANCEL
@@ -194,10 +195,10 @@ export default function CaseCard({ caseItem, onSelect }: CaseCardProps) {
                   handleDelete();
                 }}
                 style={{
-                  background: 'var(--accent-threat)', border: 'none',
-                  color: '#ffffff', fontFamily: 'var(--font-heading)',
+                  background: 'rgba(255,59,48,0.1)', border: '1px solid #ff3b30',
+                  color: '#fca5a5', fontFamily: 'var(--font-mono)',
                   fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
-                  padding: '6px 12px', cursor: 'pointer',
+                  padding: '6px 12px', cursor: 'pointer', textTransform: 'uppercase',
                 }}
               >
                 DELETE DOSSIER

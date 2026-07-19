@@ -964,20 +964,16 @@ export default function CaseDashboardPage() {
               {/* Window controls */}
               <div className="flex items-center gap-1.5 pointer-events-auto">
                 <button
-                  onClick={(e) => { e.stopPropagation(); toggleMinimize(win.id); }}
-                  className="p-1 text-gray-400 hover:text-white hover:bg-white/5 transition"
-                >
-                  <Minimize2 size={10} />
-                </button>
-                <button
                   onClick={(e) => { e.stopPropagation(); toggleMaximize(win.id); }}
                   className="p-1 text-gray-400 hover:text-white hover:bg-white/5 transition"
+                  title={win.isMaximized ? "Restore Window" : "Maximize Window"}
                 >
-                  <Maximize2 size={10} />
+                  {win.isMaximized ? <Minimize2 size={10} /> : <Maximize2 size={10} />}
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); closeWindow(win.id); }}
                   className="p-1 text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition"
+                  title="Close Window"
                 >
                   <X size={10} />
                 </button>

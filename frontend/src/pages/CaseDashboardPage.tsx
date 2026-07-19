@@ -206,6 +206,7 @@ export default function CaseDashboardPage() {
   });
   const [draggedCaseId, setDraggedCaseId] = useState<string | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showProfilePassInput, setShowProfilePassInput] = useState(false);
   const desktopRef = useRef<HTMLDivElement>(null);
 
   const handleZoom = (e: React.WheelEvent, caseId: string) => {
@@ -796,6 +797,14 @@ export default function CaseDashboardPage() {
           </span>
         </div>
       </div>
+
+      {/* Wallpaper backdrop click catcher */}
+      {showWallpaperMenu && (
+        <div 
+          className="fixed inset-0 z-[999]"
+          onClick={() => setShowWallpaperMenu(false)}
+        />
+      )}
 
       {/* Wallpaper dropdown */}
       {showWallpaperMenu && (
@@ -1461,6 +1470,15 @@ export default function CaseDashboardPage() {
 
                   <form onSubmit={handleProfileSubmit} className="bg-black/35 border border-white/5 rounded-xl p-4 flex flex-col gap-4">
                     <div className="flex flex-col gap-1">
+                      <label className="text-[8px] text-gray-500 font-bold font-mono">ASSIGNED POSITION / ROLE</label>
+                      <input
+                        type="text"
+                        value={user?.role || 'Lead Investigator'}
+                        disabled
+                        className="bg-black/20 border border-white/5 text-gray-500 text-[9px] px-3 py-1.5 outline-none font-mono cursor-not-allowed uppercase"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
                       <label className="text-[8px] text-gray-500 font-bold font-mono">FULL CREDENTIAL NAME</label>
                       <input
                         type="text"
@@ -1470,16 +1488,43 @@ export default function CaseDashboardPage() {
                       />
                     </div>
 
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[8px] text-gray-500 font-bold font-mono">NEW SESSION SECURITY KEY (PASSPHRASE)</label>
-                      <input
-                        type="password"
-                        placeholder="••••••••••••••"
-                        value={profilePass}
-                        onChange={(e) => setProfilePass(e.target.value)}
-                        className="bg-black border border-white/10 text-gray-200 text-[9px] px-3 py-1.5 focus:border-[#39ff14] outline-none"
-                      />
-                    </div>
+                    {!showProfilePassInput ? (
+                      <div className="flex justify-start">
+                        <button
+                          type="button"
+                          onClick={() => setShowProfilePassInput(true)}
+                          className="px-3 py-1.5 bg-[#39ff14]/15 border border-[#39ff14] hover:bg-[#39ff14]/25 text-[#39ff14] text-[9px] font-bold uppercase tracking-wider transition-all"
+                        >
+                          CHANGE PASSPHRASE
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[8px] text-gray-500 font-bold font-mono">NEW SESSION SECURITY KEY (PASSPHRASE)</label>
+                          <input
+                            type="password"
+                            placeholder="Enter new security key..."
+                            value={profilePass}
+                            onChange={(e) => setProfilePass(e.target.value)}
+                            className="bg-black border border-white/10 text-gray-200 text-[9px] px-3 py-1.5 focus:border-[#39ff14] outline-none w-full font-mono"
+                            required
+                          />
+                        </div>
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowProfilePassInput(false);
+                              setProfilePass('');
+                            }}
+                            className="text-[8px] text-gray-500 hover:text-white uppercase font-bold"
+                          >
+                            Cancel password change
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     <button
                       type="submit"

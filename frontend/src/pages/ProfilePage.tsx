@@ -32,6 +32,10 @@ export default function ProfilePage() {
   const [editedName, setEditedName] = useState(user?.name || '');
   const [updating, setUpdating] = useState(false);
 
+  const [isEditingPassword, setIsEditingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+
   if (!user) {
     return (
       <div style={{ color: 'var(--text-muted)', padding: 24, fontFamily: 'var(--font-mono)' }}>
@@ -57,6 +61,23 @@ export default function ProfilePage() {
       showToast('Failed to update profile name', 'error');
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    playClickTone();
+    if (!newPassword.trim()) return;
+    setUpdatingPassword(true);
+    try {
+      await updateInvestigatorProfile(undefined, newPassword.trim());
+      setIsEditingPassword(false);
+      setNewPassword('');
+      showToast('INVESTIGATOR PASSPHRASE UPDATED', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update passphrase', 'error');
+    } finally {
+      setUpdatingPassword(false);
     }
   };
 
@@ -267,6 +288,77 @@ export default function ProfilePage() {
               }}>
                 CLASS-3 SECRET INTELLIGENCE
               </span>
+
+              <label style={{ fontFamily: 'var(--font-heading)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
+                PASSPHRASE:
+              </label>
+              {isEditingPassword ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    disabled={updatingPassword}
+                    placeholder="New passphrase"
+                    style={{
+                      background: 'var(--bg-1)',
+                      border: '1px solid var(--accent-primary)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: 11,
+                      padding: '4px 8px',
+                      outline: 'none',
+                      flex: 1,
+                    }}
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleUpdatePassword}
+                    disabled={updatingPassword}
+                    style={{
+                      background: 'var(--accent-primary)', border: 'none', color: '#000000',
+                      padding: 6, cursor: 'pointer', display: 'flex', alignItems: 'center'
+                    }}
+                    title="Save Passphrase"
+                  >
+                    <Check size={14} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditingPassword(false);
+                      setNewPassword('');
+                    }}
+                    disabled={updatingPassword}
+                    style={{
+                      background: 'none', border: '1px solid var(--struct-line)', color: 'var(--text-muted)',
+                      padding: 6, cursor: 'pointer', display: 'flex', alignItems: 'center'
+                    }}
+                    title="Cancel"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
+                    ••••••••••••••
+                  </span>
+                  <button
+                    onClick={() => {
+                      playClickTone();
+                      setIsEditingPassword(true);
+                    }}
+                    style={{
+                      background: 'none', border: '1px solid var(--struct-line)', color: 'var(--text-muted)',
+                      padding: '4px 8px', fontSize: 8, fontFamily: 'var(--font-heading)',
+                      letterSpacing: '0.1em', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4
+                    }}
+                  >
+                    <Lock size={10} />
+                    CHANGE PASSWORD
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

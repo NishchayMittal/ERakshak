@@ -214,6 +214,7 @@ class XGBoostModel:
         if self.model is None:
             return None
         try:
+            import xgboost as xgb
             # Must match FEATURE_COLS order in train_xgb.py
             feat_order = [
                 "name_similarity",
@@ -224,8 +225,9 @@ class XGBoostModel:
                 "shared_domains"
             ]
             x = [[float(vector.get(f, 0.0)) for f in feat_order]]
-            probs = self.model.predict_proba(x)
-            return float(probs[0][1])
+            dmatrix = xgb.DMatrix(x)
+            probs = self.model.get_booster().predict(dmatrix)
+            return float(probs[0])
         except Exception as e:
             logger.error(f"Error executing XGBoost prediction: {e}")
             return None

@@ -5,6 +5,7 @@
 ## Overview
 
 The system is composed of two main parts:
+
 - **Backend**: A modular, registry-based connector framework written in Python. It handles data ingestion, normalization, external database queries (WHOIS, crt.sh, Wayback Machine, etc.), and link correlation using NetworkX, Fellegi-Sunter baseline, and XGBoost refinement layer.
 - **Frontend**: A React-based user interface with Cytoscape.js graph visualizations for investigators to explore links, review model confidences (with SHAP feature explanations), and generate dossier exports.
 
@@ -27,6 +28,7 @@ The system is composed of two main parts:
 ## Installation & Setup Guide
 
 ### 1. Prerequisites
+
 - **Python 3.10+** (For the backend)
 - **Node.js 18+** (For the frontend)
 - **Git**
@@ -35,6 +37,7 @@ The system is composed of two main parts:
 - **Docker & Docker Compose** (Highly Recommended for easiest setup)
 
 ### 2. Recommended Setup: Docker Compose
+
 The easiest way to run the entire stack (API, Frontend, Redis, and Celery Worker) is using Docker.
 
 1. Build and start all services from the root directory:
@@ -48,20 +51,23 @@ The easiest way to run the entire stack (API, Frontend, Redis, and Celery Worker
 ### 3. Local Setup (Without Docker)
 
 #### Backend & Worker Setup
+
 1. Open a terminal and navigate to the `backend` directory:
    ```bash
    cd backend
    ```
 2. Create and activate a Python virtual environment:
+
    ```bash
    python -m venv .venv
-   
+
    # Windows:
    .\.venv\Scripts\activate
-   
+
    # Mac/Linux:
    source .venv/bin/activate
    ```
+
 3. Install the required Python packages:
    ```bash
    pip install -r requirements.txt
@@ -84,9 +90,10 @@ The easiest way to run the entire stack (API, Frontend, Redis, and Celery Worker
    cd backend
    uvicorn app.main:app --reload
    ```
-   *The backend API will now be running at http://127.0.0.1:8000*
+   _The backend API will now be running at http://127.0.0.1:8000_
 
 #### Frontend Setup
+
 1. Open a **new** terminal and navigate to the `frontend` directory:
    ```bash
    cd frontend
@@ -99,9 +106,10 @@ The easiest way to run the entire stack (API, Frontend, Redis, and Celery Worker
    ```bash
    npm run dev
    ```
-   *The frontend UI will automatically open in your browser at http://localhost:5173*
+   _The frontend UI will automatically open in your browser at http://localhost:5173_
 
 ### 4. Setting up the Local AI (Ollama)
+
 e-Rakshak uses a local, 100% free AI model to generate intelligent summaries for your PDF dossiers without requiring paid API keys.
 
 1. Download and install **Ollama** from [ollama.com](https://ollama.com).
@@ -112,7 +120,3 @@ e-Rakshak uses a local, 100% free AI model to generate intelligent summaries for
 3. Once the model is downloaded and running, the e-Rakshak backend will automatically connect to it to generate dossier narratives! If Ollama is not running, the system will gracefully degrade and output a mock placeholder narrative.
 
 ---
-
-## Disclaimer
-
-To prevent ToS violations, privacy leaks, and financial costs during the prototype evaluation phase, the breach connector queries a **local seeded demo dataset**. Face similarity also utilizes a pure-Python fallback for ease of use across environments.

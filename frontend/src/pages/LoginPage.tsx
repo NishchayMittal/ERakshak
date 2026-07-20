@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useUIStore } from '../state/uiStore';
+import { signupRequest } from '../api/endpoints';
 
 const BOOT_LINES = [
   'SECURE ENCLAVE READY...',
@@ -11,11 +12,13 @@ const BOOT_LINES = [
 ];
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('Leon Lobo');
+  const [username, setUsername] = useState('INV-001');
+  const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
   const [bootLine, setBootLine] = useState(0);
   const { login } = useAuth();
-  const { showToast } = useUIStore();
+  const { showToast, toast, clearToast } = useUIStore();
   const navigate = useNavigate();
 
   // Cycle boot lines
@@ -26,15 +29,63 @@ export default function LoginPage() {
     return () => clearInterval(id);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim()) {
-      showToast('INVESTIGATOR ID REQUIRED', 'error');
+      showToast('INVESTIGATOR BADGE ID REQUIRED', 'error');
       return;
     }
-    login(username);
-    showToast(`ACCESS GRANTED // AGENT ${username.toUpperCase()}`, 'success');
-    navigate('/cases');
+    if (!password.trim()) {
+      showToast('SECURITY PASSPHRASE REQUIRED', 'error');
+      return;
+    }
+
+    if (isSignUp) {
+      if (!fullName.trim()) {
+        showToast('FULL NAME REQUIRED FOR REGISTRATION', 'error');
+        return;
+      }
+      try {
+        await signupRequest(username.trim(), fullName.trim(), password);
+        showToast('REGISTRATION REQUEST SUBMITTED // PENDING APPROVAL', 'success');
+        setIsSignUp(false);
+        setPassword('');
+      } catch (err: any) {
+        let msg = 'REGISTRATION REQUEST FAILED';
+        if (err.response?.data?.detail) {
+          if (typeof err.response.data.detail === 'string') {
+            msg = err.response.data.detail;
+          } else if (Array.isArray(err.response.data.detail)) {
+            msg = err.response.data.detail.map((d: any) => d.msg).join(', ');
+          } else {
+            msg = JSON.stringify(err.response.data.detail);
+          }
+        }
+        showToast(msg.toUpperCase(), 'error');
+      }
+    } else {
+      try {
+        const success = await login(username.trim(), password);
+        if (success) {
+          showToast(`ACCESS GRANTED // AGENT ${username.toUpperCase()}`, 'success');
+          navigate('/cases');
+        } else {
+          showToast('INVALID BADGE ID OR SECURITY PASSPHRASE', 'error');
+        }
+      } catch (err: any) {
+        let msg = 'INVALID CREDENTIALS';
+        if (err.response?.data?.detail) {
+          if (typeof err.response.data.detail === 'string') {
+            msg = err.response.data.detail;
+          } else if (Array.isArray(err.response.data.detail)) {
+            msg = err.response.data.detail.map((d: any) => d.msg).join(', ');
+          } else {
+            msg = JSON.stringify(err.response.data.detail);
+          }
+        }
+        showToast(msg.toUpperCase(), 'error');
+      }
+    }
   };
 
   return (
@@ -149,14 +200,14 @@ export default function LoginPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* Investigator ID */}
+            {/* Investigator Badge ID */}
             <div>
               <label style={{
                 display: 'block', fontFamily: 'var(--font-heading)', fontSize: 9,
                 letterSpacing: '0.18em', textTransform: 'uppercase',
                 color: 'var(--text-muted)', marginBottom: 6,
               }}>
-                INVESTIGATOR ID
+                INVESTIGATOR BADGE ID
               </label>
               <input
                 type="text"
@@ -175,9 +226,41 @@ export default function LoginPage() {
                 }}
                 onFocus={(e) => e.target.style.borderColor = '#39ff14'}
                 onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
-                placeholder="AGENT_NAME"
+                placeholder="INV-000"
               />
             </div>
+
+            {/* Conditionally show Full Name if SignUp */}
+            {isSignUp && (
+              <div>
+                <label style={{
+                  display: 'block', fontFamily: 'var(--font-heading)', fontSize: 9,
+                  letterSpacing: '0.18em', textTransform: 'uppercase',
+                  color: 'var(--text-muted)', marginBottom: 6,
+                }}>
+                  FULL NAME
+                </label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  style={{
+                    width: '100%', boxSizing: 'border-box',
+                    background: 'black',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: 'white',
+                    fontFamily: 'var(--font-mono)', fontSize: 12,
+                    padding: '10px 12px',
+                    outline: 'none', caretColor: '#39ff14',
+                    letterSpacing: '0.05em',
+                    transition: 'border-color 0.1s',
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#39ff14'}
+                  onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+                  placeholder="AGENT_NAME"
+                />
+              </div>
+            )}
 
             {/* Passphrase */}
             <div>
@@ -246,7 +329,29 @@ export default function LoginPage() {
                 (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#a855f7';
               }}
             >
-              AUTHORIZE SESSION
+              {isSignUp ? 'SUBMIT SIGNUP REQUEST' : 'AUTHORIZE SESSION'}
+            </button>
+
+            {/* Toggle switch */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setPassword('');
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#39ff14',
+                fontFamily: 'var(--font-mono)', fontSize: 8,
+                letterSpacing: '0.08em',
+                textDecoration: 'underline',
+                cursor: 'pointer',
+                textAlign: 'center',
+                marginTop: 4,
+              }}
+            >
+              {isSignUp ? 'OR SWITCH TO AUTH LOGIN' : 'OR REQUEST SIGN UP'}
             </button>
           </form>
         </div>
@@ -263,6 +368,58 @@ export default function LoginPage() {
           STRICTLY AUTHORIZED PERSONNEL ONLY. ALL ACCESS AND INGESTION EVENTS ARE DIGITALLY LOGGED.
         </div>
       </div>
+
+      {/* ── Global Toast ── */}
+      {toast && (
+        <div
+          onClick={clearToast}
+          style={{
+            position: 'fixed', bottom: 24, right: 24, zIndex: 100000,
+            display: 'flex', alignItems: 'center', gap: 10,
+            padding: '12px 18px',
+            background: 'rgba(4, 8, 14, 0.95)',
+            border: `1px solid ${
+              toast.type === 'error'
+                ? '#ff3b30'
+                : toast.type === 'success'
+                ? '#39ff14'
+                : '#a855f7'
+            }`,
+            boxShadow: `0 0 16px ${
+              toast.type === 'error'
+                ? 'rgba(255,59,48,0.2)'
+                : toast.type === 'success'
+                ? 'rgba(57,255,20,0.2)'
+                : 'rgba(168,85,247,0.2)'
+            }`,
+            cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10,
+            color: 'var(--text-primary)', letterSpacing: '0.08em',
+            backdropFilter: 'blur(12px)',
+            borderRadius: '4px',
+            fontWeight: 'bold',
+            textTransform: 'uppercase',
+          }}
+        >
+          <span style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background:
+              toast.type === 'error'
+                ? '#ff3b30'
+                : toast.type === 'success'
+                ? '#39ff14'
+                : '#a855f7',
+            boxShadow: `0 0 6px ${
+              toast.type === 'error'
+                ? '#ff3b30'
+                : toast.type === 'success'
+                ? '#39ff14'
+                : '#a855f7'
+            }`,
+          }} />
+          {toast.message}
+          <span style={{ marginLeft: 12, opacity: 0.5, fontSize: 8 }}>✕</span>
+        </div>
+      )}
     </div>
   );
 }

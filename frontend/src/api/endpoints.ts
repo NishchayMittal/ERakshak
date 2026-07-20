@@ -170,3 +170,90 @@ export async function deleteCase(caseId: string): Promise<void> {
   }
   await apiClient.delete(`/cases/${caseId}`);
 }
+
+let mockPendingApprovals: any[] = [
+  { id: 'mock-1', badge_id: 'INV-043', full_name: 'Asha Mehta', created_at: new Date().toISOString() },
+  { id: 'mock-2', badge_id: 'INV-044', full_name: 'John Doe', created_at: new Date().toISOString() }
+];
+
+export async function loginRequest(badgeId: string, password?: string): Promise<any> {
+  if (isMockMode()) {
+    const lowerBadge = badgeId.toLowerCase().trim();
+    
+    // Check if the badge is in the pending approval queue
+    const isPending = mockPendingApprovals.some(
+      (a) => a.badge_id.toLowerCase().trim() === lowerBadge
+    );
+    if (isPending) {
+      const err: any = new Error("Account pending approval by Lead Investigator.");
+      err.response = { data: { detail: "Account pending approval by Lead Investigator." } };
+      throw err;
+    }
+
+    // Check if badge is recognized
+    if (lowerBadge !== 'inv-001' && lowerBadge !== 'leon' && lowerBadge !== 'inv-042') {
+      const err: any = new Error("Badge ID is not registered.");
+      err.response = { data: { detail: "Badge ID is not registered." } };
+      throw err;
+    }
+
+    // Validate security passphrase (password)
+    if (password !== 'Password123!') {
+      const err: any = new Error("Invalid security passphrase.");
+      err.response = { data: { detail: "Invalid security passphrase." } };
+      throw err;
+    }
+
+    return {
+      access_token: 'mock-token',
+      badge_id: badgeId,
+      full_name: badgeId === 'INV-001' || badgeId.toLowerCase().includes('leon') ? 'Leon Lobo' : badgeId
+    };
+  }
+  const params = new URLSearchParams();
+  params.append('username', badgeId);
+  params.append('password', password || '');
+  const res = await apiClient.post('/auth/login', params, {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+  });
+  return res.data;
+}
+
+export async function signupRequest(badgeId: string, fullName: string, securityPassphrase?: string): Promise<any> {
+  if (isMockMode()) {
+    const newMock = { id: `mock-${Date.now()}`, badge_id: badgeId, full_name: fullName, created_at: new Date().toISOString() };
+    mockPendingApprovals.push(newMock);
+    return newMock;
+  }
+  const res = await apiClient.post('/auth/signup', {
+    badge_id: badgeId,
+    full_name: fullName,
+    password: securityPassphrase || 'Password123!',
+    is_active: true
+  });
+  return res.data;
+}
+
+export async function getPendingApprovals(): Promise<any[]> {
+  if (isMockMode()) return mockPendingApprovals;
+  const res = await apiClient.get('/auth/pending-approvals');
+  return res.data;
+}
+
+export async function approveInvestigator(id: string): Promise<any> {
+  if (isMockMode()) {
+    mockPendingApprovals = mockPendingApprovals.filter(a => a.id !== id);
+    return { status: 'approved' };
+  }
+  const res = await apiClient.post(`/auth/approve/${id}`);
+  return res.data;
+}
+
+export async function rejectInvestigator(id: string): Promise<any> {
+  if (isMockMode()) {
+    mockPendingApprovals = mockPendingApprovals.filter(a => a.id !== id);
+    return { status: 'rejected' };
+  }
+  const res = await apiClient.post(`/auth/reject/${id}`);
+  return res.data;
+}

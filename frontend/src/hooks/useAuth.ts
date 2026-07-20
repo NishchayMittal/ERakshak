@@ -1,4 +1,12 @@
 import { create } from 'zustand';
+import { loginRequest } from '../api/endpoints';
+import { apiClient } from '../api/client';
+
+// Load token on module initialization to keep active sessions authenticated
+const savedToken = localStorage.getItem('er_token');
+if (savedToken) {
+  apiClient.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
+}
 
 export interface Investigator {
   id: string;
@@ -23,10 +31,10 @@ const useAuthStore = create<AuthState>((set) => ({
     }
     // Default logged-in investigator for prototype convenience
     return {
-      id: 'inv-042',
+      id: 'INV-001',
       name: 'Leon Lobo',
       role: 'Lead Investigator',
-      badgeNumber: 'ER-2026-042',
+      badgeNumber: 'INV-001',
     };
   })(),
   setUser: (user) => {
@@ -46,16 +54,26 @@ const useAuthStore = create<AuthState>((set) => ({
 export function useAuth() {
   const { user, setUser } = useAuthStore();
 
-  const login = (username?: string) => {
-    setUser({
-      id: 'inv-042',
-      name: username || 'Leon Lobo',
-      role: 'Lead Investigator',
-      badgeNumber: 'ER-2026-042',
-    });
+  const login = async (badgeId: string, password?: string) => {
+    const data = await loginRequest(badgeId, password);
+    if (data && data.access_token) {
+      localStorage.setItem('er_token', data.access_token);
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${data.access_token}`;
+      
+      setUser({
+        id: data.badge_id,
+        name: data.full_name,
+        role: data.badge_id === 'INV-001' ? 'Lead Investigator' : 'Investigator',
+        badgeNumber: data.badge_id,
+      });
+      return true;
+    }
+    return false;
   };
 
   const logout = () => {
+    localStorage.removeItem('er_token');
+    delete apiClient.defaults.headers.common['Authorization'];
     setUser(null);
   };
 

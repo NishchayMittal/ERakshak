@@ -57,7 +57,8 @@ def get_current_investigator(token: str | None = Depends(oauth2_scheme), db: Ses
                 badge_id="INV-001",
                 full_name="Leon Lobo",
                 hashed_password=hash_password("Password123!"),
-                is_active=True
+                is_active=True,
+                is_approved=True
             )
             db.add(investigator)
             db.commit()

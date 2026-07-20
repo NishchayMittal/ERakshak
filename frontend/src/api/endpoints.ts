@@ -46,8 +46,12 @@ export async function createCase(title: string, description?: string): Promise<C
 
 export async function getGraph(caseId: string, entityId: string): Promise<GraphData> {
   if (isMockMode()) return mock.getMockGraph(caseId, entityId);
-  const res = await apiClient.get(`/cases/${caseId}/graph`);
-  return res.data;
+  try {
+    const res = await apiClient.get(`/cases/${caseId}/graph`);
+    return res.data || { nodes: [], edges: [] };
+  } catch (err) {
+    return { nodes: [], edges: [] };
+  }
 }
 
 export async function getProfile(caseId: string, entityId: string): Promise<ProfileData> {
@@ -130,10 +134,7 @@ export async function getEvidencePack(caseId: string): Promise<EvidencePack> {
     const res = await apiClient.get(`/cases/${caseId}/evidence`);
     return res.data;
   } catch (error) {
-    // Staging fallback: P4 is building compiler.py so if /evidence returns 404, we can consume /export/json
-    // which has an extremely similar structure. This is robust for Day 10.
-    const res = await apiClient.get(`/cases/${caseId}/export/json`);
-    return res.data;
+    return { caseId, summary: {}, findings: [] } as unknown as EvidencePack;
   }
 }
 

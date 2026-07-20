@@ -642,62 +642,32 @@ export default function PortalPage() {
       </div>
 
       <div 
+        className="cyber-card-container"
         style={{ 
           zIndex: 10, 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          gap: '24px', 
-          background: 'rgba(8,12,16,0.6)', 
-          padding: '40px', 
-          borderRadius: '16px', 
-          border: '1px solid rgba(57,255,20,0.2)', 
-          backdropFilter: 'blur(8px)',
           opacity: isZooming ? 0 : 1,
           transform: isZooming ? 'scale(1.1)' : 'scale(1)',
           transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
           pointerEvents: isZooming ? 'none' : 'auto'
         }}
       >
-        <div style={{ textAlign: 'center' }}>
-            <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 300, letterSpacing: '0.1em', color: 'var(--text-primary)' }}>SYSTEM ONLINE</h2>
-            <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>Secure connection established.</p>
+        <div className="cyber-card-border">
+          <div className="cyber-card-inner" style={{ alignItems: 'center', gap: '24px' }}>
+            <div style={{ textAlign: 'center' }}>
+                <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 300, letterSpacing: '0.1em', color: 'var(--text-primary)' }}>SYSTEM ONLINE</h2>
+                <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>Secure connection established.</p>
+            </div>
+            <div className="cyber-button-container">
+              <button
+                className="cyber-button"
+                onClick={handleEnterClick}
+              >
+                <span>ENTER DASHBOARD</span>
+                <ArrowRight size={16} color="#000000" />
+              </button>
+            </div>
+          </div>
         </div>
-        <button
-          onClick={handleEnterClick}
-          style={{
-            background: 'rgba(57, 255, 20, 0.1)',
-            border: '1px solid var(--accent-primary)',
-            color: '#39ff14',
-            fontFamily: 'var(--font-heading)',
-            fontSize: '14px',
-            fontWeight: 700,
-            letterSpacing: '0.15em',
-            textTransform: 'uppercase',
-            padding: '16px 32px',
-            cursor: 'pointer',
-            boxShadow: '0 0 16px rgba(57,255,20,0.25)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '12px',
-            transition: 'all 0.3s ease',
-            borderRadius: '4px',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#39ff14';
-            e.currentTarget.style.color = '#000000';
-            e.currentTarget.style.boxShadow = '0 0 32px rgba(57,255,20,0.5)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(57, 255, 20, 0.1)';
-            e.currentTarget.style.color = 'var(--accent-primary)';
-            e.currentTarget.style.boxShadow = '0 0 16px rgba(57,255,20,0.25)';
-          }}
-        >
-          <span>ENTER DASHBOARD</span>
-          <ArrowRight size={16} />
-        </button>
       </div>
     </div>
   );

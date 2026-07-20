@@ -182,19 +182,9 @@ export default function LoginPage() {
       })}
 
       {/* Login card */}
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 400,
-          background: "rgba(4, 8, 14, 0.95)",
-          border: "1px solid #39ff14",
-          boxShadow: "0 0 40px rgba(57,255,20,0.06)",
-          padding: 0,
-          position: "relative",
-          backdropFilter: "blur(12px)",
-        }}
-        className="rounded-xl overflow-hidden"
-      >
+      <div className="cyber-card-container" style={{ width: "100%", maxWidth: 400, margin: "0 auto", position: "relative" }}>
+        <div className="cyber-card-border">
+          <div className="cyber-card-inner" style={{ padding: 0 }}>
         {/* Top accent bar */}
         <div
           style={{
@@ -437,33 +427,15 @@ export default function LoginPage() {
             </div>
 
             {/* Submit */}
-            <button
-              type="submit"
-              style={{
-                padding: "12px",
-                background: "#a855f7",
-                border: "none",
-                color: "#000000",
-                fontFamily: "var(--font-heading)",
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: "0.25em",
-                textTransform: "uppercase",
-                cursor: "pointer",
-                boxShadow: "0 4px 14px rgba(168,85,247,0.25)",
-                transition: "background-color 0.15s, opacity 0.15s",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                  "rgba(168,85,247,0.85)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                  "#a855f7";
-              }}
-            >
-              {isSignUp ? "SUBMIT SIGNUP REQUEST" : "AUTHORIZE SESSION"}
-            </button>
+            <div className="cyber-button-container" style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+              <button
+                type="submit"
+                className="cyber-button"
+                style={{ width: "100%" }}
+              >
+                {isSignUp ? "SUBMIT SIGNUP REQUEST" : "AUTHORIZE SESSION"}
+              </button>
+            </div>
 
             {/* Toggle switch */}
             <button
@@ -505,6 +477,8 @@ export default function LoginPage() {
         >
           STRICTLY AUTHORIZED PERSONNEL ONLY. ALL ACCESS AND INGESTION EVENTS
           ARE DIGITALLY LOGGED.
+        </div>
+          </div>
         </div>
       </div>
 

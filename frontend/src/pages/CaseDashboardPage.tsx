@@ -144,7 +144,7 @@ export default function CaseDashboardPage() {
         ...prev,
         [activeCaseId]: graphData
       }));
-      
+
       if (graphData.nodes) {
         const cx = 350;
         const cy = 200;
@@ -1074,7 +1074,7 @@ export default function CaseDashboardPage() {
       <div className="absolute top-0 left-0 right-0 h-8 bg-black/60 backdrop-blur-md border-b border-[#39ff14]/15 flex items-center justify-between px-4 z-[999] text-[10px]">
         <div className="flex items-center gap-4">
           <span className="font-bold tracking-wider text-[#39ff14] flex items-center gap-1.5 animate-pulse">
-            <Shield size={12} /> e-RAKSHAK HOLOGRAPHIC CONSOLE
+            <Shield size={12} /> ORION HOLOGRAPHIC CONSOLE
           </span>
           <div className="h-3 w-[1px] bg-white/10" />
           <button
@@ -1144,7 +1144,7 @@ export default function CaseDashboardPage() {
       )}
 
       {/* Scrollable Desktop Area for Folders */}
-      <div 
+      <div
         className="absolute top-12 bottom-20 left-6 right-[460px] overflow-y-auto pointer-events-auto z-10 pr-2 custom-desktop-scrollbar"
         style={{ scrollbarWidth: 'thin' }}
       >
@@ -1503,7 +1503,7 @@ export default function CaseDashboardPage() {
                       {tab === 'graph' && (
                         <div className="flex flex-1 min-height-0 overflow-hidden relative">
                           <div className="flex-grow bg-[#0c1220] border border-[#39ff14]/30 rounded-xl relative overflow-hidden shadow-inner flex flex-col">
-                            
+
                             {/* Drag instructions overlay */}
                             <div className="absolute top-2 left-2 pointer-events-none text-[7px] text-[#39ff14] font-mono uppercase bg-black/85 px-2 py-1 border border-[#39ff14]/20 z-10 tracking-wider">
                               DRAG NODES TO REORGANIZE | DOUBLE-CLICK TO VIEW PROFILE DOSSIER | PAN NETWORK CANVAS BY DRAGGING WITH RIGHT CLICK
@@ -1520,7 +1520,7 @@ export default function CaseDashboardPage() {
                                 );
                               }
                               return (
-                                <svg 
+                                <svg
                                   className="w-full h-full cursor-grab active:cursor-grabbing"
                                   onWheel={(e) => handleZoom(e, caseId)}
                                   onMouseDown={(e) => handleSvgMouseDown(e, caseId)}
@@ -1668,7 +1668,7 @@ export default function CaseDashboardPage() {
                           {/* Left column case summary profile feeds */}
                           <div className="w-64 bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col gap-2.5 overflow-y-auto pr-1 flex-shrink-0">
                             <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest border-b border-white/5 pb-1 flex-shrink-0">TRACE MATRICES</span>
-                            
+
                             {/* Search box */}
                             <div className="mb-2 flex-shrink-0">
                               <input
@@ -1686,9 +1686,9 @@ export default function CaseDashboardPage() {
                             {(() => {
                               const caseGraph = graphDataPerCase[caseId] || graphData;
                               const query = (dossierSearchQuery[caseId] || '').toLowerCase().trim();
-                              const filteredNodes = caseGraph?.nodes?.filter((n: any) => 
-                                n.label.toLowerCase().includes(query) || 
-                                n.id.toLowerCase().includes(query) || 
+                              const filteredNodes = caseGraph?.nodes?.filter((n: any) =>
+                                n.label.toLowerCase().includes(query) ||
+                                n.id.toLowerCase().includes(query) ||
                                 n.type.toLowerCase().includes(query) ||
                                 getNodeAbbreviation(caseId, n.id).toLowerCase().includes(query)
                               ) || [];
@@ -1930,7 +1930,7 @@ export default function CaseDashboardPage() {
                         <h4 className="text-[9px] font-bold text-[#39ff14] tracking-widest uppercase">Pending Registrations</h4>
                         <p className="text-[8px] text-gray-500 font-mono mt-0.5">Approve or deny new investigator registration requests</p>
                       </div>
-                      
+
                       <div className="flex flex-col gap-2">
                         {loadingPending ? (
                           <span className="text-[8px] text-gray-500 font-mono animate-pulse">FETCHING PENDING REGISTRATIONS...</span>

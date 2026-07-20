@@ -257,3 +257,16 @@ export async function rejectInvestigator(id: string): Promise<any> {
   const res = await apiClient.post(`/auth/reject/${id}`);
   return res.data;
 }
+
+export async function getAuditLogs(): Promise<any[]> {
+  if (isMockMode()) {
+    return [
+      { id: '1', action: 'investigator.login', timestamp: new Date().toISOString(), detail: { badge_id: 'INV-001' } },
+      { id: '2', action: 'case.create', timestamp: new Date().toISOString(), detail: { title: 'OPERATION PEGASUS' } },
+      { id: '3', action: 'identifier.resolve', timestamp: new Date().toISOString(), detail: { type: 'domain', value: 'example.com' } },
+      { id: '4', action: 'pipeline.completed', timestamp: new Date().toISOString(), detail: { status: 'success' } }
+    ];
+  }
+  const res = await apiClient.get('/auth/audit-logs');
+  return res.data;
+}

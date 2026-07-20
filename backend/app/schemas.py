@@ -177,4 +177,16 @@ class EvidencePackOut(BaseModel):
     notes: list[CaseNoteOut]
     graph: EvidenceGraph
     digital_signature: str | None = None
+
+
+class AuditLogOut(BaseModel):
+    id: str
+    investigator_id: str | None
+    case_id: str | None
+    action: str
+    detail: dict | None
+    timestamp: datetime
+    signature: str | None
+
+    model_config = ConfigDict(from_attributes=True)
 

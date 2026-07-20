@@ -1,15 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import StatusBar from './StatusBar';
-import IntroSequence from '../intro/IntroSequence';
 import { useAuth } from '../../hooks/useAuth';
 import { useUIStore } from '../../state/uiStore';
 import { useCaseStore } from '../../state/caseStore';
-
-// Key to track if intro has been shown this browser session
-const INTRO_SHOWN_KEY = 'er_intro_shown';
 
 export default function AppShell() {
   const { isAuthenticated } = useAuth();
@@ -17,11 +13,6 @@ export default function AppShell() {
   const { loadCases } = useCaseStore();
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Show intro once per session
-  const [showIntro, setShowIntro] = useState<boolean>(() => {
-    return !sessionStorage.getItem(INTRO_SHOWN_KEY);
-  });
 
   // Authentication Guard
   useEffect(() => {
@@ -39,18 +30,10 @@ export default function AppShell() {
 
   if (!isAuthenticated) return null;
 
-  const handleIntroComplete = () => {
-    sessionStorage.setItem(INTRO_SHOWN_KEY, '1');
-    setShowIntro(false);
-  };
-
   const isDesktopMode = location.pathname.startsWith('/cases');
 
   return (
     <>
-      {/* Intro Sequence overlay */}
-      {showIntro && <IntroSequence onComplete={handleIntroComplete} />}
-
       {isDesktopMode ? (
         <div className="w-screen h-screen overflow-hidden bg-black relative">
           <Outlet />

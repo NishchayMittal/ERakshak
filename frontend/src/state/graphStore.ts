@@ -62,12 +62,13 @@ export const useGraphStore = create<GraphState>((set, get) => ({
       }
 
       set({
-        graphData: graph,
-        evidencePack: evidence,
+        graphData: graph || { nodes: [], edges: [] },
+        evidencePack: evidence || null,
         selectedEntityId: resolvedEntityId,
       });
     } catch (err) {
       console.error('Failed to load entity graph data:', err);
+      set({ graphData: { nodes: [], edges: [] }, evidencePack: null });
     } finally {
       set({ loading: false });
     }

@@ -596,16 +596,20 @@ export default function CaseDashboardPage() {
   };
 
   useEffect(() => {
-    if (lastAccessedCaseId) {
-      loadGraphForCase(lastAccessedCaseId, 'n1').catch(err => {
-        console.warn("Failed to prefetch graph for last accessed case:", err);
-      });
-    } else if (cases.length > 0) {
-      const firstCaseId = cases[0].caseId;
-      setLastAccessedCaseId(firstCaseId);
-      localStorage.setItem('er_last_accessed_case', firstCaseId);
+    if (cases.length === 0) return;
+
+    const validCase = cases.find(c => c.caseId === lastAccessedCaseId);
+    const targetId = validCase ? validCase.caseId : cases[0].caseId;
+
+    if (!validCase) {
+      setLastAccessedCaseId(targetId);
+      localStorage.setItem('er_last_accessed_case', targetId);
     }
-  }, [lastAccessedCaseId, cases]);
+
+    loadGraphForCase(targetId, 'n1').catch(err => {
+      console.warn("Failed to prefetch graph for case:", err);
+    });
+  }, [lastAccessedCaseId, cases.length]);
 
   const handleMatrixWheel = (e: React.WheelEvent) => {
     if (!lastAccessedCaseId) return;

@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useUIStore } from "../state/uiStore";
 import { signupRequest } from "../api/endpoints";
+import { CyberCard } from "../components/ui/CyberCard";
+import { CyberButton } from "../components/ui/CyberButton";
+
 
 const BOOT_LINES = [
   "SECURE ENCLAVE READY...",
@@ -182,9 +185,7 @@ export default function LoginPage() {
       })}
 
       {/* Login card */}
-      <div className="cyber-card-container" style={{ width: "100%", maxWidth: 400, margin: "0 auto", position: "relative" }}>
-        <div className="cyber-card-border">
-          <div className="cyber-card-inner" style={{ padding: 0 }}>
+      <CyberCard style={{ width: "100%", maxWidth: 400, margin: "0 auto", position: "relative" }} innerStyle={{ padding: 0 }}>
         {/* Top accent bar */}
         <div
           style={{
@@ -427,15 +428,13 @@ export default function LoginPage() {
             </div>
 
             {/* Submit */}
-            <div className="cyber-button-container" style={{ width: "100%", display: "flex", justifyContent: "center" }}>
-              <button
-                type="submit"
-                className="cyber-button"
-                style={{ width: "100%" }}
-              >
-                {isSignUp ? "SUBMIT SIGNUP REQUEST" : "AUTHORIZE SESSION"}
-              </button>
-            </div>
+            <CyberButton
+              type="submit"
+              style={{ width: "100%" }}
+              containerStyle={{ width: "100%", display: "flex", justifyContent: "center" }}
+            >
+              {isSignUp ? "SUBMIT SIGNUP REQUEST" : "AUTHORIZE SESSION"}
+            </CyberButton>
 
             {/* Toggle switch */}
             <button
@@ -478,9 +477,7 @@ export default function LoginPage() {
           STRICTLY AUTHORIZED PERSONNEL ONLY. ALL ACCESS AND INGESTION EVENTS
           ARE DIGITALLY LOGGED.
         </div>
-          </div>
-        </div>
-      </div>
+      </CyberCard>
 
       {/* ── Global Toast ── */}
       {toast && (

@@ -2,6 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
 import { ArrowRight } from 'lucide-react';
+import { CyberCard } from '../components/ui/CyberCard';
+import { CyberButton } from '../components/ui/CyberButton';
+
 
 // ── THREE.JS EARTH EFFECT BACKGROUND ──
 function EarthEffect() {
@@ -641,8 +644,7 @@ export default function PortalPage() {
         </div>
       </div>
 
-      <div 
-        className="cyber-card-container"
+      <CyberCard
         style={{ 
           zIndex: 10, 
           opacity: isZooming ? 0 : 1,
@@ -650,25 +652,19 @@ export default function PortalPage() {
           transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
           pointerEvents: isZooming ? 'none' : 'auto'
         }}
+        innerStyle={{ alignItems: 'center', gap: '24px' }}
       >
-        <div className="cyber-card-border">
-          <div className="cyber-card-inner" style={{ alignItems: 'center', gap: '24px' }}>
-            <div style={{ textAlign: 'center' }}>
-                <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 300, letterSpacing: '0.1em', color: 'var(--text-primary)' }}>SYSTEM ONLINE</h2>
-                <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>Secure connection established.</p>
-            </div>
-            <div className="cyber-button-container">
-              <button
-                className="cyber-button"
-                onClick={handleEnterClick}
-              >
-                <span>ENTER DASHBOARD</span>
-                <ArrowRight size={16} color="#000000" />
-              </button>
-            </div>
-          </div>
+        <div style={{ textAlign: 'center' }}>
+            <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 300, letterSpacing: '0.1em', color: 'var(--text-primary)' }}>SYSTEM ONLINE</h2>
+            <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>Secure connection established.</p>
         </div>
-      </div>
+        <CyberButton 
+          onClick={handleEnterClick} 
+          icon={<ArrowRight size={16} color="#000000" />}
+        >
+          <span>ENTER DASHBOARD</span>
+        </CyberButton>
+      </CyberCard>
     </div>
   );
 }

@@ -50,7 +50,8 @@ import {
   getEvidencePack,
   getPendingApprovals,
   approveInvestigator,
-  rejectInvestigator
+  rejectInvestigator,
+  getAuditLogs
 } from '../api/endpoints';
 
 interface WindowState {
@@ -144,7 +145,7 @@ export default function CaseDashboardPage() {
         ...prev,
         [activeCaseId]: graphData
       }));
-      
+
       if (graphData.nodes) {
         const cx = 350;
         const cy = 200;
@@ -358,26 +359,56 @@ export default function CaseDashboardPage() {
     }
   }, [cases]);
 
-  // Simulated widget intervals
+  // Fetch real backend audit logs periodically
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCpuUsage(prev => Math.min(99, Math.max(10, prev + Math.floor(Math.random() * 9) - 4)));
-      setRamUsage(prev => Math.min(95, Math.max(30, prev + Math.floor(Math.random() * 5) - 2)));
-    }, 2000);
-    return () => clearInterval(timer);
-  }, []);
+    const fetchLogs = async () => {
+      try {
+        const data = await getAuditLogs();
+        if (data && Array.isArray(data)) {
+          const formatted = data.map((log: any) => {
+            const date = new Date(log.timestamp);
+            const time = date.toTimeString().split(' ')[0];
+            const action = log.action.toLowerCase();
+            const meta = log.detail || {};
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const logs = [
-        'AUDIT: Trace verification checklist compiled.',
-        'XGBOOST: Feature vectors weights synchronized.',
-        'CONNECTOR: ping check complete on sherlock target.',
-        'SECURE: Session crypt signature verified.'
-      ];
-      const timestamp = new Date().toTimeString().split(' ')[0];
-      setHudLogs(prev => [`[${timestamp}] ${logs[Math.floor(Math.random() * logs.length)]}`, ...prev].slice(0, 8));
-    }, 5000);
+            let message = log.action.toUpperCase();
+
+            if (action === 'investigator.login') {
+              message = `INVESTIGATOR LOGIN // AGENT: ${meta.badge_id || 'UNKNOWN'}`;
+            } else if (action === 'investigator.signup') {
+              message = `SIGNUP REQUEST SUBMITTED // BADGE: ${meta.badge_id || 'UNKNOWN'}`;
+            } else if (action === 'investigator.approve') {
+              message = `REGISTRATION APPROVED // TARGET: ${meta.badge_id || 'UNKNOWN'}`;
+            } else if (action === 'investigator.reject') {
+              message = `REGISTRATION REJECTED // TARGET: ${meta.badge_id || 'UNKNOWN'}`;
+            } else if (action === 'investigator.update_profile') {
+              message = `SECURITY PROFILE UPDATED // AGENT: ${meta.badge_id || 'UNKNOWN'}`;
+            } else if (action === 'case.create') {
+              message = `CASE INITIALIZED // TITLE: ${meta.title || 'UNTITLED'}`;
+            } else if (action === 'case.delete') {
+              message = `CASE REMOVED // ID: ${meta.case_id || 'UNKNOWN'}`;
+            } else if (action === 'case.rename') {
+              message = `CASE RECLASSIFIED // TITLE: ${meta.title || 'UNTITLED'}`;
+            } else if (action === 'identifier.create') {
+              message = `IDENTIFIER INGESTED // TYPE: ${(meta.type || 'unknown').toUpperCase()} // VALUE: ${meta.value || ''}`;
+            } else if (action === 'connector.run') {
+              message = `CONNECTOR EXECUTING // ATTACHED ID: ${meta.identifier_id || ''}`;
+            } else if (action === 'feedback.submit' || action === 'feedback') {
+              message = `RELATION FEEDBACK SUBMITTED // STATUS: ${(meta.status || 'unknown').toUpperCase()}`;
+            } else if (action === 'model.retrain') {
+              message = `NEURAL CLASSIFIER WEIGHTS RETRAINED`;
+            }
+
+            return `[${time}] AUDIT: ${message}`;
+          });
+          setHudLogs(formatted);
+        }
+      } catch (err) {
+        console.error('Failed to fetch audit logs', err);
+      }
+    };
+    fetchLogs();
+    const timer = setInterval(fetchLogs, 5000);
     return () => clearInterval(timer);
   }, []);
 
@@ -1074,7 +1105,7 @@ export default function CaseDashboardPage() {
       <div className="absolute top-0 left-0 right-0 h-8 bg-black/60 backdrop-blur-md border-b border-[#39ff14]/15 flex items-center justify-between px-4 z-[999] text-[10px]">
         <div className="flex items-center gap-4">
           <span className="font-bold tracking-wider text-[#39ff14] flex items-center gap-1.5 animate-pulse">
-            <Shield size={12} /> e-RAKSHAK HOLOGRAPHIC CONSOLE
+            <Shield size={12} /> ORION HOLOGRAPHIC CONSOLE
           </span>
           <div className="h-3 w-[1px] bg-white/10" />
           <button
@@ -1144,7 +1175,7 @@ export default function CaseDashboardPage() {
       )}
 
       {/* Scrollable Desktop Area for Folders */}
-      <div 
+      <div
         className="absolute top-12 bottom-20 left-6 right-[460px] overflow-y-auto pointer-events-auto z-10 pr-2 custom-desktop-scrollbar"
         style={{ scrollbarWidth: 'thin' }}
       >
@@ -1224,37 +1255,8 @@ export default function CaseDashboardPage() {
               })()}
             </span>
           </div>
-          <div className="w-full h-32 flex items-center justify-center relative overflow-hidden bg-black/20 rounded">
+          <div className="w-full h-64 flex items-center justify-center relative overflow-hidden bg-black/20 rounded">
             {renderMatrixGraph()}
-          </div>
-        </div>
-
-        {/* Real-time System Diagnostics */}
-        <div className="w-full bg-black/40 border border-white/5 backdrop-blur-md rounded-xl p-3 flex flex-col gap-2.5 pointer-events-auto">
-          <div className="flex items-center justify-between border-b border-white/5 pb-1">
-            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-              <Sliders size={12} className="text-[#39ff14]" /> System Metrics
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-4 text-[8px] font-bold">
-            <div className="flex flex-col gap-1">
-              <div className="flex justify-between text-gray-400">
-                <span>CPU LOADING</span>
-                <span className="text-[#39ff14]">{cpuUsage}%</span>
-              </div>
-              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-[#39ff14]" style={{ width: `${cpuUsage}%` }} />
-              </div>
-            </div>
-            <div className="flex flex-col gap-1">
-              <div className="flex justify-between text-gray-400">
-                <span>RAM ALLOC</span>
-                <span className="text-[#a855f7]">{ramUsage}%</span>
-              </div>
-              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                <div className="h-full bg-[#a855f7]" style={{ width: `${ramUsage}%` }} />
-              </div>
-            </div>
           </div>
         </div>
 
@@ -1262,12 +1264,12 @@ export default function CaseDashboardPage() {
         <div className="w-full flex-1 bg-black/40 border border-white/5 backdrop-blur-md rounded-xl p-3 flex flex-col gap-2 pointer-events-auto overflow-hidden">
           <div className="flex items-center justify-between border-b border-white/5 pb-1">
             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-              <Terminal size={12} className="text-[#a855f7]" /> Diagnostic Stream
+              <Terminal size={12} className="text-[#a855f7]" /> Application Audit Stream
             </span>
           </div>
-          <div className="flex-1 overflow-hidden font-mono text-[8px] text-gray-400 flex flex-col gap-1 select-text">
+          <div className="flex-1 overflow-auto font-mono text-[8px] text-gray-400 flex flex-col gap-1 select-text scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
             {hudLogs.map((log, idx) => (
-              <div key={idx} className="truncate flex items-start gap-1">
+              <div key={idx} className="whitespace-nowrap flex items-start gap-1">
                 <span className="text-[#39ff14]">&gt;</span>
                 <span className={log.includes('AUDIT') ? 'text-[#39ff14]' : 'text-gray-300'}>{log}</span>
               </div>
@@ -1503,7 +1505,7 @@ export default function CaseDashboardPage() {
                       {tab === 'graph' && (
                         <div className="flex flex-1 min-height-0 overflow-hidden relative">
                           <div className="flex-grow bg-[#0c1220] border border-[#39ff14]/30 rounded-xl relative overflow-hidden shadow-inner flex flex-col">
-                            
+
                             {/* Drag instructions overlay */}
                             <div className="absolute top-2 left-2 pointer-events-none text-[7px] text-[#39ff14] font-mono uppercase bg-black/85 px-2 py-1 border border-[#39ff14]/20 z-10 tracking-wider">
                               DRAG NODES TO REORGANIZE | DOUBLE-CLICK TO VIEW PROFILE DOSSIER | PAN NETWORK CANVAS BY DRAGGING WITH RIGHT CLICK
@@ -1520,7 +1522,7 @@ export default function CaseDashboardPage() {
                                 );
                               }
                               return (
-                                <svg 
+                                <svg
                                   className="w-full h-full cursor-grab active:cursor-grabbing"
                                   onWheel={(e) => handleZoom(e, caseId)}
                                   onMouseDown={(e) => handleSvgMouseDown(e, caseId)}
@@ -1646,6 +1648,19 @@ export default function CaseDashboardPage() {
                                     <span className="text-gray-500 font-mono font-semibold">IDENTIFIER TYPE</span>
                                     <span className="text-gray-200 font-mono uppercase bg-white/5 p-1">{nodeInfo.type}</span>
                                   </div>
+                                  {nodeInfo.profile_url && (
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="text-gray-500 font-mono font-semibold">PROFILE URL</span>
+                                      <a
+                                        href={nodeInfo.profile_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[#39ff14] underline font-mono break-all bg-[#39ff14]/10 p-1 hover:text-white transition-colors"
+                                      >
+                                        {nodeInfo.profile_url}
+                                      </a>
+                                    </div>
+                                  )}
                                   <div className="flex flex-col gap-0.5">
                                     <span className="text-gray-500 font-mono font-semibold">CONFIDENCE VALUE</span>
                                     <div className="flex items-center gap-2 bg-white/5 p-1">
@@ -1668,7 +1683,7 @@ export default function CaseDashboardPage() {
                           {/* Left column case summary profile feeds */}
                           <div className="w-64 bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col gap-2.5 overflow-y-auto pr-1 flex-shrink-0">
                             <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest border-b border-white/5 pb-1 flex-shrink-0">TRACE MATRICES</span>
-                            
+
                             {/* Search box */}
                             <div className="mb-2 flex-shrink-0">
                               <input
@@ -1686,9 +1701,9 @@ export default function CaseDashboardPage() {
                             {(() => {
                               const caseGraph = graphDataPerCase[caseId] || graphData;
                               const query = (dossierSearchQuery[caseId] || '').toLowerCase().trim();
-                              const filteredNodes = caseGraph?.nodes?.filter((n: any) => 
-                                n.label.toLowerCase().includes(query) || 
-                                n.id.toLowerCase().includes(query) || 
+                              const filteredNodes = caseGraph?.nodes?.filter((n: any) =>
+                                n.label.toLowerCase().includes(query) ||
+                                n.id.toLowerCase().includes(query) ||
                                 n.type.toLowerCase().includes(query) ||
                                 getNodeAbbreviation(caseId, n.id).toLowerCase().includes(query)
                               ) || [];
@@ -1930,7 +1945,7 @@ export default function CaseDashboardPage() {
                         <h4 className="text-[9px] font-bold text-[#39ff14] tracking-widest uppercase">Pending Registrations</h4>
                         <p className="text-[8px] text-gray-500 font-mono mt-0.5">Approve or deny new investigator registration requests</p>
                       </div>
-                      
+
                       <div className="flex flex-col gap-2">
                         {loadingPending ? (
                           <span className="text-[8px] text-gray-500 font-mono animate-pulse">FETCHING PENDING REGISTRATIONS...</span>

@@ -35,7 +35,8 @@ def serialize_graph(G: nx.MultiDiGraph) -> dict:
             "sourceCount": source_count,
             "pivot": is_pivot,
             "expand_investigation": is_pivot,
-            "timestamp": data.get("timestamp", "")
+            "timestamp": data.get("timestamp", ""),
+            "profile_url": data.get("profile_url", "")
         })
 
     edges_list = []
@@ -257,6 +258,9 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
         elif result_type == "discovered_path":
             target_node_id = result_val.replace("Active Path: ", "").strip()
             target_type = "domain"
+        elif result_type in ("reddit_profile", "instagram_profile", "linkedin_profile"):
+            target_node_id = result_val
+            target_type = "username"
 
         if target_node_id:
             if not G.has_node(target_node_id):
@@ -268,6 +272,7 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
                     id=finding.id,
                     confidence=float(confidence),
                     timestamp=timestamp_str,
+                    profile_url=(finding.raw_payload or {}).get("profile_url", "")
                 )
             G.add_edge(
                 parent_node_id,

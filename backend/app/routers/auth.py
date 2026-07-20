@@ -6,8 +6,8 @@ from pydantic import BaseModel, Field
 from app.audit import log_action
 from app.auth import create_access_token, hash_password, verify_password, get_current_investigator
 from app.database import get_db
-from app.models import Investigator
-from app.schemas import InvestigatorCreate, InvestigatorOut, Token
+from app.models import Investigator, AuditLog
+from app.schemas import InvestigatorCreate, InvestigatorOut, Token, AuditLogOut
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -43,6 +43,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Badge ID is not registered.")
     if not verify_password(form_data.password, investigator.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid security passphrase.")
+
+    # Lead Investigator (INV-001) is automatically approved
+    if investigator.badge_id == "INV-001" and not investigator.is_approved:
+        investigator.is_approved = True
+        db.commit()
 
     if not investigator.is_approved:
         raise HTTPException(
@@ -146,3 +151,11 @@ def update_profile(
         detail={"name_updated": payload.full_name is not None, "password_updated": payload.password is not None}
     )
     return current_investigator
+
+
+@router.get("/audit-logs", response_model=list[AuditLogOut])
+def get_audit_logs(
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    return db.query(AuditLog).order_by(AuditLog.timestamp.desc()).limit(30).all()

@@ -17,6 +17,7 @@ from app.connectors.ip_geoloc import IpGeolocConnector
 from app.connectors.shodan_idb import ShodanIdbConnector
 from app.connectors.gravatar_email import GravatarEmailConnector
 from app.connectors.pgp_lookup import PgpLookupConnector
+from app.connectors.social_profiler import SocialProfilerConnector
 from app.database import Base, engine
 from app.routers import auth as auth_router
 from app.routers import cases as cases_router
@@ -61,6 +62,7 @@ registry.register(GravatarEmailConnector())
 registry.register(PgpLookupConnector())
 registry.register(OcrExtractorConnector())
 registry.register(BucketEnumConnector())
+registry.register(SocialProfilerConnector())
 
 
 async def retention_cleanup_loop():
@@ -96,6 +98,10 @@ def on_startup() -> None:
     with engine.begin() as conn:
         try:
             conn.execute(text("ALTER TABLE investigators ADD COLUMN is_approved BOOLEAN DEFAULT 0"))
+        except Exception:
+            pass
+        try:
+            conn.execute(text("UPDATE investigators SET is_approved = 1 WHERE badge_id = 'INV-001'"))
         except Exception:
             pass
     Base.metadata.create_all(bind=engine)

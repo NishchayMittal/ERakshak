@@ -92,6 +92,12 @@ async def retention_cleanup_loop():
 
 @app.on_event("startup")
 def on_startup() -> None:
+    from sqlalchemy import text
+    with engine.begin() as conn:
+        try:
+            conn.execute(text("ALTER TABLE investigators ADD COLUMN is_approved BOOLEAN DEFAULT 0"))
+        except Exception:
+            pass
     Base.metadata.create_all(bind=engine)
     import asyncio
     from app.routers.ws import redis_listener

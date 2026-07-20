@@ -8,6 +8,8 @@ from app.models import IdentifierType
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    badge_id: str
+    full_name: str
 
 
 class InvestigatorBase(BaseModel):

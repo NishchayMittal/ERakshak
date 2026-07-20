@@ -47,7 +47,10 @@ import {
   exportCaseJSON,
   exportCaseCSV,
   exportCasePDF,
-  getEvidencePack
+  getEvidencePack,
+  getPendingApprovals,
+  approveInvestigator,
+  rejectInvestigator
 } from '../api/endpoints';
 
 interface WindowState {
@@ -222,6 +225,8 @@ export default function CaseDashboardPage() {
   const [profileName, setProfileName] = useState(user?.name || '');
   const [profilePass, setProfilePass] = useState('');
   const [profileUpdating, setProfileUpdating] = useState(false);
+  const [pendingApprovals, setPendingApprovals] = useState<any[]>([]);
+  const [loadingPending, setLoadingPending] = useState(false);
 
   // Settings Trainer state
   const [retrainLogs, setRetrainLogs] = useState<string[]>([]);
@@ -934,6 +939,43 @@ export default function CaseDashboardPage() {
       setProfileUpdating(false);
     }
   };
+
+  const fetchPendingApprovals = async () => {
+    if (user?.badgeNumber !== 'INV-001') return;
+    setLoadingPending(true);
+    try {
+      const res = await getPendingApprovals();
+      setPendingApprovals(res);
+    } catch (err) {
+      console.error('Failed to fetch pending approvals', err);
+    } finally {
+      setLoadingPending(false);
+    }
+  };
+
+  const handleApprove = async (id: string, name: string) => {
+    try {
+      await approveInvestigator(id);
+      showToast(`APPROVED REGISTRATION FOR ${name.toUpperCase()}`, 'success');
+      fetchPendingApprovals();
+    } catch (err) {
+      showToast('FAILED TO APPROVE INVESTIGATOR', 'error');
+    }
+  };
+
+  const handleReject = async (id: string, name: string) => {
+    try {
+      await rejectInvestigator(id);
+      showToast(`DENIED REGISTRATION FOR ${name.toUpperCase()}`, 'success');
+      fetchPendingApprovals();
+    } catch (err) {
+      showToast('FAILED TO DENY INVESTIGATOR', 'error');
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingApprovals();
+  }, [user]);
 
   const handleRetrain = async () => {
     setRetrainProgress(0);
@@ -1881,6 +1923,46 @@ export default function CaseDashboardPage() {
                       {profileUpdating ? 'UPDATING SECURE CONFIG...' : 'UPDATE CREDENTIAL CONFIG'}
                     </button>
                   </form>
+
+                  {user?.badgeNumber === 'INV-001' && (
+                    <div className="mt-6 border-t border-white/5 pt-4">
+                      <div className="border-b border-white/5 pb-2 mb-3">
+                        <h4 className="text-[9px] font-bold text-[#39ff14] tracking-widest uppercase">Pending Registrations</h4>
+                        <p className="text-[8px] text-gray-500 font-mono mt-0.5">Approve or deny new investigator registration requests</p>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2">
+                        {loadingPending ? (
+                          <span className="text-[8px] text-gray-500 font-mono animate-pulse">FETCHING PENDING REGISTRATIONS...</span>
+                        ) : pendingApprovals.length === 0 ? (
+                          <span className="text-[8px] text-gray-600 font-mono italic">No pending registration requests.</span>
+                        ) : (
+                          pendingApprovals.map((req) => (
+                            <div key={req.id} className="bg-black/40 border border-white/5 rounded-xl p-3 flex items-center justify-between gap-3">
+                              <div className="flex flex-col gap-0.5 min-w-0">
+                                <span className="text-[9px] font-bold text-white truncate font-mono uppercase">{req.full_name}</span>
+                                <span className="text-[8px] text-gray-500 font-mono">BADGE ID: {req.badge_id}</span>
+                              </div>
+                              <div className="flex gap-2 flex-shrink-0">
+                                <button
+                                  onClick={() => handleApprove(req.id, req.full_name)}
+                                  className="px-2 py-1 bg-[#39ff14]/15 border border-[#39ff14] hover:bg-[#39ff14]/25 text-[#39ff14] text-[8px] font-bold uppercase transition-all"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleReject(req.id, req.full_name)}
+                                  className="px-2 py-1 bg-red-500/10 border border-red-500 hover:bg-red-500/20 text-red-400 text-[8px] font-bold uppercase transition-all"
+                                >
+                                  Deny
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

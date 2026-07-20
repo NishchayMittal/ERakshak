@@ -39,12 +39,89 @@ def register(payload: InvestigatorCreate, db: Session = Depends(get_db)):
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     investigator = db.query(Investigator).filter(Investigator.badge_id == form_data.username).first()
-    if not investigator or not verify_password(form_data.password, investigator.hashed_password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+    if not investigator:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Badge ID is not registered.")
+    if not verify_password(form_data.password, investigator.hashed_password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid security passphrase.")
+
+    if not investigator.is_approved:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account pending approval by Lead Investigator."
+        )
 
     token = create_access_token(investigator.badge_id)
     log_action(db, "investigator.login", investigator_id=investigator.id, detail={"badge_id": investigator.badge_id})
-    return Token(access_token=token)
+    return Token(
+        access_token=token,
+        badge_id=investigator.badge_id,
+        full_name=investigator.full_name
+    )
+
+
+@router.post("/signup", response_model=InvestigatorOut, status_code=status.HTTP_201_CREATED)
+def signup(payload: InvestigatorCreate, db: Session = Depends(get_db)):
+    existing = db.query(Investigator).filter(Investigator.badge_id == payload.badge_id).first()
+    if existing:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Badge ID already registered")
+
+    investigator = Investigator(
+        badge_id=payload.badge_id,
+        full_name=payload.full_name,
+        hashed_password=hash_password(payload.password),
+        is_active=True,
+        is_approved=False
+    )
+    db.add(investigator)
+    db.commit()
+    db.refresh(investigator)
+    log_action(db, "investigator.signup", investigator_id=investigator.id, detail={"badge_id": investigator.badge_id})
+    return investigator
+
+
+@router.get("/pending-approvals", response_model=list[InvestigatorOut])
+def get_pending_approvals(
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    if current_investigator.badge_id != "INV-001":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the Lead Investigator can view pending approvals.")
+    pending = db.query(Investigator).filter(Investigator.is_approved == False).all()
+    return pending
+
+
+@router.post("/approve/{investigator_id}")
+def approve_investigator(
+    investigator_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    if current_investigator.badge_id != "INV-001":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the Lead Investigator can approve signups.")
+    target = db.query(Investigator).filter(Investigator.id == investigator_id).first()
+    if not target:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Investigator not found")
+    target.is_approved = True
+    db.commit()
+    log_action(db, "investigator.approve", investigator_id=target.id, detail={"badge_id": target.badge_id})
+    return {"status": "approved"}
+
+
+@router.post("/reject/{investigator_id}")
+def reject_investigator(
+    investigator_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    if current_investigator.badge_id != "INV-001":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the Lead Investigator can reject signups.")
+    target = db.query(Investigator).filter(Investigator.id == investigator_id).first()
+    if not target:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Investigator not found")
+    db.delete(target)
+    db.commit()
+    log_action(db, "investigator.reject", investigator_id=investigator_id, detail={"badge_id": target.badge_id})
+    return {"status": "rejected"}
 
 
 @router.patch("/profile", response_model=InvestigatorOut)

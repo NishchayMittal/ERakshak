@@ -16,8 +16,8 @@
   --bg-1: #0D1117;
   --bg-2: #131A22;
   --bg-card: #0c1016;
-  --accent-primary: #39FF14;
-  --accent-primary-dim: rgba(57, 255, 20, 0.12);
+  --accent-primary: #A855F7;
+  --accent-primary-dim: rgba(168, 85, 247, 0.12);
   --accent-threat: #FF0044;
   --accent-threat-dim: rgba(255, 0, 68, 0.12);
   --accent-secondary: #FFB800;
@@ -42,7 +42,7 @@ html, body, #root {
 /* ---- Glow Border Utility ---- */
 .glow-border {
   border: 1px solid var(--accent-primary) !important;
-  box-shadow: 0 0 6px rgba(57, 255, 20, 0.25), inset 0 0 6px rgba(57, 255, 20, 0.03);
+  box-shadow: 0 0 6px rgba(168, 85, 247, 0.25), inset 0 0 6px rgba(168, 85, 247, 0.03);
 }
 
 .glow-border-threat {
@@ -251,7 +251,7 @@ html, body, #root {
 /* Custom Desktop Scrollbar */
 .custom-desktop-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(57, 255, 20, 0.25) transparent;
+  scrollbar-color: rgba(168, 85, 247, 0.25) transparent;
 }
 .custom-desktop-scrollbar::-webkit-scrollbar {
   width: 5px;
@@ -260,11 +260,11 @@ html, body, #root {
   background: transparent;
 }
 .custom-desktop-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(57, 255, 20, 0.25);
+  background: rgba(168, 85, 247, 0.25);
   border-radius: 4px;
 }
 .custom-desktop-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(57, 255, 20, 0.6);
+  background: rgba(168, 85, 247, 0.6);
 }
 
 /* ---- Responsive HUD Workspace Grids ---- */

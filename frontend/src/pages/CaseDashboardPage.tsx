@@ -1648,6 +1648,19 @@ export default function CaseDashboardPage() {
                                     <span className="text-gray-500 font-mono font-semibold">IDENTIFIER TYPE</span>
                                     <span className="text-gray-200 font-mono uppercase bg-white/5 p-1">{nodeInfo.type}</span>
                                   </div>
+                                  {nodeInfo.profile_url && (
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="text-gray-500 font-mono font-semibold">PROFILE URL</span>
+                                      <a
+                                        href={nodeInfo.profile_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[#39ff14] underline font-mono break-all bg-[#39ff14]/10 p-1 hover:text-white transition-colors"
+                                      >
+                                        {nodeInfo.profile_url}
+                                      </a>
+                                    </div>
+                                  )}
                                   <div className="flex flex-col gap-0.5">
                                     <span className="text-gray-500 font-mono font-semibold">CONFIDENCE VALUE</span>
                                     <div className="flex items-center gap-2 bg-white/5 p-1">

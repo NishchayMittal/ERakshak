@@ -7,6 +7,7 @@ export interface GraphNode {
   pivot?: boolean;
   expandInvestigation?: boolean;
   timestamp?: string;
+  profile_url?: string;
 }
 
 export interface GraphEdge {

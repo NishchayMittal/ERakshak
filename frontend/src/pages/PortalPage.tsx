@@ -188,7 +188,7 @@ function EarthEffect({ className, style }: EarthEffectProps) {
       const points = curve.getPoints(50);
       const curveGeo = new THREE.BufferGeometry().setFromPoints(points);
       const curveMat = new THREE.LineBasicMaterial({ 
-        color: 0x00ffc2, 
+        color: 0x39ff14, 
         transparent: true, 
         opacity: 0.15 + Math.random() * 0.2,
         blending: THREE.AdditiveBlending 
@@ -198,7 +198,7 @@ function EarthEffect({ className, style }: EarthEffectProps) {
       
       const particleGeo = new THREE.SphereGeometry(2.5, 8, 8);
       const particleMat = new THREE.MeshBasicMaterial({
-        color: 0x00ffc2,
+        color: 0x39ff14,
         transparent: true,
         opacity: 0.9,
         blending: THREE.AdditiveBlending
@@ -401,10 +401,10 @@ export default function PortalPage() {
             color: 'var(--accent-primary)',
             letterSpacing: '0.3em',
             textTransform: 'uppercase',
-            textShadow: '0 0 10px rgba(0,255,194,0.4)',
+            textShadow: '0 0 10px rgba(57,255,20,0.4)',
           }}
         >
-          e-RAKSHAK
+          ORION
         </h1>
         <p
           style={{
@@ -421,7 +421,7 @@ export default function PortalPage() {
       </div>
 
       {/* Centered Dashboard Button */}
-      <div style={{ zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', background: 'rgba(8,12,16,0.6)', padding: '40px', borderRadius: '16px', border: '1px solid rgba(0,255,194,0.2)', backdropFilter: 'blur(8px)' }}>
+      <div style={{ zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', background: 'rgba(8,12,16,0.6)', padding: '40px', borderRadius: '16px', border: '1px solid rgba(57,255,20,0.2)', backdropFilter: 'blur(8px)' }}>
         <div style={{ textAlign: 'center' }}>
             <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 300, letterSpacing: '0.1em', color: 'var(--text-primary)' }}>SYSTEM ONLINE</h2>
             <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>Secure connection established.</p>
@@ -429,7 +429,7 @@ export default function PortalPage() {
         <button
           onClick={() => navigate('/login')}
           style={{
-            background: 'rgba(0, 255, 194, 0.1)',
+            background: 'rgba(57, 255, 20, 0.1)',
             border: '1px solid var(--accent-primary)',
             color: 'var(--accent-primary)',
             fontFamily: 'var(--font-heading)',
@@ -439,7 +439,7 @@ export default function PortalPage() {
             textTransform: 'uppercase',
             padding: '16px 32px',
             cursor: 'pointer',
-            boxShadow: '0 0 16px rgba(0,255,194,0.25)',
+            boxShadow: '0 0 16px rgba(57,255,20,0.25)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -450,12 +450,12 @@ export default function PortalPage() {
           onMouseEnter={(e) => {
             e.currentTarget.style.background = 'var(--accent-primary)';
             e.currentTarget.style.color = '#000000';
-            e.currentTarget.style.boxShadow = '0 0 32px rgba(0,255,194,0.5)';
+            e.currentTarget.style.boxShadow = '0 0 32px rgba(57,255,20,0.5)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(0, 255, 194, 0.1)';
+            e.currentTarget.style.background = 'rgba(57, 255, 20, 0.1)';
             e.currentTarget.style.color = 'var(--accent-primary)';
-            e.currentTarget.style.boxShadow = '0 0 16px rgba(0,255,194,0.25)';
+            e.currentTarget.style.boxShadow = '0 0 16px rgba(57,255,20,0.25)';
           }}
         >
           <span>ENTER DASHBOARD</span>

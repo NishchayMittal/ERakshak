@@ -44,6 +44,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     if not verify_password(form_data.password, investigator.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid security passphrase.")
 
+    # Lead Investigator (INV-001) is automatically approved
+    if investigator.badge_id == "INV-001" and not investigator.is_approved:
+        investigator.is_approved = True
+        db.commit()
+
     if not investigator.is_approved:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

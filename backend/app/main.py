@@ -98,6 +98,10 @@ def on_startup() -> None:
             conn.execute(text("ALTER TABLE investigators ADD COLUMN is_approved BOOLEAN DEFAULT 0"))
         except Exception:
             pass
+        try:
+            conn.execute(text("UPDATE investigators SET is_approved = 1 WHERE badge_id = 'INV-001'"))
+        except Exception:
+            pass
     Base.metadata.create_all(bind=engine)
     import asyncio
     from app.routers.ws import redis_listener

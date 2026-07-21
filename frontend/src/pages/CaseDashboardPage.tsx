@@ -535,17 +535,6 @@ export default function CaseDashboardPage() {
   const handleDragStart = (e: React.MouseEvent, id: string) => {
     if (e.button !== 0) return;
 
-    const target = e.target as HTMLElement;
-    // Ignore window drags initiated on interactive elements (inputs, buttons, textareas, selects, links, canvas node handles)
-    if (
-      target.closest('button, input, select, textarea, a, canvas, [role="button"]') ||
-      target.getAttribute('contenteditable') === 'true'
-    ) {
-      if (!target.classList.contains('window-drag-surface')) {
-        return;
-      }
-    }
-
     const win = windows.find(w => w.id === id);
     if (!win || win.isMaximized) return;
 
@@ -555,6 +544,9 @@ export default function CaseDashboardPage() {
     const startY = e.clientY;
     const initX = win.x;
     const initY = win.y;
+
+    // Minimum Y offset to prevent window top bar from going higher than the top dashboard bar (h-8 = 32px / 2rem)
+    const TOP_BAR_HEIGHT = 32;
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const dx = moveEvent.clientX - startX;
@@ -566,7 +558,85 @@ export default function CaseDashboardPage() {
             return {
               ...w,
               x: Math.max(0, initX + dx),
-              y: Math.max(0, initY + dy)
+              y: Math.max(TOP_BAR_HEIGHT, initY + dy)
+            };
+          }
+          return w;
+        })
+      );
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleResizeStart = (e: React.MouseEvent, id: string, direction: string) => {
+    e.stopPropagation();
+    if (e.button !== 0) return;
+
+    const win = windows.find(w => w.id === id);
+    if (!win || win.isMaximized) return;
+
+    focusWindow(id);
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initX = win.x;
+    const initY = win.y;
+    const initW = win.width;
+    const initH = win.height;
+
+    const MIN_WIDTH = 400;
+    const MIN_HEIGHT = 300;
+    const TOP_BAR_HEIGHT = 32;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+
+      setWindows(prev =>
+        prev.map(w => {
+          if (w.id === id) {
+            let newX = initX;
+            let newY = initY;
+            let newW = initW;
+            let newH = initH;
+
+            // Horizontal resizing
+            if (direction.includes('e')) {
+              newW = Math.max(MIN_WIDTH, initW + dx);
+            } else if (direction.includes('w')) {
+              const maxPossibleDx = initW - MIN_WIDTH;
+              const actualDx = Math.min(dx, maxPossibleDx);
+              newX = initX + actualDx;
+              newW = initW - actualDx;
+            }
+
+            // Vertical resizing
+            if (direction.includes('s')) {
+              newH = Math.max(MIN_HEIGHT, initH + dy);
+            } else if (direction.includes('n')) {
+              const maxPossibleDy = initH - MIN_HEIGHT;
+              const requestedY = initY + dy;
+              const clampedY = Math.max(TOP_BAR_HEIGHT, requestedY);
+              const actualDy = clampedY - initY;
+              if (actualDy <= maxPossibleDy) {
+                newY = initY + actualDy;
+                newH = initH - actualDy;
+              }
+            }
+
+            return {
+              ...w,
+              x: newX,
+              y: newY,
+              width: newW,
+              height: newH
             };
           }
           return w;
@@ -1346,7 +1416,6 @@ export default function CaseDashboardPage() {
         return (
           <div
             key={win.id}
-            onMouseDown={(e) => handleDragStart(e, win.id)}
             onClick={() => focusWindow(win.id)}
             className={`absolute flex flex-col border shadow-2xl transition-all duration-100 bg-[#04080e]/95 backdrop-blur-xl ${isFocused ? 'border-[#39ff14] shadow-[#39ff14]/5' : 'border-white/10 shadow-black/80'}`}
             style={{
@@ -1423,6 +1492,53 @@ export default function CaseDashboardPage() {
               )}
               {win.type === 'cross_correlate' && <CrossCorrelationWindow win={win} />}
             </div>
+
+            {/* Directional Resize Handles (4 edges + 4 corners) */}
+            {!win.isMaximized && (
+              <>
+                {/* Top edge */}
+                <div
+                  onMouseDown={(e) => handleResizeStart(e, win.id, 'n')}
+                  className="absolute top-0 left-3 right-3 h-1.5 cursor-ns-resize hover:bg-[#39ff14]/30 z-30"
+                />
+                {/* Bottom edge */}
+                <div
+                  onMouseDown={(e) => handleResizeStart(e, win.id, 's')}
+                  className="absolute bottom-0 left-3 right-3 h-1.5 cursor-ns-resize hover:bg-[#39ff14]/30 z-30"
+                />
+                {/* Left edge */}
+                <div
+                  onMouseDown={(e) => handleResizeStart(e, win.id, 'w')}
+                  className="absolute top-3 bottom-3 left-0 w-1.5 cursor-ew-resize hover:bg-[#39ff14]/30 z-30"
+                />
+                {/* Right edge */}
+                <div
+                  onMouseDown={(e) => handleResizeStart(e, win.id, 'e')}
+                  className="absolute top-3 bottom-3 right-0 w-1.5 cursor-ew-resize hover:bg-[#39ff14]/30 z-30"
+                />
+
+                {/* Top-Left corner */}
+                <div
+                  onMouseDown={(e) => handleResizeStart(e, win.id, 'nw')}
+                  className="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize hover:bg-[#39ff14]/50 z-30"
+                />
+                {/* Top-Right corner */}
+                <div
+                  onMouseDown={(e) => handleResizeStart(e, win.id, 'ne')}
+                  className="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize hover:bg-[#39ff14]/50 z-30"
+                />
+                {/* Bottom-Left corner */}
+                <div
+                  onMouseDown={(e) => handleResizeStart(e, win.id, 'sw')}
+                  className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize hover:bg-[#39ff14]/50 z-30"
+                />
+                {/* Bottom-Right corner */}
+                <div
+                  onMouseDown={(e) => handleResizeStart(e, win.id, 'se')}
+                  className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize hover:bg-[#39ff14]/50 z-30"
+                />
+              </>
+            )}
           </div>
         );
       })}

@@ -1,8 +1,10 @@
 import React from 'react';
 import { Download, FileText } from 'lucide-react';
 import { useDashboardContext } from '../../pages/DashboardContext';
+import { useCaseWebSocket } from '../../hooks/useCaseWebSocket';
 
 export function CaseWindow({ win }: { win: any }) {
+  useCaseWebSocket(win.caseId);
   const {
     activeEntityPerCase,
     setActiveEntityPerCase,

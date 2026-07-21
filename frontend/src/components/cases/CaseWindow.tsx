@@ -3,6 +3,7 @@ import { Download, FileText } from 'lucide-react';
 import { useDashboardContext } from '../../pages/DashboardContext';
 import { useCaseWebSocket } from '../../hooks/useCaseWebSocket';
 import TemporalWindow from './TemporalWindow';
+import ChatPanel from './ChatPanel';
 
 export function CaseWindow({ win }: { win: any }) {
   useCaseWebSocket(win.caseId);
@@ -65,8 +66,9 @@ export function CaseWindow({ win }: { win: any }) {
                         { id: 'intake', label: '[01 CMD_INTAKE]' },
                         { id: 'graph', label: '[02 NET_MATRIX]' },
                         { id: 'dossier', label: '[03 TEL_DOSSIER]' },
-                        { id: 'report', label: '[04 AI_REPORT]' },
-                        { id: 'temporal', label: '[05 TEMPORAL_MATRIX]' }
+                        { id: 'temporal', label: '[04 TEMPORAL_MATRIX]' },
+                        { id: 'report', label: '[05 AI_REPORT]' },
+                        { id: 'chat', label: '[06 AI_CHAT]' }
                       ].map(t => (
                         <button
                           key={t.id}
@@ -511,6 +513,11 @@ export function CaseWindow({ win }: { win: any }) {
                       {/* Temporal Behavioral Matrix Tab */}
                       {tab === 'temporal' && (
                         <TemporalWindow caseId={caseId} />
+                      )}
+
+                      {/* AI Intelligence Chat Tab */}
+                      {tab === 'chat' && (
+                        <ChatPanel caseId={caseId} />
                       )}
 
                     </div>

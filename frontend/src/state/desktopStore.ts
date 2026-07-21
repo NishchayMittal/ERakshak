@@ -12,7 +12,7 @@ export interface WindowState {
   isMaximized: boolean;
   zIndex: number;
   caseId?: string;
-  activeTab?: 'intake' | 'graph' | 'dossier' | 'report' | 'temporal';
+  activeTab?: 'intake' | 'graph' | 'dossier' | 'report' | 'temporal' | 'chat';
 }
 
 interface DesktopState {

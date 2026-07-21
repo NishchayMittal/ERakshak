@@ -1,4 +1,5 @@
 import React, { type HTMLAttributes, type ReactNode } from 'react';
+import { useSciFiSounds } from '../../hooks/useSciFiSounds';
 
 interface CyberCardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
@@ -12,12 +13,21 @@ export const CyberCard: React.FC<CyberCardProps> = ({
   style,
   innerClassName = '',
   innerStyle,
+  onMouseEnter,
   ...props 
 }) => {
+  const { playHover } = useSciFiSounds();
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    playHover();
+    if (onMouseEnter) onMouseEnter(e);
+  };
+
   return (
     <div 
       className={`cyber-card-container ${className}`} 
       style={style} 
+      onMouseEnter={handleMouseEnter}
       {...props}
     >
       <div className="cyber-card-border">

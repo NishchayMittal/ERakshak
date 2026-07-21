@@ -1,4 +1,5 @@
 import React, { type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { useSciFiSounds } from '../../hooks/useSciFiSounds';
 
 interface CyberButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
@@ -13,8 +14,22 @@ export const CyberButton: React.FC<CyberButtonProps> = ({
   className = '', 
   containerClassName = '',
   containerStyle,
+  onMouseEnter,
+  onClick,
   ...props 
 }) => {
+  const { playHover, playClick } = useSciFiSounds();
+
+  const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    playHover();
+    if (onMouseEnter) onMouseEnter(e);
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    playClick();
+    if (onClick) onClick(e);
+  };
+
   return (
     <div 
       className={`cyber-button-container ${containerClassName}`} 
@@ -22,6 +37,8 @@ export const CyberButton: React.FC<CyberButtonProps> = ({
     >
       <button 
         className={`cyber-button ${className}`} 
+        onMouseEnter={handleMouseEnter}
+        onClick={handleClick}
         {...props}
       >
         {children}

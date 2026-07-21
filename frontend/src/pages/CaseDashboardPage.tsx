@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useCaseStore } from '../state/caseStore';
 import type { GraphData } from '../types/graph';
 import { useUIStore } from '../state/uiStore';
@@ -688,7 +688,7 @@ export default function CaseDashboardPage() {
     }
   };
 
-  const loadGraphForCase = async (caseId: string, entityId: string) => {
+  const loadGraphForCase = useCallback(async (caseId: string, entityId: string) => {
     try {
       await loadEntityGraph(caseId, entityId);
       // Auto positions nodes in a circle mapping
@@ -730,7 +730,7 @@ export default function CaseDashboardPage() {
     } catch (err) {
       console.error('Failed to load case graph:', err);
     }
-  };
+  }, [loadEntityGraph]);
 
   useEffect(() => {
     if (cases.length === 0) return;

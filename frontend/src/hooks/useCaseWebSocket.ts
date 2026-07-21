@@ -5,6 +5,12 @@ export function useCaseWebSocket(caseId: string | null) {
   const ws = useRef<WebSocket | null>(null);
   const { setCaseIngestLogs, setCaseIngestProgress, loadGraphForCase } = useDashboardContext();
 
+  const handlersRef = useRef({ setCaseIngestLogs, setCaseIngestProgress, loadGraphForCase });
+  
+  useEffect(() => {
+    handlersRef.current = { setCaseIngestLogs, setCaseIngestProgress, loadGraphForCase };
+  });
+
   useEffect(() => {
     if (!caseId) return;
 
@@ -20,6 +26,7 @@ export function useCaseWebSocket(caseId: string | null) {
     ws.current.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        const { setCaseIngestLogs, loadGraphForCase } = handlersRef.current;
         
         if (data.action === 'findings_discovered') {
           const count = data.detail.count;
@@ -55,7 +62,7 @@ export function useCaseWebSocket(caseId: string | null) {
         ws.current.close();
       }
     };
-  }, [caseId, setCaseIngestLogs, setCaseIngestProgress, loadGraphForCase]);
+  }, [caseId]);
 
   const sendMessage = (message: any) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {

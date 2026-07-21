@@ -33,7 +33,8 @@ export function useWebSocket(caseId: string | undefined) {
         console.log('WebSocket update received:', data);
         if (data.action === 'pipeline_completed') {
           // Ingestion pipeline is fully completed: reload all findings and nodes at once
-          loadEntityGraph(caseId, selectedEntityId || 'n1');
+          const latestEntityId = useGraphStore.getState().selectedEntityId;
+          loadEntityGraph(caseId, latestEntityId || 'n1');
         }
       } catch (err) {
         console.error('WebSocket message parsing error:', err);
@@ -49,7 +50,7 @@ export function useWebSocket(caseId: string | undefined) {
         ws.current.close();
       }
     };
-  }, [caseId, selectedEntityId, loadEntityGraph]);
+  }, [caseId, loadEntityGraph]);
 
   return ws.current;
 }

@@ -1,7 +1,7 @@
-import React, { HTMLAttributes } from 'react';
+import React, { type HTMLAttributes, type ReactNode } from 'react';
 
 interface CyberCardProps extends HTMLAttributes<HTMLDivElement> {
-  children: React.ReactNode;
+  children: ReactNode;
   innerClassName?: string;
   innerStyle?: React.CSSProperties;
 }

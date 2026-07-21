@@ -1,8 +1,8 @@
-import React, { ButtonHTMLAttributes } from 'react';
+import React, { type ButtonHTMLAttributes, type ReactNode } from 'react';
 
 interface CyberButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  children: React.ReactNode;
-  icon?: React.ReactNode;
+  children: ReactNode;
+  icon?: ReactNode;
   containerClassName?: string;
   containerStyle?: React.CSSProperties;
 }

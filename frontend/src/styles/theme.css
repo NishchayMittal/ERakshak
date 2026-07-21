@@ -36,8 +36,8 @@
   --text-primary: #E6EDF3;
   --text-muted: #6E7681;
   --font-display: 'Orbitron', sans-serif;
-  --font-heading: 'Space Grotesk', 'Chakra Petch', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  --font-heading: 'Orbitron', sans-serif;
+  --font-mono: 'Orbitron', sans-serif;
 }
 
 /* ---- HUD Panel — standard inner panel box ---- */
@@ -68,6 +68,9 @@
 }
 
 /* ---- Global Reset ---- */
+html {
+  font-size: 112%;
+}
 html, body, #root {
   margin: 0;
   padding: 0;

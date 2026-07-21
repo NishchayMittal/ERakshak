@@ -140,22 +140,59 @@ function EarthEffect() {
     const dotGlobe = new THREE.Points(dotGeo, dotMat);
     globeGroup.add(dotGlobe);
 
-    // 3. Thick Glowing Perimeter Aura (Always facing camera)
-    const perimeterGeo = new THREE.RingGeometry(radius, radius + 50, 128);
+    // 3. True Radial Glowing Perimeter Aura (Always facing camera)
+    const perimeterGeo = new THREE.RingGeometry(radius, radius + 2, 128);
     const perimeterMat = new THREE.MeshBasicMaterial({
-      color: 0xa855f7, // vibrant purple
+      color: 0xffffff,
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.9,
       side: THREE.DoubleSide,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
     const perimeterMesh = new THREE.Mesh(perimeterGeo, perimeterMat);
-    // Make the ring always face the camera to create a persistent 2D halo
-    perimeterMesh.onBeforeRender = (renderer, scene, camera) => {
-      perimeterMesh.quaternion.copy(camera.quaternion);
+    
+    // Smooth shader glow
+    const glowGeo = new THREE.RingGeometry(radius, radius + 45, 128);
+    const glowMat = new THREE.ShaderMaterial({
+      uniforms: {
+        color: { value: new THREE.Color(0xc084fc) }, // bright purple
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 color;
+        varying vec2 vUv;
+        void main() {
+          // vUv.y goes from 0 at inner radius to 1 at outer radius
+          float alpha = 1.0 - vUv.y;
+          alpha = pow(alpha, 2.5); // exponential falloff for soft glow
+          gl_FragColor = vec4(color, alpha * 0.8);
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+
+    // Make the rings always face the camera to create a persistent 2D halo
+    const updateHaloRotation = (mesh: THREE.Mesh) => {
+      mesh.onBeforeRender = (renderer, scene, camera) => {
+        mesh.quaternion.copy(camera.quaternion);
+      };
     };
-    scene.add(perimeterMesh); // add to scene so it doesn't spin with the globe
+    updateHaloRotation(perimeterMesh);
+    updateHaloRotation(glowMesh);
+
+    scene.add(perimeterMesh);
+    scene.add(glowMesh);
 
     // 4. Orbital Rings (Tilted)
     const ringGeo = new THREE.RingGeometry(radius + 70, radius + 73, 128);
@@ -398,6 +435,7 @@ function EarthEffect() {
       
       // Update perimeter halo position to match globe group Y offset
       perimeterMesh.position.copy(globeGroup.position);
+      glowMesh.position.copy(globeGroup.position);
 
       globeGroup.rotation.y += 0.0015;
       starsGroup.rotation.y -= 0.0002;

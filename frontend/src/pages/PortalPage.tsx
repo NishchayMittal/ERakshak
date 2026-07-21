@@ -135,10 +135,10 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
     dotGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
     const dotMat = new THREE.PointsMaterial({
-      size: 3.0,
+      size: 4.5,
       vertexColors: true,
       transparent: true,
-      opacity: 0.8,
+      opacity: 0.9,
       sizeAttenuation: true,
       blending: THREE.AdditiveBlending,
     });
@@ -461,17 +461,23 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
         globeGroup.position.y += (0 - globeGroup.position.y) * 0.08;
         globeGroup.position.x += (0 - globeGroup.position.x) * 0.08;
         dotMat.opacity += (0.35 - dotMat.opacity) * 0.05;
+        dotMat.size += (2.5 - dotMat.size) * 0.05;
       } else if (phaseRef.current === 'ready') {
         const targetY = -(window.innerHeight / 2) + 150;
         globeGroup.position.y += (targetY - globeGroup.position.y) * 0.03;
         globeGroup.position.x += (0 - globeGroup.position.x) * 0.03;
+        dotMat.opacity += (0.9 - dotMat.opacity) * 0.05;
+        dotMat.size += (4.5 - dotMat.size) * 0.05;
       } else if (phaseRef.current === 'login') {
         globeGroup.position.y += (0 - globeGroup.position.y) * 0.05;
         globeGroup.position.x += (0 - globeGroup.position.x) * 0.05;
         dotMat.opacity += (0.35 - dotMat.opacity) * 0.05;
+        dotMat.size += (2.5 - dotMat.size) * 0.05;
       } else {
         globeGroup.position.y += (0 - globeGroup.position.y) * 0.05;
         globeGroup.position.x += (0 - globeGroup.position.x) * 0.05;
+        dotMat.opacity += (0.9 - dotMat.opacity) * 0.05;
+        dotMat.size += (4.5 - dotMat.size) * 0.05;
       }
 
       movingParticles.forEach(p => {

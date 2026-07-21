@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, FileText } from 'lucide-react';
+import { Download, FileText, RefreshCw } from 'lucide-react';
 import { useDashboardContext } from '../../pages/DashboardContext';
 import { useCaseWebSocket } from '../../hooks/useCaseWebSocket';
 import TemporalWindow from './TemporalWindow';
@@ -492,6 +492,9 @@ export function CaseWindow({ win }: { win: any }) {
                               <FileText size={13} className="text-[#39ff14]" /> Dynamic AI Intelligence Summary
                             </span>
                             <div className="flex items-center gap-2">
+                              <button onClick={() => fetchNarrativeReport(caseId, true)} className="border border-white/20 hover:bg-white/10 text-gray-300 text-[8px] font-bold px-2 py-1 flex items-center gap-1 uppercase">
+                                <RefreshCw size={9} /> Re-Synthesize
+                              </button>
                               <button onClick={() => triggerExport(caseId, 'json')} className="border border-[#39ff14] hover:bg-[#39ff14]/10 text-[#39ff14] text-[8px] font-bold px-2 py-1 flex items-center gap-1 uppercase">
                                 <Download size={9} /> JSON
                               </button>

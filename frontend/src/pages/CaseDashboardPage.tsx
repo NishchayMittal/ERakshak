@@ -966,8 +966,11 @@ export default function CaseDashboardPage() {
     }
   };
 
-  // Fetch and display narrative AI report
-  const fetchNarrativeReport = async (caseId: string) => {
+  // Fetch and display narrative AI report (caches existing report unless forceRegenerate is true)
+  const fetchNarrativeReport = async (caseId: string, forceRegenerate = false) => {
+    if (!forceRegenerate && caseReportNarrative[caseId] && caseReportNarrative[caseId].trim().length > 0) {
+      return;
+    }
     try {
       showToast('Generating AI narrative synthesis...', 'info');
       const res = await getNarrative(caseId);

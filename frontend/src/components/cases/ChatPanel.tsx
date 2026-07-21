@@ -270,7 +270,7 @@ function parseMessageContent(text: string) {
   // Split by lines and process each line
   return text.split('\n').map((line, index) => {
     // Handle empty lines
-    if (!line.trim()) return <div key={idx} style={{ height: 4 }} />;
+    if (!line.trim()) return <div key={index} style={{ height: 4 }} />;
 
     // Handle bold text **text**
     const parts = line.split(/\*\*(.*?)\*\*/g);

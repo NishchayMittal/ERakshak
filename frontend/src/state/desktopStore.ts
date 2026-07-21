@@ -3,7 +3,7 @@ import { create } from 'zustand';
 export interface WindowState {
   id: string;
   title: string;
-  type: 'case_workspace' | 'settings' | 'profile' | 'cases_explorer';
+  type: 'case_workspace' | 'settings' | 'profile' | 'cases_explorer' | 'temporal_analysis' | 'cross_correlate';
   x: number;
   y: number;
   width: number;
@@ -12,7 +12,7 @@ export interface WindowState {
   isMaximized: boolean;
   zIndex: number;
   caseId?: string;
-  activeTab?: 'intake' | 'graph' | 'dossier' | 'report';
+  activeTab?: 'intake' | 'graph' | 'dossier' | 'report' | 'temporal';
 }
 
 interface DesktopState {

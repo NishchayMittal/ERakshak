@@ -2,6 +2,7 @@ import React from 'react';
 import { Download, FileText } from 'lucide-react';
 import { useDashboardContext } from '../../pages/DashboardContext';
 import { useCaseWebSocket } from '../../hooks/useCaseWebSocket';
+import TemporalWindow from './TemporalWindow';
 
 export function CaseWindow({ win }: { win: any }) {
   useCaseWebSocket(win.caseId);
@@ -64,7 +65,8 @@ export function CaseWindow({ win }: { win: any }) {
                         { id: 'intake', label: '[01 CMD_INTAKE]' },
                         { id: 'graph', label: '[02 NET_MATRIX]' },
                         { id: 'dossier', label: '[03 TEL_DOSSIER]' },
-                        { id: 'report', label: '[04 AI_REPORT]' }
+                        { id: 'report', label: '[04 AI_REPORT]' },
+                        { id: 'temporal', label: '[05 TEMPORAL_MATRIX]' }
                       ].map(t => (
                         <button
                           key={t.id}
@@ -504,6 +506,11 @@ export function CaseWindow({ win }: { win: any }) {
                             {caseReportNarrative[caseId] || 'Synthesizing report...'}
                           </div>
                         </div>
+                      )}
+
+                      {/* Temporal Behavioral Matrix Tab */}
+                      {tab === 'temporal' && (
+                        <TemporalWindow caseId={caseId} />
                       )}
 
                     </div>

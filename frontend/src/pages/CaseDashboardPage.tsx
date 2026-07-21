@@ -34,7 +34,8 @@ import {
   Link,
   ThumbsUp,
   ThumbsDown,
-  Edit
+  Edit,
+  Clock
 } from 'lucide-react';
 
 import { DashboardContext } from './DashboardContext';
@@ -42,6 +43,8 @@ import { CaseWindow } from '../components/cases/CaseWindow';
 import { SettingsWindow } from '../components/cases/SettingsWindow';
 import { ProfileWindow } from '../components/cases/ProfileWindow';
 import { ExplorerWindow } from '../components/cases/ExplorerWindow';
+import TemporalWindow from '../components/cases/TemporalWindow';
+import { CrossCorrelationWindow } from '../components/cases/CrossCorrelationWindow';
 
 import {
   triggerModelRetrain,
@@ -64,7 +67,7 @@ import {
 interface WindowState {
   id: string;
   title: string;
-  type: 'case_workspace' | 'settings' | 'profile' | 'cases_explorer';
+  type: 'case_workspace' | 'settings' | 'profile' | 'cases_explorer' | 'temporal_analysis' | 'cross_correlate';
   x: number;
   y: number;
   width: number;
@@ -530,6 +533,19 @@ export default function CaseDashboardPage() {
   };
 
   const handleDragStart = (e: React.MouseEvent, id: string) => {
+    if (e.button !== 0) return;
+
+    const target = e.target as HTMLElement;
+    // Ignore window drags initiated on interactive elements (inputs, buttons, textareas, selects, links, canvas node handles)
+    if (
+      target.closest('button, input, select, textarea, a, canvas, [role="button"]') ||
+      target.getAttribute('contenteditable') === 'true'
+    ) {
+      if (!target.classList.contains('window-drag-surface')) {
+        return;
+      }
+    }
+
     const win = windows.find(w => w.id === id);
     if (!win || win.isMaximized) return;
 
@@ -1327,6 +1343,7 @@ export default function CaseDashboardPage() {
         return (
           <div
             key={win.id}
+            onMouseDown={(e) => handleDragStart(e, win.id)}
             onClick={() => focusWindow(win.id)}
             className={`absolute flex flex-col border shadow-2xl transition-all duration-100 bg-[#04080e]/95 backdrop-blur-xl ${isFocused ? 'border-[#39ff14] shadow-[#39ff14]/5' : 'border-white/10 shadow-black/80'}`}
             style={{
@@ -1341,7 +1358,7 @@ export default function CaseDashboardPage() {
             <div
               onMouseDown={(e) => handleDragStart(e, win.id)}
               onDoubleClick={() => toggleMaximize(win.id)}
-              className={`h-7 px-3 flex items-center justify-between cursor-move select-none border-b ${isFocused ? 'bg-[#39ff14]/5 border-[#39ff14]/20 text-[#39ff14]' : 'bg-[#04080e]/40 border-white/5 text-gray-400'}`}
+              className={`h-7 px-3 flex items-center justify-between cursor-move select-none border-b window-drag-surface ${isFocused ? 'bg-[#39ff14]/5 border-[#39ff14]/20 text-[#39ff14]' : 'bg-[#04080e]/40 border-white/5 text-gray-400'}`}
             >
               <div className="flex items-center gap-2 pointer-events-auto">
                 <Folder size={12} className="flex-shrink-0" />
@@ -1398,6 +1415,10 @@ export default function CaseDashboardPage() {
               {win.type === 'settings' && <SettingsWindow />}
               {win.type === 'profile' && <ProfileWindow />}
               {win.type === 'cases_explorer' && <ExplorerWindow win={win} />}
+              {win.type === 'temporal_analysis' && (
+                <TemporalWindow caseId={win.caseId || lastAccessedCaseId || cases[0]?.caseId || ''} />
+              )}
+              {win.type === 'cross_correlate' && <CrossCorrelationWindow win={win} />}
             </div>
           </div>
         );
@@ -1422,6 +1443,14 @@ export default function CaseDashboardPage() {
           className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'cases_explorer') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
         >
           <Compass size={20} />
+        </button>
+
+        <button
+          onClick={() => openWindow('cross_correlate_window', 'Cross-Case Intelligence Correlator', 'cross_correlate')}
+          title="Cross-Case Correlation Scanner"
+          className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'cross_correlate_window') ? 'text-[#a855f7] bg-[#a855f7]/10 border border-[#a855f7]/30' : 'text-gray-300 hover:text-[#a855f7] hover:bg-white/5'}`}
+        >
+          <Network size={20} />
         </button>
 
         <button

@@ -26,6 +26,7 @@ function EarthEffect({ tooltipRef, onNodeClick }: { tooltipRef: React.RefObject<
     const mouse = new THREE.Vector2(-1000, -1000); 
 
     // Tooltip DOM element
+    
 
     // Scene setup
     const scene = new THREE.Scene();
@@ -38,7 +39,7 @@ function EarthEffect({ tooltipRef, onNodeClick }: { tooltipRef: React.RefObject<
       10000
     );
     const baseCameraZ = 1100;
-    camera.position.set(0, 0, baseCameraZ);
+    camera.position.set(0, 0, 700);
 
     const renderer = new THREE.WebGLRenderer({
       alpha: true,
@@ -374,7 +375,7 @@ function EarthEffect({ tooltipRef, onNodeClick }: { tooltipRef: React.RefObject<
     starsGroup.add(new THREE.Points(orionStarsGeo, orionStarsMat));
 
     globeGroup.position.x = window.innerWidth > 768 ? window.innerWidth * 0.25 : 0;
-    globeGroup.position.y = -20;
+    globeGroup.position.y = -200;
     globeGroup.rotation.z = Math.PI / 16; 
 
     // Mouse Move Listener
@@ -434,7 +435,7 @@ function EarthEffect({ tooltipRef, onNodeClick }: { tooltipRef: React.RefObject<
       perimeterMesh.position.copy(globeGroup.position);
       glowMesh.position.copy(globeGroup.position);
 
-      globeGroup.rotation.y += 0.0015;
+      // globeGroup.rotation.y += 0.0015;
       starsGroup.rotation.y -= 0.0002;
       starsGroup.rotation.x -= 0.0001;
       

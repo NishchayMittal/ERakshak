@@ -520,10 +520,10 @@ export function CaseWindow({ win }: { win: any }) {
                         <TemporalWindow caseId={caseId} />
                       )}
 
-                      {/* AI Intelligence Chat Tab */}
-                      {tab === 'chat' && (
+                      {/* AI Intelligence Chat Tab - Always mounted to preserve state */}
+                      <div className={tab === 'chat' ? 'flex flex-1 min-h-0' : 'hidden'}>
                         <ChatPanel caseId={caseId} />
-                      )}
+                      </div>
 
                     </div>
                   </div>

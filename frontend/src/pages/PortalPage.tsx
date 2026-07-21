@@ -389,6 +389,7 @@ function EarthEffect() {
     });
     starsGroup.add(new THREE.Points(orionStarsGeo, orionStarsMat));
 
+    globeGroup.position.x = window.innerWidth > 768 ? window.innerWidth * 0.25 : 0;
     globeGroup.position.y = -20;
     globeGroup.rotation.z = Math.PI / 16; 
 
@@ -604,105 +605,116 @@ export default function PortalPage() {
         `}
       </style>
 
+      {/* LEFT SIDE CONTENT CONTAINER */}
       <div
         style={{
           position: 'absolute',
-          top: '30px',
+          left: '5%',
+          top: '50%',
+          transform: 'translateY(-50%)',
           zIndex: 10,
-          textAlign: 'center',
-          pointerEvents: 'none',
-          opacity: isZooming ? 0 : 1,
-          transition: 'opacity 0.5s ease',
-        }}
-      >
-        <h1
-          style={{
-            margin: 0,
-            fontFamily: 'var(--font-heading)',
-            fontSize: '18px',
-            fontWeight: 700,
-            color: '#39ff14',
-            letterSpacing: '0.3em',
-            textTransform: 'uppercase',
-            textShadow: '0 0 10px rgba(57,255,20,0.4)',
-          }}
-        >
-          ORION
-        </h1>
-        <p
-          style={{
-            margin: '4px 0 0 0',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '8px',
-            color: 'var(--text-muted)',
-            letterSpacing: '0.15em',
-            textTransform: 'uppercase',
-          }}
-        >
-          Active Workspace Orbital Gateway
-        </p>
-      </div>
-
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '30px',
-          left: '30px',
-          zIndex: 10,
-          width: '280px',
-          height: '140px',
-          background: 'rgba(8,12,16,0.7)',
-          border: '1px solid rgba(57,255,20,0.2)',
-          backdropFilter: 'blur(8px)',
-          borderRadius: '8px',
-          padding: '12px',
-          fontFamily: 'monospace',
-          fontSize: '10px',
-          color: '#39ff14',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'flex-end',
-          overflow: 'hidden',
+          gap: '32px',
           opacity: isZooming ? 0 : 1,
           transition: 'opacity 0.5s ease',
-          pointerEvents: 'none',
+          pointerEvents: isZooming ? 'none' : 'auto',
+          alignItems: 'flex-start',
         }}
       >
-        <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid rgba(57,255,20,0.2)', paddingBottom: '4px', marginBottom: '8px', color: '#6E7681' }}>
-          <span>TERMINAL</span>
-          <span>//</span>
-          <span>SYS.LOG</span>
+        {/* BIG OSINT TEXT */}
+        <div>
+          <h1
+            style={{
+              margin: 0,
+              fontFamily: 'var(--font-heading)',
+              fontSize: '84px',
+              fontWeight: 900,
+              color: '#39ff14',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              textShadow: '0 0 30px rgba(57,255,20,0.6)',
+              lineHeight: '1',
+            }}
+          >
+            ORION<br/>OSINT
+          </h1>
+          <p
+            style={{
+              margin: '12px 0 0 0',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '12px',
+              color: 'var(--text-muted)',
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              maxWidth: '400px',
+              lineHeight: '1.5',
+            }}
+          >
+            Global Cyber Threat Intelligence & Deep Web Trace Correlation Matrix
+          </p>
         </div>
-        <div className="terminal-feed">
-          <p style={{ margin: '4px 0' }}>{'>'} Handshake established... [OK]</p>
-          <p style={{ margin: '4px 0' }}>{'>'} Bypassing proxy walls...</p>
-          <p style={{ margin: '4px 0', opacity: 0.7 }}>{'>'} Initializing Orion telemetry...</p>
-          <p style={{ margin: '4px 0', opacity: 0.5 }}>{'>'} Decrypting deep web packets...</p>
-          <p style={{ margin: '4px 0', animation: 'blink 1s infinite' }}>{'>'} Awaiting operator input _</p>
-        </div>
-      </div>
 
-      <CyberCard
-        style={{ 
-          zIndex: 10, 
-          opacity: isZooming ? 0 : 1,
-          transform: isZooming ? 'scale(1.1)' : 'scale(1)',
-          transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
-          pointerEvents: isZooming ? 'none' : 'auto'
-        }}
-        innerStyle={{ alignItems: 'center', gap: '24px' }}
-      >
-        <div style={{ textAlign: 'center' }}>
-            <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: 300, letterSpacing: '0.1em', color: 'var(--text-primary)' }}>SYSTEM ONLINE</h2>
-            <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>Secure connection established.</p>
-        </div>
-        <CyberButton 
-          onClick={handleEnterClick} 
-          icon={<ArrowRight size={16} color="#000000" />}
+        {/* TERMINAL BELOW OSINT TEXT */}
+        <div
+          style={{
+            width: '320px',
+            height: '160px',
+            background: 'rgba(8,12,16,0.85)',
+            border: '1px solid rgba(57,255,20,0.3)',
+            boxShadow: '0 0 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(57,255,20,0.05)',
+            backdropFilter: 'blur(12px)',
+            borderRadius: '4px',
+            padding: '16px',
+            fontFamily: 'monospace',
+            fontSize: '11px',
+            color: '#39ff14',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-end',
+            overflow: 'hidden',
+          }}
         >
-          <span>ENTER DASHBOARD</span>
-        </CyberButton>
-      </CyberCard>
+          <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid rgba(57,255,20,0.3)', paddingBottom: '6px', marginBottom: '12px', color: '#6E7681', fontSize: '9px', fontWeight: 'bold', letterSpacing: '0.1em' }}>
+            <span>TERMINAL</span>
+            <span>//</span>
+            <span>SYS.LOG</span>
+            <span style={{ marginLeft: 'auto', color: '#39ff14', animation: 'blink 1.5s infinite' }}>● ONLINE</span>
+          </div>
+          <div className="terminal-feed" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <p style={{ margin: 0 }}>{'>'} Handshake established... [OK]</p>
+            <p style={{ margin: 0 }}>{'>'} Bypassing proxy walls...</p>
+            <p style={{ margin: 0, opacity: 0.8 }}>{'>'} Initializing Orion telemetry...</p>
+            <p style={{ margin: 0, opacity: 0.6 }}>{'>'} Decrypting deep web packets...</p>
+            <p style={{ margin: 0, animation: 'blink 1s infinite' }}>{'>'} Awaiting operator input _</p>
+          </div>
+        </div>
+
+        {/* ENTER DASHBOARD CARD */}
+        <CyberCard
+          style={{ 
+            marginTop: '16px',
+          }}
+        >
+          <CyberButton
+            onClick={handleEnterDashboard}
+            style={{ 
+              width: '100%', 
+              padding: '16px',
+              fontSize: '18px',
+              letterSpacing: '0.3em',
+              fontWeight: 'bold',
+              border: '1px solid rgba(57, 255, 20, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px'
+            }}
+          >
+            <Shield size={22} className={isZooming ? 'animate-pulse' : ''} />
+            <span>{isZooming ? 'CONNECTING...' : 'INITIATE TRACE'}</span>
+          </CyberButton>
+        </CyberCard>
 
       {/* Fade to black overlay for seamless transition */}
       <div 

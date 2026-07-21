@@ -742,7 +742,7 @@ export default function PortalPage() {
           <h1
             style={{
               margin: 0,
-              fontFamily: 'var(--font-heading)',
+              fontFamily: 'var(--font-display)',
               fontSize: '96px',
               fontWeight: 900,
               color: '#39ff14',

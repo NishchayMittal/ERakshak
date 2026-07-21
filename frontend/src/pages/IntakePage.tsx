@@ -8,6 +8,7 @@ import { useCaseStore } from '../state/caseStore';
 import { useUIStore } from '../state/uiStore';
 import { submitIdentifiers } from '../api/endpoints';
 import type { IdentifierType } from '../types/identifier';
+import { CyberButton } from '../components/ui/CyberButton';
 
 interface SeedItem {
   id: string;
@@ -188,11 +189,9 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, minHeight: 0, overflow: 'hidden', userSelect: 'none' }}>
       {/* Header Info */}
-      <div style={{
+      <div className="hud-panel" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '14px 16px',
-        background: '#080c10',
-        border: '1px solid var(--struct-line)',
         position: 'relative', overflow: 'hidden',
       }}>
         <div className="cyber-grid" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
@@ -208,8 +207,8 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
           </Link>
           <h1 style={{
             margin: 0,
-            fontFamily: 'var(--font-heading)', fontSize: 16, fontWeight: 700,
-            color: 'var(--text-primary)', letterSpacing: '0.1em', textTransform: 'uppercase',
+            fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700,
+            color: 'var(--text-primary)', letterSpacing: '0.12em', textTransform: 'uppercase',
           }}>
             SEED INGESTION INLETS
           </h1>
@@ -227,16 +226,10 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
         // Ingestion pipeline active screen
         <div className="intake-grid">
           {/* Left Column: Progress checklist */}
-          <div style={{
-            background: '#080c10',
-            border: '1px solid var(--struct-line)',
-            padding: 16,
-            display: 'flex', flexDirection: 'column',
-            minHeight: 360,
-          }}>
+          <div className="hud-panel" style={{ padding: 16, display: 'flex', flexDirection: 'column', minHeight: 360 }}>
             <div style={{
               fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
-              color: 'var(--accent-primary)', letterSpacing: '0.15em', textTransform: 'uppercase',
+              color: 'var(--accent-label)', letterSpacing: '0.15em', textTransform: 'uppercase',
               borderBottom: '1px solid var(--struct-line)', paddingBottom: 8,
               display: 'flex', alignItems: 'center', gap: 8,
               marginBottom: 16,
@@ -257,9 +250,9 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
                   }}>
                     <div style={{ marginTop: 2 }}>
                       {isDone ? (
-                        <span style={{ color: '#00C853', fontWeight: 'bold', fontSize: 10 }}>✓</span>
+                        <span style={{ color: 'var(--accent-action)', fontWeight: 'bold', fontSize: 10 }}>✓</span>
                       ) : isActive ? (
-                        <div style={{ width: 12, height: 12, border: '2px solid var(--accent-primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                        <div style={{ width: 12, height: 12, border: '2px solid var(--accent-action)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                       ) : (
                         <div style={{
                           width: 12, height: 12, border: '1px solid var(--struct-line)',
@@ -283,25 +276,19 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
             <div style={{ borderTop: '1px solid var(--struct-line)', paddingTop: 16, marginTop: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', marginBottom: 6 }}>
                 <span>PIPELINE DISPATCHED</span>
-                <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{pipelineProgress}%</span>
+                <span style={{ color: 'var(--accent-action)', fontWeight: 'bold' }}>{pipelineProgress}%</span>
               </div>
               <div style={{ background: '#030609', height: 10, border: '1px solid var(--struct-line)', padding: 1, position: 'relative', overflow: 'hidden' }}>
-                <div style={{ width: `${pipelineProgress}%`, height: '100%', background: 'var(--accent-primary)', boxShadow: '0 0 4px var(--accent-primary)', transition: 'width 0.1s linear' }} />
+                <div style={{ width: `${pipelineProgress}%`, height: '100%', background: 'var(--accent-action)', boxShadow: '0 0 4px var(--accent-action)', transition: 'width 0.1s linear' }} />
               </div>
             </div>
           </div>
 
           {/* Right Column: Scrolling logs */}
-          <div style={{
-            background: '#080c10',
-            border: '1px solid var(--struct-line)',
-            padding: 16,
-            display: 'flex', flexDirection: 'column',
-            minHeight: 360,
-          }}>
+          <div className="hud-panel" style={{ padding: 16, display: 'flex', flexDirection: 'column', minHeight: 360 }}>
             <div style={{
               fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
-              color: 'var(--accent-primary)', letterSpacing: '0.15em', textTransform: 'uppercase',
+              color: 'var(--accent-label)', letterSpacing: '0.15em', textTransform: 'uppercase',
               borderBottom: '1px solid var(--struct-line)', paddingBottom: 8,
               display: 'flex', alignItems: 'center', gap: 8,
               marginBottom: 16,
@@ -318,7 +305,7 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
             }}>
               {liveLogs.map((log, idx) => (
                 <div key={idx} style={{ display: 'flex', gap: 6, marginBottom: 4, alignItems: 'flex-start' }}>
-                  <span style={{ color: 'var(--accent-primary)', userSelect: 'none' }}>&gt;</span>
+                  <span className="terminal-prompt">&gt;</span>
                   <span>{log}</span>
                 </div>
               ))}
@@ -330,7 +317,7 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
               display: 'flex', justifyContent: 'space-between',
             }}>
               <span>SYNC_GATE: PORT 8000</span>
-              <span className="animate-pulse" style={{ color: 'var(--accent-primary)' }}>PARSING SEEDS...</span>
+              <span className="animate-pulse" style={{ color: 'var(--accent-action)' }}>PARSING SEEDS...</span>
             </div>
           </div>
         </div>
@@ -341,14 +328,10 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
           <IdentifierForm onAdd={handleAddSeed} />
 
           {/* Ingestion Board */}
-          <div style={{
-            background: '#080c10',
-            border: '1px solid var(--struct-line)',
-            padding: 16,
-          }}>
+          <div className="hud-panel" style={{ padding: 16 }}>
             <div style={{
               fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
-              color: 'var(--accent-primary)', letterSpacing: '0.15em', textTransform: 'uppercase',
+              color: 'var(--accent-label)', letterSpacing: '0.15em', textTransform: 'uppercase',
               borderBottom: '1px solid var(--struct-line)', paddingBottom: 8,
               display: 'flex', alignItems: 'center', gap: 8,
               marginBottom: 16,
@@ -383,25 +366,15 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
                   display: 'flex', justifyContent: 'flex-end',
                   borderTop: '1px solid var(--struct-line)', paddingTop: 12,
                 }}>
-                  <button
+                  <CyberButton
                     type="button"
                     onClick={handleRunAnalysis}
                     disabled={submitting}
-                    style={{
-                      background: 'none',
-                      border: '1px solid var(--accent-primary)',
-                      color: 'var(--accent-primary)',
-                      fontFamily: 'var(--font-heading)', fontSize: 9,
-                      fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase',
-                      padding: '8px 16px', cursor: 'pointer',
-                      opacity: submitting ? 0.5 : 1,
-                      display: 'flex', alignItems: 'center', gap: 6,
-                      boxShadow: '0 0 6px rgba(0,255,194,0.15)',
-                    }}
+                    containerStyle={{ opacity: submitting ? 0.5 : 1 }}
+                    icon={<Play className="w-4 h-4 fill-current" />}
                   >
-                    <Play className="w-4 h-4 fill-current" />
                     <span>DISPATCH CRAWL PIPELINE</span>
-                  </button>
+                  </CyberButton>
                 </div>
               </div>
             )}

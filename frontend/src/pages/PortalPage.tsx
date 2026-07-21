@@ -1,13 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
-import { ArrowRight, Shield } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { CyberCard } from '../components/ui/CyberCard';
 import { CyberButton } from '../components/ui/CyberButton';
 
 
 // ── THREE.JS EARTH EFFECT BACKGROUND ──
-function EarthEffect({ phase, isZooming }: { phase: 'splash' | 'ready', isZooming: boolean }) {
+function EarthEffect() {
   const containerRef = useRef<HTMLDivElement>(null);
   const animationFrameIdRef = useRef<number>(0);
 
@@ -129,7 +129,7 @@ function EarthEffect({ phase, isZooming }: { phase: 'splash' | 'ready', isZoomin
     dotGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
     const dotMat = new THREE.PointsMaterial({
-      size: 5.0,
+      size: 3.5,
       vertexColors: true,
       transparent: true,
       opacity: 0.8,
@@ -389,11 +389,9 @@ function EarthEffect({ phase, isZooming }: { phase: 'splash' | 'ready', isZoomin
     });
     starsGroup.add(new THREE.Points(orionStarsGeo, orionStarsMat));
 
-    
-    
-    globeGroup.rotation.z = Math.PI / 16;
-    globeGroup.position.y = 0;
-    globeGroup.position.x = 0; 
+    globeGroup.position.x = window.innerWidth > 768 ? window.innerWidth * 0.25 : 0;
+    globeGroup.position.y = -20;
+    globeGroup.rotation.z = Math.PI / 16; 
 
     // Mouse Move Listener
     const onMouseMove = (event: MouseEvent) => {
@@ -421,10 +419,6 @@ function EarthEffect({ phase, isZooming }: { phase: 'splash' | 'ready', isZoomin
 
       animationFrameIdRef.current = requestAnimationFrame(animate);
 
-      // Phase transitions
-      const targetGlobeY = phase === 'splash' ? 0 : -(window.innerHeight / 2) - 100;
-      globeGroup.position.y += (targetGlobeY - globeGroup.position.y) * 0.05;
-
       if (isZooming) {
         camera.position.z += (50 - camera.position.z) * 0.08;
         camera.position.x += (0 - camera.position.x) * 0.08;
@@ -432,6 +426,7 @@ function EarthEffect({ phase, isZooming }: { phase: 'splash' | 'ready', isZoomin
         
         if (camera.position.z < 100) {
           window.dispatchEvent(new Event('zoom-complete'));
+          isZooming = false; 
         }
       } else {
         camera.position.x += (targetX - camera.position.x) * 0.02;
@@ -443,9 +438,7 @@ function EarthEffect({ phase, isZooming }: { phase: 'splash' | 'ready', isZoomin
       perimeterMesh.position.copy(globeGroup.position);
       glowMesh.position.copy(globeGroup.position);
 
-      if (phase === 'splash' && !isZooming) {
-        globeGroup.rotation.y += 0.004;
-      }
+      globeGroup.rotation.y += 0.0015;
       starsGroup.rotation.y -= 0.0002;
       starsGroup.rotation.x -= 0.0001;
       
@@ -537,14 +530,6 @@ function EarthEffect({ phase, isZooming }: { phase: 'splash' | 'ready', isZoomin
 export default function PortalPage() {
   const navigate = useNavigate();
   const [isZooming, setIsZooming] = useState(false);
-  const [phase, setPhase] = useState<'splash' | 'ready'>('splash');
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setPhase('ready');
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, []);
 
   useEffect(() => {
     const handleZoomComplete = () => {
@@ -575,7 +560,7 @@ export default function PortalPage() {
         userSelect: 'none',
       }}
     >
-      <EarthEffect phase={phase} isZooming={isZooming} />
+      <EarthEffect />
       
       <div 
         style={{
@@ -620,64 +605,21 @@ export default function PortalPage() {
         `}
       </style>
 
-      {/* SPLASH SCREEN GLITCH TEXT */}
+      {/* LEFT SIDE CONTENT CONTAINER */}
       <div
         style={{
           position: 'absolute',
-          top: '65%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          zIndex: 20,
-          opacity: phase === 'splash' && !isZooming ? 1 : 0,
-          transition: 'opacity 0.5s ease',
-          pointerEvents: 'none',
-          fontFamily: 'var(--font-mono)',
-          color: '#39ff14',
-          fontSize: '18px',
-          letterSpacing: '0.4em',
-          textTransform: 'uppercase',
-          animation: phase === 'splash' ? 'glitch 0.2s linear infinite' : 'none',
-          textShadow: '0 0 10px rgba(57,255,20,0.8)'
-        }}
-      >
-        &gt; INITIALIZING OSINT CORE // ORION PROTOCOLS ACTIVE...
-      </div>
-      
-      {/* CYBER CORNERS */}
-      <div style={{ position: 'absolute', top: 40, left: 40, width: 60, height: 60, borderTop: '4px solid #39ff14', borderLeft: '4px solid #39ff14', opacity: phase === 'splash' && !isZooming ? 0.8 : 0, transition: 'opacity 0.5s', zIndex: 10 }} />
-      <div style={{ position: 'absolute', top: 40, right: 40, width: 60, height: 60, borderTop: '4px solid #39ff14', borderRight: '4px solid #39ff14', opacity: phase === 'splash' && !isZooming ? 0.8 : 0, transition: 'opacity 0.5s', zIndex: 10 }} />
-      <div style={{ position: 'absolute', bottom: 40, left: 40, width: 60, height: 60, borderBottom: '4px solid #39ff14', borderLeft: '4px solid #39ff14', opacity: phase === 'splash' && !isZooming ? 0.8 : 0, transition: 'opacity 0.5s', zIndex: 10 }} />
-      <div style={{ position: 'absolute', bottom: 40, right: 40, width: 60, height: 60, borderBottom: '4px solid #39ff14', borderRight: '4px solid #39ff14', opacity: phase === 'splash' && !isZooming ? 0.8 : 0, transition: 'opacity 0.5s', zIndex: 10 }} />
-
-      <style>
-        {`
-          @keyframes glitch {
-            0% { transform: translate(-50%, -50%) translate(2px, 2px); opacity: 0.8; }
-            20% { transform: translate(-50%, -50%) translate(-2px, -2px); opacity: 1; }
-            40% { transform: translate(-50%, -50%) translate(1px, -1px); opacity: 0.9; }
-            60% { transform: translate(-50%, -50%) translate(-1px, 1px); opacity: 1; }
-            80% { transform: translate(-50%, -50%) translate(2px, -2px); opacity: 0.8; }
-            100% { transform: translate(-50%, -50%) translate(-2px, 2px); opacity: 1; }
-          }
-        `}
-      </style>
-
-      {/* READY UI CONTAINER */}
-      <div
-        style={{
-          position: 'absolute',
-          left: '50%',
-          bottom: '15%',
-          transform: 'translate(-50%, 0)',
+          left: '5%',
+          top: '50%',
+          transform: 'translateY(-50%)',
           zIndex: 10,
           display: 'flex',
           flexDirection: 'column',
-          gap: '24px',
-          opacity: phase === 'ready' && !isZooming ? 1 : 0,
-          transition: 'opacity 1.5s ease 0.5s',
-          pointerEvents: phase === 'ready' && !isZooming ? 'auto' : 'none',
-          alignItems: 'center',
-          textAlign: 'center'
+          gap: '32px',
+          opacity: isZooming ? 0 : 1,
+          transition: 'opacity 0.5s ease',
+          pointerEvents: isZooming ? 'none' : 'auto',
+          alignItems: 'flex-start',
         }}
       >
         {/* BIG OSINT TEXT */}
@@ -699,7 +641,7 @@ export default function PortalPage() {
           </h1>
           <p
             style={{
-              margin: '12px auto 0 auto',
+              margin: '12px 0 0 0',
               fontFamily: 'var(--font-mono)',
               fontSize: '12px',
               color: 'var(--text-muted)',
@@ -755,7 +697,7 @@ export default function PortalPage() {
           }}
         >
           <CyberButton
-            onClick={handleEnterClick}
+            onClick={handleEnterDashboard}
             style={{ 
               width: '100%', 
               padding: '16px',
@@ -786,7 +728,6 @@ export default function PortalPage() {
           pointerEvents: 'none'
         }}
       />
-    </div>
     </div>
   );
 }

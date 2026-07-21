@@ -35,7 +35,8 @@ import {
   ThumbsUp,
   ThumbsDown,
   Edit,
-  Clock
+  Clock,
+  Globe
 } from 'lucide-react';
 
 import { DashboardContext } from './DashboardContext';
@@ -45,6 +46,7 @@ import { ProfileWindow } from '../components/cases/ProfileWindow';
 import { ExplorerWindow } from '../components/cases/ExplorerWindow';
 import TemporalWindow from '../components/cases/TemporalWindow';
 import { CrossCorrelationWindow } from '../components/cases/CrossCorrelationWindow';
+import { GeoMapWindow } from '../components/ui/GeoMapWindow';
 
 import {
   triggerModelRetrain,
@@ -67,7 +69,7 @@ import {
 interface WindowState {
   id: string;
   title: string;
-  type: 'case_workspace' | 'settings' | 'profile' | 'cases_explorer' | 'temporal_analysis' | 'cross_correlate';
+  type: 'case_workspace' | 'settings' | 'profile' | 'cases_explorer' | 'temporal_analysis' | 'cross_correlate' | 'geo_map';
   x: number;
   y: number;
   width: number;
@@ -1491,6 +1493,12 @@ export default function CaseDashboardPage() {
                 <TemporalWindow caseId={win.caseId || lastAccessedCaseId || cases[0]?.caseId || ''} />
               )}
               {win.type === 'cross_correlate' && <CrossCorrelationWindow win={win} />}
+
+              {win.type === 'geo_map' && (
+                <div className="flex-1 relative w-full h-full min-h-0">
+                  <GeoMapWindow caseId={win.caseId || 'global'} />
+                </div>
+              )}
             </div>
 
             {/* Directional Resize Handles (4 edges + 4 corners) */}
@@ -1570,6 +1578,14 @@ export default function CaseDashboardPage() {
           className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'cross_correlate_window') ? 'text-[#a855f7] bg-[#a855f7]/10 border border-[#a855f7]/30' : 'text-gray-300 hover:text-[#a855f7] hover:bg-white/5'}`}
         >
           <Network size={20} />
+        </button>
+
+        <button
+          onClick={() => openWindow('geo_map_window', 'Global Geo-Intelligence', 'geo_map', { width: 900, height: 600 })}
+          title="Geo-Intelligence Map"
+          className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'geo_map_window') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
+        >
+          <Globe size={20} />
         </button>
 
         <button

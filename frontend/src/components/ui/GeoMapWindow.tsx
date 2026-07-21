@@ -7,6 +7,8 @@ interface GeoMapWindowProps {
   caseId: string;
 }
 
+const GLOBE_SIZE = 1400; // render at a large fixed size
+
 export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
   const [data, setData] = useState<GeoIntelligenceResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,12 +37,9 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
 
   useEffect(() => {
     if (globeEl.current && data?.nodes.length) {
-      // Auto-rotate globe slowly
       globeEl.current.controls().autoRotate = true;
-      globeEl.current.controls().autoRotateSpeed = 1.0;
-      
-      // Point camera at first node if available
-      globeEl.current.pointOfView({ lat: data.nodes[0].lat, lng: data.nodes[0].lng, altitude: 2.0 }, 1500);
+      globeEl.current.controls().autoRotateSpeed = 0.8;
+      globeEl.current.pointOfView({ lat: 20, lng: 0, altitude: 3.5 }, 1500);
     }
   }, [data]);
 
@@ -56,8 +55,17 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
   }
 
   return (
-    <div className="relative w-full h-full bg-[#020408] overflow-hidden rounded-md border border-white/5">
-      {/* HUD Overlay */}
+    /*
+     * The outer div is the window's content area (full w/h, clips overflow).
+     * The Globe renders at GLOBE_SIZE x GLOBE_SIZE pixels.
+     * We use absolute positioning + translate(-50%,-50%) to pin its CENTER
+     * to the CENTER of the outer div — no matter how big or small the window is.
+     */
+    <div
+      className="relative w-full h-full bg-[#020408] overflow-hidden rounded-md border border-white/5"
+      style={{ minHeight: 0, minWidth: 0 }}
+    >
+      {/* HUD Overlay — always on top via z-index */}
       <div className="absolute top-4 left-4 z-10 pointer-events-none">
         <div className="text-[12px] font-bold font-mono text-[#39ff14] tracking-widest mb-1 shadow-black drop-shadow-md">
           GEO-INTELLIGENCE MATRIX
@@ -67,8 +75,8 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
           <div>ACTIVE ARCS: <span className="text-[#a855f7]">{data?.arcs.length || 0}</span></div>
         </div>
       </div>
-      
-      {/* Target Reticle Overlay */}
+
+      {/* Target Reticle — centered via CSS, purely decorative */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border border-white/5 rounded-full pointer-events-none z-10 opacity-30 flex items-center justify-center">
         <div className="w-1 h-4 bg-[#39ff14]/50 absolute top-0" />
         <div className="w-1 h-4 bg-[#39ff14]/50 absolute bottom-0" />
@@ -76,45 +84,57 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
         <div className="w-4 h-1 bg-[#39ff14]/50 absolute right-0" />
       </div>
 
-      <Globe
-        ref={globeEl}
-        globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
-        bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
-        backgroundColor="rgba(2, 4, 8, 1)"
-        
-        // Nodes
-        pointsData={data?.nodes || []}
-        pointLat="lat"
-        pointLng="lng"
-        pointColor={() => '#39ff14'}
-        pointAltitude={0.02}
-        pointRadius={0.5}
-        pointsMerge={false}
-        
-        // Custom labels for nodes
-        labelsData={data?.nodes || []}
-        labelLat="lat"
-        labelLng="lng"
-        labelText="label"
-        labelSize={1.5}
-        labelDotRadius={0.3}
-        labelColor={() => 'rgba(255, 255, 255, 0.8)'}
-        labelResolution={2}
-        labelAltitude={0.05}
+      {/* Globe — positioned so its centre is always the centre of the container */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: `translate(-50%, -50%)`,
+          width: GLOBE_SIZE,
+          height: GLOBE_SIZE,
+          pointerEvents: 'auto',
+        }}
+      >
+        <Globe
+          ref={globeEl}
+          width={GLOBE_SIZE}
+          height={GLOBE_SIZE}
+          globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
+          bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
+          backgroundColor="rgba(2, 4, 8, 0)"
 
-        // Animated Arcs
-        arcsData={data?.arcs || []}
-        arcStartLat="startLat"
-        arcStartLng="startLng"
-        arcEndLat="endLat"
-        arcEndLng="endLng"
-        arcColor={() => ['#a855f7', '#39ff14']}
-        arcDashLength={0.4}
-        arcDashGap={0.2}
-        arcDashAnimateTime={1500}
-        arcAltitudeAutoScale={0.5}
-        arcStroke={0.5}
-      />
+          pointsData={data?.nodes || []}
+          pointLat="lat"
+          pointLng="lng"
+          pointColor={() => '#39ff14'}
+          pointAltitude={0.02}
+          pointRadius={0.5}
+          pointsMerge={false}
+
+          labelsData={data?.nodes || []}
+          labelLat="lat"
+          labelLng="lng"
+          labelText="label"
+          labelSize={1.5}
+          labelDotRadius={0.3}
+          labelColor={() => 'rgba(255, 255, 255, 0.8)'}
+          labelResolution={2}
+          labelAltitude={0.05}
+
+          arcsData={data?.arcs || []}
+          arcStartLat="startLat"
+          arcStartLng="startLng"
+          arcEndLat="endLat"
+          arcEndLng="endLng"
+          arcColor={() => ['#a855f7', '#39ff14']}
+          arcDashLength={0.4}
+          arcDashGap={0.2}
+          arcDashAnimateTime={1500}
+          arcAltitudeAutoScale={0.5}
+          arcStroke={0.5}
+        />
+      </div>
     </div>
   );
 }

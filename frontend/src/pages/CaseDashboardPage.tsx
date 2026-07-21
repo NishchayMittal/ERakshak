@@ -34,7 +34,8 @@ import {
   Link,
   ThumbsUp,
   ThumbsDown,
-  Edit
+  Edit,
+  Clock
 } from 'lucide-react';
 
 import { DashboardContext } from './DashboardContext';
@@ -42,6 +43,8 @@ import { CaseWindow } from '../components/cases/CaseWindow';
 import { SettingsWindow } from '../components/cases/SettingsWindow';
 import { ProfileWindow } from '../components/cases/ProfileWindow';
 import { ExplorerWindow } from '../components/cases/ExplorerWindow';
+import TemporalWindow from '../components/cases/TemporalWindow';
+import { CrossCorrelationWindow } from '../components/cases/CrossCorrelationWindow';
 
 import {
   triggerModelRetrain,
@@ -64,7 +67,7 @@ import {
 interface WindowState {
   id: string;
   title: string;
-  type: 'case_workspace' | 'settings' | 'profile' | 'cases_explorer';
+  type: 'case_workspace' | 'settings' | 'profile' | 'cases_explorer' | 'temporal_analysis' | 'cross_correlate';
   x: number;
   y: number;
   width: number;
@@ -530,6 +533,8 @@ export default function CaseDashboardPage() {
   };
 
   const handleDragStart = (e: React.MouseEvent, id: string) => {
+    if (e.button !== 0) return;
+
     const win = windows.find(w => w.id === id);
     if (!win || win.isMaximized) return;
 
@@ -539,6 +544,9 @@ export default function CaseDashboardPage() {
     const startY = e.clientY;
     const initX = win.x;
     const initY = win.y;
+
+    // Minimum Y offset to prevent window top bar from going higher than the top dashboard bar (h-8 = 32px / 2rem)
+    const TOP_BAR_HEIGHT = 32;
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const dx = moveEvent.clientX - startX;
@@ -550,7 +558,85 @@ export default function CaseDashboardPage() {
             return {
               ...w,
               x: Math.max(0, initX + dx),
-              y: Math.max(0, initY + dy)
+              y: Math.max(TOP_BAR_HEIGHT, initY + dy)
+            };
+          }
+          return w;
+        })
+      );
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  const handleResizeStart = (e: React.MouseEvent, id: string, direction: string) => {
+    e.stopPropagation();
+    if (e.button !== 0) return;
+
+    const win = windows.find(w => w.id === id);
+    if (!win || win.isMaximized) return;
+
+    focusWindow(id);
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initX = win.x;
+    const initY = win.y;
+    const initW = win.width;
+    const initH = win.height;
+
+    const MIN_WIDTH = 400;
+    const MIN_HEIGHT = 300;
+    const TOP_BAR_HEIGHT = 32;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+
+      setWindows(prev =>
+        prev.map(w => {
+          if (w.id === id) {
+            let newX = initX;
+            let newY = initY;
+            let newW = initW;
+            let newH = initH;
+
+            // Horizontal resizing
+            if (direction.includes('e')) {
+              newW = Math.max(MIN_WIDTH, initW + dx);
+            } else if (direction.includes('w')) {
+              const maxPossibleDx = initW - MIN_WIDTH;
+              const actualDx = Math.min(dx, maxPossibleDx);
+              newX = initX + actualDx;
+              newW = initW - actualDx;
+            }
+
+            // Vertical resizing
+            if (direction.includes('s')) {
+              newH = Math.max(MIN_HEIGHT, initH + dy);
+            } else if (direction.includes('n')) {
+              const maxPossibleDy = initH - MIN_HEIGHT;
+              const requestedY = initY + dy;
+              const clampedY = Math.max(TOP_BAR_HEIGHT, requestedY);
+              const actualDy = clampedY - initY;
+              if (actualDy <= maxPossibleDy) {
+                newY = initY + actualDy;
+                newH = initH - actualDy;
+              }
+            }
+
+            return {
+              ...w,
+              x: newX,
+              y: newY,
+              width: newW,
+              height: newH
             };
           }
           return w;
@@ -950,8 +1036,11 @@ export default function CaseDashboardPage() {
     }
   };
 
-  // Fetch and display narrative AI report
-  const fetchNarrativeReport = async (caseId: string) => {
+  // Fetch and display narrative AI report (caches existing report unless forceRegenerate is true)
+  const fetchNarrativeReport = async (caseId: string, forceRegenerate = false) => {
+    if (!forceRegenerate && caseReportNarrative[caseId] && caseReportNarrative[caseId].trim().length > 0) {
+      return;
+    }
     try {
       showToast('Generating AI narrative synthesis...', 'info');
       const res = await getNarrative(caseId);
@@ -1341,7 +1430,7 @@ export default function CaseDashboardPage() {
             <div
               onMouseDown={(e) => handleDragStart(e, win.id)}
               onDoubleClick={() => toggleMaximize(win.id)}
-              className={`h-7 px-3 flex items-center justify-between cursor-move select-none border-b ${isFocused ? 'bg-[#39ff14]/5 border-[#39ff14]/20 text-[#39ff14]' : 'bg-[#04080e]/40 border-white/5 text-gray-400'}`}
+              className={`h-7 px-3 flex items-center justify-between cursor-move select-none border-b window-drag-surface ${isFocused ? 'bg-[#39ff14]/5 border-[#39ff14]/20 text-[#39ff14]' : 'bg-[#04080e]/40 border-white/5 text-gray-400'}`}
             >
               <div className="flex items-center gap-2 pointer-events-auto">
                 <Folder size={12} className="flex-shrink-0" />
@@ -1398,7 +1487,58 @@ export default function CaseDashboardPage() {
               {win.type === 'settings' && <SettingsWindow />}
               {win.type === 'profile' && <ProfileWindow />}
               {win.type === 'cases_explorer' && <ExplorerWindow win={win} />}
+              {win.type === 'temporal_analysis' && (
+                <TemporalWindow caseId={win.caseId || lastAccessedCaseId || cases[0]?.caseId || ''} />
+              )}
+              {win.type === 'cross_correlate' && <CrossCorrelationWindow win={win} />}
             </div>
+
+            {/* Directional Resize Handles (4 edges + 4 corners) */}
+            {!win.isMaximized && (
+              <>
+                {/* Top edge */}
+                <div
+                  onMouseDown={(e) => handleResizeStart(e, win.id, 'n')}
+                  className="absolute top-0 left-3 right-3 h-1.5 cursor-ns-resize hover:bg-[#39ff14]/30 z-30"
+                />
+                {/* Bottom edge */}
+                <div
+                  onMouseDown={(e) => handleResizeStart(e, win.id, 's')}
+                  className="absolute bottom-0 left-3 right-3 h-1.5 cursor-ns-resize hover:bg-[#39ff14]/30 z-30"
+                />
+                {/* Left edge */}
+                <div
+                  onMouseDown={(e) => handleResizeStart(e, win.id, 'w')}
+                  className="absolute top-3 bottom-3 left-0 w-1.5 cursor-ew-resize hover:bg-[#39ff14]/30 z-30"
+                />
+                {/* Right edge */}
+                <div
+                  onMouseDown={(e) => handleResizeStart(e, win.id, 'e')}
+                  className="absolute top-3 bottom-3 right-0 w-1.5 cursor-ew-resize hover:bg-[#39ff14]/30 z-30"
+                />
+
+                {/* Top-Left corner */}
+                <div
+                  onMouseDown={(e) => handleResizeStart(e, win.id, 'nw')}
+                  className="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize hover:bg-[#39ff14]/50 z-30"
+                />
+                {/* Top-Right corner */}
+                <div
+                  onMouseDown={(e) => handleResizeStart(e, win.id, 'ne')}
+                  className="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize hover:bg-[#39ff14]/50 z-30"
+                />
+                {/* Bottom-Left corner */}
+                <div
+                  onMouseDown={(e) => handleResizeStart(e, win.id, 'sw')}
+                  className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize hover:bg-[#39ff14]/50 z-30"
+                />
+                {/* Bottom-Right corner */}
+                <div
+                  onMouseDown={(e) => handleResizeStart(e, win.id, 'se')}
+                  className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize hover:bg-[#39ff14]/50 z-30"
+                />
+              </>
+            )}
           </div>
         );
       })}
@@ -1422,6 +1562,14 @@ export default function CaseDashboardPage() {
           className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'cases_explorer') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
         >
           <Compass size={20} />
+        </button>
+
+        <button
+          onClick={() => openWindow('cross_correlate_window', 'Cross-Case Intelligence Correlator', 'cross_correlate')}
+          title="Cross-Case Correlation Scanner"
+          className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'cross_correlate_window') ? 'text-[#a855f7] bg-[#a855f7]/10 border border-[#a855f7]/30' : 'text-gray-300 hover:text-[#a855f7] hover:bg-white/5'}`}
+        >
+          <Network size={20} />
         </button>
 
         <button

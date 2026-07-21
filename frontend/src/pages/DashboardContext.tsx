@@ -62,7 +62,7 @@ export interface DashboardContextType {
   addCaseSeed: (caseId: string) => void;
   removeCaseSeed: (caseId: string, idx: number) => void;
   runIngestPipeline: (caseId: string) => void;
-  fetchNarrativeReport: (caseId: string) => void;
+  fetchNarrativeReport: (caseId: string, forceRegenerate?: boolean) => void;
   triggerExport: (caseId: string, format: 'json' | 'csv' | 'pdf') => void;
   handleGoToNode: (caseId: string, nodeId: string) => void;
   loadGraphForCase: (caseId: string, entityId: string) => void;

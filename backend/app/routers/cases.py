@@ -546,8 +546,13 @@ def chat_with_evidence(
     if not case:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
 
-    # Compile the evidence pack
+    # Compile the evidence pack and attach temporal behavioral analysis
     evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
+    from app.analytics.temporal import compute_temporal_analysis
+    try:
+        evidence_pack["temporal_analysis"] = compute_temporal_analysis(case_id, db)
+    except Exception:
+        pass
 
     # Import here to avoid circular imports
     from app.narrative import generate_narrative
@@ -560,9 +565,9 @@ def chat_with_evidence(
 
     # Check if Groq API key is available
     if not settings.groq_api_key:
+        temporal_summary = evidence_pack.get("temporal_analysis", {}).get("tradecraft_summary", "")
         return {
-            "answer": "I'm unable to process your question because the Groq API key is not configured. Please contact your administrator to set up the GROQ_API_KEY in the environment.",
-            "error": "GROQ_API_KEY not configured"
+            "answer": f"**e-Rakshak AI Analyst (Offline Tradecraft Engine)**:\n\nRegarding your query: \"{chat_request.question}\"\n\n**Temporal Behavioral Footprint**:\n{temporal_summary}\n\n*(Configure `GROQ_API_KEY` in `.env` for generative deep reasoning capabilities)*"
         }
 
     try:
@@ -811,3 +816,16 @@ def set_retention(
     
     log_action(db, "case.set_retention", investigator_id=current_investigator.id, case_id=case.id, detail={"days": payload.days, "expires_at": case.expires_at.isoformat()})
     return case
+
+
+@router.get("/{case_id}/temporal-analysis")
+def get_temporal_analysis(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+    from app.analytics.temporal import compute_temporal_analysis
+    return compute_temporal_analysis(case_id, db)

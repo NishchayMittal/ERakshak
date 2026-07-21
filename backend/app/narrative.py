@@ -68,15 +68,21 @@ def answer_question_about_evidence(evidence_pack: dict, question: str) -> str:
     If the API key is missing or invalid, it returns a graceful fallback response.
     """
     case_title = evidence_pack.get("case", {}).get("title", "Unknown Case")
+    temporal = evidence_pack.get("temporal_analysis", {})
+    temporal_summary = temporal.get("tradecraft_summary", "")
 
     fallback_response = (
         f"**e-Rakshak AI Assistant**\n\n"
-        f"> [!WARNING]\n"
-        f"> This is a placeholder response because the Groq API key is missing or invalid.\n"
-        f"> Add GROQ_API_KEY to your .env file to get real AI-powered answers.\n\n"
-        f"Regarding your question: \"{question}\"\n\n"
-        f"Based on the evidence pack for case '{case_title}', I would need to analyze the available data to provide a comprehensive answer. "
-        f"The evidence pack contains information about identifiers, findings, connections, and investigator notes that would help answer questions about suspect links, digital footprints, breach data, and infrastructure mapping."
+        f"> [!NOTE]\n"
+        f"> **Case Context**: {case_title}\n\n"
+        f"Regarding your query: \"{question}\"\n\n"
+    )
+    if temporal_summary:
+        fallback_response += f"**Temporal Behavioral Footprint**:\n{temporal_summary}\n\n"
+    
+    fallback_response += (
+        f"Based on the case evidence, target activity is aggregated across findings, identifiers, and CDX/WHOIS metadata. "
+        f"For advanced natural language reasoning, configure `GROQ_API_KEY` in your `.env` configuration."
     )
 
     if not settings.groq_api_key:
@@ -90,13 +96,14 @@ def answer_question_about_evidence(evidence_pack: dict, question: str) -> str:
         system_prompt = (
             "You are an expert intelligence analyst working with the e-Rakshak OSINT platform. "
             "You have access to a comprehensive evidence pack containing case details, identifier information, "
+            "temporal behavioral analysis (7x24 activity heatmaps, inferred timezone, circadian sleep patterns, and peak active hours), "
             "findings from various OSINT connectors (WHOIS, crt.sh, Wayback Machine, breach databases, etc.), "
             "investigator notes, and a correlated graph showing connections between entities. "
             "Your task is to answer specific investigatory questions based SOLELY on the provided evidence. "
             "You must:\n"
             "1. Base your answer exclusively on the evidence provided in the evidence pack\n"
-            "2. Cite specific sources when making claims (e.g., '[Source: Whois Connector]' or '[Finding: xxx]')\n"
-            "3. If the evidence doesn't contain enough information to answer definitively, state what additional information would be needed\n"
+            "2. Cite specific sources when making claims (e.g., '[Source: Whois Connector]' or '[Temporal Tradecraft Analysis]')\n"
+            "3. If asked about timezones, operating hours, or sleep patterns, leverage the temporal analysis metrics\n"
             "4. Provide clear, concise answers suitable for investigative work\n"
             "5. Maintain a professional, analytical tone appropriate for law enforcement and security professionals"
         )

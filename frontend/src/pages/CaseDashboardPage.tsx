@@ -188,6 +188,7 @@ export default function CaseDashboardPage() {
   }, [graphData, activeCaseId]);
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; caseId: string; title: string } | null>(null);
+  const [dockContextMenu, setDockContextMenu] = useState<{ x: number; y: number; windowId: string; title: string } | null>(null);
   const [renameCaseState, setRenameCaseState] = useState<{ id: string; title: string; newTitle: string } | null>(null);
   const [deleteConfirmCase, setDeleteConfirmCase] = useState<{ id: string; title: string } | null>(null);
 
@@ -1207,6 +1208,12 @@ export default function CaseDashboardPage() {
     <div
       ref={desktopRef}
       className="relative w-full h-full overflow-hidden select-none bg-black text-gray-300"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) {
+          setWindows(prev => prev.map(w => w.type === 'case_workspace' ? { ...w, isMinimized: true } : w));
+          setActiveWindowId(null);
+        }
+      }}
       style={{
         background: customWallpaper || currentWallpaper.value,
         backgroundSize: 'cover',
@@ -1619,6 +1626,10 @@ export default function CaseDashboardPage() {
             <button
               key={`task-${w.id}`}
               onClick={() => toggleMinimize(w.id)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setDockContextMenu({ x: e.clientX, y: e.clientY - 50, windowId: w.id, title: w.title });
+              }}
               className={`px-3 h-10 rounded-xl transition-all flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider ${isOpen ? 'bg-[#39ff14]/10 border border-[#39ff14]/30 text-[#39ff14]' : 'bg-white/5 border border-white/5 text-gray-500 hover:text-white'}`}
             >
               <div className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-[#39ff14] animate-pulse' : 'bg-gray-600'}`} />
@@ -1672,6 +1683,35 @@ export default function CaseDashboardPage() {
               className="text-left font-mono text-[9px] font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 px-3 py-2 w-full transition-colors uppercase tracking-wider"
             >
               {t('modals.delete_dossier_ctx')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Dock Window Context Menu */}
+      {dockContextMenu && (
+        <div
+          onClick={() => setDockContextMenu(null)}
+          onContextMenu={(e) => { e.preventDefault(); setDockContextMenu(null); }}
+          className="fixed inset-0 z-[100000]"
+        >
+          <div
+            style={{
+              position: 'fixed',
+              left: dockContextMenu.x,
+              top: dockContextMenu.y,
+            }}
+            className="bg-[#04080e]/95 border border-white/10 p-1 flex flex-col min-w-[130px] shadow-2xl backdrop-blur-xl z-[100001]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => {
+                setDockContextMenu(null);
+                closeWindow(dockContextMenu.windowId);
+              }}
+              className="text-left font-mono text-[9px] font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 px-3 py-2 w-full transition-colors uppercase tracking-wider"
+            >
+              {t('modals.close_window', 'CLOSE WINDOW')}
             </button>
           </div>
         </div>

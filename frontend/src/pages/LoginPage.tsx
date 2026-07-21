@@ -5,6 +5,7 @@ import { useUIStore } from "../state/uiStore";
 import { signupRequest } from "../api/endpoints";
 import { CyberCard } from "../components/ui/CyberCard";
 import { CyberButton } from "../components/ui/CyberButton";
+import { motion } from "framer-motion";
 
 
 const BOOT_LINES = [
@@ -98,11 +99,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#020408",
-        display: "flex",
+    <div style={{ minHeight: "100vh", background: "#020408", position: "relative" }}>
+      <motion.div
+        initial={{ opacity: 0, scale: 1.05, filter: "blur(20px)" }}
+        animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+        transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        style={{
+          minHeight: "100vh",
+          display: "flex",
         alignItems: "center",
         justifyContent: "center",
         position: "relative",
@@ -542,6 +546,7 @@ export default function LoginPage() {
           <span style={{ marginLeft: 12, opacity: 0.5, fontSize: 8 }}>✕</span>
         </div>
       )}
+      </motion.div>
     </div>
   );
 }

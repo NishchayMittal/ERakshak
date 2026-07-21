@@ -703,6 +703,19 @@ export default function PortalPage() {
           <span>ENTER DASHBOARD</span>
         </CyberButton>
       </CyberCard>
+
+      {/* Fade to black overlay for seamless transition */}
+      <div 
+        style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: '#020408',
+          zIndex: 1000,
+          opacity: isZooming ? 1 : 0,
+          transition: 'opacity 0.8s ease-in',
+          pointerEvents: 'none'
+        }}
+      />
     </div>
   );
 }

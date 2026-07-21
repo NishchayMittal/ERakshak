@@ -132,7 +132,7 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
     dotGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
     const dotMat = new THREE.PointsMaterial({
-      size: 5.0,
+      size: 3.0,
       vertexColors: true,
       transparent: true,
       opacity: 0.8,
@@ -457,6 +457,7 @@ globeGroup.position.x = 0;
       if (isZooming) {
         globeGroup.position.y += (0 - globeGroup.position.y) * 0.08;
         globeGroup.position.x += (0 - globeGroup.position.x) * 0.08;
+        dotMat.opacity += (0.35 - dotMat.opacity) * 0.05;
       } else if (phaseRef.current === 'ready') {
         const targetY = -(window.innerHeight / 2) + 150;
         globeGroup.position.y += (targetY - globeGroup.position.y) * 0.03;
@@ -464,6 +465,7 @@ globeGroup.position.x = 0;
       } else if (phaseRef.current === 'login') {
         globeGroup.position.y += (0 - globeGroup.position.y) * 0.05;
         globeGroup.position.x += (0 - globeGroup.position.x) * 0.05;
+        dotMat.opacity += (0.35 - dotMat.opacity) * 0.05;
       } else {
         globeGroup.position.y += (0 - globeGroup.position.y) * 0.05;
         globeGroup.position.x += (0 - globeGroup.position.x) * 0.05;
@@ -682,6 +684,41 @@ export default function PortalPage() {
           &gt; INITIALIZING OSINT CORE // ORION PROTOCOLS ACTIVE...
         </div>
       </div>
+
+      {/* SPLASH + READY PHASE BACKGROUND STARS AND NEBULA */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 2,
+          pointerEvents: 'none',
+          opacity: (phase === 'splash' || (phase === 'ready' && !isZooming)) ? 0.9 : 0,
+          transition: 'opacity 1.5s ease',
+          backgroundImage: `
+            radial-gradient(1.5px 1.5px at 20px 30px, rgba(255,255,255,0.7), rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+            radial-gradient(1px 1px at 90px 40px, rgba(216,180,254,0.7), rgba(0,0,0,0)),
+            radial-gradient(1.5px 1.5px at 130px 80px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 160px 120px, rgba(192,132,252,0.7), rgba(0,0,0,0)),
+            radial-gradient(1px 1px at 250px 180px, rgba(255,255,255,0.6), rgba(0,0,0,0)),
+            radial-gradient(1.5px 1.5px at 300px 250px, rgba(233,213,255,0.8), rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 350px 90px, rgba(255,255,255,0.7), rgba(0,0,0,0))
+          `,
+          backgroundRepeat: 'repeat',
+          backgroundSize: '400px 400px',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 1,
+          pointerEvents: 'none',
+          opacity: (phase === 'splash' || (phase === 'ready' && !isZooming)) ? 1 : 0,
+          transition: 'opacity 1.5s ease',
+          background: 'radial-gradient(circle at 10% 50%, rgba(147, 51, 234, 0.15), transparent 40%), radial-gradient(circle at 90% 50%, rgba(147, 51, 234, 0.15), transparent 40%)',
+        }}
+      />
 
       {/* READY PHASE CONTENT */}
       <div

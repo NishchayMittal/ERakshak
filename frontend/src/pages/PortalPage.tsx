@@ -4,10 +4,11 @@ import * as THREE from 'three';
 import { ArrowRight } from 'lucide-react';
 import { CyberCard } from '../components/ui/CyberCard';
 import { CyberButton } from '../components/ui/CyberButton';
+import { LoginForm } from '../components/auth/LoginForm';
 
 
 // ── THREE.JS EARTH EFFECT BACKGROUND ──
-function EarthEffect({ phase }: { phase: 'splash' | 'ready' }) {
+function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
   const phaseRef = useRef(phase);
   useEffect(() => { phaseRef.current = phase; }, [phase]);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -435,7 +436,9 @@ globeGroup.position.x = 0;
       } else {
         camera.position.x += (targetX - camera.position.x) * 0.02;
         camera.position.y += (-targetY - camera.position.y) * 0.02;
-        const targetZ = phaseRef.current === 'ready' ? 750 : 1100;
+        let targetZ = 1100;
+        if (phaseRef.current === 'ready') targetZ = 750;
+        if (phaseRef.current === 'login') targetZ = 50;
         camera.position.z += (targetZ - camera.position.z) * 0.03;
       }
       camera.lookAt(scene.position);
@@ -458,6 +461,9 @@ globeGroup.position.x = 0;
         const targetY = -(window.innerHeight / 2) + 150;
         globeGroup.position.y += (targetY - globeGroup.position.y) * 0.03;
         globeGroup.position.x += (0 - globeGroup.position.x) * 0.03;
+      } else if (phaseRef.current === 'login') {
+        globeGroup.position.y += (0 - globeGroup.position.y) * 0.05;
+        globeGroup.position.x += (0 - globeGroup.position.x) * 0.05;
       } else {
         globeGroup.position.y += (0 - globeGroup.position.y) * 0.05;
         globeGroup.position.x += (0 - globeGroup.position.x) * 0.05;
@@ -551,7 +557,7 @@ globeGroup.position.x = 0;
 export default function PortalPage() {
   const navigate = useNavigate();
   const [isZooming, setIsZooming] = useState(false);
-  const [phase, setPhase] = useState<'splash' | 'ready'>('splash');
+  const [phase, setPhase] = useState<'splash' | 'ready' | 'login'>('splash');
 
   useEffect(() => {
     // Automatically transition to ready state after splash screen (e.g. 4 seconds)
@@ -561,11 +567,12 @@ export default function PortalPage() {
 
   useEffect(() => {
     const handleZoomComplete = () => {
-      navigate('/login');
+      setIsZooming(false);
+      setPhase('login');
     };
     window.addEventListener('zoom-complete', handleZoomComplete);
     return () => window.removeEventListener('zoom-complete', handleZoomComplete);
-  }, [navigate]);
+  }, []);
 
   const handleEnterClick = () => {
     setIsZooming(true);
@@ -742,18 +749,22 @@ export default function PortalPage() {
         </CyberCard>
       </div>
 
-      {/* Fade to black overlay for zoom transition */}
-      <div 
+      {/* LOGIN PHASE CONTENT */}
+      <div
         style={{
           position: 'absolute',
-          top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: '#020408',
-          zIndex: 1000,
-          opacity: isZooming ? 1 : 0,
-          transition: 'opacity 0.8s ease-in',
-          pointerEvents: 'none'
+          inset: 0,
+          zIndex: 30,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          pointerEvents: phase === 'login' && !isZooming ? 'auto' : 'none',
+          opacity: phase === 'login' && !isZooming ? 1 : 0,
+          transition: 'opacity 1.5s ease',
         }}
-      />
+      >
+        {phase === 'login' && <LoginForm />}
+      </div>
     </div>
   );
 }

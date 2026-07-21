@@ -354,7 +354,7 @@ export default function CaseDashboardPage() {
     if (cases.length > 0) {
       setCaseOrder(prev => {
         const caseIds = cases.map(c => c.caseId);
-        let next = prev.filter(id => caseIds.includes(id));
+        const next = prev.filter(id => caseIds.includes(id));
         const missing = caseIds.filter(id => !next.includes(id));
         if (missing.length > 0 || next.length !== prev.length) {
           const updated = [...next, ...missing];
@@ -1055,7 +1055,7 @@ export default function CaseDashboardPage() {
     try {
       showToast(`Compiling ${format.toUpperCase()} archive...`, 'info');
       let blob;
-      let name = `Dossier_Export_${caseId}.${format}`;
+      const name = `Dossier_Export_${caseId}.${format}`;
       if (format === 'json') {
         blob = await exportCaseJSON(caseId);
       } else if (format === 'csv') {

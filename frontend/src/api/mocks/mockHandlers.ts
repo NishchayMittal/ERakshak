@@ -17,7 +17,7 @@ function delay<T>(value: T): Promise<T> {
 }
 
 // in-memory mutable copy so notes/tags/cases "persist" for the session without a backend
-let notesStore: CaseNote[] = [];
+const notesStore: CaseNote[] = [];
 let mockCasesStore: CaseSummary[] = [...(mockCaseList as CaseSummary[])];
 
 export function getMockCaseList(): Promise<CaseSummary[]> {

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { MessageCircle, Activity, BookOpen, FileText } from 'lucide-react';
 import GraphView from '../components/graph/GraphView';
 import GraphFilterBar from '../components/graph/GraphFilterBar';
 import GraphLegend from '../components/graph/GraphLegend';
@@ -8,12 +9,13 @@ import NotesPanel from '../components/cases/NotesPanel';
 import ReportPanel from '../components/cases/ReportPanel';
 import ExportMenu from '../components/export/ExportMenu';
 import DossierPanel from '../components/dossier/DossierPanel';
+import ChatPanel from '../components/cases/ChatPanel';
 import { useGraphStore } from '../state/graphStore';
 import { useUIStore } from '../state/uiStore';
 import { useCaseStore } from '../state/caseStore';
 import { useWebSocket } from '../hooks/useWebSocket';
 
-const TABS = ['DOSSIER', 'TIMELINE', 'NOTES', 'REPORT'] as const;
+const TABS = ['DOSSIER', 'TIMELINE', 'NOTES', 'REPORT', 'CHAT'] as const;
 type Tab = typeof TABS[number];
 
 interface InvestigationPageProps {
@@ -67,6 +69,7 @@ export default function InvestigationPage({ caseId: propCaseId, entityId: propEn
     timeline: 'TIMELINE',
     notes: 'NOTES',
     report: 'REPORT',
+    chat: 'CHAT',
   };
   const activeDisplay = tabMap[activeTab] ?? 'DOSSIER';
   const reverseTabMap: Record<Tab, string> = {
@@ -74,6 +77,7 @@ export default function InvestigationPage({ caseId: propCaseId, entityId: propEn
     TIMELINE: 'timeline',
     NOTES: 'notes',
     REPORT: 'report',
+    CHAT: 'chat',
   };
 
   return (
@@ -128,31 +132,49 @@ export default function InvestigationPage({ caseId: propCaseId, entityId: propEn
             background: '#030609',
             flexShrink: 0,
           }}>
-            {TABS.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(reverseTabMap[tab] as any)}
-                style={{
-                  flex: 1,
-                  padding: '9px 0',
-                  fontFamily: 'var(--font-heading)',
-                  fontSize: 9,
-                  fontWeight: 700,
-                  letterSpacing: '0.15em',
-                  textTransform: 'uppercase',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: activeDisplay === tab
-                    ? '2px solid var(--accent-primary)'
-                    : '2px solid transparent',
-                  color: activeDisplay === tab ? 'var(--accent-primary)' : 'var(--text-muted)',
-                  cursor: 'pointer',
-                  transition: 'color 0.1s, border-color 0.1s',
-                }}
-              >
-                {tab}
-              </button>
-            ))}
+            {TABS.map((tab) => {
+              // Define icons for each tab
+              const tabIcons: Record<Tab, React.FC<React.SVGProps<SVGSVGElement>> & { size?: number }> = {
+                DOSSIER: MessageCircle,
+                TIMELINE: Activity,  // Using Activity for timeline
+                NOTES: BookOpen,
+                REPORT: FileText,
+                CHAT: MessageCircle,  // Using MessageCircle for chat
+              };
+
+              const IconComponent = tabIcons[tab];
+
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(reverseTabMap[tab] as any)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 4,
+                    flex: 1,
+                    padding: '9px 0',
+                    fontFamily: 'var(--font-heading)',
+                    fontSize: 9,
+                    fontWeight: 700,
+                    letterSpacing: '0.15em',
+                    textTransform: 'uppercase',
+                    background: 'none',
+                    border: 'none',
+                    borderBottom: activeDisplay === tab
+                      ? '2px solid var(--accent-primary)'
+                      : '2px solid transparent',
+                    color: activeDisplay === tab ? 'var(--accent-primary)' : 'var(--text-muted)',
+                    cursor: 'pointer',
+                    transition: 'color 0.1s, border-color 0.1s',
+                  }}
+                >
+                  <IconComponent className="w-4 h-4" />
+                  <span>{tab}</span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Panel content */}
@@ -161,6 +183,7 @@ export default function InvestigationPage({ caseId: propCaseId, entityId: propEn
             {activeDisplay === 'TIMELINE' && <TimelineView />}
             {activeDisplay === 'NOTES' && caseId && <NotesPanel caseId={caseId} />}
             {activeDisplay === 'REPORT' && caseId && <ReportPanel caseId={caseId} />}
+            {activeDisplay === 'CHAT' && caseId && <ChatPanel caseId={caseId} />}
           </div>
         </div>
       </div>

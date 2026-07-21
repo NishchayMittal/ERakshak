@@ -103,6 +103,18 @@ export async function getNarrative(caseId: string): Promise<{ narrative: string 
   return res.data;
 }
 
+export async function chatWithEvidence(caseId: string, question: string): Promise<{ answer: string; question: string; case_id: string }> {
+  if (isMockMode()) {
+    return {
+      answer: `I'm an AI assistant for the e-Rakshak OSINT platform. In mock mode, I can help you understand how to interact with your evidence. Your question was: "${question}".\n\nIn a real deployment, I would analyze your evidence pack (which includes case details, identifiers, findings from OSINT connectors, and relationship maps) to provide detailed, evidence-based answers to investigative questions like:\n- "Who is linked to this domain?"\n- "What email addresses were found associated with this suspect?"\n- "Show me all social media profiles discovered"\n- "What breach data was found for this email?"\n- "What IP addresses are connected to this domain?"\n\nTo get real AI-powered insights, please ensure the backend is running with a valid GROQ_API_KEY configured.`,
+      question: question,
+      case_id: caseId
+    };
+  }
+  const res = await apiClient.post(`/cases/${caseId}/chat`, { question });
+  return res.data;
+}
+
 export async function exportCaseJSON(caseId: string): Promise<Blob> {
   if (isMockMode()) {
     const payload = JSON.stringify({ caseId, exportedAt: new Date().toISOString(), mode: 'mock' }, null, 2);

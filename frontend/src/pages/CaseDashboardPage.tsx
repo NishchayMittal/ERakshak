@@ -36,7 +36,8 @@ import {
   ThumbsDown,
   Edit,
   Clock,
-  Globe
+  Globe,
+  Minus
 } from 'lucide-react';
 
 import { DashboardContext } from './DashboardContext';
@@ -1477,6 +1478,13 @@ export default function CaseDashboardPage() {
 
               {/* Window controls */}
               <div className="flex items-center gap-1.5 pointer-events-auto">
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleMinimize(win.id); }}
+                  className="p-1 text-gray-400 hover:text-white hover:bg-white/5 transition"
+                  title={t('dashboard.minimize_window', 'MINIMIZE')}
+                >
+                  <Minus size={10} />
+                </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleMaximize(win.id); }}
                   className="p-1 text-gray-400 hover:text-white hover:bg-white/5 transition"

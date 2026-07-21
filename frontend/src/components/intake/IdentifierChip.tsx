@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Trash2 } from 'lucide-react';
 import type { IdentifierType } from '../../types/identifier';
+import { useTranslation } from 'react-i18next';
 
 interface IdentifierChipProps {
   id: string;
@@ -11,6 +12,7 @@ interface IdentifierChipProps {
 }
 
 export default function IdentifierChip({ id, type, rawValue, onDelete }: IdentifierChipProps) {
+  const { t } = useTranslation();
   const typeColors: Record<IdentifierType, string> = {
     name: 'bg-rose-950/40 border-rose-800/40 text-rose-300',
     email: 'bg-indigo-950/40 border-indigo-800/40 text-indigo-300',
@@ -41,7 +43,7 @@ export default function IdentifierChip({ id, type, rawValue, onDelete }: Identif
         type="button" 
         onClick={() => onDelete(id)}
         className="hover:bg-white/10 rounded-full p-0.5 ml-1 transition-all text-slate-400 hover:text-white"
-        title="Remove seed"
+        title={t('intake_form.remove_seed')}
       >
         <Trash2 className="w-3.5 h-3.5" />
       </button>

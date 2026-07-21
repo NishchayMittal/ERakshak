@@ -7,6 +7,7 @@ import { signupRequest } from "../../api/endpoints";
 import { CyberCard } from "../ui/CyberCard";
 import { CyberButton } from "../ui/CyberButton";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { useSciFiSounds } from "../../hooks/useSciFiSounds";
 
 const BOOT_LINES = [
@@ -25,6 +26,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
   const { login } = useAuth();
   const { showToast, toast, clearToast } = useUIStore();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { playHover, playClick } = useSciFiSounds();
 
   // Cycle boot lines
@@ -38,29 +40,29 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim()) {
-      showToast("INVESTIGATOR BADGE ID REQUIRED", "error");
+      showToast(t("login.badge_required"), "error");
       return;
     }
     if (!password.trim()) {
-      showToast("SECURITY PASSPHRASE REQUIRED", "error");
+      showToast(t("login.passphrase_required"), "error");
       return;
     }
 
     if (isSignUp) {
       if (!fullName.trim()) {
-        showToast("FULL NAME REQUIRED FOR REGISTRATION", "error");
+        showToast(t("login.name_required"), "error");
         return;
       }
       try {
         await signupRequest(username.trim(), fullName.trim(), password);
         showToast(
-          "REGISTRATION REQUEST SUBMITTED // PENDING APPROVAL",
+          t("login.signup_submitted"),
           "success",
         );
         setIsSignUp(false);
         setPassword("");
       } catch (err: any) {
-        let msg = "REGISTRATION REQUEST FAILED";
+        let msg = t("login.signup_failed");
         if (err.response?.data?.detail) {
           if (typeof err.response.data.detail === "string") {
             msg = err.response.data.detail;
@@ -77,15 +79,15 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
         const success = await login(username.trim(), password);
         if (success) {
           showToast(
-            `ACCESS GRANTED // AGENT ${username.toUpperCase()}`,
+            t("login.access_granted", { username: username.toUpperCase() }),
             "success",
           );
           navigate("/cases");
         } else {
-          showToast("INVALID BADGE ID OR SECURITY PASSPHRASE", "error");
+          showToast(t("login.invalid_credentials"), "error");
         }
       } catch (err: any) {
-        let msg = "INVALID CREDENTIALS";
+        let msg = t("login.invalid_fallback");
         if (err.response?.data?.detail) {
           if (typeof err.response.data.detail === "string") {
             msg = err.response.data.detail;
@@ -159,7 +161,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                   textShadow: "0 0 16px rgba(57,255,20,0.4)",
                 }}
               >
-                ORION
+                {t("login.brand")}
               </h1>
               <div
                 style={{
@@ -171,7 +173,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                   textTransform: "uppercase",
                 }}
               >
-                OSINT // DIGITAL FORENSICS // LINK ANALYSIS
+                {t("login.subtitle")}
               </div>
             </div>
 
@@ -209,7 +211,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                     marginBottom: 6,
                   }}
                 >
-                  INVESTIGATOR BADGE ID
+                  {t("login.badge_id")}
                 </label>
                 <input
                   type="text"
@@ -233,7 +235,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                   onBlur={(e) =>
                     (e.target.style.borderColor = "rgba(255,255,255,0.1)")
                   }
-                  placeholder="INV-000"
+                  placeholder={t("login.badge_placeholder")}
                 />
               </div>
 
@@ -251,7 +253,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                       marginBottom: 6,
                     }}
                   >
-                    FULL NAME
+                    {t("login.full_name")}
                   </label>
                   <input
                     type="text"
@@ -275,7 +277,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                     onBlur={(e) =>
                       (e.target.style.borderColor = "rgba(255,255,255,0.1)")
                     }
-                    placeholder="AGENT_NAME"
+                    placeholder={t("login.name_placeholder")}
                   />
                 </div>
               )}
@@ -293,7 +295,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                     marginBottom: 6,
                   }}
                 >
-                  SECURITY PASSPHRASE
+                  {t("login.passphrase")}
                 </label>
                 <input
                   type="password"
@@ -317,7 +319,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                   onBlur={(e) =>
                     (e.target.style.borderColor = "rgba(255,255,255,0.1)")
                   }
-                  placeholder="••••••••"
+                  placeholder={t("login.passphrase_placeholder")}
                 />
               </div>
 
@@ -343,10 +345,10 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                       boxShadow: "0 0 4px #39ff14",
                     }}
                   />
-                  SECURE AUDIT LOGGING ACTIVE
+                  {t("login.secure_logging")}
                 </span>
                 <span style={{ color: "var(--struct-line)" }}>
-                  LEVEL-5 CLEARANCE
+                  {t("login.clearance")}
                 </span>
               </div>
 
@@ -356,7 +358,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                 style={{ width: "100%" }}
                 containerStyle={{ width: "100%", display: "flex", justifyContent: "center" }}
               >
-                {isSignUp ? "SUBMIT SIGNUP REQUEST" : "AUTHORIZE SESSION"}
+                {isSignUp ? t("login.submit_signup") : t("login.authorize")}
               </CyberButton>
 
               {/* Bottom links: Go To Home + Toggle switch */}
@@ -434,8 +436,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
               lineHeight: 1.6,
             }}
           >
-            STRICTLY AUTHORIZED PERSONNEL ONLY. ALL ACCESS AND INGESTION EVENTS
-            ARE DIGITALLY LOGGED.
+            {t("login.footer_notice")}
           </div>
         </CyberCard>
       </motion.div>

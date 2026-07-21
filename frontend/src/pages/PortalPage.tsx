@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import * as THREE from 'three';
 import { ArrowRight, Shield } from 'lucide-react';
 import { CyberCard } from '../components/ui/CyberCard';
 import { CyberButton } from '../components/ui/CyberButton';
 import { LoginForm } from '../components/auth/LoginForm';
+import { LanguageSwitcher } from '../components/ui/LanguageSwitcher';
 import { useSciFiSounds } from '../hooks/useSciFiSounds';
 
 
@@ -559,6 +561,7 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
 // ── PORTAL PAGE RENDERER ──
 export default function PortalPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [isZooming, setIsZooming] = useState(false);
   const [phase, setPhase] = useState<'splash' | 'ready' | 'login'>('splash');
   const { playClick, playWhoosh } = useSciFiSounds();
@@ -637,6 +640,10 @@ export default function PortalPage() {
           boxShadow: 'inset 0 0 150px rgba(0,0,0,0.9)',
         }}
       />
+      {/* Language Switcher */}
+      <div className="absolute top-4 right-4 z-50 pointer-events-auto">
+        <LanguageSwitcher />
+      </div>
 
       {/* Matrix Rain */}
       <div
@@ -768,7 +775,7 @@ export default function PortalPage() {
               lineHeight: '1',
             }}
           >
-            ORION
+            {t('portal.brand')}
           </h1>
           <p
             style={{
@@ -781,7 +788,7 @@ export default function PortalPage() {
               lineHeight: '1.5',
             }}
           >
-            Global Cyber Threat Intelligence Matrix
+            {t('portal.subtitle')}
           </p>
         </div>
 
@@ -797,7 +804,7 @@ export default function PortalPage() {
             onClick={handleEnterClick}
             icon={<ArrowRight size={16} color="#000000" />}
           >
-            <span>ENTER DASHBOARD</span>
+            <span>{t('portal.enter_dashboard')}</span>
           </CyberButton>
         </CyberCard>
       </div>

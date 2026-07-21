@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Cpu, Activity, Terminal, RefreshCw } from 'lucide-react';
 import { triggerModelRetrain } from '../api/endpoints';
 import { useUIStore } from '../state/uiStore';
+import { CyberButton } from '../components/ui/CyberButton';
 
 // Audio click synth
 const playClickTone = () => {
@@ -87,19 +88,17 @@ export default function SettingsPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, minHeight: 0, overflow: 'hidden', userSelect: 'none' }}>
       
       {/* Header Panel */}
-      <div style={{
+      <div className="hud-panel" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '14px 16px',
-        background: '#080c10',
-        border: '1px solid var(--struct-line)',
         position: 'relative', overflow: 'hidden',
       }}>
         <div className="cyber-grid" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
         <div style={{ position: 'relative', zIndex: 1 }}>
           <h1 style={{
             margin: 0,
-            fontFamily: 'var(--font-heading)', fontSize: 16, fontWeight: 700,
-            color: 'var(--text-primary)', letterSpacing: '0.1em', textTransform: 'uppercase',
+            fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700,
+            color: 'var(--text-primary)', letterSpacing: '0.12em', textTransform: 'uppercase',
           }}>
             NEURAL MODEL CONFIGURATION
           </h1>
@@ -117,15 +116,10 @@ export default function SettingsPage() {
         {/* Left Column: Config Panels */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Booster params card */}
-          <div style={{
-            background: '#080c10',
-            border: '1px solid var(--struct-line)',
-            padding: 16,
-            display: 'flex', flexDirection: 'column', gap: 16,
-          }}>
+          <div className="hud-panel" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{
               fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
-              color: 'var(--accent-primary)', letterSpacing: '0.15em', textTransform: 'uppercase',
+              color: 'var(--accent-label)', letterSpacing: '0.15em', textTransform: 'uppercase',
               borderBottom: '1px solid var(--struct-line)', paddingBottom: 8,
               display: 'flex', alignItems: 'center', gap: 8,
             }}>
@@ -179,44 +173,27 @@ export default function SettingsPage() {
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               borderTop: '1px solid var(--struct-line)', paddingTop: 12, marginTop: 8,
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)' }}>
-                <Activity className="w-3.5 h-3.5 animate-pulse" style={{ color: '#00C853' }} />
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Activity className="w-3.5 h-3.5 animate-pulse" style={{ color: 'var(--accent-action)' }} />
                 <span>MODEL DESCRIPTOR: ONLINE</span>
               </div>
-              <button
+              <CyberButton
                 onClick={handleRetrain}
                 disabled={retraining}
-                style={{
-                  background: 'none',
-                  border: '1px solid var(--accent-primary)',
-                  color: 'var(--accent-primary)',
-                  fontFamily: 'var(--font-heading)', fontSize: 9,
-                  fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase',
-                  padding: '8px 16px', cursor: 'pointer',
-                  opacity: retraining ? 0.5 : 1,
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  boxShadow: '0 0 6px rgba(0,255,194,0.15)',
-                  transition: 'background 0.1s, box-shadow 0.1s',
-                }}
+                containerStyle={{ opacity: retraining ? 0.5 : 1 }}
+                icon={<RefreshCw className={`w-3.5 h-3.5 ${retraining ? 'animate-spin' : ''}`} />}
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${retraining ? 'animate-spin' : ''}`} />
                 <span>{retraining ? 'OPTIMIZING WEIGHTS...' : 'TRIGGER MODEL RETRAIN'}</span>
-              </button>
+              </CyberButton>
             </div>
           </div>
         </div>
 
         {/* Right Column: Console */}
-        <div style={{
-          background: '#080c10',
-          border: '1px solid var(--struct-line)',
-          padding: 16,
-          display: 'flex', flexDirection: 'column',
-          minHeight: 300,
-        }}>
+        <div className="hud-panel" style={{ padding: 16, display: 'flex', flexDirection: 'column', minHeight: 300 }}>
           <div style={{
             fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
-            color: 'var(--accent-primary)', letterSpacing: '0.15em', textTransform: 'uppercase',
+            color: 'var(--accent-label)', letterSpacing: '0.15em', textTransform: 'uppercase',
             borderBottom: '1px solid var(--struct-line)', paddingBottom: 8,
             display: 'flex', alignItems: 'center', gap: 8,
             flexShrink: 0,
@@ -239,10 +216,10 @@ export default function SettingsPage() {
             ) : (
               activeLogs.map((log, idx) => (
                 <div key={idx} style={{ display: 'flex', gap: 6, marginBottom: 4, alignItems: 'flex-start' }}>
-                  <span style={{ color: 'var(--accent-primary)', userSelect: 'none' }}>&gt;</span>
+                  <span className="terminal-prompt">&gt;</span>
                   <span style={{
                     color: log.includes('accuracy:')
-                      ? '#00C853'
+                      ? 'var(--accent-action)'
                       : log.startsWith('SYSTEM:')
                       ? 'var(--accent-primary)'
                       : 'var(--text-primary)',

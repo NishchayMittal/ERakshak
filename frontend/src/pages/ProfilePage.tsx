@@ -85,19 +85,17 @@ export default function ProfilePage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, minHeight: 0, overflow: 'hidden', userSelect: 'none' }}>
       
       {/* Header Panel */}
-      <div style={{
+      <div className="hud-panel" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '14px 16px',
-        background: '#080c10',
-        border: '1px solid var(--struct-line)',
         position: 'relative', overflow: 'hidden',
       }}>
         <div className="cyber-grid" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
         <div style={{ position: 'relative', zIndex: 1 }}>
           <h1 style={{
             margin: 0,
-            fontFamily: 'var(--font-heading)', fontSize: 16, fontWeight: 700,
-            color: 'var(--text-primary)', letterSpacing: '0.1em', textTransform: 'uppercase',
+            fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700,
+            color: 'var(--text-primary)', letterSpacing: '0.12em', textTransform: 'uppercase',
           }}>
             INVESTIGATOR PROFILE
           </h1>
@@ -122,9 +120,7 @@ export default function ProfilePage() {
       }}>
         
         {/* Left Card: Hologram Avatar & Quick Status */}
-        <div style={{
-          background: '#080c10',
-          border: '1px solid var(--struct-line)',
+        <div className="hud-panel" style={{
           padding: 20,
           display: 'flex',
           flexDirection: 'column',
@@ -136,19 +132,19 @@ export default function ProfilePage() {
           <div style={{
             width: '100%', height: 180,
             border: '1px dashed var(--struct-line)',
-            background: 'linear-gradient(180deg, rgba(0,255,194,0.02) 0%, transparent 100%)',
+            background: 'linear-gradient(180deg, rgba(0,255,148,0.04) 0%, transparent 100%)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             position: 'relative', overflow: 'hidden',
           }}>
             {/* Radar scan-like background line */}
             <div className="hologram-scanline" style={{
               position: 'absolute', width: '100%', height: '2px',
-              background: 'var(--accent-primary)',
+              background: 'var(--accent-action)',
               opacity: 0.3,
-              boxShadow: '0 0 8px var(--accent-primary)',
+              boxShadow: '0 0 8px var(--accent-action)',
               animation: 'hologramScan 3.5s infinite linear',
             }} />
-            <User size={80} style={{ color: 'var(--accent-primary)', opacity: 0.85, filter: 'drop-shadow(0 0 12px rgba(0,255,194,0.3))' }} />
+            <User size={80} style={{ color: 'var(--accent-primary)', opacity: 0.85, filter: 'drop-shadow(0 0 12px rgba(168,85,247,0.4))' }} />
           </div>
 
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'center' }}>
@@ -164,10 +160,10 @@ export default function ProfilePage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontFamily: 'var(--font-heading)', fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>SYSTEM STATE:</span>
               <span style={{
-                fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--accent-primary)',
+                fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--accent-action)',
                 fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4
               }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-primary)', boxShadow: '0 0 6px var(--accent-primary)' }} />
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-action)', boxShadow: '0 0 6px var(--accent-action)' }} />
                 ACTIVE / SECURE
               </span>
             </div>
@@ -186,17 +182,10 @@ export default function ProfilePage() {
         }}>
           
           {/* Identity & Clearance Settings */}
-          <div style={{
-            background: '#080c10',
-            border: '1px solid var(--struct-line)',
-            padding: 24,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 18,
-          }}>
+          <div className="hud-panel" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 18 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--struct-line)', paddingBottom: 10 }}>
-              <Shield size={16} style={{ color: 'var(--accent-primary)' }} />
-              <h2 style={{ margin: 0, fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.1em' }}>
+              <Shield size={16} style={{ color: 'var(--accent-label)' }} />
+              <h2 style={{ margin: 0, fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: 'var(--accent-label)', letterSpacing: '0.1em' }}>
                 SECURITY & CREDENTIALS INFO
               </h2>
             </div>
@@ -363,18 +352,10 @@ export default function ProfilePage() {
           </div>
 
           {/* System Environment & Logs Status */}
-          <div style={{
-            background: '#080c10',
-            border: '1px solid var(--struct-line)',
-            padding: 24,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 16,
-            flex: 1,
-          }}>
+          <div className="hud-panel" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--struct-line)', paddingBottom: 10 }}>
-              <Terminal size={16} style={{ color: 'var(--accent-secondary)' }} />
-              <h2 style={{ margin: 0, fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '0.1em' }}>
+              <Terminal size={16} style={{ color: 'var(--accent-action)' }} />
+              <h2 style={{ margin: 0, fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: 'var(--accent-label)', letterSpacing: '0.1em' }}>
                 OPERATIONAL CONTEXT
               </h2>
             </div>
@@ -385,7 +366,7 @@ export default function ProfilePage() {
               <div>&gt; ACTIVE LOCAL VOLUME: erakshak.db [CONNECTED]</div>
               <div>&gt; PORTAL RENDER ENGINE: THREE.JS GRAPHICS ACCELERATED</div>
               <div>&gt; ACCESS TOKEN STATE: SECURE // TIMEOUT GATED</div>
-              <div style={{ color: 'var(--accent-primary)', marginTop: 8 }}>&gt; STATUS 200: INVESTIGATION HANDLER LAUNCHED ON SHIELD PORT 5173.</div>
+              <div style={{ color: 'var(--accent-action)', marginTop: 8 }}>&gt; STATUS 200: INVESTIGATION HANDLER LAUNCHED ON SHIELD PORT 5173.</div>
             </div>
           </div>
 

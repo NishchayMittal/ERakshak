@@ -16,6 +16,7 @@ from app.database import get_db
 from app.models import Case, Investigator, Identifier, Finding, CaseNote, LinkFeedback, AuditLog
 from app.schemas import CaseCreate, CaseOut, CaseUpdate, LinkFeedbackCreate, LinkFeedbackOut, EvidencePackOut
 from app.correlation.matcher import trigger_background_retrain
+from app.narrative import generate_narrative
 
 
 router = APIRouter(prefix="/cases", tags=["cases"])
@@ -190,6 +191,10 @@ class IdentifierInputItem(BaseModel):
     type: str
     rawValue: str
     metadata: dict | None = None
+
+
+class ChatRequest(BaseModel):
+    question: str
 
 
 class IdentifiersSubmitPayload(BaseModel):
@@ -511,7 +516,7 @@ def get_case_narrative(
     db: Session = Depends(get_db),
     current_investigator: Investigator = Depends(get_current_investigator)
 ):
-    # Case validation is handled inside compile_evidence_pack, 
+    # Case validation is handled inside compile_evidence_pack,
     # but we can do it here for explicit 404
     case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
     if not case:
@@ -519,11 +524,97 @@ def get_case_narrative(
 
     evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
     narrative_text = generate_narrative(evidence_pack)
-    
+
     return {
         "case_id": case_id,
         "narrative": narrative_text
     }
+
+
+@router.post("/{case_id}/chat")
+def chat_with_evidence(
+    case_id: str,
+    chat_request: ChatRequest,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    """
+    Chat with the evidence pack using the Groq API to answer investigative questions.
+    """
+    # Validate case access
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    # Compile the evidence pack and attach temporal behavioral analysis
+    evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
+    from app.analytics.temporal import compute_temporal_analysis
+    try:
+        evidence_pack["temporal_analysis"] = compute_temporal_analysis(case_id, db)
+    except Exception:
+        pass
+
+    # Import here to avoid circular imports
+    from app.narrative import generate_narrative
+    from groq import Groq
+    from app.config import settings
+    import logging
+    import json
+
+    logger = logging.getLogger(__name__)
+
+    # Check if Groq API key is available
+    if not settings.groq_api_key:
+        temporal_summary = evidence_pack.get("temporal_analysis", {}).get("tradecraft_summary", "")
+        return {
+            "answer": f"**e-Rakshak AI Analyst (Offline Tradecraft Engine)**:\n\nRegarding your query: \"{chat_request.question}\"\n\n**Temporal Behavioral Footprint**:\n{temporal_summary}\n\n*(Configure `GROQ_API_KEY` in `.env` for generative deep reasoning capabilities)*"
+        }
+
+    try:
+        client = Groq(api_key=settings.groq_api_key)
+
+        system_prompt = (
+            "You are an expert intelligence analyst assisting investigators with the e-Rakshak OSINT platform.\n"
+            "You have access to an Evidence Pack containing case details, identifiers, findings, and relationship data.\n"
+            "Answer the investigator's question based SOLELY on the evidence provided in the Evidence Pack.\n"
+            "If the evidence does not contain sufficient information to answer the question, state clearly what information is missing.\n"
+            "When making claims based on the evidence, include inline citations referencing the source (e.g., '[Source: Whois Connector - Confidence 0.9]' or '[Identifier ID: xxx]').\n"
+            "Provide clear, concise, and professional answers suitable for an investigative context.\n"
+            "Do not speculate beyond what the evidence shows."
+        )
+
+        user_prompt = f"""Evidence Pack:
+```json
+{json.dumps(evidence_pack, indent=2, default=str)}
+```
+
+Investigator's Question: {chat_request.question}
+
+Please provide a detailed answer based only on the evidence above."""
+
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            model="llama-3.3-70b-versatile",
+            temperature=0.2  # Slightly lower temperature for more focused answers
+        )
+
+        answer = chat_completion.choices[0].message.content
+
+        return {
+            "answer": answer,
+            "question": chat_request.question,
+            "case_id": case_id
+        }
+
+    except Exception as e:
+        logger.error(f"Error processing chat request: {e}")
+        return {
+            "answer": f"I encountered an error while processing your question: {str(e)}. Please try again or contact support if the issue persists.",
+            "error": str(e)
+        }
 
 
 from app.compiler import compile_evidence_pack
@@ -725,3 +816,16 @@ def set_retention(
     
     log_action(db, "case.set_retention", investigator_id=current_investigator.id, case_id=case.id, detail={"days": payload.days, "expires_at": case.expires_at.isoformat()})
     return case
+
+
+@router.get("/{case_id}/temporal-analysis")
+def get_temporal_analysis(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+    from app.analytics.temporal import compute_temporal_analysis
+    return compute_temporal_analysis(case_id, db)

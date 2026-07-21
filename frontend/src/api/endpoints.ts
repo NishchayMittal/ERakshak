@@ -103,6 +103,18 @@ export async function getNarrative(caseId: string): Promise<{ narrative: string 
   return res.data;
 }
 
+export async function chatWithEvidence(caseId: string, question: string): Promise<{ answer: string; question: string; case_id: string }> {
+  if (isMockMode()) {
+    return {
+      answer: `I'm an AI assistant for the e-Rakshak OSINT platform. In mock mode, I can help you understand how to interact with your evidence. Your question was: "${question}".\n\nIn a real deployment, I would analyze your evidence pack (which includes case details, identifiers, findings from OSINT connectors, and relationship maps) to provide detailed, evidence-based answers to investigative questions like:\n- "Who is linked to this domain?"\n- "What email addresses were found associated with this suspect?"\n- "Show me all social media profiles discovered"\n- "What breach data was found for this email?"\n- "What IP addresses are connected to this domain?"\n\nTo get real AI-powered insights, please ensure the backend is running with a valid GROQ_API_KEY configured.`,
+      question: question,
+      case_id: caseId
+    };
+  }
+  const res = await apiClient.post(`/cases/${caseId}/chat`, { question });
+  return res.data;
+}
+
 export async function exportCaseJSON(caseId: string): Promise<Blob> {
   if (isMockMode()) {
     const payload = JSON.stringify({ caseId, exportedAt: new Date().toISOString(), mode: 'mock' }, null, 2);
@@ -296,5 +308,68 @@ export async function getCrossCorrelations(): Promise<CrossCorrelationResult> {
     return { correlations: [], total_shared_identifiers: 0, cases_analyzed: 0 };
   }
   const res = await apiClient.get('/cases/cross-correlate');
+  return res.data;
+}
+
+export interface FootprintEvent {
+  source: string;
+  type: string;
+  title: string;
+  value: string;
+  timestamp_utc: string;
+  node_id?: string;
+}
+
+export interface TemporalAnalysisResult {
+  case_id: string;
+  total_observations: number;
+  heatmap_utc: number[][];
+  inferred_timezone: string;
+  utc_offset_hours: number;
+  sleep_window_local: string;
+  peak_hours_local: string;
+  night_owl_percentage: number;
+  weekend_ratio: number;
+  tradecraft_summary: string;
+  sources_breakdown?: {
+    identifiers: number;
+    findings: number;
+    notes: number;
+    audits: number;
+  };
+  cell_details_utc?: Record<string, FootprintEvent[]>;
+}
+
+export async function getTemporalAnalysis(caseId: string): Promise<TemporalAnalysisResult> {
+  if (isMockMode()) {
+    const mockGrid = [
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,6,9,7,4,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,2,8,12,10,5,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,11,14,8,3,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,4,9,13,11,6,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,10,8,4,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,5,7,3,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,4,2,0,0],
+    ];
+    return {
+      case_id: caseId,
+      total_observations: 184,
+      heatmap_utc: mockGrid,
+      inferred_timezone: "UTC+05:30 (Asia/Kolkata)",
+      utc_offset_hours: 5.5,
+      sleep_window_local: "01:00 - 07:00 Local",
+      peak_hours_local: "19:00, 20:00, 21:00",
+      night_owl_percentage: 28.4,
+      weekend_ratio: 0.12,
+      tradecraft_summary: "Temporal analysis indicates suspect operational activity aligned with UTC+05:30. Inferred sleep window is 01:00 - 07:00 Local with peak activity concentrated in evening hours.",
+      sources_breakdown: {
+        identifiers: 12,
+        findings: 142,
+        notes: 8,
+        audits: 22
+      }
+    };
+  }
+  const res = await apiClient.get(`/cases/${caseId}/temporal-analysis`);
   return res.data;
 }

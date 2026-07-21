@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Download, FileCheck, RefreshCw, FileText, ChevronDown } from 'lucide-react';
 import { exportCaseCSV, exportCaseJSON, exportCasePDF } from '../../api/endpoints';
 import { useUIStore } from '../../state/uiStore';
+import { useTranslation } from 'react-i18next';
 
 interface ExportMenuProps {
   caseId: string;
@@ -29,6 +30,7 @@ const playClickTone = () => {
 };
 
 export default function ExportMenu({ caseId }: ExportMenuProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const { showToast } = useUIStore();
@@ -50,10 +52,10 @@ export default function ExportMenu({ caseId }: ExportMenuProps) {
     try {
       const blob = await exportCaseJSON(caseId);
       downloadBlob(blob, `ERakshak_Dossier_${caseId}_Export.json`);
-      showToast('Raw JSON dossier exported', 'success');
+      showToast(t('export.json_success'), 'success');
     } catch (error) {
       console.error(error);
-      showToast('Failed to export JSON dossier', 'error');
+      showToast(t('export.json_failed'), 'error');
     } finally {
       setExporting(false);
       setIsOpen(false);
@@ -66,10 +68,10 @@ export default function ExportMenu({ caseId }: ExportMenuProps) {
     try {
       const blob = await exportCaseCSV(caseId);
       downloadBlob(blob, `ERakshak_Findings_${caseId}.csv`);
-      showToast('Flattened CSV exported successfully', 'success');
+      showToast(t('export.csv_success'), 'success');
     } catch (error) {
       console.error(error);
-      showToast('Failed to export CSV findings', 'error');
+      showToast(t('export.csv_failed'), 'error');
     } finally {
       setExporting(false);
       setIsOpen(false);
@@ -79,15 +81,15 @@ export default function ExportMenu({ caseId }: ExportMenuProps) {
   const handleExportPDF = async () => {
     playClickTone();
     setExporting(true);
-    showToast('Generating PDF intelligence report...', 'info');
+    showToast(t('export.pdf_generating'), 'info');
 
     try {
       const blob = await exportCasePDF(caseId);
       downloadBlob(blob, `ERakshak_Dossier_${caseId}.pdf`);
-      showToast('Intelligence report PDF exported successfully', 'success');
+      showToast(t('export.pdf_success'), 'success');
     } catch (error) {
       console.error(error);
-      showToast('Failed to generate PDF report', 'error');
+      showToast(t('export.pdf_failed'), 'error');
     } finally {
       setExporting(false);
       setIsOpen(false);
@@ -113,7 +115,7 @@ export default function ExportMenu({ caseId }: ExportMenuProps) {
           ) : (
             <Download className="w-4 h-4 text-slate-100" />
           )}
-          <span>{exporting ? 'Exporting...' : 'Export Dossier'}</span>
+          <span>{exporting ? t('export.exporting') : t('export.export_dossier')}</span>
           <ChevronDown className={`w-3.5 h-3.5 text-slate-200 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </motion.button>
       </div>
@@ -137,8 +139,8 @@ export default function ExportMenu({ caseId }: ExportMenuProps) {
                   disabled={exporting}
                   className="w-full text-left px-4 py-3 text-xs text-slate-350 hover:bg-slate-850 hover:text-white flex items-center gap-2.5 transition-colors border-b border-slate-850/50 font-sans"
                 >
-                  <span className="font-bold text-[8px] uppercase px-1.5 py-0.5 bg-slate-950 rounded text-amber-500 font-mono border border-slate-800">JSON</span>
-                  <span className="font-mono text-[10px] uppercase font-bold tracking-wide">Raw Graph Dataset</span>
+                  <span className="font-bold text-[8px] uppercase px-1.5 py-0.5 bg-slate-950 rounded text-amber-500 font-mono border border-slate-800">{t('export.json')}</span>
+                  <span className="font-mono text-[10px] uppercase font-bold tracking-wide">{t('export.json_desc')}</span>
                 </button>
 
                 <button
@@ -146,8 +148,8 @@ export default function ExportMenu({ caseId }: ExportMenuProps) {
                   disabled={exporting}
                   className="w-full text-left px-4 py-3 text-xs text-slate-350 hover:bg-slate-850 hover:text-white flex items-center gap-2.5 transition-colors border-b border-slate-850/50 font-sans"
                 >
-                  <span className="font-bold text-[8px] uppercase px-1.5 py-0.5 bg-slate-950 rounded text-emerald-500 font-mono border border-slate-800">CSV</span>
-                  <span className="font-mono text-[10px] uppercase font-bold tracking-wide">Flattened Findings</span>
+                  <span className="font-bold text-[8px] uppercase px-1.5 py-0.5 bg-slate-950 rounded text-emerald-500 font-mono border border-slate-800">{t('export.csv')}</span>
+                  <span className="font-mono text-[10px] uppercase font-bold tracking-wide">{t('export.csv_desc')}</span>
                 </button>
 
                 <button
@@ -155,8 +157,8 @@ export default function ExportMenu({ caseId }: ExportMenuProps) {
                   disabled={exporting}
                   className="w-full text-left px-4 py-3 text-xs text-slate-350 hover:bg-slate-850 hover:text-white flex items-center gap-2.5 transition-colors font-sans"
                 >
-                  <span className="font-bold text-[8px] uppercase px-1.5 py-0.5 bg-slate-950 rounded text-rose-500 font-mono border border-slate-800">PDF</span>
-                  <span className="font-mono text-[10px] uppercase font-bold tracking-wide">Dossier Report PDF</span>
+                  <span className="font-bold text-[8px] uppercase px-1.5 py-0.5 bg-slate-950 rounded text-rose-500 font-mono border border-slate-800">{t('export.pdf')}</span>
+                  <span className="font-mono text-[10px] uppercase font-bold tracking-wide">{t('export.pdf_desc')}</span>
                 </button>
               </div>
             </motion.div>

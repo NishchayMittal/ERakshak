@@ -1,5 +1,6 @@
 import React from 'react';
 import { useGraphStore } from '../../state/graphStore';
+import { useTranslation } from 'react-i18next';
 
 const sources = [
   { id: 'whois',               label: 'WHOIS/RDAP' },
@@ -15,6 +16,7 @@ const sources = [
 ];
 
 export default function GraphFilterBar() {
+  const { t } = useTranslation();
   const { confidenceThreshold, setConfidenceThreshold, selectedSources, toggleSourceFilter } = useGraphStore();
 
   return (
@@ -32,7 +34,7 @@ export default function GraphFilterBar() {
           color: 'var(--text-muted)', letterSpacing: '0.15em', textTransform: 'uppercase',
           whiteSpace: 'nowrap',
         }}>
-          CONFIDENCE THRESHOLD
+          {t('graph.confidence_threshold')}
         </span>
         <input
           type="range" min="0" max="1" step="0.05"
@@ -60,7 +62,7 @@ export default function GraphFilterBar() {
           color: 'var(--text-muted)', letterSpacing: '0.15em', textTransform: 'uppercase',
           marginRight: 4, whiteSpace: 'nowrap',
         }}>
-          SOURCE
+          {t('graph.source')}
         </span>
         {sources.map((src) => {
           const active = selectedSources.includes(src.id);

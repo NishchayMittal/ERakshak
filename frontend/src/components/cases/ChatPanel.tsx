@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Send, Zap, MessageCircle } from 'lucide-react';
 import { chatWithEvidence } from '../../api/endpoints';
 import { useUIStore } from '../../state/uiStore';
+import { useTranslation } from 'react-i18next';
 
 interface ChatMessage {
   id: string;
@@ -16,6 +17,7 @@ export default function ChatPanel({ caseId }: { caseId: string }) {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { showToast } = useUIStore();
+  const { t } = useTranslation();
 
   const sendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -43,12 +45,12 @@ export default function ChatPanel({ caseId }: { caseId: string }) {
       setMessages(prev => [...prev, botMessage]);
     } catch (err) {
       console.error(err);
-      showToast('Failed to get AI response', 'error');
+      showToast(t('chat.error'), 'error');
 
       // Add error message to chat
       const errorMessage: ChatMessage = {
         id: Date.now().toString() + 'e',
-        content: "I'm sorry, I encountered an error while processing your question. Please try again.",
+        content: t('chat.fallback_error'),
         isUser: false,
         timestamp: new Date().toISOString()
       };
@@ -75,7 +77,7 @@ export default function ChatPanel({ caseId }: { caseId: string }) {
     if (messages.length === 0) {
       const welcomeMessage: ChatMessage = {
         id: 'welcome',
-        content: "Hello! I'm your AI assistant for the e-Rakshak OSINT platform. I can help you analyze your case evidence by answering questions about linked entities, discovered findings, breach data, and more. What would you like to know about your case?",
+        content: t('chat.welcome'),
         isUser: false,
         timestamp: new Date().toISOString()
       };
@@ -108,7 +110,7 @@ export default function ChatPanel({ caseId }: { caseId: string }) {
             letterSpacing: '0.15em',
             textTransform: 'uppercase'
           }}>
-            AI INVESTIGATION ASSISTANT
+            {t('chat.title')}
           </span>
         </div>
         <div style={{
@@ -116,7 +118,7 @@ export default function ChatPanel({ caseId }: { caseId: string }) {
           fontSize: 8,
           color: 'var(--text-muted)'
         }}>
-          MODEL: LLAMA-3.3-70B-VERSATILE
+          {t('chat.model_label')}
         </div>
       </div>
 
@@ -204,7 +206,7 @@ export default function ChatPanel({ caseId }: { caseId: string }) {
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyPress}
-          placeholder="Ask about linked entities, breach data, connections, or investigation details..."
+          placeholder={t('chat.placeholder')}
           disabled={isLoading}
           style={{
             flex: 1,
@@ -258,7 +260,7 @@ export default function ChatPanel({ caseId }: { caseId: string }) {
           ) : (
             <Send className="w-3 h-3" style={{ color: 'var(--accent-primary)' }} />
           )}
-          <span>{isLoading ? 'PROCESSING...' : 'SEND'}</span>
+          <span>{isLoading ? t('chat.processing') : t('chat.send')}</span>
         </button>
       </div>
     </div>

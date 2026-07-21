@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useCaseStore } from '../../state/caseStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useUIStore } from '../../state/uiStore';
+import { useTranslation } from 'react-i18next';
 
 interface NotesPanelProps {
   caseId: string;
@@ -11,6 +12,7 @@ export default function NotesPanel({ caseId }: NotesPanelProps) {
   const { notes, loadNotes, addCaseNote, activeCase } = useCaseStore();
   const { user } = useAuth();
   const { showToast } = useUIStore();
+  const { t } = useTranslation();
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -29,10 +31,10 @@ export default function NotesPanel({ caseId }: NotesPanelProps) {
       const authorId = user?.name || 'Leon Lobo';
       await addCaseNote(caseId, authorId, text.trim());
       setText('');
-      showToast('Investigative note logged in audit trail', 'success');
+      showToast(t('notes.note_logged'), 'success');
     } catch (err) {
       console.error(err);
-      showToast('Failed to write note', 'error');
+      showToast(t('notes.note_failed'), 'error');
     } finally {
       setSubmitting(false);
     }
@@ -54,14 +56,14 @@ export default function NotesPanel({ caseId }: NotesPanelProps) {
           display: 'flex', alignItems: 'center', gap: 8,
         }}>
           <span style={{ fontSize: 14, color: 'var(--accent-primary)', lineHeight: 1 }}>⌐</span>
-          AUDIT NOTES
+          {t('notes.title')}
           <span style={{ fontSize: 14, color: 'var(--accent-primary)', lineHeight: 1, transform: 'scaleX(-1)', display: 'inline-block' }}>⌐</span>
         </div>
         <div style={{
           fontFamily: 'var(--font-mono)', fontSize: 8,
           color: 'var(--text-muted)', marginTop: 4, letterSpacing: '0.08em',
         }}>
-          LOGS AND OBSERVED SIGNAL TRAILS ENUMERATED BY INVESTIGATORS
+          {t('notes.subtitle')}
         </div>
       </div>
 
@@ -74,7 +76,7 @@ export default function NotesPanel({ caseId }: NotesPanelProps) {
           display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
           flexShrink: 0,
         }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', textTransform: 'uppercase' }}>TAGS:</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{t('notes.tags')}</span>
           {activeCase.tags.map((t) => (
             <span key={t} style={{
               fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--accent-primary)',
@@ -95,7 +97,7 @@ export default function NotesPanel({ caseId }: NotesPanelProps) {
             color: 'var(--text-muted)', padding: '24px 0', textAlign: 'center',
             letterSpacing: '0.1em',
           }}>
-            NO DOSSIER NOTES RECORDED
+            {t('notes.no_notes')}
           </div>
         ) : (
           notes.map((note) => (
@@ -140,13 +142,13 @@ export default function NotesPanel({ caseId }: NotesPanelProps) {
             resize: 'none',
             minHeight: 50,
           }}
-          placeholder="Log findings, e.g. Domain registered to privacy proxy..."
+          placeholder={t('notes.placeholder')}
           required
         />
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)' }}>
-            SIGNING AS: <span style={{ color: 'var(--text-primary)' }}>{user?.name || 'Leon Lobo'}</span>
+            {t('notes.signing_as')} <span style={{ color: 'var(--text-primary)' }}>{user?.name || 'Leon Lobo'}</span>
           </span>
           
           <button
@@ -162,7 +164,7 @@ export default function NotesPanel({ caseId }: NotesPanelProps) {
               opacity: submitting ? 0.5 : 1,
             }}
           >
-            {submitting ? 'LOGGING...' : 'LOG NOTE'}
+            {submitting ? t('notes.logging') : t('notes.log_note')}
           </button>
         </div>
       </form>

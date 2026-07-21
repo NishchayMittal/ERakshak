@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Clock, Globe, Activity, Moon, Sun, Shield, RefreshCw, X, FileText, Database, Key, Info, ExternalLink } from 'lucide-react';
 import { getTemporalAnalysis, type TemporalAnalysisResult, type FootprintEvent } from '../../api/endpoints';
 import { useSciFiSounds } from '../../hooks/useSciFiSounds';
@@ -29,6 +30,7 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
     return Boolean(nodeId && nodeId.trim() !== '');
   };
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
   const [timezoneMode, setTimezoneMode] = useState<'suspected' | 'indian' | 'utc'>('suspected');
   const [hoveredCell, setHoveredCell] = useState<{ day: string; hour: number; count: number } | null>(null);
   const [selectedCell, setSelectedCell] = useState<{
@@ -60,8 +62,8 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400">
         <RefreshCw size={24} className="animate-spin text-[#39ff14]" />
-        <span className="text-[10px] font-mono tracking-widest uppercase animate-pulse">
-          EXTRACTING TEMPORAL FOOTPRINTS & CIRCADIAN METRICS...
+        <span>
+          {t('temporal.loading')}
         </span>
       </div>
     );
@@ -69,8 +71,8 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
 
   if (!data) {
     return (
-      <div className="flex items-center justify-center h-full text-red-400 text-xs font-mono">
-        Failed to load temporal footprint data for this dossier.
+      <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400">
+        {t('temporal.error')}
       </div>
     );
   }
@@ -93,8 +95,8 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
 
   const getTimezoneLabel = (): string => {
     if (timezoneMode === 'suspected') return `Suspected (${data.inferred_timezone.split(' ')[0]})`;
-    if (timezoneMode === 'indian') return 'Indian View (IST +05:30)';
-    return 'UTC View (Raw +00:00)';
+    if (timezoneMode === 'indian') return t('temporal.ist');
+    return t('temporal.utc');
   };
 
   const handleCellClick = (dayIdx: number, hourIdx: number) => {
@@ -150,7 +152,7 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
       <div className="grid grid-cols-4 gap-2">
         <div className="bg-black/40 border border-white/10 p-2.5 rounded-lg flex flex-col gap-1">
           <div className="flex items-center justify-between text-gray-400">
-            <span className="text-[8.5px] font-bold uppercase tracking-wider">Inferred Timezone</span>
+            <span className="text-[8.5px] font-bold uppercase tracking-wider">{t('temporal.inferred_tz')}</span>
             <Globe size={12} className="text-[#39ff14]" />
           </div>
           <span className="text-[11px] font-bold text-[#39ff14] font-mono truncate">
@@ -160,7 +162,7 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
 
         <div className="bg-black/40 border border-white/10 p-2.5 rounded-lg flex flex-col gap-1">
           <div className="flex items-center justify-between text-gray-400">
-            <span className="text-[8.5px] font-bold uppercase tracking-wider">Sleep Window</span>
+            <span className="text-[8.5px] font-bold uppercase tracking-wider">{t('temporal.sleep_window')}</span>
             <Moon size={12} className="text-[#a855f7]" />
           </div>
           <span className="text-[11px] font-bold text-gray-200 font-mono truncate">
@@ -170,7 +172,7 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
 
         <div className="bg-black/40 border border-white/10 p-2.5 rounded-lg flex flex-col gap-1">
           <div className="flex items-center justify-between text-gray-400">
-            <span className="text-[8.5px] font-bold uppercase tracking-wider">Peak Active Hours</span>
+            <span className="text-[8.5px] font-bold uppercase tracking-wider">{t('temporal.peak_hours')}</span>
             <Sun size={12} className="text-yellow-400" />
           </div>
           <span className="text-[11px] font-bold text-gray-200 font-mono truncate">
@@ -180,11 +182,11 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
 
         <div className="bg-black/40 border border-white/10 p-2.5 rounded-lg flex flex-col gap-1">
           <div className="flex items-center justify-between text-gray-400">
-            <span className="text-[8.5px] font-bold uppercase tracking-wider">Night Owl Index</span>
+            <span className="text-[8.5px] font-bold uppercase tracking-wider">{t('temporal.night_owl')}</span>
             <Activity size={12} className={data.night_owl_percentage > 25 ? "text-red-400" : "text-[#39ff14]"} />
           </div>
           <span className={`text-[11px] font-bold font-mono truncate ${data.night_owl_percentage > 25 ? "text-red-400" : "text-[#39ff14]"}`}>
-            {data.night_owl_percentage}% Executions
+            {data.night_owl_percentage}% {t('temporal.executions')}
           </span>
         </div>
       </div>
@@ -195,23 +197,23 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
         <div className="flex items-center gap-2 font-mono flex-wrap">
           <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-200 uppercase tracking-wider">
             <Clock size={14} className="text-[#39ff14]" />
-            <span>Temporal Heatmap (7×24)</span>
+            <span>{t('temporal.heatmap_title')}</span>
           </div>
 
           <span className="text-[9px] font-semibold text-gray-400 bg-white/5 px-2 py-0.5 rounded border border-white/10">
-            {data.total_observations} Footprints
+            {data.total_observations} {t('temporal.footprints')}
           </span>
 
           {data.sources_breakdown && (
             <div className="flex items-center gap-1 text-[8.5px]">
               <span className="bg-[#39ff14]/10 text-[#39ff14] px-2 py-0.5 rounded border border-[#39ff14]/20 font-bold">
-                {data.sources_breakdown.findings} Findings
+                {data.sources_breakdown.findings} {t('temporal.findings')}
               </span>
               <span className="bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded border border-purple-500/20 font-bold">
-                {data.sources_breakdown.identifiers} IDs
+                {data.sources_breakdown.identifiers} {t('temporal.ids')}
               </span>
               <span className="bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20 font-bold">
-                {data.sources_breakdown.audits} Audits
+                {data.sources_breakdown.audits} {t('temporal.audits')}
               </span>
             </div>
           )}
@@ -273,7 +275,7 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
       <div className="bg-black/50 border border-white/10 p-3 rounded-xl flex flex-col gap-2 relative">
         {/* Heatmap Grid Header: 24 Hours */}
         <div className="grid grid-cols-[40px_repeat(24,1fr)] gap-1 text-center font-mono text-[8px] text-gray-500 font-bold border-b border-white/5 pb-1">
-          <div>DAY</div>
+          <div>{t('temporal.day_col')}</div>
           {Array.from({ length: 24 }).map((_, h) => (
             <div key={h} className="truncate">{h.toString().padStart(2, '0')}</div>
           ))}
@@ -282,7 +284,7 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
         {/* Heatmap Grid Body: 7 Days */}
         {DAYS.map((day, dIdx) => (
           <div key={day} className="grid grid-cols-[40px_repeat(24,1fr)] gap-1 items-center">
-            <span className="text-[9px] font-bold font-mono text-gray-400 uppercase tracking-wider">{day}</span>
+            <span className="text-[9px] font-bold font-mono text-gray-400 uppercase tracking-wider">{t(`temporal.${day.toLowerCase()}`)}</span>
             {Array.from({ length: 24 }).map((_, hIdx) => {
               const count = getShiftedCount(dIdx, hIdx);
               return (
@@ -309,19 +311,19 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
           <span>
             {hoveredCell ? (
               <span className="text-[#39ff14] font-bold">
-                {hoveredCell.day} @ {hoveredCell.hour.toString().padStart(2, '0')}:00 {getTimezoneLabel()} — {hoveredCell.count} Footprint Events (Click cell to inspect)
+                {t(`temporal.${hoveredCell.day.toLowerCase()}`)} @ {hoveredCell.hour.toString().padStart(2, '0')}:00 {getTimezoneLabel()} — {hoveredCell.count} Footprint Events (Click cell to inspect)
               </span>
             ) : (
-              'Click any active grid cell to open detailed footprint event inspector'
+              t('temporal.click_hint')
             )}
           </span>
           <div className="flex items-center gap-1.5 text-[8px]">
-            <span>Low</span>
+            <span>{t('temporal.low')}</span>
             <div className="w-2 h-2 rounded bg-white/5 border border-white/5" />
             <div className="w-2 h-2 rounded bg-[#39ff14]/20 border border-[#39ff14]/40" />
             <div className="w-2 h-2 rounded bg-[#39ff14]/50 border border-[#39ff14]/70" />
             <div className="w-2 h-2 rounded bg-[#39ff14] shadow-[0_0_6px_#39ff14]" />
-            <span>High</span>
+            <span>{t('temporal.high')}</span>
           </div>
         </div>
       </div>
@@ -330,9 +332,9 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
       <div className="bg-black/40 border border-[#39ff14]/20 p-3 rounded-xl flex flex-col gap-1.5">
         <div className="flex items-center justify-between border-b border-white/5 pb-1">
           <span className="text-[9.5px] font-bold text-[#39ff14] uppercase tracking-wider flex items-center gap-1.5">
-            <Shield size={12} /> Circadian & Timezone OSINT Intelligence Summary
+            <Shield size={12} /> {t('temporal.summary_title')}
           </span>
-          <span className="text-[8px] font-mono text-gray-500">CONFIDENCE: HIGH</span>
+          <span className="text-[8px] font-mono text-gray-500">{t('temporal.confidence_high')}</span>
         </div>
         <p className="text-[10px] text-gray-300 font-mono leading-relaxed">
           {data.tradecraft_summary}
@@ -348,10 +350,10 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
               <div className="flex items-center gap-2">
                 <Clock size={16} className="text-[#39ff14]" />
                 <span className="text-[11px] font-bold text-[#39ff14] uppercase tracking-wider">
-                  Footprint Event Inspector: {selectedCell.day} @ {selectedCell.hour.toString().padStart(2, '0')}:00 ({getTimezoneLabel()})
+                  {t('temporal.inspector_title')}: {t(`temporal.${selectedCell.day.toLowerCase()}`)} @ {selectedCell.hour.toString().padStart(2, '0')}:00 ({getTimezoneLabel()})
                 </span>
                 <span className="text-[9px] bg-white/5 px-2 py-0.5 rounded border border-white/10 text-gray-300">
-                  {selectedCell.count} EVENTS
+                  {t('temporal.events', { count: selectedCell.count })}
                 </span>
               </div>
               <button
@@ -367,7 +369,7 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
               {selectedCell.events.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-gray-500 gap-2 text-center">
                   <Info size={24} />
-                  <span className="text-[10px]">No specific raw event payload stored for this baseline cell.</span>
+                  <span className="text-[10px]">{t('temporal.no_events')}</span>
                 </div>
               ) : (
                 selectedCell.events.map((evt, idx) => (
@@ -405,7 +407,7 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
                           className="flex items-center gap-1 text-[8.5px] font-bold text-[#39ff14] hover:text-white px-2 py-1 rounded border border-[#39ff14]/40 hover:border-[#39ff14] bg-[#39ff14]/15 hover:bg-[#39ff14]/30 transition uppercase tracking-wider"
                         >
                           <ExternalLink size={10} />
-                          Pivot to Node
+                          {t('temporal.pivot_node')}
                         </button>
                       )}
                     </div>
@@ -420,7 +422,7 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
                 onClick={() => { playClick(); setSelectedCell(null); }}
                 className="text-[9px] font-bold bg-[#39ff14]/15 border border-[#39ff14] text-[#39ff14] px-4 py-1.5 rounded hover:bg-[#39ff14] hover:text-black transition uppercase tracking-wider"
               >
-                Close Inspector
+                {t('temporal.close_inspector')}
               </button>
             </div>
           </div>

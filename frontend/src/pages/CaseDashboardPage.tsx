@@ -51,13 +51,15 @@ import {
   getPendingApprovals,
   approveInvestigator,
   rejectInvestigator,
-  getAuditLogs
+  getAuditLogs,
+  getCrossCorrelations
 } from '../api/endpoints';
+import type { CrossCorrelation, CrossCorrelationResult } from '../api/endpoints';
 
 interface WindowState {
   id: string;
   title: string;
-  type: 'case_workspace' | 'settings' | 'profile' | 'cases_explorer';
+  type: 'case_workspace' | 'settings' | 'profile' | 'cases_explorer' | 'cross_correlate';
   x: number;
   y: number;
   width: number;
@@ -257,6 +259,8 @@ export default function CaseDashboardPage() {
     return localStorage.getItem('er_last_accessed_case') || null;
   });
   const [explorerSearchQuery, setExplorerSearchQuery] = useState('');
+  const [crossCorrelationData, setCrossCorrelationData] = useState<CrossCorrelationResult | null>(null);
+  const [crossCorrelationLoading, setCrossCorrelationLoading] = useState(false);
   const desktopRef = useRef<HTMLDivElement>(null);
 
   const handleZoom = (e: React.WheelEvent, caseId: string) => {
@@ -1981,6 +1985,109 @@ export default function CaseDashboardPage() {
                 </div>
               )}
 
+              {/* 4b. CROSS-CORRELATION WINDOW */}
+              {win.type === 'cross_correlate' && (
+                <div className="flex flex-col gap-3 h-full overflow-y-auto pr-1">
+                  <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                    <span className="text-[10px] font-bold text-[#a855f7] uppercase tracking-wider">CROSS-CASE INTELLIGENCE CORRELATOR</span>
+                    <button
+                      onClick={async () => {
+                        setCrossCorrelationLoading(true);
+                        try {
+                          const data = await getCrossCorrelations();
+                          setCrossCorrelationData(data);
+                        } catch (err) {
+                          console.error('Cross-correlate failed:', err);
+                          showToast('CROSS-CORRELATION SCAN FAILED', 'error');
+                        } finally {
+                          setCrossCorrelationLoading(false);
+                        }
+                      }}
+                      disabled={crossCorrelationLoading}
+                      className="text-[8px] font-bold border border-[#a855f7]/50 hover:bg-[#a855f7]/10 text-[#a855f7] px-2 py-1 uppercase disabled:opacity-50"
+                    >
+                      {crossCorrelationLoading ? 'SCANNING...' : 'RE-SCAN'}
+                    </button>
+                  </div>
+
+                  {/* Stats bar */}
+                  {crossCorrelationData && (
+                    <div className="flex gap-3 text-[8px] font-mono uppercase tracking-wider">
+                      <span className="text-gray-500">CASES ANALYZED: <span className="text-[#39ff14]">{crossCorrelationData.cases_analyzed}</span></span>
+                      <span className="text-gray-500">SHARED IDENTIFIERS: <span className={crossCorrelationData.total_shared_identifiers > 0 ? 'text-[#a855f7]' : 'text-gray-400'}>{crossCorrelationData.total_shared_identifiers}</span></span>
+                    </div>
+                  )}
+
+                  {crossCorrelationLoading && (
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="w-8 h-8 border-2 border-[#a855f7]/30 border-t-[#a855f7] rounded-full animate-spin mx-auto mb-3" />
+                        <span className="text-[9px] font-mono text-[#a855f7] animate-pulse uppercase tracking-widest">SCANNING IDENTIFIER OVERLAP ACROSS CASES...</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {!crossCorrelationLoading && crossCorrelationData && crossCorrelationData.correlations.length === 0 && (
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="text-center">
+                        <Shield size={32} className="text-gray-600 mx-auto mb-3" />
+                        <p className="text-[10px] font-mono text-gray-500 uppercase">NO SHARED IDENTIFIERS DETECTED</p>
+                        <p className="text-[8px] font-mono text-gray-600 mt-1">Identifiers must appear in 2+ cases to trigger a correlation alert.</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {!crossCorrelationLoading && crossCorrelationData && crossCorrelationData.correlations.length > 0 && (
+                    <div className="flex flex-col gap-3">
+                      {crossCorrelationData.correlations.map((corr, idx) => (
+                        <div key={idx} className="bg-[#a855f7]/5 border border-[#a855f7]/20 p-3 hover:border-[#a855f7]/40 transition-all">
+                          {/* Header */}
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <AlertTriangle size={12} className="text-[#a855f7]" />
+                              <span className="text-[10px] font-bold text-[#a855f7] uppercase tracking-wide">CROSS-CASE MATCH</span>
+                            </div>
+                            <span className="text-[8px] font-mono bg-[#a855f7]/15 text-[#a855f7] px-1.5 py-0.5 uppercase">{corr.type}</span>
+                          </div>
+
+                          {/* Shared Value */}
+                          <div className="bg-black/40 border border-white/5 px-2.5 py-1.5 mb-2">
+                            <span className="text-[8px] text-gray-500 font-mono uppercase block mb-0.5">SHARED IDENTIFIER</span>
+                            <span className="text-[11px] text-[#39ff14] font-mono font-bold break-all">{corr.normalized_value}</span>
+                          </div>
+
+                          {/* Involved Cases */}
+                          <div className="flex flex-col gap-1.5">
+                            <span className="text-[8px] text-gray-500 font-mono uppercase">APPEARS IN {corr.case_count} CASES:</span>
+                            {corr.cases.map((c, cIdx) => (
+                              <div
+                                key={cIdx}
+                                onClick={() => {
+                                  closeWindow(win.id);
+                                  openWindow(
+                                    `workspace-${c.case_id}`,
+                                    `Case Workspace: ${c.case_title}`,
+                                    'case_workspace',
+                                    { caseId: c.case_id }
+                                  );
+                                }}
+                                className="flex items-center justify-between bg-white/3 border border-white/5 hover:border-[#39ff14]/40 px-2 py-1.5 cursor-pointer transition-all group"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Folder size={10} className="text-[#a855f7] group-hover:text-[#39ff14] transition-colors" />
+                                  <span className="text-[9px] font-bold text-gray-300 group-hover:text-white uppercase">{c.case_title}</span>
+                                </div>
+                                <span className="text-[7px] font-mono text-gray-600">{c.source}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* 4. DOSSIER EXPLORER */}
               {win.type === 'cases_explorer' && (
                 <div className="flex flex-col gap-3 h-full overflow-y-auto pr-1">
@@ -2091,6 +2198,28 @@ export default function CaseDashboardPage() {
           className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'settings_window') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
         >
           <Settings size={20} />
+        </button>
+
+        <button
+          onClick={async () => {
+            openWindow('cross_correlate_window', 'Cross-Case Correlator', 'cross_correlate');
+            if (!crossCorrelationData) {
+              setCrossCorrelationLoading(true);
+              try {
+                const data = await getCrossCorrelations();
+                setCrossCorrelationData(data);
+              } catch (err) {
+                console.error('Cross-correlate failed:', err);
+                showToast('CROSS-CORRELATION SCAN FAILED', 'error');
+              } finally {
+                setCrossCorrelationLoading(false);
+              }
+            }
+          }}
+          title="Cross-Case Correlation Scanner"
+          className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'cross_correlate_window') ? 'text-[#a855f7] bg-[#a855f7]/5 border border-[#a855f7]/20' : 'text-gray-300 hover:text-[#a855f7] hover:bg-white/5'}`}
+        >
+          <Network size={20} />
         </button>
 
         <div className="h-6 w-[1px] bg-white/10" />

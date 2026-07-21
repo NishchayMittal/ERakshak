@@ -270,3 +270,31 @@ export async function getAuditLogs(): Promise<any[]> {
   const res = await apiClient.get('/auth/audit-logs');
   return res.data;
 }
+
+export interface CrossCorrelation {
+  normalized_value: string;
+  type: string;
+  case_count: number;
+  cases: Array<{
+    case_id: string;
+    case_title: string;
+    identifier_id: string;
+    type: string;
+    raw_value: string;
+    source: string;
+  }>;
+}
+
+export interface CrossCorrelationResult {
+  correlations: CrossCorrelation[];
+  total_shared_identifiers: number;
+  cases_analyzed: number;
+}
+
+export async function getCrossCorrelations(): Promise<CrossCorrelationResult> {
+  if (isMockMode()) {
+    return { correlations: [], total_shared_identifiers: 0, cases_analyzed: 0 };
+  }
+  const res = await apiClient.get('/cases/cross-correlate');
+  return res.data;
+}

@@ -52,6 +52,87 @@ def list_cases(db: Session = Depends(get_db), current_investigator: Investigator
     )
 
 
+@router.get("/cross-correlate")
+def cross_correlate_cases(
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator),
+):
+    """Find identifiers that appear across multiple cases for this investigator."""
+    from sqlalchemy import func, distinct
+
+    cases = (
+        db.query(Case)
+        .filter(Case.lead_investigator_id == current_investigator.id)
+        .all()
+    )
+
+    if len(cases) < 2:
+        return {
+            "correlations": [],
+            "total_shared_identifiers": 0,
+            "cases_analyzed": len(cases),
+        }
+
+    case_ids = [c.id for c in cases]
+    case_lookup = {c.id: c for c in cases}
+
+    # Find normalized_values that appear in more than one distinct case
+    shared_rows = (
+        db.query(
+            Identifier.normalized_value,
+            Identifier.type,
+            func.count(distinct(Identifier.case_id)).label("case_count"),
+        )
+        .filter(Identifier.case_id.in_(case_ids))
+        .group_by(Identifier.normalized_value, Identifier.type)
+        .having(func.count(distinct(Identifier.case_id)) > 1)
+        .all()
+    )
+
+    correlations = []
+    for norm_val, id_type, case_count in shared_rows:
+        # Fetch every identifier row matching this normalized value across the cases
+        matching_ids = (
+            db.query(Identifier)
+            .filter(
+                Identifier.case_id.in_(case_ids),
+                Identifier.normalized_value == norm_val,
+            )
+            .all()
+        )
+
+        involved_cases = []
+        seen_case_ids: set[str] = set()
+        for mid in matching_ids:
+            case_obj = case_lookup.get(mid.case_id)
+            if case_obj and mid.case_id not in seen_case_ids:
+                seen_case_ids.add(mid.case_id)
+                involved_cases.append({
+                    "case_id": case_obj.id,
+                    "case_title": case_obj.title,
+                    "identifier_id": mid.id,
+                    "type": mid.type.value if hasattr(mid.type, "value") else str(mid.type),
+                    "raw_value": mid.raw_value,
+                    "source": mid.source,
+                })
+
+        correlations.append({
+            "normalized_value": norm_val,
+            "type": id_type.value if hasattr(id_type, "value") else str(id_type),
+            "case_count": len(involved_cases),
+            "cases": involved_cases,
+        })
+
+    # Most-shared first
+    correlations.sort(key=lambda x: x["case_count"], reverse=True)
+
+    return {
+        "correlations": correlations,
+        "total_shared_identifiers": len(correlations),
+        "cases_analyzed": len(cases),
+    }
+
+
 @router.get("/{case_id}", response_model=CaseOut)
 def get_case(case_id: str, db: Session = Depends(get_db), current_investigator: Investigator = Depends(get_current_investigator)):
     case = (

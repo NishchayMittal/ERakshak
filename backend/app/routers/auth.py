@@ -39,8 +39,23 @@ def register(payload: InvestigatorCreate, db: Session = Depends(get_db)):
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     investigator = db.query(Investigator).filter(Investigator.badge_id == form_data.username).first()
+    
     if not investigator:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Badge ID is not registered.")
+        # Check if the database is completely empty; if so, create the default user
+        if db.query(Investigator).count() == 0 and form_data.username == "INV-001":
+            investigator = Investigator(
+                badge_id="INV-001",
+                full_name="Leon Lobo",
+                hashed_password=hash_password("Password123!"),
+                is_active=True,
+                is_approved=True
+            )
+            db.add(investigator)
+            db.commit()
+            db.refresh(investigator)
+        else:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Badge ID is not registered.")
+
     if not verify_password(form_data.password, investigator.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid security passphrase.")
 

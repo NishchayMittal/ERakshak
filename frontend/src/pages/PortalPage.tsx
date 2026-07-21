@@ -7,7 +7,7 @@ import { CyberButton } from '../components/ui/CyberButton';
 
 
 // ── THREE.JS EARTH EFFECT BACKGROUND ──
-function EarthEffect({ tooltipRef, onNodeClick }: { tooltipRef: React.RefObject<HTMLDivElement | null>, onNodeClick: () => void }) {
+function EarthEffect() {
   const containerRef = useRef<HTMLDivElement>(null);
   const animationFrameIdRef = useRef<number>(0);
 
@@ -26,7 +26,22 @@ function EarthEffect({ tooltipRef, onNodeClick }: { tooltipRef: React.RefObject<
     const mouse = new THREE.Vector2(-1000, -1000); 
 
     // Tooltip DOM element
-    
+    const tooltip = document.createElement('div');
+    tooltip.style.position = 'absolute';
+    tooltip.style.padding = '8px 12px';
+    tooltip.style.background = 'rgba(8,12,16,0.9)';
+    tooltip.style.border = '1px solid #39FF14';
+    tooltip.style.color = '#39FF14';
+    tooltip.style.fontFamily = 'monospace';
+    tooltip.style.fontSize = '10px';
+    tooltip.style.pointerEvents = 'none';
+    tooltip.style.opacity = '0';
+    tooltip.style.transition = 'opacity 0.2s';
+    tooltip.style.zIndex = '100';
+    tooltip.style.boxShadow = '0 0 10px rgba(57,255,20,0.3)';
+    tooltip.style.borderRadius = '4px';
+    tooltip.style.textTransform = 'uppercase';
+    document.body.appendChild(tooltip);
 
     // Scene setup
     const scene = new THREE.Scene();
@@ -39,7 +54,7 @@ function EarthEffect({ tooltipRef, onNodeClick }: { tooltipRef: React.RefObject<
       10000
     );
     const baseCameraZ = 1100;
-    camera.position.set(0, 0, 700);
+    camera.position.set(0, 0, baseCameraZ);
 
     const renderer = new THREE.WebGLRenderer({
       alpha: true,
@@ -375,7 +390,7 @@ function EarthEffect({ tooltipRef, onNodeClick }: { tooltipRef: React.RefObject<
     starsGroup.add(new THREE.Points(orionStarsGeo, orionStarsMat));
 
     globeGroup.position.x = window.innerWidth > 768 ? window.innerWidth * 0.25 : 0;
-    globeGroup.position.y = -200;
+    globeGroup.position.y = -20;
     globeGroup.rotation.z = Math.PI / 16; 
 
     // Mouse Move Listener
@@ -388,22 +403,10 @@ function EarthEffect({ tooltipRef, onNodeClick }: { tooltipRef: React.RefObject<
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
       
-      if (tooltipRef.current) {
-        tooltipRef.current.style.left = `${event.clientX + 15}px`;
-        tooltipRef.current.style.top = `${event.clientY + 15}px`;
-      }
+      tooltip.style.left = `${event.clientX + 15}px`;
+      tooltip.style.top = `${event.clientY + 15}px`;
     };
     window.addEventListener('mousemove', onMouseMove);
-    const onClick = () => {
-      if (!isZooming) {
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObjects(interactiveNodes);
-        if (intersects.length > 0) {
-          onNodeClick();
-        }
-      }
-    };
-    window.addEventListener('click', onClick);
 
     // Zoom Event Listener
     const onTriggerZoom = () => {
@@ -435,7 +438,7 @@ function EarthEffect({ tooltipRef, onNodeClick }: { tooltipRef: React.RefObject<
       perimeterMesh.position.copy(globeGroup.position);
       glowMesh.position.copy(globeGroup.position);
 
-      // globeGroup.rotation.y += 0.0015;
+      globeGroup.rotation.y += 0.0015;
       starsGroup.rotation.y -= 0.0002;
       starsGroup.rotation.x -= 0.0001;
       
@@ -455,18 +458,15 @@ function EarthEffect({ tooltipRef, onNodeClick }: { tooltipRef: React.RefObject<
         
         if (intersects.length > 0) {
           const hovered = intersects[0].object;
-          if (tooltipRef.current) {
-            const labelEl = tooltipRef.current.querySelector('.cyber-tooltip-label');
-            if (labelEl) labelEl.textContent = hovered.userData.label;
-            tooltipRef.current.style.opacity = '1';
-          }
+          tooltip.innerText = hovered.userData.label;
+          tooltip.style.opacity = '1';
           document.body.style.cursor = 'crosshair';
         } else {
-          if (tooltipRef.current) tooltipRef.current.style.opacity = '0';
+          tooltip.style.opacity = '0';
           document.body.style.cursor = 'default';
         }
       } else {
-          if (tooltipRef.current) tooltipRef.current.style.opacity = '0';
+        tooltip.style.opacity = '0';
       }
 
       renderer.render(scene, camera);
@@ -485,12 +485,11 @@ function EarthEffect({ tooltipRef, onNodeClick }: { tooltipRef: React.RefObject<
       isCancelled = true;
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('click', onClick);
       window.removeEventListener('trigger-zoom', onTriggerZoom);
       cancelAnimationFrame(animationFrameIdRef.current);
 
-      if (tooltipRef.current) {
-        tooltipRef.current.style.opacity = '0';
+      if (document.body.contains(tooltip)) {
+        document.body.removeChild(tooltip);
       }
       document.body.style.cursor = 'default';
 
@@ -529,7 +528,6 @@ function EarthEffect({ tooltipRef, onNodeClick }: { tooltipRef: React.RefObject<
 
 // ── PORTAL PAGE RENDERER ──
 export default function PortalPage() {
-  const tooltipRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [isZooming, setIsZooming] = useState(false);
 
@@ -562,7 +560,7 @@ export default function PortalPage() {
         userSelect: 'none',
       }}
     >
-      <EarthEffect tooltipRef={tooltipRef} onNodeClick={handleEnterClick} />
+      <EarthEffect />
       
       <div 
         style={{
@@ -731,27 +729,6 @@ export default function PortalPage() {
           pointerEvents: 'none'
         }}
       />
-
-      {/* CyberCard Tooltip Overlay */}
-      <div 
-        ref={tooltipRef}
-        style={{
-          position: 'absolute',
-          top: -1000, 
-          left: -1000, 
-          opacity: 0, 
-          pointerEvents: 'none', 
-          zIndex: 100, 
-          transition: 'opacity 0.2s ease-in-out'
-        }}
-      >
-        <CyberCard>
-          <div style={{ padding: '8px', minWidth: '120px' }}>
-            <div style={{ fontSize: '10px', color: '#6E7681', marginBottom: '4px' }}>INTERCEPT NODE</div>
-            <div className="cyber-tooltip-label" style={{ color: '#39FF14', fontSize: '12px', fontWeight: 'bold' }}>-</div>
-          </div>
-        </CyberCard>
-      </div>
     </div>
   );
 }

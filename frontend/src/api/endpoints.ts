@@ -373,3 +373,32 @@ export async function getTemporalAnalysis(caseId: string): Promise<TemporalAnaly
   const res = await apiClient.get(`/cases/${caseId}/temporal-analysis`);
   return res.data;
 }
+
+export interface GeoNode {
+  id: string;
+  lat: number;
+  lng: number;
+  label: string;
+  source: string;
+}
+
+export interface GeoArc {
+  startLat: number;
+  startLng: number;
+  endLat: number;
+  endLng: number;
+  label: string;
+}
+
+export interface GeoIntelligenceResult {
+  nodes: GeoNode[];
+  arcs: GeoArc[];
+}
+
+export async function getGeoIntelligence(caseId: string): Promise<GeoIntelligenceResult> {
+  if (isMockMode()) {
+    return { nodes: [], arcs: [] };
+  }
+  const res = await apiClient.get(`/cases/${caseId}/geo`);
+  return res.data;
+}

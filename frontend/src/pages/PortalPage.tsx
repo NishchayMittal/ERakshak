@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import * as THREE from 'three';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Shield } from 'lucide-react';
 import { CyberCard } from '../components/ui/CyberCard';
 import { CyberButton } from '../components/ui/CyberButton';
 import { LoginForm } from '../components/auth/LoginForm';
+import { LanguageSwitcher } from '../components/ui/LanguageSwitcher';
 
 
 // ── THREE.JS EARTH EFFECT BACKGROUND ──
@@ -564,6 +566,7 @@ globeGroup.position.x = 0;
 // ── PORTAL PAGE RENDERER ──
 export default function PortalPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [isZooming, setIsZooming] = useState(false);
   const [phase, setPhase] = useState<'splash' | 'ready' | 'login'>('splash');
 
@@ -627,7 +630,11 @@ export default function PortalPage() {
           boxShadow: 'inset 0 0 150px rgba(0,0,0,0.9)',
         }}
       />
-      
+      {/* Language Switcher */}
+      <div className="absolute top-4 right-4 z-50 pointer-events-auto">
+        <LanguageSwitcher />
+      </div>
+
       {/* Matrix Rain */}
       <div
         style={{
@@ -758,7 +765,7 @@ export default function PortalPage() {
               lineHeight: '1',
             }}
           >
-            ORION
+            {t('portal.brand')}
           </h1>
           <p
             style={{
@@ -771,7 +778,7 @@ export default function PortalPage() {
               lineHeight: '1.5',
             }}
           >
-            Global Cyber Threat Intelligence Matrix
+            {t('portal.subtitle')}
           </p>
         </div>
 
@@ -780,14 +787,14 @@ export default function PortalPage() {
           innerStyle={{ alignItems: 'center', gap: '20px', padding: '24px 48px' }}
         >
           <div style={{ textAlign: 'center' }}>
-              <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 600, letterSpacing: '0.15em', color: 'var(--text-primary)' }}>SYSTEM READY</h2>
-              <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.1em' }}>Secure connection established.</p>
+              <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 600, letterSpacing: '0.15em', color: 'var(--text-primary)' }}>{t('portal.system_ready')}</h2>
+              <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.1em' }}>{t('portal.secure_connection')}</p>
           </div>
           <CyberButton 
             onClick={handleEnterClick} 
             icon={<ArrowRight size={16} color="#000000" />}
           >
-            <span>ENTER DASHBOARD</span>
+            <span>{t('portal.enter_dashboard')}</span>
           </CyberButton>
         </CyberCard>
       </div>

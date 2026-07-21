@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RefreshCw, ShieldAlert, Sparkles } from 'lucide-react';
 import { getNarrative } from '../../api/endpoints';
 import { useUIStore } from '../../state/uiStore';
@@ -32,6 +33,7 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
   const [report, setReport] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { showToast } = useUIStore();
+  const { t } = useTranslation();
 
   const loadReport = async () => {
     setLoading(true);
@@ -41,7 +43,7 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
       playDiagnosticTone();
     } catch (err) {
       console.error(err);
-      showToast('Failed to load LLM Narrative Report', 'error');
+      showToast(t('report.load_failed'), 'error');
     } finally {
       setLoading(false);
     }
@@ -160,7 +162,7 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
           display: 'flex', alignItems: 'center', gap: 8,
         }}>
           <span style={{ fontSize: 14, color: 'var(--accent-primary)', lineHeight: 1 }}>⌐</span>
-          LLM DOSSIER SYNTHESIS
+          {t('report.title')}
           <span style={{ fontSize: 14, color: 'var(--accent-primary)', lineHeight: 1, transform: 'scaleX(-1)', display: 'inline-block' }}>⌐</span>
         </div>
         <button
@@ -178,7 +180,7 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
           }}
         >
           <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-          <span>{loading ? 'RUNNING...' : 'REGENERATE'}</span>
+          <span>{loading ? t('report.running') : t('report.regenerate')}</span>
         </button>
       </div>
 
@@ -192,20 +194,20 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
         flexShrink: 0,
       }}>
         <div>
-          <span style={{ color: 'var(--text-muted)' }}>PROVIDER:</span>{' '}
-          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>OLLAMA (LOCAL COMPILER)</span>
+          <span style={{ color: 'var(--text-muted)' }}>{t('report.provider')}</span>{' '}
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{t('report.provider_val')}</span>
         </div>
         <div>
-          <span style={{ color: 'var(--text-muted)' }}>TEMPERATURE:</span>{' '}
-          <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>0.25 (BOUNDED)</span>
+          <span style={{ color: 'var(--text-muted)' }}>{t('report.temperature')}</span>{' '}
+          <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>{t('report.temp_val')}</span>
         </div>
         <div>
-          <span style={{ color: 'var(--text-muted)' }}>CONTEXT VECTORS:</span>{' '}
-          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>EVIDENCE PACK</span>
+          <span style={{ color: 'var(--text-muted)' }}>{t('report.context')}</span>{' '}
+          <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{t('report.context_val')}</span>
         </div>
         <div>
-          <span style={{ color: 'var(--text-muted)' }}>STATUS:</span>{' '}
-          <span style={{ color: '#00C853', fontWeight: 600 }}>SIGNED</span>
+          <span style={{ color: 'var(--text-muted)' }}>{t('report.status_label')}</span>{' '}
+          <span style={{ color: '#00C853', fontWeight: 600 }}>{t('report.status_val')}</span>
         </div>
       </div>
 
@@ -214,7 +216,7 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10 }}>
             <div style={{ width: 24, height: 24, border: '2px solid var(--accent-primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--accent-primary)', animation: 'blink 1.5s step-start infinite' }}>RUNNING NARRATIVE COMPILER...</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--accent-primary)', animation: 'blink 1.5s step-start infinite' }}>{t('report.compiling')}</span>
           </div>
         ) : report ? (
           <div style={{ userSelect: 'text' }}>
@@ -223,7 +225,7 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 8 }}>
             <ShieldAlert className="w-5 h-5" style={{ color: 'var(--text-muted)' }} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)' }}>NO REPORT CACHED. CLICK REGENERATE.</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)' }}>{t('report.no_report')}</span>
           </div>
         )}
       </div>
@@ -236,8 +238,8 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
         fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)',
         flexShrink: 0,
       }}>
-        <span>HASH: SHA-256/DOSS-SYNTH-2026</span>
-        <span style={{ color: '#00C853', fontWeight: 700 }}>ALIGNED</span>
+        <span>{t('report.hash')}</span>
+        <span style={{ color: '#00C853', fontWeight: 700 }}>{t('report.aligned')}</span>
       </div>
     </div>
   );

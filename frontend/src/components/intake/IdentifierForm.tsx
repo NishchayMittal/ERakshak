@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import type { IdentifierType } from '../../types/identifier';
+import { useTranslation } from 'react-i18next';
 
 interface IdentifierFormProps {
   onAdd: (type: IdentifierType, value: string) => void;
 }
 
 export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
+  const { t } = useTranslation();
   const [value, setValue] = useState('');
   const [type, setType] = useState<IdentifierType>('email');
 
@@ -43,9 +45,9 @@ export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
   return (
     <form onSubmit={handleSubmit} className="bg-slate-900 border border-slate-800 rounded-lg p-5 space-y-4">
       <div>
-        <h3 className="font-semibold text-slate-200 text-sm mb-1">Add Seed Identifier</h3>
+        <h3 className="font-semibold text-slate-200 text-sm mb-1">{t('intake_form.title')}</h3>
         <p className="text-[11px] text-slate-500">
-          Enter a seed value. The system will auto-detect the type but you can override it manually.
+          {t('intake_form.description')}
         </p>
       </div>
 
@@ -57,7 +59,7 @@ export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
             value={value}
             onChange={(e) => setValue(e.target.value)}
             className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono placeholder:text-slate-600"
-            placeholder="e.g. suspect@domain.com, +91-9876543210, John Patel"
+            placeholder={t('intake_form.placeholder')}
             required
           />
         </div>
@@ -69,15 +71,15 @@ export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
             onChange={(e) => setType(e.target.value as IdentifierType)}
             className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-sans"
           >
-            <option value="email">Email Address</option>
-            <option value="phone">Phone Number</option>
-            <option value="name">Individual Name</option>
-            <option value="username">Username / Alias</option>
-            <option value="domain">Domain Name / URL</option>
-            <option value="ip">IP Address</option>
-            <option value="wallet">Crypto Wallet Address</option>
-            <option value="photo">Photo / Face URL</option>
-            <option value="other">Other / Fallback</option>
+            <option value="email">{t('case_window.email_address')}</option>
+            <option value="phone">{t('case_window.phone_number')}</option>
+            <option value="name">{t('case_window.individual_name')}</option>
+            <option value="username">{t('case_window.social_username')}</option>
+            <option value="domain">{t('case_window.domains')}</option>
+            <option value="ip">{t('case_window.ip_address')}</option>
+            <option value="wallet">{t('case_window.crypto_wallet')}</option>
+            <option value="photo">{t('case_window.photo_url')}</option>
+            <option value="other">{t('case_window.other_fallback')}</option>
           </select>
         </div>
 
@@ -86,7 +88,7 @@ export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
           type="submit"
           className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-semibold hover:shadow hover:shadow-indigo-500/10 transition-all flex-shrink-0"
         >
-          Add Seed
+          {t('intake_form.add_seed')}
         </button>
       </div>
     </form>

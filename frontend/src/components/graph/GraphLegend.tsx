@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const NODE_TYPES = [
   { label: 'PERSON',   shape: 'circle',  color: 'var(--accent-primary)' },
@@ -11,11 +12,7 @@ const NODE_TYPES = [
   { label: 'FLAGGED',  shape: 'triangle',color: 'var(--accent-threat)' },
 ];
 
-const EDGE_TYPES = [
-  { label: 'VERIFIED LINK',    color: 'var(--accent-primary)' },
-  { label: 'MEDIUM RISK',      color: 'var(--accent-secondary)' },
-  { label: 'HIGH RISK / FLAGGED', color: 'var(--accent-threat)' },
-];
+
 
 function ShapeIcon({ shape, color }: { shape: string; color: string }) {
   const size = 10;
@@ -49,6 +46,14 @@ function ShapeIcon({ shape, color }: { shape: string; color: string }) {
 }
 
 export default function GraphLegend() {
+  const { t } = useTranslation();
+
+  const EDGE_TYPES = [
+    { label: t('graph.verified_link'),    color: 'var(--accent-primary)' },
+    { label: t('graph.medium_risk'),      color: 'var(--accent-secondary)' },
+    { label: t('graph.high_risk'), color: 'var(--accent-threat)' },
+  ];
+
   return (
     <div style={{
       padding: '8px 14px',
@@ -62,7 +67,7 @@ export default function GraphLegend() {
           fontFamily: 'var(--font-heading)', fontSize: 8, letterSpacing: '0.18em',
           color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6,
         }}>
-          NODE TYPES
+          {t('graph.node_types')}
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px' }}>
           {NODE_TYPES.map((t) => (
@@ -86,7 +91,7 @@ export default function GraphLegend() {
           fontFamily: 'var(--font-heading)', fontSize: 8, letterSpacing: '0.18em',
           color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6,
         }}>
-          EDGE RISK
+          {t('graph.edge_risk')}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {EDGE_TYPES.map((e) => (

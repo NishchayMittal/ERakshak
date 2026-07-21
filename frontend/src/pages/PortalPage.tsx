@@ -7,7 +7,9 @@ import { CyberButton } from '../components/ui/CyberButton';
 
 
 // ── THREE.JS EARTH EFFECT BACKGROUND ──
-function EarthEffect() {
+function EarthEffect({ phase }: { phase: 'splash' | 'ready' }) {
+  const phaseRef = useRef(phase);
+  useEffect(() => { phaseRef.current = phase; }, [phase]);
   const containerRef = useRef<HTMLDivElement>(null);
   const animationFrameIdRef = useRef<number>(0);
 
@@ -129,7 +131,7 @@ function EarthEffect() {
     dotGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
     const dotMat = new THREE.PointsMaterial({
-      size: 3.5,
+      size: 5.0,
       vertexColors: true,
       transparent: true,
       opacity: 0.8,
@@ -389,9 +391,11 @@ function EarthEffect() {
     });
     starsGroup.add(new THREE.Points(orionStarsGeo, orionStarsMat));
 
-    globeGroup.position.x = window.innerWidth > 768 ? window.innerWidth * 0.25 : 0;
-    globeGroup.position.y = -20;
-    globeGroup.rotation.z = Math.PI / 16; 
+    
+    
+    globeGroup.rotation.z = Math.PI / 16;
+globeGroup.position.y = 0;
+globeGroup.position.x = 0; 
 
     // Mouse Move Listener
     const onMouseMove = (event: MouseEvent) => {
@@ -431,6 +435,8 @@ function EarthEffect() {
       } else {
         camera.position.x += (targetX - camera.position.x) * 0.02;
         camera.position.y += (-targetY - camera.position.y) * 0.02;
+        const targetZ = phaseRef.current === 'ready' ? 750 : 1100;
+        camera.position.z += (targetZ - camera.position.z) * 0.03;
       }
       camera.lookAt(scene.position);
       
@@ -439,8 +445,23 @@ function EarthEffect() {
       glowMesh.position.copy(globeGroup.position);
 
       globeGroup.rotation.y += 0.0015;
+      ring.rotation.z -= 0.005;
+      ring2.rotation.z += 0.003;
       starsGroup.rotation.y -= 0.0002;
       starsGroup.rotation.x -= 0.0001;
+      
+      // Handle Phase Transitions Smoothly
+      if (isZooming) {
+        globeGroup.position.y += (0 - globeGroup.position.y) * 0.08;
+        globeGroup.position.x += (0 - globeGroup.position.x) * 0.08;
+      } else if (phaseRef.current === 'ready') {
+        const targetY = -(window.innerHeight / 2) + 150;
+        globeGroup.position.y += (targetY - globeGroup.position.y) * 0.03;
+        globeGroup.position.x += (0 - globeGroup.position.x) * 0.03;
+      } else {
+        globeGroup.position.y += (0 - globeGroup.position.y) * 0.05;
+        globeGroup.position.x += (0 - globeGroup.position.x) * 0.05;
+      }
       
       movingParticles.forEach(p => {
         p.t += p.speed;
@@ -530,6 +551,13 @@ function EarthEffect() {
 export default function PortalPage() {
   const navigate = useNavigate();
   const [isZooming, setIsZooming] = useState(false);
+  const [phase, setPhase] = useState<'splash' | 'ready'>('splash');
+
+  useEffect(() => {
+    // Automatically transition to ready state after splash screen (e.g. 4 seconds)
+    const timer = setTimeout(() => setPhase('ready'), 4000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const handleZoomComplete = () => {
@@ -560,8 +588,9 @@ export default function PortalPage() {
         userSelect: 'none',
       }}
     >
-      <EarthEffect />
+      <EarthEffect phase={phase} />
       
+      {/* Background Grids */}
       <div 
         style={{
           position: 'absolute',
@@ -584,6 +613,7 @@ export default function PortalPage() {
         }}
       />
       
+      {/* Matrix Rain */}
       <div
         style={{
           position: 'absolute',
@@ -602,121 +632,117 @@ export default function PortalPage() {
             0% { background-position: 0% -200%; }
             100% { background-position: 0% 200%; }
           }
+          @keyframes glitchText {
+            0% { opacity: 1; transform: translate(0) }
+            20% { opacity: 0.8; transform: translate(-2px, 1px) }
+            40% { opacity: 1; transform: translate(1px, -1px) }
+            60% { opacity: 0.9; transform: translate(-1px, 2px) }
+            80% { opacity: 1; transform: translate(2px, -1px) }
+            100% { opacity: 1; transform: translate(0) }
+          }
         `}
       </style>
 
-      {/* LEFT SIDE CONTENT CONTAINER */}
+      {/* SPLASH SCREEN PHASE */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 10,
+        pointerEvents: 'none',
+        opacity: phase === 'splash' ? 1 : 0,
+        transition: 'opacity 0.8s ease',
+      }}>
+        {/* Cyber Corners */}
+        <div style={{ position: 'absolute', top: '20px', left: '20px', width: '50px', height: '50px', borderTop: '2px solid #39ff14', borderLeft: '2px solid #39ff14' }} />
+        <div style={{ position: 'absolute', top: '20px', right: '20px', width: '50px', height: '50px', borderTop: '2px solid #39ff14', borderRight: '2px solid #39ff14' }} />
+        <div style={{ position: 'absolute', bottom: '20px', left: '20px', width: '50px', height: '50px', borderBottom: '2px solid #39ff14', borderLeft: '2px solid #39ff14' }} />
+        <div style={{ position: 'absolute', bottom: '20px', right: '20px', width: '50px', height: '50px', borderBottom: '2px solid #39ff14', borderRight: '2px solid #39ff14' }} />
+
+        {/* Loading Glitch Text */}
+        <div style={{
+          position: 'absolute',
+          top: 'calc(50% + 220px)',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          fontFamily: 'monospace',
+          color: '#39ff14',
+          fontSize: '12px',
+          letterSpacing: '0.3em',
+          animation: 'glitchText 2s infinite',
+          textShadow: '0 0 10px rgba(57,255,20,0.5)',
+          whiteSpace: 'nowrap'
+        }}>
+          &gt; INITIALIZING OSINT CORE // ORION PROTOCOLS ACTIVE...
+        </div>
+      </div>
+
+      {/* READY PHASE CONTENT */}
       <div
         style={{
           position: 'absolute',
-          left: '5%',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          zIndex: 10,
+          top: '35%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 20,
           display: 'flex',
           flexDirection: 'column',
-          gap: '32px',
-          opacity: isZooming ? 0 : 1,
-          transition: 'opacity 0.5s ease',
-          pointerEvents: isZooming ? 'none' : 'auto',
-          alignItems: 'flex-start',
+          alignItems: 'center',
+          gap: '48px',
+          opacity: phase === 'ready' && !isZooming ? 1 : 0,
+          transition: 'opacity 1.5s ease',
+          pointerEvents: phase === 'ready' && !isZooming ? 'auto' : 'none',
         }}
       >
-        {/* BIG OSINT TEXT */}
-        <div>
+        {/* BIG OSINT TEXT CENTERED */}
+        <div style={{ textAlign: 'center' }}>
           <h1
             style={{
               margin: 0,
               fontFamily: 'var(--font-heading)',
-              fontSize: '84px',
+              fontSize: '96px',
               fontWeight: 900,
               color: '#39ff14',
-              letterSpacing: '0.1em',
+              letterSpacing: '0.15em',
               textTransform: 'uppercase',
-              textShadow: '0 0 30px rgba(57,255,20,0.6)',
+              textShadow: '0 0 40px rgba(57,255,20,0.6)',
               lineHeight: '1',
             }}
           >
-            ORION<br/>OSINT
+            ORION
           </h1>
           <p
             style={{
-              margin: '12px 0 0 0',
+              margin: '16px 0 0 0',
               fontFamily: 'var(--font-mono)',
-              fontSize: '12px',
+              fontSize: '14px',
               color: 'var(--text-muted)',
-              letterSpacing: '0.2em',
+              letterSpacing: '0.3em',
               textTransform: 'uppercase',
-              maxWidth: '400px',
               lineHeight: '1.5',
             }}
           >
-            Global Cyber Threat Intelligence & Deep Web Trace Correlation Matrix
+            Global Cyber Threat Intelligence Matrix
           </p>
         </div>
 
-        {/* TERMINAL BELOW OSINT TEXT */}
-        <div
-          style={{
-            width: '320px',
-            height: '160px',
-            background: 'rgba(8,12,16,0.85)',
-            border: '1px solid rgba(57,255,20,0.3)',
-            boxShadow: '0 0 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(57,255,20,0.05)',
-            backdropFilter: 'blur(12px)',
-            borderRadius: '4px',
-            padding: '16px',
-            fontFamily: 'monospace',
-            fontSize: '11px',
-            color: '#39ff14',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-end',
-            overflow: 'hidden',
-          }}
-        >
-          <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid rgba(57,255,20,0.3)', paddingBottom: '6px', marginBottom: '12px', color: '#6E7681', fontSize: '9px', fontWeight: 'bold', letterSpacing: '0.1em' }}>
-            <span>TERMINAL</span>
-            <span>//</span>
-            <span>SYS.LOG</span>
-            <span style={{ marginLeft: 'auto', color: '#39ff14', animation: 'blink 1.5s infinite' }}>● ONLINE</span>
-          </div>
-          <div className="terminal-feed" style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <p style={{ margin: 0 }}>{'>'} Handshake established... [OK]</p>
-            <p style={{ margin: 0 }}>{'>'} Bypassing proxy walls...</p>
-            <p style={{ margin: 0, opacity: 0.8 }}>{'>'} Initializing Orion telemetry...</p>
-            <p style={{ margin: 0, opacity: 0.6 }}>{'>'} Decrypting deep web packets...</p>
-            <p style={{ margin: 0, animation: 'blink 1s infinite' }}>{'>'} Awaiting operator input _</p>
-          </div>
-        </div>
-
-        {/* ENTER DASHBOARD CARD */}
+        {/* ENTER DASHBOARD CARD CENTERED */}
         <CyberCard
-          style={{ 
-            marginTop: '16px',
-          }}
+          innerStyle={{ alignItems: 'center', gap: '20px', padding: '24px 48px' }}
         >
-          <CyberButton
-            onClick={handleEnterDashboard}
-            style={{ 
-              width: '100%', 
-              padding: '16px',
-              fontSize: '18px',
-              letterSpacing: '0.3em',
-              fontWeight: 'bold',
-              border: '1px solid rgba(57, 255, 20, 0.4)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '12px'
-            }}
+          <div style={{ textAlign: 'center' }}>
+              <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 600, letterSpacing: '0.15em', color: 'var(--text-primary)' }}>SYSTEM READY</h2>
+              <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.1em' }}>Secure connection established.</p>
+          </div>
+          <CyberButton 
+            onClick={handleEnterClick} 
+            icon={<ArrowRight size={16} color="#000000" />}
           >
-            <Shield size={22} className={isZooming ? 'animate-pulse' : ''} />
-            <span>{isZooming ? 'CONNECTING...' : 'INITIATE TRACE'}</span>
+            <span>ENTER DASHBOARD</span>
           </CyberButton>
         </CyberCard>
+      </div>
 
-      {/* Fade to black overlay for seamless transition */}
+      {/* Fade to black overlay for zoom transition */}
       <div 
         style={{
           position: 'absolute',

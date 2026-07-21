@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from "react";
-import { Send, Zap, MessageCircle } from "lucide-react";
-import { chatWithEvidence } from "../../api/endpoints";
-import { useUIStore } from "../../state/uiStore";
+import React, { useEffect, useState, useRef } from 'react';
+import { Send, Zap, MessageCircle } from 'lucide-react';
+import { chatWithEvidence } from '../../api/endpoints';
+import { useUIStore } from '../../state/uiStore';
+import { useTranslation } from 'react-i18next';
 
 interface ChatMessage {
   id: string;
@@ -10,17 +11,79 @@ interface ChatMessage {
   timestamp: string;
 }
 
-interface ChatPanelProps {
-  caseId: string;
-  messages: ChatMessage[];
-  inputValue: string;
-  isLoading: boolean;
-  messagesEndRef: React.RefObject<HTMLDivElement | null>;
-  onSendMessage: () => void;
-  onInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  onKeyPress: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
-  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
-}
+export default function ChatPanel({ caseId }: { caseId: string }) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { showToast } = useUIStore();
+  const { t } = useTranslation();
+
+  const sendMessage = async () => {
+    if (!inputValue.trim() || isLoading) return;
+
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      content: inputValue,
+      isUser: true,
+      timestamp: new Date().toISOString()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputValue('');
+    setIsLoading(true);
+
+    try {
+      const response = await chatWithEvidence(caseId, inputValue);
+      const botMessage: ChatMessage = {
+        id: Date.now().toString() + 'b',
+        content: response.answer,
+        isUser: false,
+        timestamp: new Date().toISOString()
+      };
+
+      setMessages(prev => [...prev, botMessage]);
+    } catch (err) {
+      console.error(err);
+      showToast(t('chat.error'), 'error');
+
+      // Add error message to chat
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString() + 'e',
+        content: t('chat.fallback_error'),
+        isUser: false,
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Welcome message when component mounts
+  useEffect(() => {
+    if (messages.length === 0) {
+      const welcomeMessage: ChatMessage = {
+        id: 'welcome',
+        content: t('chat.welcome'),
+        isUser: false,
+        timestamp: new Date().toISOString()
+      };
+      setMessages([welcomeMessage]);
+    }
+  }, [messages.length, caseId]);
 
 export default function ChatPanel({
   caseId = "",
@@ -86,6 +149,36 @@ export default function ChatPanel({
           }}
         >
           MODEL: LLAMA-3.3-70B-VERSATILE
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingBottom: 8,
+        borderBottom: '1px solid var(--struct-line)'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8
+        }}>
+          <MessageCircle className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} />
+          <span style={{
+            fontFamily: 'var(--font-heading)',
+            fontSize: 10,
+            fontWeight: 700,
+            color: 'var(--accent-primary)',
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase'
+          }}>
+            {t('chat.title')}
+          </span>
+        </div>
+        <div style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 8,
+          color: 'var(--text-muted)'
+        }}>
+          {t('chat.model_label')}
         </div>
       </div>
 
@@ -200,6 +293,9 @@ export default function ChatPanel({
           onChange={onInputChange}
           onKeyDown={onKeyPress}
           placeholder="Ask about linked entities, breach data, connections, or investigation details..."
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyPress}
+          placeholder={t('chat.placeholder')}
           disabled={isLoading}
           style={{
             flex: 1,
@@ -258,6 +354,7 @@ export default function ChatPanel({
             />
           )}
           <span>{isLoading ? "PROCESSING..." : "SEND"}</span>
+          <span>{isLoading ? t('chat.processing') : t('chat.send')}</span>
         </button>
       </div>
     </div>

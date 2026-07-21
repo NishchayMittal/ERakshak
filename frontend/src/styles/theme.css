@@ -1,5 +1,5 @@
 /* Font Imports — must be first */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Chakra+Petch:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Chakra+Petch:wght@400;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -16,16 +16,55 @@
   --bg-1: #0D1117;
   --bg-2: #131A22;
   --bg-card: #0c1016;
+
+  /* Purple = Structure, Intelligence, Navigation, Data Chrome */
   --accent-primary: #A855F7;
   --accent-primary-dim: rgba(168, 85, 247, 0.12);
+
+  /* Green #39FF14 = Action, Buttons, Highlights */
+  --accent-action: #39FF14;
+  --accent-action-dim: rgba(57, 255, 20, 0.12);
+
   --accent-threat: #FF0044;
   --accent-threat-dim: rgba(255, 0, 68, 0.12);
   --accent-secondary: #FFB800;
+
+  /* Accent for card/panel interior labels — NOT green, stays readable */
+  --accent-label: #C8D8E8;
+
   --struct-line: #2A3038;
   --text-primary: #E6EDF3;
   --text-muted: #6E7681;
+  --font-display: 'Orbitron', sans-serif;
   --font-heading: 'Space Grotesk', 'Chakra Petch', sans-serif;
   --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+/* ---- HUD Panel — standard inner panel box ---- */
+.hud-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--struct-line);
+}
+
+/* ---- Section label — panel header text strip ---- */
+.section-label {
+  font-family: var(--font-heading);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-label);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--struct-line);
+  padding-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---- Terminal prompt green ---- */
+.terminal-prompt {
+  color: var(--accent-action);
+  user-select: none;
 }
 
 /* ---- Global Reset ---- */
@@ -41,8 +80,8 @@ html, body, #root {
 
 /* ---- Glow Border Utility ---- */
 .glow-border {
-  border: 1px solid var(--accent-primary) !important;
-  box-shadow: 0 0 6px rgba(168, 85, 247, 0.25), inset 0 0 6px rgba(168, 85, 247, 0.03);
+  border: 1px solid var(--accent-action) !important;
+  box-shadow: 0 0 6px rgba(57, 255, 20, 0.25), inset 0 0 6px rgba(57, 255, 20, 0.03);
 }
 
 .glow-border-threat {
@@ -317,22 +356,22 @@ html, body, #root {
    CYBER CHAMFERED COMPONENTS
    ======================================== */
 :root {
-  --cyber-neon: var(--accent-primary);
+  --cyber-neon: var(--accent-action);
 }
 
 .cyber-button-container {
   display: inline-block;
-  filter: drop-shadow(0 0 4px rgba(168, 85, 247, 0.4)) drop-shadow(3px 3px 0px rgba(0,0,0,0.8));
+  filter: drop-shadow(0 0 4px rgba(57, 255, 20, 0.4)) drop-shadow(3px 3px 0px rgba(0,0,0,0.8));
   transition: transform 0.2s ease, filter 0.2s ease;
 }
 
 .cyber-button-container:hover {
   transform: translateY(-2px);
-  filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.6)) drop-shadow(5px 5px 0px rgba(0,0,0,0.5));
+  filter: drop-shadow(0 0 10px rgba(57, 255, 20, 0.7)) drop-shadow(5px 5px 0px rgba(0,0,0,0.5));
 }
 
 .cyber-button {
-  background-color: var(--cyber-neon);
+  background-color: var(--accent-action);
   color: #000000 !important;
   font-family: var(--font-heading);
   font-weight: 700;
@@ -351,7 +390,7 @@ html, body, #root {
 }
 
 .cyber-card-container {
-  filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.15)) drop-shadow(4px 4px 0px rgba(0,0,0,0.5));
+  filter: drop-shadow(0 0 8px rgba(57, 255, 20, 0.18)) drop-shadow(4px 4px 0px rgba(0,0,0,0.5));
 }
 
 .cyber-card-border {

@@ -5,6 +5,7 @@ import cola from 'cytoscape-cola';
 import { useGraphStore } from '../../state/graphStore';
 import { graphStyles } from './graphStyles';
 import TimelineSlider from './TimelineSlider';
+import { useTranslation } from 'react-i18next';
 
 // Register cytoscape-cola layout algorithm
 try {
@@ -18,6 +19,7 @@ interface GraphViewProps {
 }
 
 export default function GraphView({ onSelectNode }: GraphViewProps) {
+  const { t } = useTranslation();
   const { graphData, confidenceThreshold, selectedSources, timelineMaxTime } = useGraphStore();
   const cyRef = useRef<cytoscape.Core | null>(null);
   const reticleRef = useRef<HTMLDivElement | null>(null);
@@ -190,7 +192,7 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
           <div style={{ width: 32, height: 32, border: '1px solid var(--struct-line)', borderRadius: '50%', position: 'relative' }}>
             <div style={{ position: 'absolute', inset: 8, border: '1px solid var(--struct-line)', borderRadius: '50%' }} />
           </div>
-          NO ELEMENTS MATCH ACTIVE FILTERS
+          {t('graph.no_elements')}
         </div>
       ) : (
         <CytoscapeComponent

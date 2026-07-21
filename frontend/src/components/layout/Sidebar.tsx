@@ -117,17 +117,17 @@ export default function Sidebar() {
       >
         {!sidebarCollapsed && (
           <span style={{
-            fontFamily: 'var(--font-heading)', fontSize: 13, fontWeight: 700,
-            color: 'var(--accent-primary)', letterSpacing: '0.2em',
-            textTransform: 'uppercase', textShadow: '0 0 10px rgba(0,255,194,0.4)',
+            fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+            color: 'var(--accent-action)', letterSpacing: '0.2em',
+            textTransform: 'uppercase', textShadow: '0 0 10px rgba(57,255,20,0.5)',
           }}>
             e-RAKSHAK
           </span>
         )}
         {sidebarCollapsed && (
           <span style={{
-            fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
-            color: 'var(--accent-primary)', letterSpacing: '0.1em',
+            fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700,
+            color: 'var(--accent-action)', letterSpacing: '0.1em',
           }}>
             eR
           </span>
@@ -275,11 +275,11 @@ export default function Sidebar() {
             </button>
           </>
         )}
-        {/* Online indicator */}
+        {/* Online indicator — green = live system */}
         <span style={{
           width: 6, height: 6, borderRadius: '50%',
-          background: 'var(--accent-primary)',
-          boxShadow: '0 0 6px var(--accent-primary)',
+          background: 'var(--accent-action)',
+          boxShadow: '0 0 6px var(--accent-action)',
           display: sidebarCollapsed ? 'block' : 'none',
         }} />
       </div>
@@ -292,9 +292,9 @@ export default function Sidebar() {
           backdropFilter: 'blur(4px)',
         }}>
           <div style={{
-            background: '#080c10', border: '1px solid var(--struct-line)',
+            background: 'var(--bg-card)', border: '1px solid var(--accent-primary)',
             padding: 24, width: 300, display: 'flex', flexDirection: 'column', gap: 16,
-            boxShadow: '0 0 24px rgba(0,255,194,0.15)',
+            boxShadow: '0 0 24px rgba(168,85,247,0.2)',
           }}>
             <div style={{ fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: 'var(--accent-primary)', letterSpacing: '0.15em' }}>
               CONFIRM DISCONNECT

@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useGraphStore } from '../../state/graphStore';
 
 // Animated risk gauge that counts up to the risk percentage
 function RiskGauge({ pct }: { pct: number }) {
+  const { t } = useTranslation();
   const [display, setDisplay] = useState(0);
   const rafRef = useRef<number | null>(null);
 
@@ -37,7 +39,7 @@ function RiskGauge({ pct }: { pct: number }) {
         letterSpacing: '0.15em', textTransform: 'uppercase',
         color: 'var(--text-muted)',
       }}>
-        <span>RISK SCORE</span>
+        <span>{t('dossier.risk_score')}</span>
         <span style={{ color, fontSize: 16, fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
           {display}<span style={{ fontSize: 9, marginLeft: 1 }}>%</span>
         </span>
@@ -64,7 +66,7 @@ function RiskGauge({ pct }: { pct: number }) {
         fontFamily: 'var(--font-mono)', fontSize: 7,
         color: 'var(--text-muted)', marginTop: 3, letterSpacing: '0.05em',
       }}>
-        <span>LOW</span><span>MED</span><span>HIGH</span>
+        <span>{t('dossier.low')}</span><span>{t('dossier.med')}</span><span>{t('dossier.high')}</span>
       </div>
     </div>
   );
@@ -80,6 +82,7 @@ interface FieldProps {
 }
 
 function Field({ label, value, redacted = false, payload, onViewDetails }: FieldProps) {
+  const { t } = useTranslation();
   const [revealed, setRevealed] = useState(!redacted);
   
   const isLeak = label.toLowerCase() === 'leak_record';
@@ -130,7 +133,7 @@ function Field({ label, value, redacted = false, payload, onViewDetails }: Field
               e.currentTarget.style.color = 'var(--accent-threat)';
             }}
           >
-            VIEW DETAILS
+            {t('dossier.view_details')}
           </button>
         )}
       </div>
@@ -146,7 +149,7 @@ function Field({ label, value, redacted = false, payload, onViewDetails }: Field
           letterSpacing: '0.02em',
           wordBreak: 'break-word',
         }}
-        title={redacted && !revealed ? 'Click to reveal' : undefined}
+        title={redacted && !revealed ? t('dossier.click_reveal') : undefined}
       >
         {value || '—'}
       </div>
@@ -155,9 +158,10 @@ function Field({ label, value, redacted = false, payload, onViewDetails }: Field
 }
 
 function LeakRecordField({ value, payload }: { value: string; payload: any }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   
-  const breach = payload.breach || "Unknown";
+  const breach = payload.breach || t('dossier.unknown');
   const year = payload.xposed_date || "Unknown";
   const fields = payload.xposed_fields || [];
   const risk = payload.password_risk || "unknown";
@@ -227,7 +231,7 @@ function LeakRecordField({ value, payload }: { value: string; payload: any }) {
               userSelect: 'none'
             }}
           >
-            {expanded ? '▼ Hide Context' : '▶ View Breach Context & Info'}
+            {expanded ? t('dossier.hide_context') : t('dossier.view_context')}
           </div>
           
           {expanded && (
@@ -243,7 +247,7 @@ function LeakRecordField({ value, payload }: { value: string; payload: any }) {
               {samples.length > 0 && (
                 <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--accent-threat)', letterSpacing: '0.05em', borderBottom: '1px solid rgba(244,63,94,0.2)', paddingBottom: 2 }}>
-                    RAW COMPROMISED RECORD SAMPLES (OSINT DUMP)
+                    {t('dossier.raw_samples')}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {samples.map((s: any, idx: number) => (
@@ -252,12 +256,12 @@ function LeakRecordField({ value, payload }: { value: string; payload: any }) {
                         display: 'flex', flexDirection: 'column', gap: 2, fontFamily: 'var(--font-mono)', fontSize: 8
                       }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ color: '#ffffff' }}>Email: {s.email}</span>
-                          <span style={{ color: 'var(--text-muted)' }}>IP: {s.ip_address}</span>
+                          <span style={{ color: '#ffffff' }}>{t('dossier.email_label')}{s.email}</span>
+                          <span style={{ color: 'var(--text-muted)' }}>{t('dossier.ip_label')}{s.ip_address}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ color: '#ff4d4d' }}>PWD: {s.password}</span>
-                          <span style={{ color: '#ffffff' }}>Phone: {s.phone}</span>
+                          <span style={{ color: '#ff4d4d' }}>{t('dossier.pwd_label')}{s.password}</span>
+                          <span style={{ color: '#ffffff' }}>{t('dossier.phone_label')}{s.phone}</span>
                         </div>
                       </div>
                     ))}
@@ -266,7 +270,7 @@ function LeakRecordField({ value, payload }: { value: string; payload: any }) {
               )}
 
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: 4, display: 'flex', justifyContent: 'space-between', fontSize: 8 }}>
-                <span>Records: {Number(records).toLocaleString()}</span>
+                <span>{t('dossier.records_label')}{Number(records).toLocaleString()}</span>
                 {domain && (
                   <a href={`https://${domain}`} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>
                     {domain} ↗
@@ -283,6 +287,7 @@ function LeakRecordField({ value, payload }: { value: string; payload: any }) {
 
 
 export default function DossierPanel() {
+  const { t } = useTranslation();
   const { evidencePack, selectedEntityId, loading } = useGraphStore();
   const [selectedBreach, setSelectedBreach] = useState<any>(null);
 
@@ -313,7 +318,7 @@ export default function DossierPanel() {
         }}>
           <div style={{ width: 20, height: 20, borderRadius: '50%', border: '1px solid var(--struct-line)' }} />
         </div>
-        SELECT A NODE TO<br/>LOAD SUBJECT DOSSIER
+        {t('dossier.select_node')}<br/>{t('dossier.load_dossier')}
       </div>
     );
   }
@@ -395,7 +400,7 @@ export default function DossierPanel() {
         }}>
           {/* Bracket corner */}
           <span style={{ fontSize: 14, color: 'var(--accent-primary)', lineHeight: 1 }}>⌐</span>
-          SUBJECT DOSSIER
+          {t('dossier.subject_dossier')}
           <span style={{ fontSize: 14, color: 'var(--accent-primary)', lineHeight: 1, transform: 'scaleX(-1)', display: 'inline-block' }}>⌐</span>
         </div>
         <div style={{
@@ -409,7 +414,7 @@ export default function DossierPanel() {
           fontFamily: 'var(--font-mono)', fontSize: 8,
           color: 'var(--text-muted)', marginTop: 2, letterSpacing: '0.08em',
         }}>
-          CLASSIFICATION: RESTRICTED // ACCESS LEVEL 5
+          {t('dossier.classification')}
         </div>
       </div>
 
@@ -426,7 +431,7 @@ export default function DossierPanel() {
             color: 'var(--text-muted)', padding: '16px 0', textAlign: 'center',
             letterSpacing: '0.1em',
           }}>
-            NO ATTRIBUTES INDEXED
+            {t('dossier.no_attributes')}
           </div>
         ) : (
           fields.map((f, i) => {
@@ -461,7 +466,7 @@ export default function DossierPanel() {
         color: 'var(--text-muted)', letterSpacing: '0.08em',
         flexShrink: 0,
       }}>
-        DOSSIER STATUS: COMPLETE // DATA INTEGRITY SIGNED
+        {t('dossier.dossier_status')}
       </div>
 
       {/* Breach Leak Details Inspection Modal */}
@@ -499,21 +504,21 @@ export default function DossierPanel() {
             {/* Grid Metrics */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, background: '#000000', border: '1px solid var(--struct-line)', padding: 10 }}>
               <div>
-                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>DATE OF EXPOSURE</div>
+                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{t('dossier.date_exposure')}</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 650, color: '#ffffff', marginTop: 2 }}>{selectedBreach.xposed_date}</div>
               </div>
               <div>
-                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>RECORDS EXPOSED</div>
+                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{t('dossier.records_exposed')}</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 650, color: '#ffffff', marginTop: 2 }}>{Number(selectedBreach.exposed_records_count || 0).toLocaleString()}</div>
               </div>
               <div>
-                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>ASSOCIATED DOMAIN</div>
+                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{t('dossier.associated_domain')}</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 650, color: '#ffffff', marginTop: 2 }}>
-                  {selectedBreach.domain ? <a href={`https://${selectedBreach.domain}`} target="_blank" rel="noreferrer" style={{ color: '#39ff14', textDecoration: 'none' }}>{selectedBreach.domain}</a> : 'N/A'}
+                  {selectedBreach.domain ? <a href={`https://${selectedBreach.domain}`} target="_blank" rel="noreferrer" style={{ color: '#39ff14', textDecoration: 'none' }}>{selectedBreach.domain}</a> : t('dossier.na')}
                 </div>
               </div>
               <div>
-                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>PASSWORD SECURITY</div>
+                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{t('dossier.password_security')}</div>
                 <div style={{
                   fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700,
                   color: selectedBreach.password_risk === 'plaintext' ? '#FF3B30' : selectedBreach.password_risk === 'easytocrack' ? '#FF9500' : '#4CD964',
@@ -526,7 +531,7 @@ export default function DossierPanel() {
 
             {/* Exposed Fields */}
             <div>
-              <div style={{ fontFamily: 'var(--font-heading)', fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: 6 }}>EXPOSED DATA CLASSES</div>
+              <div style={{ fontFamily: 'var(--font-heading)', fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: 6 }}>{t('dossier.exposed_classes')}</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                 {(selectedBreach.xposed_fields || []).map((field: string) => (
                   <span key={field} style={{
@@ -543,13 +548,13 @@ export default function DossierPanel() {
 
             {/* Description */}
             <div>
-              <div style={{ fontFamily: 'var(--font-heading)', fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: 4 }}>BREACH CONTEXT</div>
+              <div style={{ fontFamily: 'var(--font-heading)', fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: 4 }}>{t('dossier.breach_context')}</div>
               <div style={{
                 fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-primary)',
                 lineHeight: 1.4, background: '#000000', border: '1px solid var(--struct-line)',
                 padding: 10, overflowY: 'auto', maxHeight: 80, wordBreak: 'break-word'
               }}>
-                {selectedBreach.description || 'No description summary available.'}
+                {selectedBreach.description || t('dossier.no_description')}
               </div>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Download, FileText, RefreshCw } from 'lucide-react';
 import { useDashboardContext } from '../../pages/DashboardContext';
 import { useCaseWebSocket } from '../../hooks/useCaseWebSocket';
@@ -6,6 +7,7 @@ import TemporalWindow from './TemporalWindow';
 import ChatPanel from './ChatPanel';
 
 export function CaseWindow({ win }: { win: any }) {
+  const { t } = useTranslation();
   useCaseWebSocket(win.caseId);
   const {
     activeEntityPerCase,
@@ -63,12 +65,12 @@ export function CaseWindow({ win }: { win: any }) {
                     {/* Retro workspace tab headers */}
                     <div className="flex gap-2 border-b border-white/10 pb-2 mb-3 flex-shrink-0 text-[9px] font-bold">
                       {[
-                        { id: 'intake', label: '[01 CMD_INTAKE]' },
-                        { id: 'graph', label: '[02 NET_MATRIX]' },
-                        { id: 'dossier', label: '[03 TEL_DOSSIER]' },
-                        { id: 'temporal', label: '[04 TEMPORAL_MATRIX]' },
-                        { id: 'report', label: '[05 AI_REPORT]' },
-                        { id: 'chat', label: '[06 AI_CHAT]' }
+                        { id: 'intake', label: t('case_window.tab_intake') },
+                        { id: 'graph', label: t('case_window.tab_matrix') },
+                        { id: 'dossier', label: t('case_window.tab_dossier') },
+                        { id: 'temporal', label: t('case_window.tab_temporal') },
+                        { id: 'report', label: t('case_window.tab_report') },
+                        { id: 'chat', label: t('case_window.tab_chat') }
                       ].map(t => (
                         <button
                           key={t.id}
@@ -92,10 +94,10 @@ export function CaseWindow({ win }: { win: any }) {
                           <div className="grid grid-cols-2 gap-4">
                             {/* Input Form */}
                             <div className="bg-black/35 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
-                              <h4 className="text-[10px] font-bold text-[#39ff14] border-b border-white/5 pb-1">INJECT SEARCH SEEDS</h4>
+                              <h4 className="text-[10px] font-bold text-[#39ff14] border-b border-white/5 pb-1">{t('case_window.inject_seeds')}</h4>
 
                               <div className="flex flex-col gap-1">
-                                <span className="text-[8px] text-gray-500 font-bold">IDENTIFIER VECTOR TYPE</span>
+                                <span className="text-[8px] text-gray-500 font-bold">{t('case_window.vector_type')}</span>
                                 <select
                                   value={caseSeedsInput[caseId]?.type || 'email'}
                                   onChange={(e) => setCaseSeedsInput((prev: any) => ({
@@ -104,24 +106,24 @@ export function CaseWindow({ win }: { win: any }) {
                                   }))}
                                   className="bg-black border border-white/10 text-gray-300 text-[9px] p-1.5 focus:border-[#39ff14] outline-none"
                                 >
-                                  <option value="email">EMAIL ADDRESS</option>
-                                  <option value="phone">PHONE NUMBER</option>
-                                  <option value="name">INDIVIDUAL NAME</option>
-                                  <option value="username">SOCIAL USERNAME</option>
-                                  <option value="domain">DOMAINS</option>
-                                  <option value="ip">IP ADDRESS</option>
-                                  <option value="wallet">CRYPTO WALLET</option>
-                                  <option value="photo">PHOTO / FACE URL</option>
-                                  <option value="other">OTHER / FALLBACK</option>
+                                  <option value="email">{t('case_window.email_address')}</option>
+                                  <option value="phone">{t('case_window.phone_number')}</option>
+                                  <option value="name">{t('case_window.individual_name')}</option>
+                                  <option value="username">{t('case_window.social_username')}</option>
+                                  <option value="domain">{t('case_window.domains')}</option>
+                                  <option value="ip">{t('case_window.ip_address')}</option>
+                                  <option value="wallet">{t('case_window.crypto_wallet')}</option>
+                                  <option value="photo">{t('case_window.photo_url')}</option>
+                                  <option value="other">{t('case_window.other_fallback')}</option>
                                 </select>
                               </div>
 
                               <div className="flex flex-col gap-1">
-                                <span className="text-[8px] text-gray-500 font-bold font-mono">VECTOR VALUE</span>
+                                <span className="text-[8px] text-gray-500 font-bold font-mono">{t('case_window.vector_value')}</span>
                                 <div className="flex gap-2">
                                   <input
                                     type="text"
-                                    placeholder="Enter target detail..."
+                                    placeholder={t('case_window.value_placeholder')}
                                     value={caseSeedsInput[caseId]?.value || ''}
                                     onChange={(e) => {
                                       const val = e.target.value;
@@ -141,7 +143,7 @@ export function CaseWindow({ win }: { win: any }) {
                                     onClick={() => addCaseSeed(caseId)}
                                     className="bg-[#39ff14] hover:bg-[#39ff14]/80 text-black text-[9px] font-bold px-3 py-1.5"
                                   >
-                                    ADD SEED
+                                    {t('case_window.add_seed')}
                                   </button>
                                 </div>
                               </div>
@@ -149,10 +151,10 @@ export function CaseWindow({ win }: { win: any }) {
 
                             {/* Ingest queue */}
                             <div className="bg-black/35 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
-                              <h4 className="text-[10px] font-bold text-gray-300 border-b border-white/5 pb-1">INGEST QUEUE LIST</h4>
+                              <h4 className="text-[10px] font-bold text-gray-300 border-b border-white/5 pb-1">{t('case_window.ingest_queue')}</h4>
                               <div className="flex-1 flex flex-col gap-1.5 overflow-y-auto max-h-32 min-h-24">
                                 {(casePendingSeeds[caseId] || []).length === 0 ? (
-                                  <span className="text-[8px] text-gray-600 font-mono italic">No pending vector seeds...</span>
+                                  <span className="text-[8px] text-gray-600 font-mono italic">{t('case_window.no_seeds')}</span>
                                 ) : (
                                   (casePendingSeeds[caseId] || []).map((s, idx) => (
                                     <div key={idx} className="flex justify-between items-center bg-white/5 border border-white/5 px-2.5 py-1 rounded">
@@ -203,7 +205,7 @@ export function CaseWindow({ win }: { win: any }) {
 
                             {/* Drag instructions overlay */}
                             <div className="absolute top-2 left-2 pointer-events-none text-[7px] text-[#39ff14] font-mono uppercase bg-black/85 px-2 py-1 border border-[#39ff14]/20 z-10 tracking-wider">
-                              DRAG NODES TO REORGANIZE | DOUBLE-CLICK TO VIEW PROFILE DOSSIER | PAN NETWORK CANVAS BY DRAGGING WITH RIGHT CLICK
+                              {t('case_window.graph_instructions')}
                             </div>
 
                             {/* Network Canvas */}
@@ -212,7 +214,7 @@ export function CaseWindow({ win }: { win: any }) {
                               if (!caseGraph || !caseGraph.nodes || caseGraph.nodes.length === 0) {
                                 return (
                                   <div className="flex-1 flex flex-col items-center justify-center text-[9px] text-[#39ff14]/60 font-mono tracking-widest gap-2">
-                                    <span className="animate-pulse">AWAITING CORRELATION SEED INPUT IN CMD_INTAKE...</span>
+                                    <span className="animate-pulse">{t('case_window.awaiting_seed')}</span>
                                   </div>
                                 );
                               }
@@ -320,32 +322,32 @@ export function CaseWindow({ win }: { win: any }) {
 
                           {/* Mini side action node menu */}
                           <div className="w-64 bg-black/35 border border-white/5 rounded-xl ml-3 p-3 flex flex-col gap-3">
-                            <span className="text-[8.5px] text-gray-500 font-bold border-b border-white/5 pb-1 uppercase tracking-wider">Node Details</span>
+                            <span className="text-[8.5px] text-gray-500 font-bold border-b border-white/5 pb-1 uppercase tracking-wider">{t('case_window.node_details')}</span>
                             {(() => {
                               const caseGraph = graphDataPerCase[caseId] || graphData;
                               const nodeInfo = caseGraph?.nodes?.find((n: any) => n.id === activeEntity);
                               if (!nodeInfo) {
                                 return (
-                                  <div className="text-[8px] text-gray-500 italic">No node selected. Click a node in the graph matrix to explore its details.</div>
+                                  <div className="text-[8px] text-gray-500 italic">{t('case_window.no_node_selected')}</div>
                                 );
                               }
                               return (
                                 <div className="flex flex-col gap-2.5 text-[8px] flex-1">
                                   <div className="flex flex-col gap-0.5">
-                                    <span className="text-gray-500 font-mono font-semibold">NODE ID</span>
+                                    <span className="text-gray-500 font-mono font-semibold">{t('case_window.node_id')}</span>
                                     <span className="text-[9px] font-bold text-[#39ff14] truncate font-mono uppercase bg-white/5 p-1">{getNodeAbbreviation(caseId, nodeInfo.id)}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
-                                    <span className="text-gray-500 font-mono font-semibold">VALUE / DETAIL</span>
+                                    <span className="text-gray-500 font-mono font-semibold">{t('case_window.value_detail')}</span>
                                     <span className="text-gray-200 font-mono break-all bg-white/5 p-1 select-text">{nodeInfo.label}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
-                                    <span className="text-gray-500 font-mono font-semibold">IDENTIFIER TYPE</span>
+                                    <span className="text-gray-500 font-mono font-semibold">{t('case_window.identifier_type')}</span>
                                     <span className="text-gray-200 font-mono uppercase bg-white/5 p-1">{nodeInfo.type}</span>
                                   </div>
                                   {nodeInfo.profile_url && (
                                     <div className="flex flex-col gap-0.5">
-                                      <span className="text-gray-500 font-mono font-semibold">PROFILE URL</span>
+                                      <span className="text-gray-500 font-mono font-semibold">{t('case_window.profile_url')}</span>
                                       <a
                                         href={nodeInfo.profile_url}
                                         target="_blank"
@@ -357,7 +359,7 @@ export function CaseWindow({ win }: { win: any }) {
                                     </div>
                                   )}
                                   <div className="flex flex-col gap-0.5">
-                                    <span className="text-gray-500 font-mono font-semibold">CONFIDENCE VALUE</span>
+                                    <span className="text-gray-500 font-mono font-semibold">{t('case_window.confidence_value')}</span>
                                     <div className="flex items-center gap-2 bg-white/5 p-1">
                                       <span className="text-[#39ff14] font-bold">{(nodeInfo.confidence * 100).toFixed(0)}%</span>
                                       <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
@@ -377,13 +379,13 @@ export function CaseWindow({ win }: { win: any }) {
                         <div className="flex flex-grow overflow-hidden relative min-h-0">
                           {/* Left column case summary profile feeds */}
                           <div className="w-64 bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col gap-2.5 overflow-y-auto pr-1 flex-shrink-0">
-                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest border-b border-white/5 pb-1 flex-shrink-0">TRACE MATRICES</span>
+                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest border-b border-white/5 pb-1 flex-shrink-0">{t('case_window.trace_matrices')}</span>
 
                             {/* Search box */}
                             <div className="mb-2 flex-shrink-0">
                               <input
                                 type="text"
-                                placeholder="Filter nodes / details..."
+                                placeholder={t('case_window.filter_placeholder')}
                                 value={dossierSearchQuery[caseId] || ''}
                                 onChange={(e) => setDossierSearchQuery((prev: any) => ({
                                   ...prev,
@@ -404,7 +406,7 @@ export function CaseWindow({ win }: { win: any }) {
                               ) || [];
 
                               if (filteredNodes.length === 0) {
-                                return <span className="text-[8px] text-gray-600 font-mono italic">No matching traces found.</span>;
+                                return <span className="text-[8px] text-gray-600 font-mono italic">{t('case_window.no_traces')}</span>;
                               }
 
                               return filteredNodes.map((n: any) => (
@@ -428,7 +430,7 @@ export function CaseWindow({ win }: { win: any }) {
                                       }}
                                       className="text-[#39ff14] hover:text-white px-1.5 py-0.5 border border-[#39ff14]/30 hover:border-[#39ff14] bg-[#39ff14]/5 transition uppercase font-bold"
                                     >
-                                      Go to Node
+                                      {t('case_window.go_to_node')}
                                     </button>
                                   </div>
                                 </div>
@@ -440,10 +442,10 @@ export function CaseWindow({ win }: { win: any }) {
                           <div className="flex-1 bg-black/40 border border-white/5 rounded-xl ml-3 p-4 flex flex-col gap-3 overflow-y-auto pr-1">
                             <div className="flex items-center justify-between border-b border-white/5 pb-2">
                               <div className="flex flex-col">
-                                <h3 className="text-[10px] font-bold text-white tracking-widest uppercase font-mono">OSINT TELEMETRY DOSSIER</h3>
-                                <span className="text-[8px] text-gray-500 font-mono mt-0.5">IDENTIFIER CODE: {activeEntity}</span>
+                                <h3 className="text-[10px] font-bold text-white tracking-widest uppercase font-mono">{t('case_window.dossier_title')}</h3>
+                                <span className="text-[8px] text-gray-500 font-mono mt-0.5">{t('case_window.identifier_code')}{activeEntity}</span>
                               </div>
-                              <span className="text-[9px] font-bold border border-[#39ff14]/40 bg-[#39ff14]/5 text-[#39ff14] px-2 py-0.5 rounded font-mono uppercase">VERIFIED SECURE</span>
+                              <span className="text-[9px] font-bold border border-[#39ff14]/40 bg-[#39ff14]/5 text-[#39ff14] px-2 py-0.5 rounded font-mono uppercase">{t('case_window.verified_secure')}</span>
                             </div>
 
                             {/* Dossier contents list */}
@@ -477,7 +479,7 @@ export function CaseWindow({ win }: { win: any }) {
                                   </div>
                                 </div>
                               ) : (
-                                <span className="text-[9px] font-mono text-gray-500 italic">No dossiers compiled. Launch ingestion scan in Intake tab.</span>
+                                <span className="text-[9px] font-mono text-gray-500 italic">{t('case_window.no_dossiers')}</span>
                               )}
                             </div>
                           </div>
@@ -489,11 +491,11 @@ export function CaseWindow({ win }: { win: any }) {
                         <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-black/40 border border-white/5 rounded-xl p-4 gap-3">
                           <div className="flex items-center justify-between border-b border-white/5 pb-2">
                             <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest flex items-center gap-1.5">
-                              <FileText size={13} className="text-[#39ff14]" /> Dynamic AI Intelligence Summary
+                              <FileText size={13} className="text-[#39ff14]" /> {t('case_window.ai_summary')}
                             </span>
                             <div className="flex items-center gap-2">
                               <button onClick={() => fetchNarrativeReport(caseId, true)} className="border border-white/20 hover:bg-white/10 text-gray-300 text-[8px] font-bold px-2 py-1 flex items-center gap-1 uppercase">
-                                <RefreshCw size={9} /> Re-Synthesize
+                                <RefreshCw size={9} /> {t('case_window.re_synthesize')}
                               </button>
                               <button onClick={() => triggerExport(caseId, 'json')} className="border border-[#39ff14] hover:bg-[#39ff14]/10 text-[#39ff14] text-[8px] font-bold px-2 py-1 flex items-center gap-1 uppercase">
                                 <Download size={9} /> JSON
@@ -508,7 +510,7 @@ export function CaseWindow({ win }: { win: any }) {
                           </div>
 
                           <div className="flex-grow overflow-y-auto font-mono text-[9px] text-gray-300 pr-1 select-text bg-black/25 p-3 border border-white/5 whitespace-pre-wrap leading-relaxed">
-                            {caseReportNarrative[caseId] || 'Synthesizing report...'}
+                            {caseReportNarrative[caseId] || t('case_window.synthesizing')}
                           </div>
                         </div>
                       )}

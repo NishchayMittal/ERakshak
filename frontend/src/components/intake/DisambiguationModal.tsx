@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, MapPin, Calendar, Building, Check, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface DisambiguationModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface DisambiguationModalProps {
 }
 
 export default function DisambiguationModal({ isOpen, onClose, onSubmit, ambiguousName }: DisambiguationModalProps) {
+  const { t } = useTranslation();
   const [city, setCity] = useState('');
   const [age, setAge] = useState('');
   const [employer, setEmployer] = useState('');
@@ -53,9 +55,9 @@ export default function DisambiguationModal({ isOpen, onClose, onSubmit, ambiguo
                   <AlertTriangle className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-white text-xs tracking-wider uppercase font-mono">Disambiguation Anchors</h3>
+                  <h3 className="font-bold text-white text-xs tracking-wider uppercase font-mono">{t('disambiguation.title')}</h3>
                   <p className="text-[10px] text-gray-400 mt-1 leading-normal font-sans">
-                    The query <span className="font-semibold text-[#a855f7] font-bold font-mono">"{ambiguousName}"</span> matches multiple identities. Please provide demographic constraints.
+                    {t('disambiguation.prompt', { name: ambiguousName })}
                   </p>
                 </div>
               </div>
@@ -63,7 +65,7 @@ export default function DisambiguationModal({ isOpen, onClose, onSubmit, ambiguo
               {/* Form fields */}
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="block text-[8px] uppercase font-bold tracking-widest text-gray-500 font-mono">Anchor City / Location</label>
+                  <label className="block text-[8px] uppercase font-bold tracking-widest text-gray-500 font-mono">{t('disambiguation.city_label')}</label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-2 w-4 h-4 text-gray-500" />
                     <input
@@ -71,14 +73,14 @@ export default function DisambiguationModal({ isOpen, onClose, onSubmit, ambiguo
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       className="w-full bg-black/40 border border-white/10 focus:border-[#39ff14] rounded px-10 py-1.5 text-xs text-gray-200 font-mono outline-none transition-all"
-                      placeholder="e.g. Ahmedabad, Mumbai"
+                      placeholder={t('disambiguation.city_placeholder')}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="block text-[8px] uppercase font-bold tracking-widest text-gray-500 font-mono">Approx Age</label>
+                    <label className="block text-[8px] uppercase font-bold tracking-widest text-gray-500 font-mono">{t('disambiguation.age_label')}</label>
                     <div className="relative">
                       <Calendar className="absolute left-3 top-2 w-4 h-4 text-gray-500" />
                       <input
@@ -86,7 +88,7 @@ export default function DisambiguationModal({ isOpen, onClose, onSubmit, ambiguo
                         value={age}
                         onChange={(e) => setAge(e.target.value)}
                         className="w-full bg-black/40 border border-white/10 focus:border-[#39ff14] rounded px-10 py-1.5 text-xs text-gray-200 font-mono outline-none transition-all"
-                        placeholder="28"
+                        placeholder={t('disambiguation.age_placeholder')}
                         min="0"
                         max="120"
                       />
@@ -94,7 +96,7 @@ export default function DisambiguationModal({ isOpen, onClose, onSubmit, ambiguo
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block text-[8px] uppercase font-bold tracking-widest text-gray-500 font-mono">Employer Entity</label>
+                    <label className="block text-[8px] uppercase font-bold tracking-widest text-gray-500 font-mono">{t('disambiguation.employer_label')}</label>
                     <div className="relative">
                       <Building className="absolute left-3 top-2 w-4 h-4 text-gray-500" />
                       <input
@@ -102,7 +104,7 @@ export default function DisambiguationModal({ isOpen, onClose, onSubmit, ambiguo
                         value={employer}
                         onChange={(e) => setEmployer(e.target.value)}
                         className="w-full bg-black/40 border border-white/10 focus:border-[#39ff14] rounded px-10 py-1.5 text-xs text-gray-200 font-mono outline-none transition-all"
-                        placeholder="e.g. SVNIT"
+                        placeholder={t('disambiguation.employer_placeholder')}
                       />
                     </div>
                   </div>
@@ -115,14 +117,14 @@ export default function DisambiguationModal({ isOpen, onClose, onSubmit, ambiguo
                     className="px-3.5 py-1.5 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase bg-transparent flex items-center gap-1"
                   >
                     <X className="w-3 h-3" />
-                    <span>Cancel</span>
+                    <span>{t('disambiguation.cancel')}</span>
                   </button>
                   <button
                     type="submit"
                     className="px-3.5 py-1.5 bg-[#39ff14]/15 border border-[#39ff14] hover:bg-[#39ff14]/25 text-[#39ff14] rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase flex items-center gap-1"
                   >
                     <Check className="w-3 h-3" />
-                    <span>Inject Anchors</span>
+                    <span>{t('disambiguation.inject')}</span>
                   </button>
                 </div>
               </form>

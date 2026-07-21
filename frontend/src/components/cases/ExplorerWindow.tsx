@@ -1,6 +1,7 @@
 import React from 'react';
 import { Folder, Search, X } from 'lucide-react';
 import { useDashboardContext } from '../../pages/DashboardContext';
+import { useTranslation } from 'react-i18next';
 
 export function ExplorerWindow({ win }: { win: any }) {
   const { 
@@ -12,16 +13,17 @@ export function ExplorerWindow({ win }: { win: any }) {
     openWindow, 
     handleDeleteCase 
   } = useDashboardContext();
+  const { t } = useTranslation();
 
   return (
     <div className="flex flex-col gap-3 h-full overflow-y-auto pr-1">
       <div className="flex items-center justify-between border-b border-white/5 pb-2">
-        <span className="text-[10px] font-bold text-gray-300 uppercase">File Path: C://cases/list</span>
+        <span className="text-[10px] font-bold text-gray-300 uppercase">{t('explorer.file_path')}</span>
         <button
           onClick={handleCreateCase}
           className="text-[8px] font-bold border border-[#39ff14]/50 hover:bg-[#39ff14]/10 text-[#39ff14] px-2 py-1 uppercase"
         >
-          + Initialize File
+          {t('explorer.init_file')}
         </button>
       </div>
 
@@ -30,7 +32,7 @@ export function ExplorerWindow({ win }: { win: any }) {
         <Search size={10} className="text-gray-500" />
         <input
           type="text"
-          placeholder="SEARCH CASE FILES..."
+          placeholder={t('explorer.search_placeholder')}
           value={explorerSearchQuery}
           onChange={(e) => setExplorerSearchQuery(e.target.value)}
           className="bg-transparent border-none text-gray-200 placeholder-gray-600 text-[9px] font-mono outline-none w-full uppercase"

@@ -35,7 +35,8 @@ import {
   ThumbsUp,
   ThumbsDown,
   Edit,
-  Clock
+  Clock,
+  Globe
 } from 'lucide-react';
 
 import { DashboardContext } from './DashboardContext';
@@ -45,6 +46,7 @@ import { ProfileWindow } from '../components/cases/ProfileWindow';
 import { ExplorerWindow } from '../components/cases/ExplorerWindow';
 import TemporalWindow from '../components/cases/TemporalWindow';
 import { CrossCorrelationWindow } from '../components/cases/CrossCorrelationWindow';
+import { GeoMapWindow } from '../components/ui/GeoMapWindow';
 
 import {
   triggerModelRetrain,
@@ -67,7 +69,7 @@ import {
 interface WindowState {
   id: string;
   title: string;
-  type: 'case_workspace' | 'settings' | 'profile' | 'cases_explorer' | 'temporal_analysis' | 'cross_correlate';
+  type: 'case_workspace' | 'settings' | 'profile' | 'cases_explorer' | 'temporal_analysis' | 'cross_correlate' | 'geo_map';
   x: number;
   y: number;
   width: number;
@@ -133,7 +135,11 @@ const detectSeedType = (val: string): string => {
   return 'email';
 };
 
+import { LanguageSwitcher } from '../components/ui/LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
+
 export default function CaseDashboardPage() {
+  const { t } = useTranslation();
   const { cases, loading, loadCases, selectCase, initializeNewCase, deleteCase, renameCase } = useCaseStore();
   const { showToast } = useUIStore();
   const { user, logout } = useAuth();
@@ -1233,21 +1239,23 @@ export default function CaseDashboardPage() {
       <div className="absolute top-0 left-0 right-0 h-8 bg-black/60 backdrop-blur-md border-b border-[#39ff14]/15 flex items-center justify-between px-4 z-[999] text-[10px]">
         <div className="flex items-center gap-4">
           <span className="font-bold tracking-wider text-[#39ff14] flex items-center gap-1.5 animate-pulse">
-            <Shield size={12} /> ORION HOLOGRAPHIC CONSOLE
+            <Shield size={12} /> {t('dashboard.console_title')}
           </span>
           <div className="h-3 w-[1px] bg-white/10" />
           <button
             onClick={() => setShowWallpaperMenu(!showWallpaperMenu)}
             className="text-[9px] text-gray-400 hover:text-white uppercase tracking-wider transition-colors"
           >
-            Wallpaper
+            {t('dashboard.wallpaper')}
           </button>
         </div>
-        <div className="flex items-center gap-4 text-[9px] text-gray-400 font-medium">
-          <span>INVESTIGATOR BADGE: <span className="text-[#39ff14] font-bold">{user?.badgeNumber}</span></span>
+        <div className="flex items-center gap-4 text-[9px] text-gray-400 font-medium pointer-events-auto">
+          <LanguageSwitcher />
+          <div className="h-3 w-[1px] bg-white/10" />
+          <span>{t('dashboard.badge_label')} <span className="text-[#39ff14] font-bold">{user?.badgeNumber}</span></span>
           <div className="h-3 w-[1px] bg-white/10" />
           <span className="flex items-center gap-1 text-[#39ff14]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14] animate-ping" /> CORE READY
+            <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14] animate-ping" /> {t('dashboard.core_ready')}
           </span>
         </div>
       </div>
@@ -1280,7 +1288,7 @@ export default function CaseDashboardPage() {
           {/* File Upload Input */}
           <div className="border-t border-white/10 mt-1 pt-1">
             <label className="w-full text-left text-[9px] px-2 py-1.5 text-gray-400 hover:text-white cursor-pointer transition flex items-center gap-1.5 uppercase font-bold">
-              <span>↑ Custom File</span>
+              <span>{t('dashboard.custom_file')}</span>
               <input
                 type="file"
                 accept="image/*"
@@ -1291,10 +1299,10 @@ export default function CaseDashboardPage() {
           </div>
           {/* Custom URL Input */}
           <div className="border-t border-[#39ff14]/10 mt-1 pt-1 flex flex-col gap-1 px-2">
-            <span className="text-[7.5px] text-gray-500 font-mono">OR PASTE URL:</span>
+            <span className="text-[7.5px] text-gray-500 font-mono">{t('dashboard.paste_url')}</span>
             <input
               type="text"
-              placeholder="https://..."
+              placeholder={t('dashboard.url_placeholder')}
               onKeyDown={handleWallpaperUrlKeyDown}
               className="w-full bg-black border border-white/10 text-gray-300 text-[8px] px-1 py-0.5 focus:border-[#39ff14] outline-none"
             />
@@ -1317,7 +1325,7 @@ export default function CaseDashboardPage() {
               <Plus size={32} className="group-hover:scale-110 transition-transform" />
             </div>
             <span className="mt-1 text-[11px] font-bold text-gray-300 tracking-wider group-hover:text-white uppercase line-clamp-2 leading-tight">
-              INITIALIZE
+              {t('dashboard.initialize')}
             </span>
           </div>
 
@@ -1336,7 +1344,7 @@ export default function CaseDashboardPage() {
                 onClick={() =>
                   openWindow(
                     `workspace-${c.caseId}`,
-                    `Case Workspace: ${c.title}`,
+                    t('dashboard.case_workspace', { title: c.title }),
                     'case_workspace',
                     { caseId: c.caseId }
                   )
@@ -1350,7 +1358,7 @@ export default function CaseDashboardPage() {
                     handleDeleteCase(e, c.caseId, c.title);
                   }}
                   className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity p-0.5"
-                  title="Archive case file"
+                  title={t('dashboard.archive_tooltip')}
                 >
                   <X size={10} />
                 </button>
@@ -1374,12 +1382,12 @@ export default function CaseDashboardPage() {
         <div className="w-full bg-black/40 border border-white/5 backdrop-blur-md rounded-xl p-3 flex flex-col gap-2 pointer-events-auto">
           <div className="flex items-center justify-between border-b border-white/5 pb-1">
             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-              <Network size={12} className="text-[#39ff14]" /> Cyber Link Matrix
+              <Network size={12} className="text-[#39ff14]" /> {t('dashboard.cyber_link')}
             </span>
             <span className="text-[7.5px] text-[#39ff14] font-semibold uppercase tracking-wider">
               {(() => {
                 const lastAccessedCase = cases.find(c => c.caseId === lastAccessedCaseId);
-                return lastAccessedCase ? lastAccessedCase.title.replace('Investigation', 'FILE').toUpperCase() : 'NO ACTIVE MESH';
+                return lastAccessedCase ? lastAccessedCase.title.replace('Investigation', 'FILE').toUpperCase() : t('dashboard.no_active_mesh');
               })()}
             </span>
           </div>
@@ -1392,7 +1400,7 @@ export default function CaseDashboardPage() {
         <div className="w-full flex-1 bg-black/40 border border-white/5 backdrop-blur-md rounded-xl p-3 flex flex-col gap-2 pointer-events-auto overflow-hidden">
           <div className="flex items-center justify-between border-b border-white/5 pb-1">
             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-              <Terminal size={12} className="text-[#a855f7]" /> Application Audit Stream
+              <Terminal size={12} className="text-[#a855f7]" /> {t('dashboard.audit_stream')}
             </span>
           </div>
           <div className="flex-1 overflow-auto font-mono text-[8px] text-gray-400 flex flex-col gap-1 select-text scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
@@ -1438,7 +1446,7 @@ export default function CaseDashboardPage() {
                   {(() => {
                     if (win.type === 'case_workspace' && win.caseId) {
                       const targetCase = cases.find(c => c.caseId === win.caseId);
-                      return targetCase ? `Case Workspace: ${targetCase.title}` : win.title;
+                      return targetCase ? t('dashboard.case_workspace', { title: targetCase.title }) : win.title;
                     }
                     return win.title;
                   })()}
@@ -1453,7 +1461,7 @@ export default function CaseDashboardPage() {
                       handleTriggerRename(win.caseId!, title);
                     }}
                     className="p-1 text-gray-400 hover:text-[#39ff14] hover:bg-white/5 transition rounded flex items-center justify-center"
-                    title="Rename Dossier"
+                    title={t('dashboard.rename_dossier')}
                   >
                     <Edit size={10} />
                   </button>
@@ -1465,14 +1473,14 @@ export default function CaseDashboardPage() {
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleMaximize(win.id); }}
                   className="p-1 text-gray-400 hover:text-white hover:bg-white/5 transition"
-                  title={win.isMaximized ? "Restore Window" : "Maximize Window"}
+                  title={win.isMaximized ? t('dashboard.restore_window') : t('dashboard.maximize_window')}
                 >
                   {win.isMaximized ? <Minimize2 size={10} /> : <Maximize2 size={10} />}
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); closeWindow(win.id); }}
                   className="p-1 text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition"
-                  title="Close Window"
+                  title={t('dashboard.close_window')}
                 >
                   <X size={10} />
                 </button>
@@ -1491,6 +1499,12 @@ export default function CaseDashboardPage() {
                 <TemporalWindow caseId={win.caseId || lastAccessedCaseId || cases[0]?.caseId || ''} />
               )}
               {win.type === 'cross_correlate' && <CrossCorrelationWindow win={win} />}
+
+              {win.type === 'geo_map' && (
+                <div className="flex-1 relative w-full h-full min-h-0">
+                  <GeoMapWindow caseId={win.caseId || 'global'} />
+                </div>
+              )}
             </div>
 
             {/* Directional Resize Handles (4 edges + 4 corners) */}
@@ -1547,7 +1561,7 @@ export default function CaseDashboardPage() {
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 h-14 bg-[#080d16]/75 border border-white/10 backdrop-blur-xl rounded-2xl flex items-center px-4 gap-3 z-[999] shadow-2xl">
         <button
           onClick={handleCreateCase}
-          title="Create New Case File"
+          title={t('dashboard.create_case')}
           className="w-10 h-10 rounded-xl hover:bg-white/5 active:bg-white/10 transition-colors flex items-center justify-center text-gray-300 hover:text-[#39ff14]"
         >
           <Plus size={20} />
@@ -1557,32 +1571,40 @@ export default function CaseDashboardPage() {
 
         {/* Launchers */}
         <button
-          onClick={() => openWindow('cases_explorer', 'Case File Explorer', 'cases_explorer')}
-          title="Dossier Files Explorer"
+          onClick={() => openWindow('cases_explorer', t('dashboard.explorer_title'), 'cases_explorer')}
+          title={t('dashboard.explorer_tooltip')}
           className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'cases_explorer') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
         >
           <Compass size={20} />
         </button>
 
         <button
-          onClick={() => openWindow('cross_correlate_window', 'Cross-Case Intelligence Correlator', 'cross_correlate')}
-          title="Cross-Case Correlation Scanner"
+          onClick={() => openWindow('cross_correlate_window', t('dashboard.correlator_title'), 'cross_correlate')}
+          title={t('dashboard.correlator_tooltip')}
           className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'cross_correlate_window') ? 'text-[#a855f7] bg-[#a855f7]/10 border border-[#a855f7]/30' : 'text-gray-300 hover:text-[#a855f7] hover:bg-white/5'}`}
         >
           <Network size={20} />
         </button>
 
         <button
-          onClick={() => openWindow('profile_window', 'Investigator Credentials', 'profile')}
-          title="Profile Panel"
+          onClick={() => openWindow('geo_map_window', t('dashboard.geo_title'), 'geo_map', { width: 900, height: 600 })}
+          title={t('dashboard.geo_tooltip')}
+          className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'geo_map_window') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
+        >
+          <Globe size={20} />
+        </button>
+
+        <button
+          onClick={() => openWindow('profile_window', t('dashboard.profile_title'), 'profile')}
+          title={t('dashboard.profile_tooltip')}
           className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'profile_window') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
         >
           <User size={20} />
         </button>
 
         <button
-          onClick={() => openWindow('settings_window', 'Core Parameters Console', 'settings')}
-          title="Neural config console"
+          onClick={() => openWindow('settings_window', t('dashboard.settings_title'), 'settings')}
+          title={t('dashboard.settings_tooltip')}
           className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'settings_window') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
         >
           <Settings size={20} />
@@ -1610,7 +1632,7 @@ export default function CaseDashboardPage() {
         {/* Disconnect */}
         <button
           onClick={() => setShowLogoutConfirm(true)}
-          title="Disconnect Investigator Session"
+          title={t('dashboard.logout_tooltip')}
           className="w-10 h-10 rounded-xl hover:bg-red-500/10 active:bg-red-500/20 transition-colors flex items-center justify-center text-gray-500 hover:text-red-400"
         >
           <LogOut size={20} />
@@ -1640,7 +1662,7 @@ export default function CaseDashboardPage() {
               }}
               className="text-left font-mono text-[9px] font-bold text-gray-300 hover:bg-[#39ff14]/10 hover:text-[#39ff14] px-3 py-2 w-full transition-colors uppercase tracking-wider"
             >
-              RENAME DOSSIER
+              {t('modals.rename_dossier_ctx')}
             </button>
             <button
               onClick={() => {
@@ -1649,7 +1671,7 @@ export default function CaseDashboardPage() {
               }}
               className="text-left font-mono text-[9px] font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 px-3 py-2 w-full transition-colors uppercase tracking-wider"
             >
-              DELETE DOSSIER
+              {t('modals.delete_dossier_ctx')}
             </button>
           </div>
         </div>
@@ -1659,10 +1681,10 @@ export default function CaseDashboardPage() {
         <div className="fixed inset-0 bg-black/80 z-[99999] flex items-center justify-center backdrop-blur-sm">
           <div className="bg-[#04080e]/95 border border-[#39ff14] p-6 w-[360px] flex flex-col gap-4 shadow-2xl shadow-[#39ff14]/5 backdrop-blur-xl">
             <div className="font-mono text-[10px] font-bold text-[#39ff14] tracking-widest uppercase pb-2 border-b border-white/5">
-              RENAME CASE FILE
+              {t('modals.rename_title')}
             </div>
             <div className="flex flex-col gap-2">
-              <span className="font-mono text-[8px] text-gray-500 uppercase tracking-wider">NEW DOSSIER TITLE</span>
+              <span className="font-mono text-[8px] text-gray-500 uppercase tracking-wider">{t('modals.new_title_label')}</span>
               <input
                 type="text"
                 value={renameCaseState.newTitle}
@@ -1680,13 +1702,13 @@ export default function CaseDashboardPage() {
                 onClick={() => setRenameCaseState(null)}
                 className="px-3.5 py-1.5 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase bg-transparent"
               >
-                CANCEL
+                {t('modals.cancel')}
               </button>
               <button
                 onClick={handleSaveRename}
                 className="px-3.5 py-1.5 bg-[#39ff14]/15 border border-[#39ff14] hover:bg-[#39ff14]/25 text-[#39ff14] rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase"
               >
-                SAVE CHANGES
+                {t('modals.save_changes')}
               </button>
             </div>
           </div>
@@ -1697,25 +1719,25 @@ export default function CaseDashboardPage() {
         <div className="fixed inset-0 bg-black/80 z-[99999] flex items-center justify-center backdrop-blur-sm">
           <div className="bg-[#04080e]/95 border border-red-500 p-6 w-[360px] flex flex-col gap-4 shadow-2xl shadow-red-500/5 backdrop-blur-xl">
             <div className="font-mono text-[10px] font-bold text-red-500 tracking-widest uppercase pb-2 border-b border-white/5">
-              CONFIRM DOSSIER DELETION
+              {t('modals.confirm_delete_title')}
             </div>
             <div className="font-mono text-[10px] text-gray-400 leading-relaxed">
-              ARE YOU SURE YOU WANT TO PERMANENTLY DELETE CASE <span className="text-white font-bold">"{deleteConfirmCase.title}"</span>?
+              {t('modals.confirm_delete_body')} <span className="text-white font-bold">"{deleteConfirmCase.title}"</span>?
               <br /><br />
-              THIS WILL IRREVERSIBLY ERASE ALL INGESTED IDENTIFIERS, CORRELATED SUSPECT PROFILES, AND NOTES.
+              {t('modals.confirm_delete_warning')}
             </div>
             <div className="flex justify-end gap-2.5 pt-3 border-t border-white/5 mt-2">
               <button
                 onClick={() => setDeleteConfirmCase(null)}
                 className="px-3.5 py-1.5 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase bg-transparent"
               >
-                CANCEL
+                {t('modals.cancel')}
               </button>
               <button
                 onClick={handleConfirmDelete}
                 className="px-3.5 py-1.5 bg-red-500/10 border border-red-500 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase"
               >
-                DELETE DOSSIER
+                {t('modals.delete_dossier')}
               </button>
             </div>
           </div>
@@ -1726,17 +1748,17 @@ export default function CaseDashboardPage() {
         <div className="fixed inset-0 bg-black/80 z-[99999] flex items-center justify-center backdrop-blur-sm">
           <div className="bg-[#04080e]/95 border border-red-500 p-6 w-[360px] flex flex-col gap-4 shadow-2xl shadow-red-500/5 backdrop-blur-xl">
             <div className="font-mono text-[10px] font-bold text-red-500 tracking-widest uppercase pb-2 border-b border-white/5">
-              CONFIRM DISCONNECT
+              {t('modals.confirm_disconnect_title')}
             </div>
             <div className="font-mono text-[10px] text-gray-400 leading-relaxed">
-              ARE YOU SURE YOU WANT TO TERMINATE THE ACTIVE INVESTIGATOR SESSION?
+              {t('modals.confirm_disconnect_body')}
             </div>
             <div className="flex justify-end gap-2.5 pt-3 border-t border-white/5 mt-2">
               <button
                 onClick={() => setShowLogoutConfirm(false)}
                 className="px-3.5 py-1.5 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase bg-transparent"
               >
-                CANCEL
+                {t('modals.cancel')}
               </button>
               <button
                 onClick={() => {
@@ -1746,7 +1768,7 @@ export default function CaseDashboardPage() {
                 }}
                 className="px-3.5 py-1.5 bg-red-500/10 border border-red-500 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase"
               >
-                DISCONNECT
+                {t('modals.disconnect')}
               </button>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as THREE from 'three';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Shield } from 'lucide-react';
 import { CyberCard } from '../components/ui/CyberCard';
 import { CyberButton } from '../components/ui/CyberButton';
 
@@ -697,7 +697,7 @@ export default function PortalPage() {
           }}
         >
           <CyberButton
-            onClick={handleEnterDashboard}
+            onClick={handleEnterClick}
             style={{ 
               width: '100%', 
               padding: '16px',
@@ -715,6 +715,7 @@ export default function PortalPage() {
             <span>{isZooming ? 'CONNECTING...' : 'INITIATE TRACE'}</span>
           </CyberButton>
         </CyberCard>
+      </div>
 
       {/* Fade to black overlay for seamless transition */}
       <div 

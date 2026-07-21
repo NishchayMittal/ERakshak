@@ -311,6 +311,15 @@ export async function getCrossCorrelations(): Promise<CrossCorrelationResult> {
   return res.data;
 }
 
+export interface FootprintEvent {
+  source: string;
+  type: string;
+  title: string;
+  value: string;
+  timestamp_utc: string;
+  node_id?: string;
+}
+
 export interface TemporalAnalysisResult {
   case_id: string;
   total_observations: number;
@@ -322,6 +331,13 @@ export interface TemporalAnalysisResult {
   night_owl_percentage: number;
   weekend_ratio: number;
   tradecraft_summary: string;
+  sources_breakdown?: {
+    identifiers: number;
+    findings: number;
+    notes: number;
+    audits: number;
+  };
+  cell_details_utc?: Record<string, FootprintEvent[]>;
 }
 
 export async function getTemporalAnalysis(caseId: string): Promise<TemporalAnalysisResult> {
@@ -345,7 +361,13 @@ export async function getTemporalAnalysis(caseId: string): Promise<TemporalAnaly
       peak_hours_local: "19:00, 20:00, 21:00",
       night_owl_percentage: 28.4,
       weekend_ratio: 0.12,
-      tradecraft_summary: "Temporal analysis indicates suspect operational activity aligned with UTC+05:30. Inferred sleep window is 01:00 - 07:00 Local with peak activity concentrated in evening hours."
+      tradecraft_summary: "Temporal analysis indicates suspect operational activity aligned with UTC+05:30. Inferred sleep window is 01:00 - 07:00 Local with peak activity concentrated in evening hours.",
+      sources_breakdown: {
+        identifiers: 12,
+        findings: 142,
+        notes: 8,
+        audits: 22
+      }
     };
   }
   const res = await apiClient.get(`/cases/${caseId}/temporal-analysis`);

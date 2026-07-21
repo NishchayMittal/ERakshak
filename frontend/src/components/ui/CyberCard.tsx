@@ -7,14 +7,14 @@ interface CyberCardProps extends HTMLAttributes<HTMLDivElement> {
   innerStyle?: React.CSSProperties;
 }
 
-export const CyberCard: React.FC<CyberCardProps> = ({ 
-  children, 
-  className = '', 
+export const CyberCard: React.FC<CyberCardProps> = ({
+  children,
+  className = '',
   style,
   innerClassName = '',
   innerStyle,
   onMouseEnter,
-  ...props 
+  ...props
 }) => {
   const { playHover } = useSciFiSounds();
 
@@ -24,15 +24,15 @@ export const CyberCard: React.FC<CyberCardProps> = ({
   };
 
   return (
-    <div 
-      className={`cyber-card-container ${className}`} 
-      style={style} 
+    <div
+      className={`cyber-card-container ${className}`}
+      style={style}
       onMouseEnter={handleMouseEnter}
       {...props}
     >
       <div className="cyber-card-border">
-        <div 
-          className={`cyber-card-inner ${innerClassName}`} 
+        <div
+          className={`cyber-card-inner ${innerClassName}`}
           style={innerStyle}
         >
           {children}

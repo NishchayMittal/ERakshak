@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useUIStore } from "../../state/uiStore";
 import { signupRequest } from "../../api/endpoints";
 import { CyberCard } from "../ui/CyberCard";
 import { CyberButton } from "../ui/CyberButton";
 import { motion } from "framer-motion";
+import { useSciFiSounds } from "../../hooks/useSciFiSounds";
 
 const BOOT_LINES = [
   "SECURE ENCLAVE READY...",
@@ -14,7 +16,7 @@ const BOOT_LINES = [
   "AWAITING INVESTIGATOR AUTH...",
 ];
 
-export function LoginForm() {
+export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
   const [username, setUsername] = useState("INV-001");
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
@@ -23,6 +25,7 @@ export function LoginForm() {
   const { login } = useAuth();
   const { showToast, toast, clearToast } = useUIStore();
   const navigate = useNavigate();
+  const { playHover, playClick } = useSciFiSounds();
 
   // Cycle boot lines
   useEffect(() => {
@@ -356,28 +359,65 @@ export function LoginForm() {
                 {isSignUp ? "SUBMIT SIGNUP REQUEST" : "AUTHORIZE SESSION"}
               </CyberButton>
 
-              {/* Toggle switch */}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSignUp(!isSignUp);
-                  setPassword("");
-                }}
+              {/* Bottom links: Go To Home + Toggle switch */}
+              <div
                 style={{
-                  background: "none",
-                  border: "none",
-                  color: "#39ff14",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 8,
-                  letterSpacing: "0.08em",
-                  textDecoration: "underline",
-                  cursor: "pointer",
-                  textAlign: "center",
-                  marginTop: 4,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginTop: 10,
+                  width: "100%",
                 }}
               >
-                {isSignUp ? "OR SWITCH TO AUTH LOGIN" : "OR REQUEST SIGN UP"}
-              </button>
+                {onGoHome ? (
+                  <button
+                    type="button"
+                    onMouseEnter={playHover}
+                    onClick={() => {
+                      playClick();
+                      onGoHome();
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#39ff14",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 8,
+                      letterSpacing: "0.08em",
+                      textDecoration: "underline",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      padding: 0,
+                    }}
+                  >
+                    &larr; GO TO HOME
+                  </button>
+                ) : <div />}
+
+                <button
+                  type="button"
+                  onMouseEnter={playHover}
+                  onClick={() => {
+                    playClick();
+                    setIsSignUp(!isSignUp);
+                    setPassword("");
+                  }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#39ff14",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 8,
+                    letterSpacing: "0.08em",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                    textAlign: "right",
+                    padding: 0,
+                  }}
+                >
+                  {isSignUp ? "OR SWITCH TO AUTH LOGIN" : "OR REQUEST SIGN UP"}
+                </button>
+              </div>
             </form>
           </div>
 
@@ -414,20 +454,18 @@ export function LoginForm() {
             gap: 10,
             padding: "12px 18px",
             background: "rgba(4, 8, 14, 0.95)",
-            border: `1px solid ${
-              toast.type === "error"
+            border: `1px solid ${toast.type === "error"
                 ? "#ff3b30"
                 : toast.type === "success"
                   ? "#39ff14"
                   : "#a855f7"
-            }`,
-            boxShadow: `0 0 16px ${
-              toast.type === "error"
+              }`,
+            boxShadow: `0 0 16px ${toast.type === "error"
                 ? "rgba(255,59,48,0.2)"
                 : toast.type === "success"
                   ? "rgba(57,255,20,0.2)"
                   : "rgba(168,85,247,0.2)"
-            }`,
+              }`,
             cursor: "pointer",
             fontFamily: "var(--font-mono)",
             fontSize: 10,
@@ -450,13 +488,12 @@ export function LoginForm() {
                   : toast.type === "success"
                     ? "#39ff14"
                     : "#a855f7",
-              boxShadow: `0 0 6px ${
-                toast.type === "error"
+              boxShadow: `0 0 6px ${toast.type === "error"
                   ? "#ff3b30"
                   : toast.type === "success"
                     ? "#39ff14"
                     : "#a855f7"
-              }`,
+                }`,
             }}
           />
           {toast.message}

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { playNotificationSound } from '../hooks/useSciFiSounds';
 
 interface UIState {
   sidebarCollapsed: boolean;
@@ -22,6 +23,11 @@ export const useUIStore = create<UIState>((set) => ({
   toast: null,
   showToast: (message, type = 'info') => {
     set({ toast: { message, type } });
+    try {
+      playNotificationSound();
+    } catch (e) {
+      console.warn('Failed to play toast notification sound:', e);
+    }
     // auto dismiss toast after 4s
     setTimeout(() => {
       set((state) => {

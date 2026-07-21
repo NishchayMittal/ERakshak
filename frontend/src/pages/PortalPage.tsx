@@ -5,6 +5,7 @@ import { ArrowRight, Shield } from 'lucide-react';
 import { CyberCard } from '../components/ui/CyberCard';
 import { CyberButton } from '../components/ui/CyberButton';
 import { LoginForm } from '../components/auth/LoginForm';
+import { useSciFiSounds } from '../hooks/useSciFiSounds';
 
 
 // ── THREE.JS EARTH EFFECT BACKGROUND ──
@@ -26,7 +27,7 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
 
     // Raycaster for interactive nodes
     const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2(-1000, -1000); 
+    const mouse = new THREE.Vector2(-1000, -1000);
 
     // Tooltip DOM element
     const tooltip = document.createElement('div');
@@ -67,13 +68,13 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0x000000, 1);
-    
+
     renderer.domElement.style.position = 'absolute';
     renderer.domElement.style.top = '0';
     renderer.domElement.style.left = '0';
     renderer.domElement.style.width = '100%';
     renderer.domElement.style.height = '100%';
-    renderer.domElement.style.zIndex = '0'; 
+    renderer.domElement.style.zIndex = '0';
 
     containerRef.current.innerHTML = '';
     containerRef.current.appendChild(renderer.domElement);
@@ -102,11 +103,11 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
       const phi = (Math.PI * i) / phiSteps;
       for (let j = 0; j <= thetaSteps; j++) {
         const theta = (2 * Math.PI * j) / thetaSteps;
-        const noise = 
-          Math.sin(3 * phi) * Math.cos(4 * theta) + 
-          Math.sin(6 * phi) * Math.sin(2 * theta) + 
+        const noise =
+          Math.sin(3 * phi) * Math.cos(4 * theta) +
+          Math.sin(6 * phi) * Math.sin(2 * theta) +
           Math.cos(5 * phi) * Math.cos(5 * theta);
-          
+
         if (noise > 0.1) continue;
 
         const x = radius * Math.sin(phi) * Math.cos(theta);
@@ -114,15 +115,15 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
         const z = radius * Math.sin(phi) * Math.sin(theta);
 
         positions.push(x, y, z);
-        
+
         // Deep purple variants for the map dots
         const mix = Math.random();
         if (mix > 0.8) {
-           colors.push(0.8, 0.4, 1.0); // light purple
+          colors.push(0.8, 0.4, 1.0); // light purple
         } else if (mix > 0.4) {
-           colors.push(0.6, 0.2, 0.9); // mid purple
+          colors.push(0.6, 0.2, 0.9); // mid purple
         } else {
-           colors.push(0.4, 0.1, 0.7); // dark purple
+          colors.push(0.4, 0.1, 0.7); // dark purple
         }
       }
     }
@@ -137,7 +138,7 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
       transparent: true,
       opacity: 0.8,
       sizeAttenuation: true,
-      blending: THREE.AdditiveBlending, 
+      blending: THREE.AdditiveBlending,
     });
 
     const dotGlobe = new THREE.Points(dotGeo, dotMat);
@@ -154,7 +155,7 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
       depthWrite: false,
     });
     const perimeterMesh = new THREE.Mesh(perimeterGeo, perimeterMat);
-    
+
     // Smooth shader glow
     const glowGeo = new THREE.RingGeometry(radius, radius + 45, 128);
     const glowMat = new THREE.ShaderMaterial({
@@ -211,7 +212,7 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
     ring.rotation.x = Math.PI / 2;
     ring.rotation.y = Math.PI / 8;
     globeGroup.add(ring);
-    
+
     const ringGeo2 = new THREE.RingGeometry(radius + 90, radius + 115, 128);
     const ringMat2 = new THREE.MeshBasicMaterial({
       color: 0x9333ea,
@@ -247,7 +248,7 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
       return new THREE.Vector3(x, y, z);
     };
 
-    for(let i=0; i<5; i++) {
+    for (let i = 0; i < 5; i++) {
       const pos = getRandomSpherePoint(radius + 2);
       const nodeGeo = new THREE.SphereGeometry(8, 16, 16);
       const nodeMat = new THREE.MeshBasicMaterial({
@@ -272,32 +273,32 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
       });
       const ringMesh = new THREE.Mesh(ringGeo, ringMat);
       ringMesh.position.copy(pos);
-      ringMesh.lookAt(new THREE.Vector3(0,0,0)); // face outwards
+      ringMesh.lookAt(new THREE.Vector3(0, 0, 0)); // face outwards
       globeGroup.add(ringMesh);
     }
 
     // 6. Data Arcs
     const arcsGroup = new THREE.Group();
     globeGroup.add(arcsGroup);
-    
+
     const movingParticles: any[] = [];
-    for(let i=0; i<8; i++) {
+    for (let i = 0; i < 8; i++) {
       const p1 = getRandomSpherePoint(radius);
       const p2 = getRandomSpherePoint(radius);
       const mid = p1.clone().add(p2).multiplyScalar(0.5).normalize().multiplyScalar(radius + 40 + Math.random() * 60);
-      
+
       const curve = new THREE.QuadraticBezierCurve3(p1, mid, p2);
       const points = curve.getPoints(50);
       const curveGeo = new THREE.BufferGeometry().setFromPoints(points);
-      const curveMat = new THREE.LineBasicMaterial({ 
-        color: 0xa855f7, 
-        transparent: true, 
+      const curveMat = new THREE.LineBasicMaterial({
+        color: 0xa855f7,
+        transparent: true,
         opacity: 0.2 + Math.random() * 0.3,
-        blending: THREE.AdditiveBlending 
+        blending: THREE.AdditiveBlending
       });
       const arc = new THREE.Line(curveGeo, curveMat);
       arcsGroup.add(arc);
-      
+
       const particleGeo = new THREE.SphereGeometry(3, 8, 8);
       const particleMat = new THREE.MeshBasicMaterial({
         color: 0xe9d5ff, // nearly white purple
@@ -307,7 +308,7 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
       });
       const particle = new THREE.Mesh(particleGeo, particleMat);
       arcsGroup.add(particle);
-      
+
       movingParticles.push({
         mesh: particle,
         curve: curve,
@@ -323,7 +324,7 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
     const starGeo = new THREE.BufferGeometry();
     const starPos = [];
     const starColors = [];
-    
+
     // generate random stars
     for (let i = 0; i < 800; i++) {
       starPos.push(
@@ -333,7 +334,7 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
       );
       starColors.push(0.4, 0.2, 0.6 + Math.random() * 0.4); // faint purple/blue
     }
-    
+
     starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
     starGeo.setAttribute('color', new THREE.Float32BufferAttribute(starColors, 3));
     const starMat = new THREE.PointsMaterial({
@@ -357,7 +358,7 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
       new THREE.Vector3(-150, -300, -800),// Saiph
       new THREE.Vector3(250, -250, -800)  // Rigel
     ];
-    
+
     const orionLines = [
       [0, 1], [0, 2], [1, 4], [2, 3], [3, 4], [2, 5], [4, 6], [5, 6]
     ];
@@ -368,7 +369,7 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
       const p1 = orionStars[line[0]];
       const p2 = orionStars[line[1]];
       const mid = p1.clone().add(p2).multiplyScalar(0.5);
-      mid.z -= 50; 
+      mid.z -= 50;
       const curve = new THREE.QuadraticBezierCurve3(p1, mid, p2);
       curve.getPoints(20).forEach(pt => constellationPoints.push(pt.x, pt.y, pt.z));
     });
@@ -392,11 +393,11 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
     });
     starsGroup.add(new THREE.Points(orionStarsGeo, orionStarsMat));
 
-    
-    
+
+
     globeGroup.rotation.z = Math.PI / 16;
-globeGroup.position.y = 0;
-globeGroup.position.x = 0; 
+    globeGroup.position.y = 0;
+    globeGroup.position.x = 0;
 
     // Mouse Move Listener
     const onMouseMove = (event: MouseEvent) => {
@@ -407,7 +408,7 @@ globeGroup.position.x = 0;
 
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-      
+
       tooltip.style.left = `${event.clientX + 15}px`;
       tooltip.style.top = `${event.clientY + 15}px`;
     };
@@ -428,10 +429,10 @@ globeGroup.position.x = 0;
         camera.position.z += (50 - camera.position.z) * 0.08;
         camera.position.x += (0 - camera.position.x) * 0.08;
         camera.position.y += (0 - camera.position.y) * 0.08;
-        
+
         if (camera.position.z < 100) {
           window.dispatchEvent(new Event('zoom-complete'));
-          isZooming = false; 
+          isZooming = false;
         }
       } else {
         camera.position.x += (targetX - camera.position.x) * 0.02;
@@ -442,7 +443,7 @@ globeGroup.position.x = 0;
         camera.position.z += (targetZ - camera.position.z) * 0.03;
       }
       camera.lookAt(scene.position);
-      
+
       // Update perimeter halo position to match globe group Y offset
       perimeterMesh.position.copy(globeGroup.position);
       glowMesh.position.copy(globeGroup.position);
@@ -452,7 +453,7 @@ globeGroup.position.x = 0;
       ring2.rotation.z += 0.003;
       starsGroup.rotation.y -= 0.0002;
       starsGroup.rotation.x -= 0.0001;
-      
+
       // Handle Phase Transitions Smoothly
       if (isZooming) {
         globeGroup.position.y += (0 - globeGroup.position.y) * 0.08;
@@ -470,10 +471,10 @@ globeGroup.position.x = 0;
         globeGroup.position.y += (0 - globeGroup.position.y) * 0.05;
         globeGroup.position.x += (0 - globeGroup.position.x) * 0.05;
       }
-      
+
       movingParticles.forEach(p => {
         p.t += p.speed;
-        if(p.t > 1) {
+        if (p.t > 1) {
           p.t = 0;
           p.speed = 0.003 + Math.random() * 0.008;
         }
@@ -484,7 +485,7 @@ globeGroup.position.x = 0;
       if (!isZooming) {
         raycaster.setFromCamera(mouse, camera);
         const intersects = raycaster.intersectObjects(interactiveNodes);
-        
+
         if (intersects.length > 0) {
           const hovered = intersects[0].object;
           tooltip.innerText = hovered.userData.label;
@@ -560,12 +561,23 @@ export default function PortalPage() {
   const navigate = useNavigate();
   const [isZooming, setIsZooming] = useState(false);
   const [phase, setPhase] = useState<'splash' | 'ready' | 'login'>('splash');
+  const { playClick, playWhoosh } = useSciFiSounds();
 
   useEffect(() => {
-    // Automatically transition to ready state after splash screen (e.g. 4 seconds)
-    const timer = setTimeout(() => setPhase('ready'), 4000);
-    return () => clearTimeout(timer);
-  }, []);
+    if (phase === 'splash') {
+      const timer = setTimeout(() => setPhase('ready'), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [phase]);
+
+  const handleGoHome = () => {
+    try {
+      playClick();
+      playWhoosh();
+    } catch (e) {}
+    setIsZooming(false);
+    setPhase('splash');
+  };
 
   useEffect(() => {
     const handleZoomComplete = () => {
@@ -577,6 +589,10 @@ export default function PortalPage() {
   }, []);
 
   const handleEnterClick = () => {
+    try {
+      playClick();
+      playWhoosh();
+    } catch (e) {}
     setIsZooming(true);
     window.dispatchEvent(new Event('trigger-zoom'));
   };
@@ -598,9 +614,9 @@ export default function PortalPage() {
       }}
     >
       <EarthEffect phase={phase} />
-      
+
       {/* Background Grids */}
-      <div 
+      <div
         style={{
           position: 'absolute',
           top: 0, left: 0, right: 0, bottom: 0,
@@ -611,8 +627,8 @@ export default function PortalPage() {
           transition: 'opacity 1s',
         }}
       />
-      
-      <div 
+
+      <div
         style={{
           position: 'absolute',
           top: 0, left: 0, right: 0, bottom: 0,
@@ -621,7 +637,7 @@ export default function PortalPage() {
           boxShadow: 'inset 0 0 150px rgba(0,0,0,0.9)',
         }}
       />
-      
+
       {/* Matrix Rain */}
       <div
         style={{
@@ -774,11 +790,11 @@ export default function PortalPage() {
           innerStyle={{ alignItems: 'center', gap: '20px', padding: '24px 48px' }}
         >
           <div style={{ textAlign: 'center' }}>
-              <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 600, letterSpacing: '0.15em', color: 'var(--text-primary)' }}>SYSTEM READY</h2>
-              <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.1em' }}>Secure connection established.</p>
+            <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 600, letterSpacing: '0.15em', color: 'var(--text-primary)' }}>SYSTEM READY</h2>
+            <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.1em' }}>Secure connection established.</p>
           </div>
-          <CyberButton 
-            onClick={handleEnterClick} 
+          <CyberButton
+            onClick={handleEnterClick}
             icon={<ArrowRight size={16} color="#000000" />}
           >
             <span>ENTER DASHBOARD</span>
@@ -800,7 +816,7 @@ export default function PortalPage() {
           transition: 'opacity 1.5s ease',
         }}
       >
-        {phase === 'login' && <LoginForm />}
+        {phase === 'login' && <LoginForm onGoHome={handleGoHome} />}
       </div>
     </div>
   );

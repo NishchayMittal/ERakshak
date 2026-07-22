@@ -878,6 +878,15 @@ def get_case_geo(
                 lon = float(payload["lon"])
                 label = f"IP: {f.identifier.raw_value}"
         
+        # 1b. EXIF Photo Geotag (Exact)
+        elif f.connector_name == "exif_extractor" and f.result_type == "geolocation":
+            if "lat" in payload and "lon" in payload:
+                import os
+                lat = float(payload["lat"])
+                lon = float(payload["lon"])
+                filename = os.path.basename(f.identifier.raw_value)
+                label = f"Photo Geotag ({filename}): {f.result_value}"
+        
         # 2. WHOIS / Registrant Country
         elif f.connector_name == "whois_rdap" and "country" in payload:
             cc = str(payload["country"]).upper()

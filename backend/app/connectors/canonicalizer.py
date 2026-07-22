@@ -88,6 +88,15 @@ def canonicalize_findings(findings: list[Finding]) -> list[Finding]:
             # Lowercase the entire profile link or username part
             result_value = result_value.strip().lower()
             
+        elif result_type in ("image_hosting_page", "image_exact_match"):
+            result_value = result_value.strip()
+            
+        elif result_type == "image_entity_label":
+            result_value = result_value.strip()
+            
+        elif result_type == "geolocation":
+            result_value = result_value.strip()
+            
         else:
             # Fallback Romanization
             result_value = anyascii(result_value).strip().lower()
@@ -268,6 +277,19 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
 
     elif result_type == "subdomain":
         return IdentifierType.domain, clean_domain(val)
+
+    elif result_type in ("image_hosting_page", "image_exact_match"):
+        domain = clean_domain(val)
+        if domain and "." in domain and not domain.startswith("localhost"):
+            return IdentifierType.domain, domain
+
+    elif result_type == "image_entity_label":
+        entity_name = val.strip()
+        words = entity_name.split()
+        blacklist = {"vision", "google", "detection", "photo", "image", "logo", "screen", "illustration", "art", "drawing"}
+        if 2 <= len(words) <= 3 and all(w.isalpha() for w in words):
+            if not any(w.lower() in blacklist for w in words):
+                return IdentifierType.name, entity_name.title()
 
     elif result_type == "wikipedia_entry":
         # Extract the Wikipedia page URL as a domain for further pivoting

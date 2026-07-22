@@ -36,18 +36,18 @@ export function SuspectsWindow() {
 
   const handleRegisterSuspect = async (file: File) => {
     if (!suspectName.trim()) {
-      showToast('Please enter suspect name first', 'error');
+      showToast(t('suspects.toast_enter_name'), 'error');
       return;
     }
     setSuspectName('');
     setSuspectUploading(true);
     try {
       const res = await uploadSuspectImage(suspectName, file);
-      showToast(`Registered suspect: ${res.label}`, 'success');
+      showToast(t('suspects.toast_registered', { name: res.label }), 'success');
       fetchSuspects();
     } catch (err) {
       console.error(err);
-      showToast('Failed to upload suspect profile', 'error');
+      showToast(t('suspects.toast_upload_failed'), 'error');
     } finally {
       setSuspectUploading(false);
     }
@@ -57,11 +57,11 @@ export function SuspectsWindow() {
     setAddingPhotoForSuspect(suspectLabel);
     try {
       const res = await uploadSuspectImage(suspectLabel, file);
-      showToast(`Added photo to suspect: ${res.label}`, 'success');
+      showToast(t('suspects.toast_added_photo', { name: res.label }), 'success');
       fetchSuspects();
     } catch (err) {
       console.error(err);
-      showToast('Failed to add photo to suspect', 'error');
+      showToast(t('suspects.toast_add_failed'), 'error');
     } finally {
       setAddingPhotoForSuspect(null);
     }
@@ -70,10 +70,10 @@ export function SuspectsWindow() {
   const handleDeletePhoto = async (filename: string) => {
     try {
       await deleteSuspectPhoto(filename);
-      showToast("Suspect photo deleted", "success");
+      showToast(t('suspects.toast_photo_deleted'), "success");
       fetchSuspects();
     } catch (err) {
-      showToast("Failed to delete photo", "error");
+      showToast(t('suspects.toast_delete_failed'), "error");
     }
   };
 
@@ -91,19 +91,19 @@ export function SuspectsWindow() {
 
       {/* Suspect Database Registry card */}
       <div className="bg-black/35 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
-        <h4 className="text-[9px] font-bold text-[#39ff14] uppercase">SUSPECT DATABASE REGISTRY</h4>
+        <h4 className="text-[9px] font-bold text-[#39ff14] uppercase">{t('suspects.registry_title')}</h4>
         <p className="text-[8px] text-gray-500 font-mono mt-0.5">
-          UPLOAD AND ENROLL PORTRAIT IMAGES DIRECTLY INTO THE LOCAL RECOGNITION DATABASE (AUTO-DISCOVERED FOR OFF-LINE FACE CORRELATION MATCHING).
+          {t('suspects.registry_desc')}
         </p>
 
         <div className="flex flex-col gap-2">
           <div>
             <label className="block text-[8px] font-bold text-gray-400 uppercase mb-1 font-mono">
-              SUSPECT FULL NAME
+              {t('suspects.name_label')}
             </label>
             <input
               type="text"
-              placeholder="e.g. John Doe"
+              placeholder={t('suspects.name_placeholder')}
               value={suspectName}
               onChange={(e) => setSuspectName(e.target.value)}
               className="w-full bg-black border border-white/10 text-gray-300 text-[10px] px-3 py-1.5 focus:border-[#39ff14] outline-none font-mono"
@@ -112,7 +112,7 @@ export function SuspectsWindow() {
 
           <div className="flex gap-2 items-center">
             <label className="cursor-pointer bg-neutral-900 border border-white/10 hover:border-[#39ff14] text-gray-400 hover:text-white px-3 py-1.5 rounded text-[9px] transition-all flex items-center gap-1.5 font-mono flex-shrink-0">
-              <span>SELECT PORTRAIT FILE</span>
+              <span>{t('suspects.select_portrait')}</span>
               <input
                 type="file"
                 accept="image/*"
@@ -127,7 +127,7 @@ export function SuspectsWindow() {
             </label>
             {suspectUploading && (
               <span className="font-mono text-[8px] text-[#39ff14] animate-pulse">
-                ENROLLING IMAGE INTO INDEX...
+                {t('suspects.enrolling_portrait')}
               </span>
             )}
           </div>
@@ -136,12 +136,12 @@ export function SuspectsWindow() {
 
       {/* Suspects Catalog list */}
       <div className="bg-black/35 border border-white/5 rounded-xl p-4 flex flex-col gap-3 flex-1 min-h-[250px]">
-        <h4 className="text-[9px] font-bold text-[#39ff14] uppercase">ENROLLED SUSPECT PROFILES</h4>
+        <h4 className="text-[9px] font-bold text-[#39ff14] uppercase">{t('suspects.enrolled_title')}</h4>
 
         <div className="flex flex-col gap-3 overflow-y-auto max-h-[300px] pr-1">
           {suspects.length === 0 ? (
             <div className="text-gray-600 italic text-[9px] font-mono p-4 text-center">
-              NO SUSPECTS CURRENTLY ENROLLED IN THE DATABASE
+              {t('suspects.no_suspects')}
             </div>
           ) : (
             suspects.map((suspect) => {
@@ -159,7 +159,7 @@ export function SuspectsWindow() {
                       <User size={11} className="text-[#a855f7]" />
                       <span>{suspect.label}</span>
                       <span className="text-[8px] text-gray-500 font-normal font-mono lowercase">
-                        ({suspect.photos.length} {suspect.photos.length === 1 ? 'photo' : 'photos'})
+                        ({suspect.photos.length} {suspect.photos.length === 1 ? t('suspects.photo_count_singular') : t('suspects.photo_count_plural')})
                       </span>
                     </span>
 
@@ -169,7 +169,7 @@ export function SuspectsWindow() {
                         className="cursor-pointer bg-white/5 border border-white/10 hover:border-[#39ff14] text-gray-400 hover:text-white px-2 py-0.5 rounded text-[8px] font-mono transition-all flex items-center gap-1"
                       >
                         <Plus size={10} />
-                        <span>ADD PHOTO</span>
+                        <span>{t('suspects.add_photo')}</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -189,7 +189,7 @@ export function SuspectsWindow() {
                     <div className="p-2.5 pt-0 border-t border-white/5 flex flex-col gap-2 bg-black/10">
                       {addingPhotoForSuspect === suspect.label && (
                         <div className="text-[8px] text-[#39ff14] font-mono animate-pulse mt-2">
-                          ADDING PORTRAIT TO PROFILE...
+                          {t('suspects.adding_photo')}
                         </div>
                       )}
 
@@ -214,7 +214,7 @@ export function SuspectsWindow() {
                                 title="Delete photo"
                               >
                                 <Trash2 size={10} />
-                                <span>DELETE</span>
+                                <span>{t('suspects.delete_btn')}</span>
                               </button>
                             </div>
                           </div>

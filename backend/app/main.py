@@ -31,6 +31,8 @@ from app.connectors.ocr_extractor import OcrExtractorConnector
 from app.connectors.bucket_enum import BucketEnumConnector
 from app.connectors.hibp import HaveIBeenPwnedConnector
 from app.connectors.wikipedia_lookup import WikipediaConnector
+from app.connectors.reverse_image import ReverseImageConnector
+from app.connectors.exif_extractor import ExifExtractorConnector
 
 app = FastAPI(title="e-Rakshak API", version="0.1.0")
 
@@ -68,6 +70,8 @@ registry.register(OcrExtractorConnector())
 registry.register(BucketEnumConnector())
 registry.register(SocialProfilerConnector())
 registry.register(WikipediaConnector())
+registry.register(ReverseImageConnector())
+registry.register(ExifExtractorConnector())
 
 
 async def retention_cleanup_loop():

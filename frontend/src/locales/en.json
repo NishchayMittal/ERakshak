@@ -223,7 +223,27 @@
   },
   "suspects": {
     "title": "Suspect Database Console",
-    "description": "Local biometric suspect index and portrait catalog"
+    "description": "Local biometric suspect index and portrait catalog",
+    "registry_title": "SUSPECT DATABASE REGISTRY",
+    "registry_desc": "UPLOAD AND ENROLL PORTRAIT IMAGES DIRECTLY INTO THE LOCAL RECOGNITION DATABASE (AUTO-DISCOVERED FOR OFF-LINE FACE CORRELATION MATCHING).",
+    "name_label": "SUSPECT FULL NAME",
+    "name_placeholder": "e.g. John Doe",
+    "select_portrait": "SELECT PORTRAIT FILE",
+    "enrolling_portrait": "ENROLLING IMAGE INTO INDEX...",
+    "enrolled_title": "ENROLLED SUSPECT PROFILES",
+    "no_suspects": "NO SUSPECTS CURRENTLY ENROLLED IN THE DATABASE",
+    "photo_count_singular": "photo",
+    "photo_count_plural": "photos",
+    "add_photo": "ADD PHOTO",
+    "adding_photo": "ADDING PORTRAIT TO PROFILE...",
+    "delete_btn": "DELETE",
+    "toast_enter_name": "Please enter suspect name first",
+    "toast_registered": "Registered suspect: {{name}}",
+    "toast_upload_failed": "Failed to upload suspect profile",
+    "toast_added_photo": "Added photo to suspect: {{name}}",
+    "toast_add_failed": "Failed to add photo to suspect",
+    "toast_photo_deleted": "Suspect photo deleted",
+    "toast_delete_failed": "Failed to delete photo"
   },
   "temporal": {
     "loading": "EXTRACTING TEMPORAL FOOTPRINTS & CIRCADIAN METRICS...",

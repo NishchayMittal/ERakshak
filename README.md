@@ -83,6 +83,10 @@ The easiest way to run the entire stack (API, Frontend, Redis, and Celery Worker
 6. Start the Celery worker (in a new terminal, with the virtual environment activated):
    ```bash
    cd backend
+   # Windows:
+   celery -A app.worker.celery_app worker --loglevel=info --pool=solo
+
+   # Mac/Linux:
    celery -A app.worker.celery_app worker --loglevel=info
    ```
 7. Start the backend API (in a new terminal, with the virtual environment activated):

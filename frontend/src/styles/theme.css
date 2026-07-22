@@ -81,6 +81,10 @@ html, body, #root {
   overflow: hidden;
 }
 
+* {
+  font-family: var(--font-mono) !important;
+}
+
 /* ---- Glow Border Utility ---- */
 .glow-border {
   border: 1px solid var(--accent-action) !important;

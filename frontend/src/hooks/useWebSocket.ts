@@ -1,10 +1,19 @@
 import { useEffect, useRef } from 'react';
 import { useGraphStore } from '../state/graphStore';
 
-export function useWebSocket(caseId: string | undefined) {
+export function useWebSocket(
+  caseId: string | undefined,
+  /** Whether graph reloads are allowed — derived from window open/minimize state */
+  graphReloadActive?: boolean
+) {
   const ws = useRef<WebSocket | null>(null);
   const loadEntityGraph = useGraphStore((state) => state.loadEntityGraph);
   const selectedEntityId = useGraphStore((state) => state.selectedEntityId);
+
+  // Keep a ref so the WebSocket handler always reads the latest value
+  // without needing to re-create the effect every time graphReloadActive changes.
+  const graphReloadActiveRef = useRef(graphReloadActive);
+  graphReloadActiveRef.current = graphReloadActive;
 
   useEffect(() => {
     if (!caseId) return;
@@ -14,7 +23,7 @@ export function useWebSocket(caseId: string | undefined) {
     // Base URL or fallback to host
     const apiBase = import.meta.env.VITE_API_BASE_URL;
     let wsUrl = '';
-    
+
     if (apiBase) {
       wsUrl = `${apiBase.replace(/^http/, 'ws')}/ws/cases/${caseId}`;
     } else {
@@ -32,7 +41,13 @@ export function useWebSocket(caseId: string | undefined) {
         const data = JSON.parse(event.data);
         console.log('WebSocket update received:', data);
         if (data.action === 'pipeline_completed') {
-          // Ingestion pipeline is fully completed: reload all findings and nodes at once
+          // Only reload the graph if a case workspace window is actually open and not minimized.
+          // Uses a ref to avoid stale closures — reads the latest value every time.
+          if (!graphReloadActiveRef.current) {
+            console.log('Skipping graph reload: no case workspace window is open');
+            return;
+          }
+
           const latestEntityId = useGraphStore.getState().selectedEntityId;
           loadEntityGraph(caseId, latestEntityId || 'n1');
         }

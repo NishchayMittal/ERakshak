@@ -295,6 +295,70 @@ async def submit_case_identifiers(
     }
 
 
+@router.get("/{case_id}/identifiers")
+def get_case_identifiers(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    identifiers = db.query(Identifier).filter(
+        Identifier.case_id == case_id,
+        Identifier.source == "manual_intake"
+    ).order_by(Identifier.timestamp.desc()).all()
+    
+    return [
+        {
+            "id": i.id,
+            "type": i.type.value if hasattr(i.type, "value") else str(i.type),
+            "raw_value": i.raw_value,
+            "normalized_value": i.normalized_value,
+            "confidence": i.confidence,
+            "source": i.source,
+            "timestamp": i.timestamp.isoformat()
+        } for i in identifiers
+    ]
+
+
+@router.delete("/{case_id}/identifiers/{identifier_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_case_identifier(
+    case_id: str,
+    identifier_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    identifier = db.query(Identifier).filter(
+        Identifier.id == identifier_id,
+        Identifier.case_id == case_id
+    ).first()
+
+    if not identifier:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Identifier not found")
+
+    # Delete all dependent data
+    db.query(Finding).filter(Finding.identifier_id == identifier_id).delete(synchronize_session=False)
+
+    db.delete(identifier)
+    db.commit()
+
+    log_action(
+        db,
+        "identifier.delete",
+        investigator_id=current_investigator.id,
+        case_id=case_id,
+        detail={"identifier_id": identifier_id}
+    )
+
+    return None
+
+
 @router.get("/{case_id}/entities/{entity_id}/graph")
 def get_entity_graph(
     case_id: str,

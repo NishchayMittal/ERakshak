@@ -69,7 +69,9 @@
     "url_wallpaper_loaded": "Custom URL wallpaper loaded",
     "case_workspace": "Case Workspace: {{title}}",
     "investigation_title": "Investigation #{{number}} — AD HOC",
-    "adhoc_desc": "Ad-hoc initialized case file"
+    "adhoc_desc": "Ad-hoc initialized case file",
+    "system_ready": "SYSTEM READY",
+    "secure_connection": "Secure connection established."
   },
   "modals": {
     "rename_title": "RENAME CASE FILE",
@@ -205,7 +207,9 @@
     "approved": "APPROVED REGISTRATION FOR {{name}}",
     "approve_failed": "FAILED TO APPROVE INVESTIGATOR",
     "denied": "DENIED REGISTRATION FOR {{name}}",
-    "deny_failed": "FAILED TO DENY INVESTIGATOR"
+    "deny_failed": "FAILED TO DENY INVESTIGATOR",
+    "entity_profile_dossier": "Entity Profile Dossier",
+    "no_attributes": "No attributes associated with this entity."
   },
   "settings": {
     "title": "Booster Parameters Calibration",
@@ -243,8 +247,13 @@
     "click_hint": "Click any active grid cell to open detailed footprint event inspector",
     "ist": "Indian View (IST +05:30)",
     "utc": "UTC View (Raw +00:00)",
-    "sun": "Sun", "mon": "Mon", "tue": "Tue", "wed": "Wed",
-    "thu": "Thu", "fri": "Fri", "sat": "Sat"
+    "sun": "Sun",
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri",
+    "sat": "Sat"
   },
   "report": {
     "title": "LLM DOSSIER SYNTHESIS",
@@ -357,7 +366,8 @@
     "load_events": "LOAD TIMELINE EVENTS",
     "no_events": "NO CHRONOLOGICAL EVENTS LOGGED",
     "title": "EVENT TIMELINE",
-    "subtitle": "CHRONOLOGICAL AUDIT FOOTPRINTS COLLECTED IN REALTIME"
+    "subtitle": "CHRONOLOGICAL AUDIT FOOTPRINTS COLLECTED IN REALTIME",
+    "event_timeline": "EVENT TIMELINE"
   },
   "profile_card": {
     "select_prompt": "Select any node in the link graph to view consolidated attributes and credentials.",
@@ -394,5 +404,17 @@
   },
   "language": {
     "label": "LANG"
+  },
+  "cases": {
+    "no_cases_registered": "No Cases Registered",
+    "run_correlation_scan": "RUN CORRELATION SCAN",
+    "correlation_prior": "CORRELATION PRIOR",
+    "leak_exposures": "LEAK EXPOSURES",
+    "ingested_crawler_payloads": "INGESTED CRAWLER PAYLOADS"
+  },
+  "intake": {
+    "pipeline_dispatched": "PIPELINE DISPATCHED",
+    "dispatch_crawl_pipeline": "DISPATCH CRAWL PIPELINE",
+    "parsing_seeds": "PARSING SEEDS..."
   }
 }

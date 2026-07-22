@@ -2,6 +2,7 @@ import React from 'react';
 import AttributeRow from './AttributeRow';
 import { useGraphStore } from '../../state/graphStore';
 import type { ProfileAttribute } from '../../types/profile';
+import { Transliterate } from '../ui/Transliterate';
 
 export default function ProfileCard() {
   const { evidencePack, selectedEntityId, loading } = useGraphStore();

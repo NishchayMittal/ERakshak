@@ -1216,11 +1216,12 @@ export default function CaseDashboardPage() {
         }
       }}
       style={{
-        background: customWallpaper || currentWallpaper.value,
-        backgroundSize: 'cover',
+        backgroundImage: customWallpaper || currentWallpaper.value,
+        backgroundColor: 'black',
+        backgroundSize: '100% 100%',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
-        transition: 'background 0.5s ease',
+        transition: 'background-image 0.5s ease',
         fontFamily: 'var(--font-mono)'
       }}
     >

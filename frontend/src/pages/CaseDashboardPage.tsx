@@ -1646,7 +1646,7 @@ export default function CaseDashboardPage() {
           );
         })}
 
-        <div className="h-6 w-[1px] bg-white/10" />
+        {windows.length > 0 && <div className="h-6 w-[1px] bg-white/10" />}
 
         {/* Disconnect */}
         <button

@@ -49,3 +49,15 @@ services:
       REDIS_URL: redis://redis:6379/0
     volumes:
       - ./:/app
+
+  beat:
+    build: .
+    command: celery -A app.worker.celery_app beat --loglevel=info
+    depends_on:
+      redis:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgresql+psycopg://erakshak:erakshak_dev@db:5432/erakshak
+      REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./:/app

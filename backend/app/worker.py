@@ -19,7 +19,51 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
+    beat_schedule={
+        "monitor-active-cases-hourly": {
+            "task": "monitor_active_cases",
+            "schedule": 3600.0, # Every 1 hour
+        }
+    }
 )
+
+@celery_app.task(name="monitor_active_cases")
+def monitor_active_cases():
+    """
+    Periodic task to re-scan manual seeds for all active cases.
+    """
+    from app.database import SessionLocal
+    from app.models import Case, Identifier
+    from sqlalchemy.orm import joinedload
+    from datetime import datetime, timezone
+
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        # Find active cases
+        active_cases = db.query(Case).filter(
+            (Case.expires_at == None) | (Case.expires_at > now)
+        ).all()
+        
+        logger.info(f"Beat Task: Found {len(active_cases)} active cases for monitoring.")
+        
+        for c in active_cases:
+            # Get original seed identifiers for this case
+            seed_identifiers = db.query(Identifier).filter(
+                Identifier.case_id == c.id,
+                Identifier.source == "manual_intake"
+            ).all()
+            
+            for ident in seed_identifiers:
+                # Dispatch the runner for depth=1 (re-check)
+                logger.info(f"Beat Task: Dispatching background scan for seed {ident.normalized_value} in case {c.id}")
+                task_run_connectors_and_pivot.delay(c.id, ident.id, ident.investigator_id, 1)
+                
+    except Exception as e:
+        logger.error(f"Error in monitor_active_cases: {e}")
+    finally:
+        db.close()
+
 
 @celery_app.task(name="task_run_connectors_and_pivot")
 def task_run_connectors_and_pivot(case_id: str, identifier_id: str, investigator_id: str, depth: int):

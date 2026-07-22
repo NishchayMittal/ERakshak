@@ -1,87 +1,85 @@
-import React, { useState } from 'react';
-import { Cpu, Activity, Terminal, RefreshCw } from 'lucide-react';
-import { triggerModelRetrain } from '../api/endpoints';
+import React, { useState, useEffect } from 'react';
 import { useUIStore } from '../state/uiStore';
-import { CyberButton } from '../components/ui/CyberButton';
-
-// Audio click synth
-const playClickTone = () => {
-  try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(1400, ctx.currentTime);
-    osc.frequency.setValueAtTime(900, ctx.currentTime + 0.05);
-    gain.gain.setValueAtTime(0.04, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.12);
-  } catch (e) {}
-};
-
-const MOCK_TRAINING_LOGS = [
-  'BOOTSTRAP: Accessing SQLite DB link_feedbacks and audit_logs tables...',
-  'VECTORS: Generating comparison vectors for 1,204 labeled persona node pairs.',
-  'TRAIN: Init XGBoost DMatrix booster parameters...',
-  'TRAIN: Iteration 01/05 — train_loss: 0.1142 | val_loss: 0.1492 | accuracy: 92.1%',
-  'TRAIN: Iteration 02/05 — train_loss: 0.0824 | val_loss: 0.1124 | accuracy: 94.4%',
-  'TRAIN: Iteration 03/05 — train_loss: 0.0541 | val_loss: 0.0845 | accuracy: 95.8%',
-  'TRAIN: Iteration 04/05 — train_loss: 0.0310 | val_loss: 0.0592 | accuracy: 96.1%',
-  'TRAIN: Iteration 05/05 — train_loss: 0.0194 | val_loss: 0.0412 | accuracy: 96.5%',
-  'SHAP: Compiling SHAP TreeExplainer values for top 4 feature variables...',
-  'SHAP: Feature importance cached: [Name similarity: 42%, Phone match: 28%, Co-email: 18%]',
-  'SERIALIZE: Serializing compiled XGBoost weight matrices to config volume...',
-  'SYSTEM: Reloading baseline matcher models. Retraining completed successfully!'
-];
+import { uploadSuspectImage, getSuspects, deleteSuspectPhoto } from '../api/endpoints';
+import { apiClient } from '../api/client';
+import { Plus, Trash2, User, Shield } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const { showToast } = useUIStore();
+  const [suspectName, setSuspectName] = useState('');
+  const [suspectUploading, setSuspectUploading] = useState(false);
+  const [suspects, setSuspects] = useState<Array<{ name: string; label: string; photos: Array<{ filename: string; url: string }> }>>([]);
+  const [addingPhotoForSuspect, setAddingPhotoForSuspect] = useState<string | null>(null);
+  const [expandedSuspects, setExpandedSuspects] = useState<Record<string, boolean>>({});
 
-  const [retraining, setRetraining] = useState(false);
-  const [activeLogs, setActiveLogs] = useState<string[]>([]);
-  const [currentAccuracy, setCurrentAccuracy] = useState(96.4);
-  const [currentLoss, setCurrentLoss] = useState(0.041);
-  const [activeStep, setActiveStep] = useState(0);
+  const toggleExpandSuspect = (name: string) => {
+    setExpandedSuspects(prev => ({
+      ...prev,
+      [name]: !prev[name]
+    }));
+  };
 
-  const handleRetrain = async () => {
-    playClickTone();
-    setRetraining(true);
-    setActiveStep(0);
-    setActiveLogs([MOCK_TRAINING_LOGS[0]]);
+  const fetchSuspects = async () => {
+    try {
+      const res = await getSuspects();
+      setSuspects(res);
+    } catch (err) {
+      console.error("Failed to load suspects", err);
+    }
+  };
 
-    const apiPromise = triggerModelRetrain();
+  useEffect(() => {
+    fetchSuspects();
+  }, []);
 
-    let step = 0;
-    const interval = setInterval(() => {
-      step += 1;
-      setActiveStep(step);
-      
-      if (step < MOCK_TRAINING_LOGS.length) {
-        setActiveLogs((prev) => [...prev, MOCK_TRAINING_LOGS[step]]);
-      }
+  const handleRegisterSuspect = async (file: File) => {
+    if (!suspectName.trim()) {
+      showToast('Please enter suspect name first', 'error');
+      return;
+    }
+    setSuspectUploading(true);
+    try {
+      const res = await uploadSuspectImage(suspectName, file);
+      showToast(`Registered suspect: ${res.label}`, 'success');
+      setSuspectName('');
+      fetchSuspects();
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to upload suspect profile', 'error');
+    } finally {
+      setSuspectUploading(false);
+    }
+  };
 
-      if (step >= MOCK_TRAINING_LOGS.length - 1) {
-        clearInterval(interval);
-        
-        apiPromise
-          .then((res) => {
-            setRetraining(false);
-            setCurrentAccuracy(97.2);
-            setCurrentLoss(0.038);
-            showToast(res.message || 'Model retraining finished successfully!', 'success');
-          })
-          .catch((err) => {
-            console.error(err);
-            setRetraining(false);
-            showToast('Model retraining completed on backend', 'info');
-          });
-      }
-    }, 450);
+  const handleAddPhotoToSuspect = async (suspectLabel: string, file: File) => {
+    setAddingPhotoForSuspect(suspectLabel);
+    try {
+      const res = await uploadSuspectImage(suspectLabel, file);
+      showToast(`Added photo to suspect: ${res.label}`, 'success');
+      fetchSuspects();
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to add photo to suspect', 'error');
+    } finally {
+      setAddingPhotoForSuspect(null);
+    }
+  };
+
+  const handleDeletePhoto = async (filename: string) => {
+    try {
+      await deleteSuspectPhoto(filename);
+      showToast("Suspect photo deleted", "success");
+      fetchSuspects();
+    } catch (err) {
+      showToast("Failed to delete photo", "error");
+    }
+  };
+
+  const getBaseURL = () => {
+    const base = apiClient.defaults.baseURL || '';
+    return base.endsWith('/') ? base.slice(0, -1) : base;
   };
 
   return (
@@ -100,22 +98,21 @@ export default function SettingsPage() {
             fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700,
             color: 'var(--text-primary)', letterSpacing: '0.12em', textTransform: 'uppercase',
           }}>
-            NEURAL MODEL CONFIGURATION
+            SUSPECT REGISTRY & DATABASE
           </h1>
           <p style={{
             margin: '4px 0 0 0',
             fontFamily: 'var(--font-mono)', fontSize: 9,
             color: 'var(--text-muted)', letterSpacing: '0.08em',
           }}>
-            XGBOOST CLASSIFIER PARAMETERS & ACCURACY RATIOS
+            MANAGE OFF-LINE FACIAL RECOGNITION TARGETS AND SUSPECT DOSSIERS
           </p>
         </div>
       </div>
 
       <div className="settings-grid">
-        {/* Left Column: Config Panels */}
+        {/* Left Column: Suspect Registry Form */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Booster params card */}
           <div className="hud-panel" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{
               fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
@@ -123,73 +120,67 @@ export default function SettingsPage() {
               borderBottom: '1px solid var(--struct-line)', paddingBottom: 8,
               display: 'flex', alignItems: 'center', gap: 8,
             }}>
-              <Cpu className="w-4 h-4" />
-              BOOSTER MODEL PARAMETERS
+              <User className="w-4 h-4" />
+              SUSPECT DATABASE REGISTRY
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-              {[
-                { label: 'Classifier', value: 'XGBoost' },
-                { label: 'Features', value: '4 Vectors' },
-                { label: 'Accuracy', value: `${currentAccuracy}%`, color: '#00C853' },
-                { label: 'Val Loss', value: currentLoss, color: 'var(--accent-primary)' },
-              ].map((p, idx) => (
-                <div key={idx} style={{
-                  background: 'rgba(0,0,0,0.2)', border: '1px solid var(--struct-line)',
-                  padding: 10, textAlign: 'center',
-                }}>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{p.label}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 700, color: p.color || 'var(--text-primary)', marginTop: 4 }}>{p.value}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Feature weights */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ fontFamily: 'var(--font-heading)', fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                ESTIMATED MODEL FEATURE CONTRIBUTIONS (SHAP)
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {[
-                  { name: 'Individual Name Similarity (Jaro-Winkler)', val: '42%' },
-                  { name: 'Phone Number Registry Matches', val: '28%' },
-                  { name: 'Email Domain Co-occurrence', val: '18%' },
-                  { name: 'Username Alias Leaks', val: '12%' },
-                ].map((f, idx) => (
-                  <div key={idx} style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    background: 'rgba(0,0,0,0.1)', border: '1px solid var(--struct-line)',
-                    padding: '8px 12px', fontFamily: 'var(--font-mono)', fontSize: 9,
-                  }}>
-                    <span style={{ color: 'var(--text-muted)' }}>{f.name}</span>
-                    <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>{f.val} WEIGHT</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Retrain Button footer container */}
-            <div style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              borderTop: '1px solid var(--struct-line)', paddingTop: 12, marginTop: 8,
+            <p style={{
+              margin: 0,
+              fontFamily: 'var(--font-mono)', fontSize: 9,
+              color: 'var(--text-muted)', letterSpacing: '0.05em', lineHeight: '1.4'
             }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Activity className="w-3.5 h-3.5 animate-pulse" style={{ color: 'var(--accent-action)' }} />
-                <span>MODEL DESCRIPTOR: ONLINE</span>
+              UPLOAD AND ENROLL PORTRAIT IMAGES DIRECTLY INTO THE LOCAL RECOGNITION DATABASE (AUTO-DISCOVERED FOR OFF-LINE FACE CORRELATION MATCHING).
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div>
+                <label style={{ display: 'block', fontFamily: 'var(--font-heading)', fontSize: 8, color: 'var(--text-muted)', marginBottom: 4, letterSpacing: '0.05em' }}>
+                  SUSPECT FULL NAME
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. John Doe"
+                  value={suspectName}
+                  onChange={(e) => setSuspectName(e.target.value)}
+                  style={{
+                    width: '100%',
+                    background: 'rgba(0,0,0,0.3)',
+                    border: '1px solid var(--struct-line)',
+                    color: 'white',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 10,
+                    padding: '8px 10px',
+                    outline: 'none',
+                  }}
+                />
               </div>
-              <CyberButton
-                onClick={handleRetrain}
-                disabled={retraining}
-                containerStyle={{ opacity: retraining ? 0.5 : 1 }}
-                icon={<RefreshCw className={`w-3.5 h-3.5 ${retraining ? 'animate-spin' : ''}`} />}
-              >
-                <span>{retraining ? 'OPTIMIZING WEIGHTS...' : 'TRIGGER MODEL RETRAIN'}</span>
-              </CyberButton>
+
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <label className="cursor-pointer bg-neutral-900 border border-white/10 hover:border-[#39ff14] text-gray-400 hover:text-white px-3 py-2 rounded text-[10px] transition-all flex items-center gap-1.5 font-mono flex-shrink-0">
+                  <span>SELECT PORTRAIT FILE</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      handleRegisterSuspect(file);
+                    }}
+                    className="hidden"
+                    disabled={suspectUploading}
+                  />
+                </label>
+                {suspectUploading && (
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#39ff14' }} className="animate-pulse">
+                    ENROLLING PORTRAIT...
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Console */}
+        {/* Right Column: Suspect Catalog view */}
         <div className="hud-panel" style={{ padding: 16, display: 'flex', flexDirection: 'column', minHeight: 300 }}>
           <div style={{
             fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
@@ -198,49 +189,102 @@ export default function SettingsPage() {
             display: 'flex', alignItems: 'center', gap: 8,
             flexShrink: 0,
           }}>
-            <Terminal className="w-4 h-4" />
-            TRAINING CONSOLE
+            <Shield className="w-4 h-4" />
+            ENROLLED SUSPECT PROFILES
           </div>
 
           <div style={{
             flex: 1, overflowY: 'auto',
-            fontFamily: 'var(--font-mono)', fontSize: 9,
             padding: '12px 0',
-            lineHeight: '1.4',
-            color: 'var(--text-muted)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8
           }}>
-            {activeLogs.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                TERMINAL IDLE. CLICK "TRIGGER MODEL RETRAIN" TO COMPILATE WEIGHTS.
+            {suspects.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: 9 }}>
+                NO SUSPECTS CURRENTLY ENROLLED IN THE DATABASE
               </div>
             ) : (
-              activeLogs.map((log, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: 6, marginBottom: 4, alignItems: 'flex-start' }}>
-                  <span className="terminal-prompt">&gt;</span>
-                  <span style={{
-                    color: log.includes('accuracy:')
-                      ? 'var(--accent-action)'
-                      : log.startsWith('SYSTEM:')
-                      ? 'var(--accent-primary)'
-                      : 'var(--text-primary)',
-                  }}>
-                    {log}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
+              suspects.map((suspect) => {
+                const isExpanded = !!expandedSuspects[suspect.name];
+                return (
+                  <div key={suspect.name} style={{ border: '1px solid var(--struct-line)', background: 'rgba(0,0,0,0.1)', marginBottom: 4 }}>
+                    <div
+                      onClick={() => toggleExpandSuspect(suspect.name)}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', cursor: 'pointer', transition: 'background-color 0.15s ease' }}
+                    >
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ color: 'var(--text-muted)', fontSize: 8 }}>
+                          {isExpanded ? '▼' : '►'}
+                        </span>
+                        <User size={12} style={{ color: 'var(--accent-primary)' }} /> {suspect.label}
+                        <span style={{ fontSize: 8, color: 'var(--text-muted)', fontWeight: 'normal', textTransform: 'lowercase' }}>
+                          ({suspect.photos.length} {suspect.photos.length === 1 ? 'photo' : 'photos'})
+                        </span>
+                      </span>
 
-          <div style={{
-            borderTop: '1px solid var(--struct-line)', paddingTop: 12,
-            fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)',
-            display: 'flex', justifyContent: 'space-between',
-            flexShrink: 0,
-          }}>
-            <span>ALGORITHM: XGBOOST</span>
-            <span style={{ color: retraining ? 'var(--accent-primary)' : 'var(--text-muted)', fontWeight: retraining ? 700 : 'normal' }}>
-              {retraining ? 'OPTIMIZING...' : 'STANDBY'}
-            </span>
+                      {isExpanded && (
+                        <label
+                          onClick={(e) => e.stopPropagation()}
+                          className="cursor-pointer bg-white/5 border border-white/10 hover:border-[#39ff14] text-gray-400 hover:text-white px-2 py-0.5 rounded text-[8px] font-mono transition-all flex items-center gap-1"
+                        >
+                          <Plus size={10} />
+                          <span>ADD PHOTO</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              handleAddPhotoToSuspect(suspect.label, file);
+                            }}
+                            className="hidden"
+                            disabled={addingPhotoForSuspect !== null}
+                          />
+                        </label>
+                      )}
+                    </div>
+
+                    {isExpanded && (
+                      <div style={{ padding: 10, borderTop: '1px solid var(--struct-line)', background: 'rgba(0,0,0,0.15)' }}>
+                        {addingPhotoForSuspect === suspect.label && (
+                          <div style={{ fontSize: 8, color: '#39ff14', fontFamily: 'var(--font-mono)', marginBottom: 4 }} className="animate-pulse">
+                            ADDING PORTRAIT...
+                          </div>
+                        )}
+
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {suspect.photos.map((photo) => (
+                            <div key={photo.filename} style={{ display: 'flex', alignItems: 'center', gap: 8, border: '1px solid var(--struct-line)', padding: 4, background: 'black' }}>
+                              <img
+                                src={`${getBaseURL()}${photo.url}`}
+                                alt={suspect.label}
+                                style={{ width: 48, height: 48, objectFit: 'cover', border: '1px solid var(--struct-line)' }}
+                                onError={(e) => {
+                                  e.currentTarget.src = photo.url;
+                                }}
+                              />
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', maxWidth: 80, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={photo.filename}>
+                                  {photo.filename}
+                                </span>
+                                <button
+                                  onClick={() => handleDeletePhoto(photo.filename)}
+                                  style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#ff3b30', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 'bold' }}
+                                >
+                                  <Trash2 size={10} />
+                                  <span>DELETE</span>
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>

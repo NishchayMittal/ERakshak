@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { IdentifierType } from '../../types/identifier';
 import { useTranslation } from 'react-i18next';
+import { uploadImage } from '../../api/endpoints';
 
 interface IdentifierFormProps {
   onAdd: (type: IdentifierType, value: string) => void;
@@ -10,6 +11,7 @@ export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
   const { t } = useTranslation();
   const [value, setValue] = useState('');
   const [type, setType] = useState<IdentifierType>('email');
+  const [isUploading, setIsUploading] = useState(false);
 
   // Simple heuristic router for auto-detecting identifier types
   useEffect(() => {
@@ -18,6 +20,8 @@ export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
 
     if (trimmed.includes('@')) {
       setType('email');
+    } else if (/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(trimmed)) {
+      setType('photo');
     } else if (/^\+?\d[\d-\s()]{7,}\d$/.test(trimmed)) {
       setType('phone');
     } else if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(trimmed)) {
@@ -53,15 +57,58 @@ export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
 
       <div className="flex flex-col md:flex-row gap-3">
         {/* Value Input */}
-        <div className="flex-1">
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono placeholder:text-slate-600"
-            placeholder={t('intake_form.placeholder')}
-            required
-          />
+        <div className="flex-grow flex gap-2 items-center">
+          {type === 'photo' ? (
+            <div className="flex gap-2 w-full items-center">
+              <input
+                type="text"
+                value={(() => {
+                  if (value.startsWith('http://') || value.startsWith('https://')) {
+                    return value;
+                  }
+                  if (value.includes('/')) {
+                    return value.split('/').pop() || value;
+                  }
+                  return value;
+                })()}
+                onChange={(e) => setValue(e.target.value)}
+                className="flex-grow bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono placeholder:text-slate-600"
+                placeholder={isUploading ? "Uploading file..." : "Paste face URL or select file →"}
+                disabled={isUploading}
+                required
+              />
+              <label className="cursor-pointer bg-slate-800 border border-slate-700 hover:border-indigo-500 text-slate-300 hover:text-white px-3 py-2 rounded text-xs transition-all flex items-center gap-1.5 flex-shrink-0 font-mono">
+                <span>SELECT FILE</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setIsUploading(true);
+                    try {
+                      const res = await uploadImage(file);
+                      setValue(res.filename);
+                    } catch (err) {
+                      console.error("Upload failed", err);
+                    } finally {
+                      setIsUploading(false);
+                    }
+                  }}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          ) : (
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono placeholder:text-slate-600"
+              placeholder={t('intake_form.placeholder')}
+              required
+            />
+          )}
         </div>
 
         {/* Type Selector */}

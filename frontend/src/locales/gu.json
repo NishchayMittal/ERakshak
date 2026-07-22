@@ -58,8 +58,8 @@
     "geo_tooltip": "ભૌગોલિક-ગુપ્તચર નકશો",
     "profile_title": "તપાસકર્તા ઓળખપત્ર",
     "profile_tooltip": "પ્રોફાઇલ પેનલ",
-    "settings_title": "કોર પેરામીટર કન્સોલ",
-    "settings_tooltip": "ન્યુરલ કૉન્ફિગ કન્સોલ",
+    "suspects_title": "શંકાસ્પદ ડેટાબેઝ કન્સોલ",
+    "suspects_tooltip": "શંકાસ્પદ ડેટાબેઝ કન્સોલ",
     "logout_tooltip": "તપાસકર્તા સત્ર ડિસ્કનેક્ટ કરો",
     "case_renamed": "કેસનું નામ બદલાયું",
     "rename_failed": "કેસનું નામ બદલવામાં નિષ્ફળ",
@@ -219,7 +219,11 @@
     "calibrating": "સહસંબંધ ભાર કેલિબ્રેટ થઈ રહ્યા છે...",
     "trigger_retrain": "ન્યુરલ પુનઃતાલીમ શરૂ કરો",
     "retrain_complete": "ન્યુરલ પુનઃતાલીમ પૂર્ણ",
-    "retrain_failed": "મોડલ પુનઃતાલીમ નિષ્ફળ"
+    "retrain_failed": "Model retraining failed"
+  },
+  "suspects": {
+    "title": "શંકાસ્પદ ડેટાબેઝ કન્સોલ",
+    "description": "સ્થાનિક બાયોમેટ્રિક શંકાસ્પદ ઇન્ડેક્સ અને પોટ્રેટ કેટલોગ"
   },
   "temporal": {
     "loading": "ટેમ્પોરલ ફૂટપ્રિન્ટ અને સર્કેડિયન મેટ્રિક્સ કાઢવામાં આવી રહ્યા છે...",

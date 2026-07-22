@@ -64,6 +64,10 @@ def normalize(raw_value: str, id_type: IdentifierType) -> str:
         parsed = phonenumbers.parse(value, "IN")
         return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
 
+    if id_type == IdentifierType.photo:
+        val = value.replace("\\", "/").strip("/")
+        return val
+
     if id_type == IdentifierType.name:
         from anyascii import anyascii
         return anyascii(value).lower().strip()

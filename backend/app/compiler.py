@@ -187,7 +187,11 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
                 target_node_id = result_val.strip()
             target_type = "username" # map to username or person
         elif result_type == "face_similarity":
-            target_node_id = result_val.split("Match: ")[1].split(" (Similarity:")[0].strip()
+            lower_val = result_val.lower()
+            if "match: " in lower_val:
+                target_node_id = lower_val.split("match: ")[1].split(" (similarity:")[0].strip().title()
+            else:
+                target_node_id = result_val.strip().title()
             target_type = "person"
         elif result_type == "leak_record":
             payload = finding.raw_payload or {}

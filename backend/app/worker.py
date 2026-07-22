@@ -19,7 +19,51 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
+    beat_schedule={
+        "monitor-active-cases-hourly": {
+            "task": "monitor_active_cases",
+            "schedule": 3600.0, # Every 1 hour
+        }
+    }
 )
+
+@celery_app.task(name="monitor_active_cases")
+def monitor_active_cases():
+    """
+    Periodic task to re-scan manual seeds for all active cases.
+    """
+    from app.database import SessionLocal
+    from app.models import Case, Identifier
+    from sqlalchemy.orm import joinedload
+    from datetime import datetime, timezone
+
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        # Find active cases
+        active_cases = db.query(Case).filter(
+            (Case.expires_at == None) | (Case.expires_at > now)
+        ).all()
+        
+        logger.info(f"Beat Task: Found {len(active_cases)} active cases for monitoring.")
+        
+        for c in active_cases:
+            # Get original seed identifiers for this case
+            seed_identifiers = db.query(Identifier).filter(
+                Identifier.case_id == c.id,
+                Identifier.source == "manual_intake"
+            ).all()
+            
+            for ident in seed_identifiers:
+                # Dispatch the runner for depth=1 (re-check)
+                logger.info(f"Beat Task: Dispatching background scan for seed {ident.normalized_value} in case {c.id}")
+                task_run_connectors_and_pivot.delay(c.id, ident.id, ident.investigator_id, 1)
+                
+    except Exception as e:
+        logger.error(f"Error in monitor_active_cases: {e}")
+    finally:
+        db.close()
+
 
 @celery_app.task(name="task_run_connectors_and_pivot")
 def task_run_connectors_and_pivot(case_id: str, identifier_id: str, investigator_id: str, depth: int):
@@ -48,19 +92,33 @@ def is_redis_available() -> bool:
         return False
 
 
+def is_celery_worker_active() -> bool:
+    """Checks if there are active Celery workers listening to the queue."""
+    if not is_redis_available():
+        return False
+    try:
+        inspect = celery_app.control.inspect(timeout=0.15)
+        if inspect:
+            active = inspect.active()
+            return active is not None and len(active) > 0
+    except Exception:
+        pass
+    return False
+
+
 def dispatch_task(case_id: str, identifier_id: str, investigator_id: str, depth: int):
     """
-    Dispatches task to Celery queue, falling back to local thread/asyncio execution if Redis is unavailable.
+    Dispatches task to Celery queue, falling back to local thread/asyncio execution if no Celery worker is active.
     """
-    if is_redis_available():
+    if is_celery_worker_active():
         try:
             task_run_connectors_and_pivot.delay(case_id, identifier_id, investigator_id, depth)
             logger.info("Successfully dispatched task to Celery queue.")
             return
         except Exception as e:
-            logger.warning(f"Celery dispatch failed despite port check ({e}). Falling back to local background execution.")
+            logger.warning(f"Celery dispatch failed despite worker check ({e}). Falling back to local background execution.")
     else:
-        logger.info("Redis is offline. Bypassing Celery queue, using local background execution.")
+        logger.info("Celery worker is offline. Bypassing Celery queue, using local background execution.")
 
     import threading
     from app.connectors.runner import run_connectors_and_pivot_background

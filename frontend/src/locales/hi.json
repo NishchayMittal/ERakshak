@@ -58,8 +58,8 @@
     "geo_tooltip": "भू-खुफिया मानचित्र",
     "profile_title": "जांचकर्ता प्रमाण-पत्र",
     "profile_tooltip": "प्रोफ़ाइल पैनल",
-    "settings_title": "कोर पैरामीटर कंसोल",
-    "settings_tooltip": "न्यूरल कॉन्फ़िग कंसोल",
+    "suspects_title": "संदिग्ध डेटाबेस कंसोल",
+    "suspects_tooltip": "संदिग्ध डेटाबेस कंसोल",
     "logout_tooltip": "जांचकर्ता सत्र डिस्कनेक्ट करें",
     "case_renamed": "केस का नाम बदला गया",
     "rename_failed": "केस का नाम बदलने में विफल",
@@ -219,7 +219,11 @@
     "calibrating": "सहसंबंध भार कैलिब्रेट हो रहे हैं...",
     "trigger_retrain": "न्यूरल पुनर्प्रशिक्षण शुरू करें",
     "retrain_complete": "न्यूरल पुनर्प्रशिक्षण पूर्ण",
-    "retrain_failed": "मॉडल पुनर्प्रशिक्षण विफल"
+    "retrain_failed": "Model retraining failed"
+  },
+  "suspects": {
+    "title": "संदिग्ध डेटाबेस कंसोल",
+    "description": "स्थानीय बायोमेट्रिक संदिग्ध सूचकांक और चित्र सूची"
   },
   "temporal": {
     "loading": "टेम्पोरल फ़ुटप्रिंट और सर्कैडियन मेट्रिक्स निकाले जा रहे हैं...",

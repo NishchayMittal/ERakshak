@@ -1,14 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Download, FileText, RefreshCw } from 'lucide-react';
 import { useDashboardContext } from '../../pages/DashboardContext';
 import { useCaseWebSocket } from '../../hooks/useCaseWebSocket';
+import { useGraphStore } from '../../state/graphStore';
+import { uploadImage, getSuspects } from '../../api/endpoints';
+import { apiClient } from '../../api/client';
 import TemporalWindow from './TemporalWindow';
 import ChatPanel from './ChatPanel';
 
 export function CaseWindow({ win }: { win: any }) {
   const { t } = useTranslation();
   useCaseWebSocket(win.caseId);
+  const [isUploading, setIsUploading] = useState(false);
   const {
     activeEntityPerCase,
     setActiveEntityPerCase,
@@ -47,10 +51,84 @@ export function CaseWindow({ win }: { win: any }) {
   const pan = casePan[caseId] || { x: 0, y: 0 };
   const currentGraph = graphData;
 
+  const { evidencePack } = useGraphStore();
+  const [selectedSuspect, setSelectedSuspect] = useState<any>(null);
+  
+  const caseGraph = graphDataPerCase[caseId] || graphData;
+  const nodeInfo = caseGraph?.nodes?.find((n: any) => n.id === activeEntity);
+
+  const getFindingsForEntity = (nodeInfo: any) => {
+    if (!evidencePack || !nodeInfo) return [];
+    
+    // 1. Match by normalized_value label
+    const activeIdent = evidencePack.identifiers.find(
+      (i: any) => {
+        const normVal = (i.normalizedValue || i.normalized_value || '').toLowerCase();
+        const rawVal = (i.raw_value || '').toLowerCase();
+        const label = nodeInfo.label.toLowerCase();
+        return normVal === label || rawVal === label || i.id === nodeInfo.id;
+      }
+    );
+    
+    if (activeIdent) {
+      return activeIdent.findings;
+    }
+    
+    // 2. Fallback: check if this node is derived from a finding of some identifier
+    for (const ident of evidencePack.identifiers) {
+      const match = ident.findings.find(
+        (f: any) => {
+          const fval = (f.value || '').toLowerCase();
+          const label = nodeInfo.label.toLowerCase();
+          return fval === label || f.id === nodeInfo.id;
+        }
+      );
+      if (match) {
+        return ident.findings;
+      }
+    }
+    
+    return [];
+  };
+
+  // Helper: get face_similarity findings for a photo node from evidencePack
+  const getFaceMatchFindings = (nodeLabel: string) => {
+    if (!evidencePack) return [];
+    const allFaceFindings: any[] = [];
+    const label = nodeLabel.toLowerCase();
+    // Also compute basename in case the node label is a subpath like uuid/filename.jpg
+    const labelBasename = label.split('/').pop() || label;
+    for (const ident of evidencePack.identifiers) {
+      const normVal = (ident.normalizedValue || ident.normalized_value || '').toLowerCase();
+      const rawVal = (ident.raw_value || '').toLowerCase();
+      const normBasename = normVal.split('/').pop() || normVal;
+      const rawBasename = rawVal.split('/').pop()?.split('?')[0] || rawVal;
+      const matches = normVal === label || rawVal === label ||
+                      normBasename === labelBasename || rawBasename === labelBasename;
+      if (matches) {
+        const faceFindings = ident.findings.filter((f: any) => f.type === 'face_similarity');
+        allFaceFindings.push(...faceFindings);
+      }
+    }
+    return allFaceFindings;
+  };
+
+  const [suspectsList, setSuspectsList] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    getSuspects().then(setSuspectsList).catch(console.error);
+  }, []);
+
+  const getBaseURL = () => {
+    const base = apiClient.defaults.baseURL || '';
+    return base.endsWith('/') ? base.slice(0, -1) : base;
+  };
+
   const detectSeedType = (val: string): string => {
     const trimmed = val.trim();
     if (!trimmed) return 'email';
     if (trimmed.includes('@')) return 'email';
+    else if (/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(trimmed)) return 'photo';
     else if (/^\+?\d[\d-\s()]{7,}\d$/.test(trimmed)) return 'phone';
     else if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(trimmed)) return 'ip';
     else if (/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(trimmed) || (trimmed.includes('.') && !trimmed.includes(' '))) return 'domain';
@@ -121,24 +199,83 @@ export function CaseWindow({ win }: { win: any }) {
                               <div className="flex flex-col gap-1">
                                 <span className="text-[8px] text-gray-500 font-bold font-mono">{t('case_window.vector_value')}</span>
                                 <div className="flex gap-2">
-                                  <input
-                                    type="text"
-                                    placeholder={t('case_window.value_placeholder')}
-                                    value={caseSeedsInput[caseId]?.value || ''}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      const autoType = detectSeedType(val);
-                                      setCaseSeedsInput((prev: any) => ({
-                                        ...prev,
-                                        [caseId]: {
-                                          type: autoType,
-                                          value: val
-                                        }
-                                      }));
-                                    }}
-                                    onKeyDown={(e) => e.key === 'Enter' && addCaseSeed(caseId)}
-                                    className="flex-1 bg-black border border-white/10 text-gray-200 text-[9px] px-2.5 py-1.5 focus:border-[#39ff14] outline-none"
-                                  />
+                                  {caseSeedsInput[caseId]?.type === 'photo' ? (
+                                    <div className="flex gap-2 flex-grow items-center">
+                                      <input
+                                        type="text"
+                                        placeholder={isUploading ? "Uploading file..." : "Paste face URL or select file →"}
+                                        value={(() => {
+                                          const val = caseSeedsInput[caseId]?.value || '';
+                                          if (val.startsWith('http://') || val.startsWith('https://')) {
+                                            return val;
+                                          }
+                                          if (val.includes('/')) {
+                                            return val.split('/').pop() || val;
+                                          }
+                                          return val;
+                                        })()}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          setCaseSeedsInput((prev: any) => ({
+                                            ...prev,
+                                            [caseId]: {
+                                              type: 'photo',
+                                              value: val
+                                            }
+                                          }));
+                                        }}
+                                        onKeyDown={(e) => e.key === 'Enter' && addCaseSeed(caseId)}
+                                        className="flex-1 bg-black border border-white/10 text-gray-200 text-[9px] px-2.5 py-1.5 focus:border-[#39ff14] outline-none"
+                                        disabled={isUploading}
+                                      />
+                                      <label className="cursor-pointer bg-neutral-900 border border-white/10 hover:border-[#39ff14] text-gray-400 hover:text-white px-2.5 py-1.5 rounded text-[8px] transition-all flex items-center gap-1 flex-shrink-0 font-mono">
+                                        <span>UPLOAD</span>
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            setIsUploading(true);
+                                            try {
+                                              const res = await uploadImage(file);
+                                              setCaseSeedsInput((prev: any) => ({
+                                                ...prev,
+                                                [caseId]: {
+                                                  type: 'photo',
+                                                  value: res.filename
+                                                }
+                                              }));
+                                            } catch (err) {
+                                              console.error("Upload failed", err);
+                                            } finally {
+                                              setIsUploading(false);
+                                            }
+                                          }}
+                                          className="hidden"
+                                        />
+                                      </label>
+                                    </div>
+                                  ) : (
+                                    <input
+                                      type="text"
+                                      placeholder={t('case_window.value_placeholder')}
+                                      value={caseSeedsInput[caseId]?.value || ''}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        const autoType = detectSeedType(val);
+                                        setCaseSeedsInput((prev: any) => ({
+                                          ...prev,
+                                          [caseId]: {
+                                            type: autoType,
+                                            value: val
+                                          }
+                                        }));
+                                      }}
+                                      onKeyDown={(e) => e.key === 'Enter' && addCaseSeed(caseId)}
+                                      className="flex-grow bg-black border border-white/10 text-gray-200 text-[9px] px-2.5 py-1.5 focus:border-[#39ff14] outline-none"
+                                    />
+                                  )}
                                   <button
                                     onClick={() => addCaseSeed(caseId)}
                                     className="bg-[#39ff14] hover:bg-[#39ff14]/80 text-black text-[9px] font-bold px-3 py-1.5"
@@ -168,7 +305,7 @@ export function CaseWindow({ win }: { win: any }) {
                               </div>
                               <button
                                 onClick={() => runIngestPipeline(caseId)}
-                                disabled={(casePendingSeeds[caseId] || []).length === 0 || caseIngestProgress[caseId] !== undefined}
+                                disabled={(casePendingSeeds[caseId] || []).length === 0 || (caseIngestProgress[caseId] !== undefined && caseIngestProgress[caseId] !== null)}
                                 className="w-full bg-[#a855f7] hover:bg-[#a855f7]/85 disabled:bg-white/5 disabled:text-gray-600 text-black text-[9px] font-bold py-2 tracking-widest text-center uppercase"
                               >
                                 RUN CORRELATION SCAN
@@ -321,7 +458,7 @@ export function CaseWindow({ win }: { win: any }) {
                           </div>
 
                           {/* Mini side action node menu */}
-                          <div className="w-64 bg-black/35 border border-white/5 rounded-xl ml-3 p-3 flex flex-col gap-3">
+                          <div className="w-64 bg-black/35 border border-white/5 rounded-xl ml-3 p-3 flex flex-col gap-3 overflow-y-auto">
                             <span className="text-[8.5px] text-gray-500 font-bold border-b border-white/5 pb-1 uppercase tracking-wider">{t('case_window.node_details')}</span>
                             {(() => {
                               const caseGraph = graphDataPerCase[caseId] || graphData;
@@ -367,6 +504,71 @@ export function CaseWindow({ win }: { win: any }) {
                                       </div>
                                     </div>
                                   </div>
+                                  {/* Show enrolled suspect portraits if this node IS a suspect */}
+                                  {nodeInfo.type === 'person' && (() => {
+                                    const matchedSuspect = suspectsList.find(s => s.label.toLowerCase() === nodeInfo.label.toLowerCase());
+                                    if (matchedSuspect && matchedSuspect.photos.length > 0) {
+                                      return (
+                                        <div className="flex flex-col gap-1 mt-1">
+                                          <span className="text-gray-500 font-mono font-semibold text-[7.5px] uppercase tracking-wider">ENROLLED PORTRAITS</span>
+                                          <div className="flex flex-wrap gap-1 bg-white/5 p-1 border border-white/5">
+                                            {matchedSuspect.photos.map((p: any) => (
+                                              <img
+                                                key={p.filename}
+                                                src={`${getBaseURL()}${p.url}`}
+                                                alt={matchedSuspect.label}
+                                                className="w-10 h-10 object-cover border border-white/10"
+                                                onError={(e) => {
+                                                  e.currentTarget.src = p.url;
+                                                }}
+                                              />
+                                            ))}
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  })()}
+
+                                  {/* Show face match alerts if this node is a photo seed that matched suspects */}
+                                  {(() => {
+                                    const faceMatches = getFaceMatchFindings(nodeInfo.label);
+                                    if (faceMatches.length === 0) return null;
+                                    return (
+                                      <div className="flex flex-col gap-1.5 mt-1 border-t border-[#39ff14]/20 pt-2">
+                                        <span className="text-[#39ff14] font-mono font-bold text-[7.5px] uppercase tracking-wider animate-pulse">⚠ FACE MATCH ALERTS ({faceMatches.length})</span>
+                                        {faceMatches.map((f: any, idx: number) => {
+                                          const suspectName = (f.raw_payload?.suspect_name || f.value || '').replace(/^match:\s*/i, '').split(' (similarity')[0].trim();
+                                          const score = f.raw_payload?.similarity_score ?? Math.round((f.confidence || 0) * 100);
+                                          const suspectPhoto = suspectsList.find(s => s.label.toLowerCase() === suspectName.toLowerCase());
+                                          return (
+                                            <div key={idx} className="flex items-center gap-2 bg-[#39ff14]/5 border border-[#39ff14]/20 p-1.5 rounded">
+                                              {suspectPhoto && suspectPhoto.photos.length > 0 ? (
+                                                <img
+                                                  src={`${getBaseURL()}${suspectPhoto.photos[0].url}`}
+                                                  alt={suspectName}
+                                                  className="w-8 h-8 object-cover border border-[#39ff14]/40 flex-shrink-0"
+                                                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                />
+                                              ) : (
+                                                <div className="w-8 h-8 bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0 text-[6px] text-gray-500">N/A</div>
+                                              )}
+                                              <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                                                <span className="text-white font-mono font-bold text-[7.5px] uppercase truncate">{suspectName}</span>
+                                                <span className="text-[#39ff14] font-mono text-[7px] font-bold">{score.toFixed ? score.toFixed(1) : score}% MATCH</span>
+                                              </div>
+                                              <button
+                                                onClick={() => setSelectedSuspect(f.raw_payload || f)}
+                                                className="bg-[#39ff14]/10 border border-[#39ff14]/40 hover:bg-[#39ff14]/20 text-[#39ff14] px-1.5 py-0.5 text-[7px] font-bold font-mono uppercase flex-shrink-0"
+                                              >
+                                                VIEW
+                                              </button>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                               );
                             })()}
@@ -449,38 +651,53 @@ export function CaseWindow({ win }: { win: any }) {
                             </div>
 
                             {/* Dossier contents list */}
+                            {/* Dossier contents list */}
                             <div className="flex flex-col gap-3">
-                              {/* Simple loop for findings/dossier attributes */}
-                              {currentGraph && currentGraph.nodes && currentGraph.nodes.find((n: any) => n.id === activeEntity) ? (
-                                <div className="flex flex-col gap-3">
-                                  <div className="grid grid-cols-2 gap-3 text-[8.5px]">
-                                    <div className="bg-white/5 border border-white/5 p-2.5 rounded flex flex-col gap-1">
-                                      <span className="text-gray-500 font-bold uppercase">CORRELATION PRIOR</span>
-                                      <span className="text-white font-mono uppercase">0.9888 matching confidence</span>
-                                    </div>
-                                    <div className="bg-white/5 border border-white/5 p-2.5 rounded flex flex-col gap-1">
-                                      <span className="text-gray-500 font-bold uppercase">LEAK EXPOSURES</span>
-                                      <span className="text-red-400 font-mono uppercase">Canva, Wattpad Leaks flagged</span>
-                                    </div>
-                                  </div>
+                              {(() => {
+                                const caseGraph = graphDataPerCase[caseId] || graphData;
+                                const nodeInfo = caseGraph?.nodes?.find((n: any) => n.id === activeEntity);
+                                if (!nodeInfo) {
+                                  return <span className="text-[9px] font-mono text-gray-500 italic">{t('case_window.no_dossiers')}</span>;
+                                }
 
-                                  <div className="flex flex-col gap-1.5">
-                                    <span className="text-[8.5px] font-bold text-gray-400 uppercase tracking-wide">INGESTED CRAWLER PAYLOADS</span>
-                                    <div className="flex flex-col gap-1.5 font-mono text-[8px] text-gray-300">
-                                      <div className="p-2 bg-black border border-white/5 rounded flex justify-between">
-                                        <span>WHOIS Registrant: securehost@mail.com</span>
-                                        <span className="text-[#39ff14]">100% CONFIDENCE</span>
-                                      </div>
-                                      <div className="p-2 bg-black border border-white/5 rounded flex justify-between">
-                                        <span>Social footprints: target_dev handle detected</span>
-                                        <span className="text-[#a855f7]">94% CONFIDENCE</span>
+                                const entityFindings = getFindingsForEntity(nodeInfo);
+
+                                if (entityFindings.length === 0) {
+                                  return <span className="text-[9px] font-mono text-gray-500 italic">{t('case_window.no_dossiers')}</span>;
+                                }
+
+                                return (
+                                  <div className="flex flex-col gap-3">
+                                    <div className="flex flex-col gap-1.5">
+                                      <span className="text-[8.5px] font-bold text-gray-400 uppercase tracking-wide">INGESTED CRAWLER PAYLOADS</span>
+                                      <div className="flex flex-col gap-1.5 font-mono text-[8px] text-gray-300">
+                                        {entityFindings.map((f: any, idx: number) => {
+                                          const isFaceMatch = f.type === 'face_similarity';
+                                          return (
+                                            <div key={idx} className="p-2.5 bg-black border border-white/5 rounded flex justify-between items-center gap-4">
+                                              <div className="flex flex-col gap-0.5">
+                                                <span className="text-gray-500 text-[7px] uppercase tracking-wider">{f.connector || 'connector'}</span>
+                                                <span className="text-gray-200 capitalize">{f.value}</span>
+                                              </div>
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-[#39ff14] font-bold uppercase">{Math.round(f.confidence * 100)}% CONFIDENCE</span>
+                                                {isFaceMatch && (
+                                                  <button
+                                                    onClick={() => setSelectedSuspect(f.raw_payload || f.rawPayload || f)}
+                                                    className="bg-white/5 border border-white/10 hover:border-[#39ff14] text-gray-400 hover:text-white px-2 py-0.5 rounded text-[8px] font-mono transition-all flex items-center gap-1 font-bold"
+                                                  >
+                                                    VIEW MATCH
+                                                  </button>
+                                                )}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
                                       </div>
                                     </div>
                                   </div>
-                                </div>
-                              ) : (
-                                <span className="text-[9px] font-mono text-gray-500 italic">{t('case_window.no_dossiers')}</span>
-                              )}
+                                );
+                              })()}
                             </div>
                           </div>
                         </div>
@@ -524,6 +741,137 @@ export function CaseWindow({ win }: { win: any }) {
                       <div className={tab === 'chat' ? 'flex flex-1 min-h-0' : 'hidden'}>
                         <ChatPanel caseId={caseId} />
                       </div>
+
+                      {/* Suspect Face Match Modal */}
+                      {selectedSuspect && (
+                        <div style={{
+                          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
+                          zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          backdropFilter: 'blur(6px)',
+                        }}>
+                          <div style={{
+                            background: 'rgba(4, 8, 14, 0.95)', border: '1px solid #39ff14',
+                            padding: 20, width: 500, display: 'flex', flexDirection: 'column', gap: 14,
+                            boxShadow: '0 0 24px rgba(57,255,20,0.15)',
+                            backdropFilter: 'blur(12px)',
+                            animation: 'scale-up 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                          }} className="text-left">
+                            <style>{`
+                              @keyframes scanline {
+                                0% { top: 0%; }
+                                50% { top: 100%; }
+                                100% { top: 0%; }
+                              }
+                            `}</style>
+                            {/* Header */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--struct-line)', paddingBottom: 8 }}>
+                              <div>
+                                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: '#39ff14', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
+                                  FACIAL RECOGNITION ANALYSIS
+                                </div>
+                                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', marginTop: 2 }}>
+                                  CORRELATED TARGET DOSSIER MATCH
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => setSelectedSuspect(null)}
+                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14 }}
+                              >
+                                ✕
+                              </button>
+                            </div>
+
+                            {/* Side-by-Side Images */}
+                            <div style={{ display: 'flex', gap: 20, justifyContent: 'center', alignItems: 'center', margin: '10px 0' }}>
+                              {/* Target Image */}
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1 }}>
+                                <span style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>INPUT TARGET SEED</span>
+                                <div style={{ position: 'relative', border: '1px solid var(--struct-line)', background: '#000', width: 140, height: 140, overflow: 'hidden' }}>
+                                  {(() => {
+                                    const targetFilename = nodeInfo?.label || '';
+                                    const isUrl = targetFilename.startsWith('http://') || targetFilename.startsWith('https://');
+                                    const isUpload = targetFilename.startsWith('upload_') || targetFilename.includes('/');
+                                    const targetUrl = isUrl 
+                                      ? targetFilename 
+                                      : isUpload 
+                                        ? `${getBaseURL()}/static/uploads/${targetFilename}` 
+                                        : `${getBaseURL()}/static/suspects/${targetFilename}`;
+                                    return (
+                                      <img
+                                        src={targetUrl}
+                                        alt="Target Seed"
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        onError={(e) => {
+                                          e.currentTarget.src = `${getBaseURL()}/static/uploads/${targetFilename}`;
+                                        }}
+                                      />
+                                    );
+                                  })()}
+                                  {/* Neon Scanline overlay animation */}
+                                  <div style={{
+                                    position: 'absolute', inset: '0 0 auto 0', height: 2, background: '#39ff14',
+                                    boxShadow: '0 0 8px #39ff14',
+                                    animation: 'scanline 2s linear infinite',
+                                  }} />
+                                </div>
+                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {nodeInfo?.label || ''}
+                                </span>
+                              </div>
+
+                              {/* Match Connection Line */}
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 'bold', color: '#39ff14' }}>
+                                  {(selectedSuspect.similarity_score || selectedSuspect.confidence * 100 || 0).toFixed(1)}%
+                                </span>
+                                <div style={{ width: 40, height: 1, background: 'linear-gradient(90deg, #39ff14, #39ff14)' }} />
+                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--text-muted)', textTransform: 'uppercase' }}>match</span>
+                              </div>
+
+                              {/* Suspect Image */}
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1 }}>
+                                <span style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>ENROLLED SUSPECT PROFILE</span>
+                                <div style={{ position: 'relative', border: '1px solid var(--struct-line)', background: '#000', width: 140, height: 140, overflow: 'hidden' }}>
+                                  {(() => {
+                                    const suspectFilename = selectedSuspect.suspect_image ? selectedSuspect.suspect_image.split(/[/\\]/).pop() : '';
+                                    const suspectUrl = `${getBaseURL()}/static/suspects/${suspectFilename}`;
+                                    return (
+                                      <img
+                                        src={suspectUrl}
+                                        alt={selectedSuspect.suspect_name}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                      />
+                                    );
+                                  })()}
+                                </div>
+                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#39ff14', fontWeight: 'bold' }}>
+                                  {selectedSuspect.suspect_name || selectedSuspect.suspect_name || 'Suspect'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Details Table */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, background: '#000000', border: '1px solid var(--struct-line)', padding: 10 }}>
+                              <div>
+                                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>SUSPECT REGISTERED NAME</div>
+                                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: '#ffffff', marginTop: 2 }}>{selectedSuspect.suspect_name || 'Suspect'}</div>
+                              </div>
+                              <div>
+                                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>CONFIDENCE RATING</div>
+                                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: '#39ff14', marginTop: 2 }}>{(selectedSuspect.similarity_score || selectedSuspect.confidence * 100 || 0).toFixed(1)}% SIMILARITY</div>
+                              </div>
+                              <div>
+                                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>ALGORITHM METHOD</div>
+                                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: '#ffffff', marginTop: 2 }}>{selectedSuspect.method || 'HOG Cosine Similarity'}</div>
+                              </div>
+                              <div>
+                                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>OFF-LINE INTEGRATION</div>
+                                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: '#a855f7', marginTop: 2, textTransform: 'uppercase' }}>verified suspect</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                     </div>
                   </div>

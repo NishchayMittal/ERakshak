@@ -1,5 +1,9 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+
+resources_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "resources"))
 
 from app.connectors.base import registry
 from app.connectors.crtsh import CrtShConnector
@@ -35,6 +39,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/static", StaticFiles(directory=resources_dir), name="static")
 
 app.include_router(auth_router.router)
 app.include_router(cases_router.router)

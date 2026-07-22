@@ -58,8 +58,8 @@
     "geo_tooltip": "Geo-Intelligence Map",
     "profile_title": "Investigator Credentials",
     "profile_tooltip": "Profile Panel",
-    "settings_title": "Core Parameters Console",
-    "settings_tooltip": "Neural config console",
+    "suspects_title": "Suspects Database Console",
+    "suspects_tooltip": "Suspects Database Console",
     "logout_tooltip": "Disconnect Investigator Session",
     "case_renamed": "CASE RENAMED",
     "rename_failed": "Failed to rename case",
@@ -216,6 +216,10 @@
     "trigger_retrain": "TRIGGER NEURAL RETRAIN",
     "retrain_complete": "Neural retrainer completed",
     "retrain_failed": "Model retraining failed"
+  },
+  "suspects": {
+    "title": "Suspect Database Console",
+    "description": "Local biometric suspect index and portrait catalog"
   },
   "temporal": {
     "loading": "EXTRACTING TEMPORAL FOOTPRINTS & CIRCADIAN METRICS...",

@@ -10,6 +10,7 @@ import {
   Database,
   Network,
   Settings,
+  Users,
   User,
   X,
   Minimize2,
@@ -42,7 +43,7 @@ import {
 
 import { DashboardContext } from './DashboardContext';
 import { CaseWindow } from '../components/cases/CaseWindow';
-import { SettingsWindow } from '../components/cases/SettingsWindow';
+import { SuspectsWindow } from '../components/cases/SuspectsWindow';
 import { ProfileWindow } from '../components/cases/ProfileWindow';
 import { ExplorerWindow } from '../components/cases/ExplorerWindow';
 import TemporalWindow from '../components/cases/TemporalWindow';
@@ -70,7 +71,7 @@ import {
 interface WindowState {
   id: string;
   title: string;
-  type: 'case_workspace' | 'settings' | 'profile' | 'cases_explorer' | 'temporal_analysis' | 'cross_correlate' | 'geo_map';
+  type: 'case_workspace' | 'settings' | 'suspects' | 'profile' | 'cases_explorer' | 'temporal_analysis' | 'cross_correlate' | 'geo_map';
   x: number;
   y: number;
   width: number;
@@ -120,6 +121,8 @@ const detectSeedType = (val: string): string => {
 
   if (trimmed.includes('@')) {
     return 'email';
+  } else if (/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(trimmed)) {
+    return 'photo';
   } else if (/^\+?\d[\d-\s()]{7,}\d$/.test(trimmed)) {
     return 'phone';
   } else if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(trimmed)) {
@@ -1507,7 +1510,7 @@ export default function CaseDashboardPage() {
 
 
               {win.type === 'case_workspace' && <CaseWindow win={win} />}
-              {win.type === 'settings' && <SettingsWindow />}
+              {win.type === 'suspects' && <SuspectsWindow />}
               {win.type === 'profile' && <ProfileWindow />}
               {win.type === 'cases_explorer' && <ExplorerWindow win={win} />}
               {win.type === 'temporal_analysis' && (
@@ -1618,11 +1621,11 @@ export default function CaseDashboardPage() {
         </button>
 
         <button
-          onClick={() => openWindow('settings_window', t('dashboard.settings_title'), 'settings')}
-          title={t('dashboard.settings_tooltip')}
-          className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'settings_window') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
+          onClick={() => openWindow('suspects_window', t('dashboard.suspects_title'), 'suspects')}
+          title={t('dashboard.suspects_tooltip')}
+          className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'suspects_window') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
         >
-          <Settings size={20} />
+          <Users size={20} />
         </button>
 
         <div className="h-6 w-[1px] bg-white/10" />

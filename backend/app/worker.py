@@ -48,19 +48,33 @@ def is_redis_available() -> bool:
         return False
 
 
+def is_celery_worker_active() -> bool:
+    """Checks if there are active Celery workers listening to the queue."""
+    if not is_redis_available():
+        return False
+    try:
+        inspect = celery_app.control.inspect(timeout=0.15)
+        if inspect:
+            active = inspect.active()
+            return active is not None and len(active) > 0
+    except Exception:
+        pass
+    return False
+
+
 def dispatch_task(case_id: str, identifier_id: str, investigator_id: str, depth: int):
     """
-    Dispatches task to Celery queue, falling back to local thread/asyncio execution if Redis is unavailable.
+    Dispatches task to Celery queue, falling back to local thread/asyncio execution if no Celery worker is active.
     """
-    if is_redis_available():
+    if is_celery_worker_active():
         try:
             task_run_connectors_and_pivot.delay(case_id, identifier_id, investigator_id, depth)
             logger.info("Successfully dispatched task to Celery queue.")
             return
         except Exception as e:
-            logger.warning(f"Celery dispatch failed despite port check ({e}). Falling back to local background execution.")
+            logger.warning(f"Celery dispatch failed despite worker check ({e}). Falling back to local background execution.")
     else:
-        logger.info("Redis is offline. Bypassing Celery queue, using local background execution.")
+        logger.info("Celery worker is offline. Bypassing Celery queue, using local background execution.")
 
     import threading
     from app.connectors.runner import run_connectors_and_pivot_background

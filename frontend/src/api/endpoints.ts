@@ -402,3 +402,58 @@ export async function getGeoIntelligence(caseId: string): Promise<GeoIntelligenc
   const res = await apiClient.get(`/cases/${caseId}/geo`);
   return res.data;
 }
+
+export async function uploadImage(file: File): Promise<{ filepath: string; filename: string }> {
+  if (isMockMode()) {
+    return { filepath: "backend/app/resources/suspects/suspect_alpha.png", filename: file.name };
+  }
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await apiClient.post('/identifiers/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return res.data;
+}
+
+export async function uploadSuspectImage(name: string, file: File): Promise<{ filename: string; label: string }> {
+  if (isMockMode()) {
+    return { filename: `${name.toLowerCase().replace(/\s+/g, '_')}.png`, label: name };
+  }
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await apiClient.post(`/identifiers/suspects/upload?name=${encodeURIComponent(name)}`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return res.data;
+}
+
+export async function getSuspects(): Promise<Array<{ name: string; label: string; photos: Array<{ filename: string; url: string }> }>> {
+  if (isMockMode()) {
+    return [
+      {
+        name: 'suspect_alpha',
+        label: 'Suspect Alpha',
+        photos: [{ filename: 'suspect_alpha.png', url: 'backend/app/resources/suspects/suspect_alpha.png' }]
+      },
+      {
+        name: 'suspect_beta',
+        label: 'Suspect Beta',
+        photos: [{ filename: 'suspect_beta.png', url: 'backend/app/resources/suspects/suspect_beta.png' }]
+      }
+    ];
+  }
+  const res = await apiClient.get('/identifiers/suspects');
+  return res.data;
+}
+
+export async function deleteSuspectPhoto(filename: string): Promise<{ status: string; message: string }> {
+  if (isMockMode()) {
+    return { status: 'success', message: 'Photo deleted' };
+  }
+  const res = await apiClient.delete(`/identifiers/suspects/${encodeURIComponent(filename)}`);
+  return res.data;
+}

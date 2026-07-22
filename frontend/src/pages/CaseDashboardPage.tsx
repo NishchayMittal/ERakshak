@@ -1219,11 +1219,12 @@ export default function CaseDashboardPage() {
         }
       }}
       style={{
-        background: customWallpaper || currentWallpaper.value,
-        backgroundSize: 'cover',
+        backgroundImage: customWallpaper || currentWallpaper.value,
+        backgroundColor: 'black',
+        backgroundSize: '100% 100%',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
-        transition: 'background 0.5s ease',
+        transition: 'background-image 0.5s ease',
         fontFamily: 'var(--font-mono)'
       }}
     >
@@ -1649,7 +1650,7 @@ export default function CaseDashboardPage() {
           );
         })}
 
-        <div className="h-6 w-[1px] bg-white/10" />
+        {windows.length > 0 && <div className="h-6 w-[1px] bg-white/10" />}
 
         {/* Disconnect */}
         <button

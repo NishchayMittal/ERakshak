@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Play, Cpu, Database, Terminal } from 'lucide-react';
 import IdentifierForm from '../components/intake/IdentifierForm';
@@ -51,6 +52,7 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
   const navigate = useNavigate();
   const { activeCase, selectCase } = useCaseStore();
   const { showToast } = useUIStore();
+  const { t } = useTranslation();
 
   const [seeds, setSeeds] = useState<SeedItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -275,7 +277,7 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
             {/* Progress bar */}
             <div style={{ borderTop: '1px solid var(--struct-line)', paddingTop: 16, marginTop: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', marginBottom: 6 }}>
-                <span>PIPELINE DISPATCHED</span>
+                <span>{t('intake.pipeline_dispatched')}</span>
                 <span style={{ color: 'var(--accent-action)', fontWeight: 'bold' }}>{pipelineProgress}%</span>
               </div>
               <div style={{ background: '#030609', height: 10, border: '1px solid var(--struct-line)', padding: 1, position: 'relative', overflow: 'hidden' }}>
@@ -317,7 +319,7 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
               display: 'flex', justifyContent: 'space-between',
             }}>
               <span>SYNC_GATE: PORT 8000</span>
-              <span className="animate-pulse" style={{ color: 'var(--accent-action)' }}>PARSING SEEDS...</span>
+              <span className="animate-pulse" style={{ color: 'var(--accent-action)' }}>{t('intake.parsing_seeds')}</span>
             </div>
           </div>
         </div>
@@ -373,7 +375,7 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
                     containerStyle={{ opacity: submitting ? 0.5 : 1 }}
                     icon={<Play className="w-4 h-4 fill-current" />}
                   >
-                    <span>DISPATCH CRAWL PIPELINE</span>
+                    <span>{t('intake.dispatch_crawl_pipeline')}</span>
                   </CyberButton>
                 </div>
               </div>

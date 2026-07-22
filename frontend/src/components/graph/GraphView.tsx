@@ -6,6 +6,7 @@ import { useGraphStore } from '../../state/graphStore';
 import { graphStyles } from './graphStyles';
 import TimelineSlider from './TimelineSlider';
 import { useTranslation } from 'react-i18next';
+import { useTransliteration } from '../ui/Transliterate';
 
 // Register cytoscape-cola layout algorithm
 try {
@@ -20,6 +21,7 @@ interface GraphViewProps {
 
 export default function GraphView({ onSelectNode }: GraphViewProps) {
   const { t } = useTranslation();
+  const transliterate = useTransliteration();
   const { graphData, confidenceThreshold, selectedSources, timelineMaxTime } = useGraphStore();
   const cyRef = useRef<cytoscape.Core | null>(null);
   const reticleRef = useRef<HTMLDivElement | null>(null);
@@ -49,7 +51,7 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
     });
 
     const cyNodes = filteredNodes.map((n) => ({
-      data: { id: n.id, label: n.label, type: n.type, confidence: n.confidence },
+      data: { id: n.id, label: transliterate(n.label), type: n.type, confidence: n.confidence },
     }));
     const cyEdges = filteredEdges.map((e) => ({
       data: {

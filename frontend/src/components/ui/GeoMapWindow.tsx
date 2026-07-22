@@ -76,13 +76,7 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
         </div>
       </div>
 
-      {/* Target Reticle — centered via CSS, purely decorative */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border border-white/5 rounded-full pointer-events-none z-10 opacity-30 flex items-center justify-center">
-        <div className="w-1 h-4 bg-[#39ff14]/50 absolute top-0" />
-        <div className="w-1 h-4 bg-[#39ff14]/50 absolute bottom-0" />
-        <div className="w-4 h-1 bg-[#39ff14]/50 absolute left-0" />
-        <div className="w-4 h-1 bg-[#39ff14]/50 absolute right-0" />
-      </div>
+
 
       {/* Globe — positioned so its centre is always the centre of the container */}
       <div

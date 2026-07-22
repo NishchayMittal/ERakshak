@@ -72,6 +72,21 @@ export async function submitIdentifiers(caseId: string, identifiers: unknown[]) 
   return res.data;
 }
 
+export async function getIdentifiers(caseId: string): Promise<any[]> {
+  if (isMockMode()) {
+    // Return mock identifiers based on pending seeds?
+    // In mock mode, we don't have an endpoint for this currently, just returning empty.
+    return [];
+  }
+  const res = await apiClient.get(`/cases/${caseId}/identifiers`);
+  return res.data;
+}
+
+export async function deleteIdentifier(caseId: string, identifierId: string): Promise<void> {
+  if (isMockMode()) return;
+  await apiClient.delete(`/cases/${caseId}/identifiers/${identifierId}`);
+}
+
 export async function getNotes(caseId: string): Promise<CaseNote[]> {
   if (isMockMode()) return mock.getMockNotes(caseId);
   const res = await apiClient.get(`/cases/${caseId}/notes`);

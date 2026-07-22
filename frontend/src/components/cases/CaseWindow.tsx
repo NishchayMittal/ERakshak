@@ -4,7 +4,7 @@ import { Download, FileText, RefreshCw } from 'lucide-react';
 import { useDashboardContext } from '../../pages/DashboardContext';
 import { useCaseWebSocket } from '../../hooks/useCaseWebSocket';
 import { useGraphStore } from '../../state/graphStore';
-import { uploadImage, getSuspects } from '../../api/endpoints';
+import { uploadImage, getSuspects, getIdentifiers, deleteIdentifier } from '../../api/endpoints';
 import { apiClient } from '../../api/client';
 import TemporalWindow from './TemporalWindow';
 import ChatPanel from './ChatPanel';
@@ -114,6 +114,31 @@ export function CaseWindow({ win }: { win: any }) {
   };
 
   const [suspectsList, setSuspectsList] = React.useState<any[]>([]);
+  const [existingSeeds, setExistingSeeds] = React.useState<any[]>([]);
+
+  const fetchExistingSeeds = React.useCallback(async () => {
+    try {
+      const identifiers = await getIdentifiers(caseId);
+      setExistingSeeds(identifiers);
+    } catch (err) {
+      console.error("Failed to fetch seeds", err);
+    }
+  }, [caseId]);
+
+  React.useEffect(() => {
+    if (tab === 'intake') {
+      fetchExistingSeeds();
+    }
+  }, [tab, fetchExistingSeeds]);
+
+  const removeExistingSeed = async (identifierId: string) => {
+    try {
+      await deleteIdentifier(caseId, identifierId);
+      await fetchExistingSeeds();
+    } catch (err) {
+      console.error("Failed to delete seed", err);
+    }
+  };
 
   React.useEffect(() => {
     getSuspects().then(setSuspectsList).catch(console.error);
@@ -304,12 +329,40 @@ export function CaseWindow({ win }: { win: any }) {
                                 )}
                               </div>
                               <button
-                                onClick={() => runIngestPipeline(caseId)}
+                                onClick={async () => {
+                                  await runIngestPipeline(caseId);
+                                  // Refresh seeds shortly after ingestion
+                                  setTimeout(fetchExistingSeeds, 2000);
+                                }}
                                 disabled={(casePendingSeeds[caseId] || []).length === 0 || (caseIngestProgress[caseId] !== undefined && caseIngestProgress[caseId] !== null)}
                                 className="w-full bg-[#a855f7] hover:bg-[#a855f7]/85 disabled:bg-white/5 disabled:text-gray-600 text-black text-[9px] font-bold py-2 tracking-widest text-center uppercase"
                               >
                                 RUN CORRELATION SCAN
                               </button>
+                            </div>
+                          </div>
+
+                          {/* Existing seeds */}
+                          <div className="bg-black/35 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
+                            <div className="flex justify-between items-center border-b border-white/5 pb-1">
+                              <h4 className="text-[10px] font-bold text-gray-300">ADDED SEEDS</h4>
+                              <button onClick={fetchExistingSeeds} className="text-[8px] text-[#39ff14] hover:text-white flex items-center gap-1 font-mono">
+                                <RefreshCw size={10} /> REFRESH
+                              </button>
+                            </div>
+                            <div className="flex-1 flex flex-col gap-1.5 overflow-y-auto max-h-48 min-h-24">
+                              {existingSeeds.length === 0 ? (
+                                <span className="text-[8px] text-gray-600 font-mono italic">No seeds added yet.</span>
+                              ) : (
+                                existingSeeds.map((s, idx) => (
+                                  <div key={idx} className="flex justify-between items-center bg-white/5 border border-white/5 px-2.5 py-1 rounded">
+                                    <span className="text-[8px] uppercase font-bold text-gray-300">
+                                      <span className="text-[#a855f7] mr-1.5">[{s.type}]</span> {s.raw_value}
+                                    </span>
+                                    <button onClick={() => removeExistingSeed(s.id)} className="text-gray-500 hover:text-red-400 text-[8px] font-bold border border-transparent hover:border-red-400 px-1 rounded transition-colors">REMOVE</button>
+                                  </div>
+                                ))
+                              )}
                             </div>
                           </div>
 

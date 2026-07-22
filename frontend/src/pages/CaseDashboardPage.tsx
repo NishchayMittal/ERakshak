@@ -150,6 +150,10 @@ export default function CaseDashboardPage() {
   const { loadEntityGraph, graphData, clearGraph } = useGraphStore();
 
   const [windows, setWindows] = useState<WindowState[]>([]);
+  // Ref that always holds the latest windows — used inside interval callbacks
+  // to avoid stale closures when checking whether a case window is still open.
+  const windowsRef = useRef(windows);
+  windowsRef.current = windows;
   const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
   const [maxZIndex, setMaxZIndex] = useState(10);
   const [wallpaperIdx, setWallpaperIdx] = useState(0);
@@ -157,7 +161,8 @@ export default function CaseDashboardPage() {
   const [showWallpaperMenu, setShowWallpaperMenu] = useState(false);
 
   const activeCaseId = windows.find(w => w.id === activeWindowId && w.type === 'case_workspace')?.caseId;
-  useWebSocket(activeCaseId);
+  const hasOpenCaseWindow = windows.some(w => w.type === 'case_workspace' && !w.isMinimized);
+  useWebSocket(activeCaseId, hasOpenCaseWindow);
 
   useEffect(() => {
     if (graphData && activeCaseId) {
@@ -428,10 +433,17 @@ export default function CaseDashboardPage() {
         console.error('Failed to fetch audit logs', err);
       }
     };
+
     fetchLogs();
-    const timer = setInterval(fetchLogs, 5000);
+
+    // Only poll when at least one window is open — reduces backend load
+    // when nothing is being worked on
+    const hasActiveWindows = windows.length > 0 && windows.some(w => !w.isMinimized);
+    const POLL_INTERVAL = hasActiveWindows ? 5000 : 30000;
+
+    const timer = setInterval(fetchLogs, POLL_INTERVAL);
     return () => clearInterval(timer);
-  }, []);
+  }, [windows.length]);
 
   const currentWallpaper = WALLPAPERS[wallpaperIdx];
 
@@ -738,6 +750,12 @@ export default function CaseDashboardPage() {
   useEffect(() => {
     if (cases.length === 0) return;
 
+    // Only preload graph data when a case workspace window is actually open.
+    // This prevents continuous background HTTP requests to the backend that
+    // slow down the website when no investigation is being viewed.
+    const hasOpenCaseWindow = windows.some(w => w.type === 'case_workspace' && !w.isMinimized);
+    if (!hasOpenCaseWindow) return;
+
     const validCase = cases.find(c => c.caseId === lastAccessedCaseId);
     const targetId = validCase ? validCase.caseId : cases[0].caseId;
 
@@ -749,7 +767,7 @@ export default function CaseDashboardPage() {
     loadGraphForCase(targetId, 'n1').catch(err => {
       console.warn("Failed to prefetch graph for case:", err);
     });
-  }, [lastAccessedCaseId, cases.length]);
+  }, [lastAccessedCaseId, cases.length, windows]);
 
   const handleMatrixWheel = (e: React.WheelEvent) => {
     if (!lastAccessedCaseId) return;
@@ -1027,7 +1045,16 @@ export default function CaseDashboardPage() {
           setWindows(prev =>
             prev.map(w => (w.caseId === caseId ? { ...w, activeTab: 'graph' } : w))
           );
-          loadGraphForCase(caseId, seeds[0].value.trim().toLowerCase());
+          // Only reload graph if the case window is still open — the user may have
+          // closed it during ingestion, and we don't want a background HTTP flood.
+          // Uses windowsRef.current (not the closure-captured `windows`) so the
+          // check is accurate even after the setInterval callback fires late.
+          const windowStillOpen = windowsRef.current.some(
+            w => w.caseId === caseId && !w.isMinimized
+          );
+          if (windowStillOpen) {
+            loadGraphForCase(caseId, seeds[0].value.trim().toLowerCase());
+          }
         } catch (err) {
           showToast('Backend ingestion pipeline failed', 'error');
           setCaseIngestProgress(prev => ({ ...prev, [caseId]: null }));

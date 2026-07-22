@@ -58,7 +58,7 @@ export function CaseWindow({ win }: { win: any }) {
   const nodeInfo = caseGraph?.nodes?.find((n: any) => n.id === activeEntity);
 
   const getFindingsForEntity = (nodeInfo: any) => {
-    if (!evidencePack || !nodeInfo) return [];
+    if (!evidencePack || !evidencePack.identifiers || !nodeInfo) return [];
     
     // 1. Match by normalized_value label
     const activeIdent = evidencePack.identifiers.find(
@@ -93,7 +93,7 @@ export function CaseWindow({ win }: { win: any }) {
 
   // Helper: get face_similarity findings for a photo node from evidencePack
   const getFaceMatchFindings = (nodeLabel: string) => {
-    if (!evidencePack) return [];
+    if (!evidencePack || !evidencePack.identifiers) return [];
     const allFaceFindings: any[] = [];
     const label = nodeLabel.toLowerCase();
     // Also compute basename in case the node label is a subpath like uuid/filename.jpg

@@ -862,7 +862,10 @@ def get_case_geo(
         findings = db.query(Finding).join(Identifier).filter(Identifier.case_id == case_id).all()
     
     nodes = []
-    seen_locations = set()
+    seen_labels = set()
+    used_locations = set()
+    
+    import random
 
     for f in findings:
         payload = f.raw_payload or {}
@@ -888,19 +891,19 @@ def get_case_geo(
             if domain:
                 if domain.endswith(".com") or domain.endswith(".net") or domain.endswith(".org"):
                     lat, lon = COUNTRY_COORDS["US"]
-                    label = f"Domain: {domain} (US)"
+                    label = domain
                 elif domain.endswith(".uk"):
                     lat, lon = COUNTRY_COORDS["GB"]
-                    label = f"Domain: {domain} (GB)"
+                    label = domain
                 elif domain.endswith(".in"):
                     lat, lon = COUNTRY_COORDS["IN"]
-                    label = f"Domain: {domain} (IN)"
+                    label = domain
                 elif domain.endswith(".ru"):
                     lat, lon = COUNTRY_COORDS["RU"]
-                    label = f"Domain: {domain} (RU)"
+                    label = domain
                 elif domain.endswith(".jp"):
                     lat, lon = COUNTRY_COORDS["JP"]
-                    label = f"Domain: {domain} (JP)"
+                    label = domain
 
         # 3. Phone Number Country
         elif f.connector_name == "phone_lookup" and "country_code" in payload:
@@ -918,16 +921,29 @@ def get_case_geo(
                     break
 
         if lat is not None and lon is not None:
-            loc_key = f"{lat},{lon}"
-            if loc_key not in seen_locations:
-                nodes.append({
-                    "id": str(f.id),
-                    "lat": lat,
-                    "lng": lon,
-                    "label": label or f"Asset: {f.id}",
-                    "source": f.connector_name
-                })
-                seen_locations.add(loc_key)
+            node_label = label or f"Asset: {f.id}"
+            
+            # Avoid duplicate labels
+            if node_label in seen_labels:
+                continue
+            seen_labels.add(node_label)
+            
+            # Add jitter if location is already occupied
+            while True:
+                loc_key = f"{round(lat, 1)},{round(lon, 1)}"
+                if loc_key not in used_locations:
+                    used_locations.add(loc_key)
+                    break
+                lat += random.uniform(-3.0, 3.0)
+                lon += random.uniform(-3.0, 3.0)
+
+            nodes.append({
+                "id": str(f.id),
+                "lat": lat,
+                "lng": lon,
+                "label": node_label,
+                "source": f.connector_name
+            })
 
     arcs = []
     

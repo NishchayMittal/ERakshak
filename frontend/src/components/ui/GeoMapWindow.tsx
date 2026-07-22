@@ -109,12 +109,12 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
           labelsData={data?.nodes || []}
           labelLat="lat"
           labelLng="lng"
-          labelText="label"
-          labelSize={1.5}
-          labelDotRadius={0.3}
-          labelColor={() => 'rgba(255, 255, 255, 0.8)'}
-          labelResolution={2}
-          labelAltitude={0.05}
+          labelText={(d: any) => (d.label || '').replace(/^Domain:\s*/, '').replace(/\s*\([A-Z]{2}\)$/, '')}
+          labelSize={0.35}
+          labelDotRadius={0.15}
+          labelColor={() => 'rgba(255, 255, 255, 0.9)'}
+          labelResolution={4}
+          labelAltitude={(d: any) => 0.02 + ((d.label || '').length % 5) * 0.02}
 
           arcsData={data?.arcs || []}
           arcStartLat="startLat"

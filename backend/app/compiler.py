@@ -67,6 +67,7 @@ def serialize_graph(G: nx.MultiDiGraph) -> dict:
             "wallet_lookup": "wallet_lookup",
             "face_matcher": "face_matcher",
             "breach_repository_demo": "breach_lookup",
+            "wikipedia_lookup": "wikipedia",
         }
         source_prov = source_prov_map.get(source_prov, source_prov)
 
@@ -261,6 +262,16 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
         elif result_type in ("reddit_profile", "instagram_profile", "linkedin_profile"):
             target_node_id = result_val
             target_type = "username"
+
+        elif result_type == "wikipedia_entry":
+            payload = finding.raw_payload or {}
+            page_title = payload.get("page_title", "")
+            page_url = payload.get("page_url", "")
+            target_node_id = page_title or result_val
+            target_type = "person"
+            # Store profile_url for frontend linking (use page_url in addition to profile_url)
+            if page_url and not payload.get("profile_url"):
+                payload["profile_url"] = page_url
 
         if target_node_id:
             if not G.has_node(target_node_id):

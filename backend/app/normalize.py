@@ -44,6 +44,11 @@ def detect_type(raw_value: str) -> IdentifierType:
     if " " in value and any(char.isalpha() for char in value):
         return IdentifierType.name
 
+    # Long single-word inputs with only alphabetic chars are probably names
+    # (e.g., "Amitabh", "Madhuri", "Bachchan")
+    if len(value) >= 4 and value.isalpha() and value[0].isupper():
+        return IdentifierType.name
+
     return IdentifierType.other
 
 

@@ -172,10 +172,20 @@ async def run_connectors_and_pivot(
 
     async def invoke(connector):
         try:
+            # First check if we have cached results for this connector and identifier
+            cached_results = await connector._get_from_cache(identifier.normalized_value)
+            if cached_results is not None:
+                return connector, cached_results
+
+            # If not in cache, run the connector
             raw_res = await connector.run(
                 identifier.normalized_value,
                 metadata=identifier.identifier_metadata or {},
             )
+
+            # Cache the results for future use
+            await connector._set_in_cache(identifier.normalized_value, raw_res)
+
             return connector, raw_res
         except Exception as e:
             logger.error(f"Error running connector {connector.name}: {e}")

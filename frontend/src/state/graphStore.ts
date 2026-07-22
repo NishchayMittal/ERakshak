@@ -28,7 +28,8 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   selectedSources: [
     'whois', 'crt.sh', 'wayback', 'sherlock', 'breach_demo',
     'dns_resolver', 'github_commit_email', 'phone_lookup',
-    'wallet_lookup', 'face_matcher', 'breach_lookup'
+    'wallet_lookup', 'face_matcher', 'breach_lookup',
+    'wikipedia',
   ],
   timelineMaxTime: null,
   loading: false,

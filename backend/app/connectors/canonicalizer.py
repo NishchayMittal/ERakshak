@@ -118,15 +118,6 @@ def canonicalize_findings(findings: list[Finding]) -> list[Finding]:
             if repos > 0 or followers > 0:
                 pf.confidence = min(1.0, pf.confidence + 0.1)
 
-        # Keybase Profile boost
-        elif "keybase.io" in rval or (isinstance(payload, dict) and payload.get("site_name") == "Keybase"):
-            pf.confidence = min(0.98, pf.confidence + 0.1)
-
-        # Empty Patreon/Linktree check
-        elif ("patreon.com" in rval or "linktr.ee" in rval) and isinstance(payload, dict):
-            if not payload.get("bio") and not payload.get("display_name"):
-                pf.confidence = max(0.5, pf.confidence - 0.2)
-
     # Count breach lookup exposures
     breach_findings = [f for f in processed_findings if f.connector_name == "breach_lookup"]
     if len(breach_findings) > 5:
@@ -240,11 +231,8 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
         r'https?://(?:www\.)?(?:'
         r'github\.com'
         r'|reddit\.com/user'
-        r'|linktr\.ee'
-        r'|keybase\.io'
         r'|twitter\.com'
         r'|instagram\.com'
-        r'|patreon\.com'
         r'|news\.ycombinator\.com/user\?id='
         r')/([a-zA-Z0-9_.-]+)',
         search_text, re.IGNORECASE
@@ -257,15 +245,15 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
     # 6. Map explicit result types
     if result_type == "registrant_email":
         return IdentifierType.email, val.strip().lower()
-        
+
     elif result_type == "registrant_phone":
         return IdentifierType.phone, val.strip()
-        
+
     elif result_type == "registrant_name":
         name = val.split(" (")[0].strip()
         if name and "profile" not in name.lower() and "leak" not in name.lower():
             return IdentifierType.name, name
-            
+
     elif result_type == "face_similarity":
         name = None
         if isinstance(payload, dict):
@@ -277,8 +265,19 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
             name = cleaned_val.split(" (similarity:")[0].split(" (")[0].strip()
         if name and "profile" not in name.lower() and "leak" not in name.lower():
             return IdentifierType.name, name
-            
+
     elif result_type == "subdomain":
         return IdentifierType.domain, clean_domain(val)
-        
+
+    elif result_type == "wikipedia_entry":
+        # Extract the Wikipedia page URL as a domain for further pivoting
+        if isinstance(payload, dict):
+            page_url = payload.get("page_url", "")
+            if page_url:
+                # Extract domain from URL
+                domain_match = re.search(r'https?://([^/]+)', page_url)
+                if domain_match:
+                    return IdentifierType.domain, domain_match.group(1)
+        return None
+
     return None

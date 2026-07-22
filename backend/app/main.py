@@ -15,8 +15,6 @@ from app.connectors.dns_resolver import DnsResolverConnector
 from app.connectors.github_commits import GithubCommitEmailConnector
 from app.connectors.ip_geoloc import IpGeolocConnector
 from app.connectors.shodan_idb import ShodanIdbConnector
-from app.connectors.gravatar_email import GravatarEmailConnector
-from app.connectors.pgp_lookup import PgpLookupConnector
 from app.connectors.social_profiler import SocialProfilerConnector
 from app.database import Base, engine
 from app.routers import auth as auth_router
@@ -25,6 +23,10 @@ from app.routers import identifiers as identifiers_router
 from app.routers import model as model_router
 from app.routers import ws as ws_router
 
+from app.connectors.ocr_extractor import OcrExtractorConnector
+from app.connectors.bucket_enum import BucketEnumConnector
+from app.connectors.hibp import HaveIBeenPwnedConnector
+from app.connectors.wikipedia_lookup import WikipediaConnector
 
 app = FastAPI(title="e-Rakshak API", version="0.1.0")
 
@@ -42,14 +44,12 @@ app.include_router(identifiers_router.router)
 app.include_router(model_router.router)
 app.include_router(ws_router.router)
 
-from app.connectors.ocr_extractor import OcrExtractorConnector
-from app.connectors.bucket_enum import BucketEnumConnector
-
 registry.register(CrtShConnector())
 registry.register(WhoisConnector())
 registry.register(WaybackConnector())
 registry.register(UsernameEnumConnector())
 registry.register(BreachLookupConnector())
+registry.register(HaveIBeenPwnedConnector())
 registry.register(FaceMatcherConnector())
 registry.register(NameSearchConnector())
 registry.register(PhoneLookupConnector())
@@ -58,11 +58,10 @@ registry.register(DnsResolverConnector())
 registry.register(GithubCommitEmailConnector())
 registry.register(IpGeolocConnector())
 registry.register(ShodanIdbConnector())
-registry.register(GravatarEmailConnector())
-registry.register(PgpLookupConnector())
 registry.register(OcrExtractorConnector())
 registry.register(BucketEnumConnector())
 registry.register(SocialProfilerConnector())
+registry.register(WikipediaConnector())
 
 
 async def retention_cleanup_loop():
@@ -70,7 +69,7 @@ async def retention_cleanup_loop():
     from app.models import Case, Identifier, Finding, AuditLog, CaseNote, LinkFeedback
     from datetime import datetime, timezone
     import asyncio
-    
+
     while True:
         try:
             db = SessionLocal()

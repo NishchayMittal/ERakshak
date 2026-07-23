@@ -122,7 +122,7 @@ def dispatch_task(case_id: str, identifier_id: str, investigator_id: str, depth:
     """
     Dispatches task to Celery queue, falling back to local thread/asyncio execution if no Celery worker is active.
     """
-    if is_redis_available():
+    if is_celery_worker_active():
         try:
             task_run_connectors_and_pivot.delay(case_id, identifier_id, investigator_id, depth)
             logger.info("Successfully dispatched task to Celery queue.")
@@ -130,7 +130,7 @@ def dispatch_task(case_id: str, identifier_id: str, investigator_id: str, depth:
         except Exception as e:
             logger.warning(f"Celery dispatch failed ({e}). Falling back to local background execution.")
     else:
-        logger.info("Redis is offline. Bypassing Celery queue, using local background execution.")
+        logger.info("No active Celery workers found. Bypassing Celery queue, using local background execution.")
 
     import threading
     from app.connectors.runner import run_connectors_and_pivot_background

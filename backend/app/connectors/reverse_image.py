@@ -114,8 +114,8 @@ def get_mock_findings(filename: str) -> list[Finding]:
     for key, findings in MOCK_DATA.items():
         if key in filename:
             return findings
-    # Fallback to ronaldo mock data in development so any generic photo URL successfully scans
-    return MOCK_DATA["ronaldo"]
+    # Return empty if no specific mock data matches, rather than hardcoding a confusing fallback
+    return None
 
 class ReverseImageConnector(BaseConnector):
     name = "reverse_image_search"

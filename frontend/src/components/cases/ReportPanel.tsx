@@ -9,25 +9,7 @@ interface ReportPanelProps {
 }
 
 // Audio click synth
-const playDiagnosticTone = () => {
-  try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(800, ctx.currentTime);
-    osc.frequency.setValueAtTime(1200, ctx.currentTime + 0.08);
-    osc.frequency.setValueAtTime(1600, ctx.currentTime + 0.16);
-    gain.gain.setValueAtTime(0.03, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.25);
-  } catch (e) {}
-};
+const playDiagnosticTone = () => {};
 
 export default function ReportPanel({ caseId }: ReportPanelProps) {
   const [report, setReport] = useState<string | null>(null);

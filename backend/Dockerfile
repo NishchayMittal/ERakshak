@@ -20,5 +20,10 @@ COPY haarcascade_frontalface_default.xml ./haarcascade_frontalface_default.xml
 
 EXPOSE 8000
 
-# Use Gunicorn with Uvicorn workers for production
-CMD ["gunicorn", "app.main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000"]
+COPY start.sh ./start.sh
+USER root
+RUN chmod +x ./start.sh
+USER appuser
+
+# Execute the unified startup script
+CMD ["./start.sh"]

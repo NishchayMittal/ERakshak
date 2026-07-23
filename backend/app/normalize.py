@@ -16,7 +16,7 @@ IP_RE = re.compile(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$")
 def detect_type(raw_value: str) -> IdentifierType:
     value = raw_value.strip()
     lower_val = value.lower()
-    if lower_val.endswith((".png", ".jpg", ".jpeg", ".webp", ".gif")) or "suspect_" in lower_val:
+    if re.search(r"\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$", lower_val):
         return IdentifierType.photo
 
     if EMAIL_RE.match(value):

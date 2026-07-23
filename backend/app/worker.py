@@ -1,9 +1,16 @@
 import os
 import asyncio
+from dotenv import load_dotenv
+backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+load_dotenv(os.path.join(backend_dir, ".env"))
+
 from celery import Celery
 import logging
 
 logger = logging.getLogger(__name__)
+
+from app.connectors import register_all
+register_all()
 
 redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 
@@ -27,6 +34,9 @@ celery_app.conf.update(
         }
     }
 )
+
+if os.name == "nt":
+    celery_app.conf.update(worker_pool="solo")
 
 @celery_app.task(name="monitor_active_cases")
 def monitor_active_cases():

@@ -39,12 +39,6 @@ const Icons = {
       <path d="M3 17a7 7 0 0114 0" stroke="currentColor" strokeWidth="1.2" />
     </svg>
   ),
-  settings: (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <circle cx="10" cy="10" r="3.5" stroke="currentColor" strokeWidth="1.2" />
-      <path d="M10 2v2.5M10 15.5v2.5M2 10h2.5M15.5 10h2.5M4.3 4.3l1.8 1.8M13.9 13.9l1.8 1.8M15.7 4.3L13.9 6.1M6.1 13.9l-1.8 1.8" stroke="currentColor" strokeWidth="1.2" />
-    </svg>
-  ),
   collapse: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="square" />
@@ -62,7 +56,6 @@ const NAV_ITEMS = [
   { key: 'intake', label: 'INTAKE', path: null },
   { key: 'investigate', label: 'INVESTIGATE', path: null },
   { key: 'profile', label: 'PROFILE', path: '/profile' },
-  { key: 'settings', label: 'SETTINGS', path: '/settings' },
 ];
 
 export default function Sidebar() {

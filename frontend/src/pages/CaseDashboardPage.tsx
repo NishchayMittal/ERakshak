@@ -43,7 +43,6 @@ import {
 
 import { DashboardContext } from './DashboardContext';
 import { CaseWindow } from '../components/cases/CaseWindow';
-import { SuspectsWindow } from '../components/cases/SuspectsWindow';
 import { ProfileWindow } from '../components/cases/ProfileWindow';
 import { ExplorerWindow } from '../components/cases/ExplorerWindow';
 import TemporalWindow from '../components/cases/TemporalWindow';
@@ -71,7 +70,7 @@ import {
 interface WindowState {
   id: string;
   title: string;
-  type: 'case_workspace' | 'settings' | 'suspects' | 'profile' | 'cases_explorer' | 'temporal_analysis' | 'cross_correlate' | 'geo_map';
+  type: 'case_workspace' | 'profile' | 'cases_explorer' | 'temporal_analysis' | 'cross_correlate' | 'geo_map';
   x: number;
   y: number;
   width: number;
@@ -749,11 +748,6 @@ export default function CaseDashboardPage() {
 
   useEffect(() => {
     if (cases.length === 0) return;
-
-    // Only preload graph data when a case workspace window is actually open.
-    // This prevents continuous background HTTP requests to the backend that
-    // slow down the website when no investigation is being viewed.
-    const hasOpenCaseWindow = windows.some(w => w.type === 'case_workspace' && !w.isMinimized);
     if (!hasOpenCaseWindow) return;
 
     const validCase = cases.find(c => c.caseId === lastAccessedCaseId);
@@ -767,7 +761,7 @@ export default function CaseDashboardPage() {
     loadGraphForCase(targetId, 'n1').catch(err => {
       console.warn("Failed to prefetch graph for case:", err);
     });
-  }, [lastAccessedCaseId, cases.length, windows]);
+  }, [lastAccessedCaseId, cases.length, hasOpenCaseWindow, loadGraphForCase]);
 
   const handleMatrixWheel = (e: React.WheelEvent) => {
     if (!lastAccessedCaseId) return;
@@ -1538,7 +1532,6 @@ export default function CaseDashboardPage() {
 
 
               {win.type === 'case_workspace' && <CaseWindow win={win} />}
-              {win.type === 'suspects' && <SuspectsWindow />}
               {win.type === 'profile' && <ProfileWindow />}
               {win.type === 'cases_explorer' && <ExplorerWindow win={win} />}
               {win.type === 'temporal_analysis' && (
@@ -1646,14 +1639,6 @@ export default function CaseDashboardPage() {
           className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'profile_window') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
         >
           <User size={20} />
-        </button>
-
-        <button
-          onClick={() => openWindow('suspects_window', t('dashboard.suspects_title'), 'suspects')}
-          title={t('dashboard.suspects_tooltip')}
-          className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'suspects_window') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
-        >
-          <Users size={20} />
         </button>
 
         <div className="h-6 w-[1px] bg-white/10" />

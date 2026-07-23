@@ -343,6 +343,7 @@ def delete_case_identifier(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Identifier not found")
 
     # Delete all dependent data
+    _delete_photo_files([identifier])
     db.query(Finding).filter(Finding.identifier_id == identifier_id).delete(synchronize_session=False)
 
     db.delete(identifier)
@@ -834,6 +835,51 @@ def export_case_pdf(
     return StreamingResponse(buffer, headers=headers, media_type="application/pdf")
 
 
+def _delete_photo_files(identifiers: list[Identifier]):
+    """Delete uploaded files associated with photo identifiers."""
+    import os
+    import shutil
+    from app.models import IdentifierType
+
+    uploads_dir = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "resources", "uploads")
+    )
+
+    for i in identifiers:
+        if i.type == IdentifierType.photo:
+            for val in (i.raw_value, i.normalized_value):
+                if not val:
+                    continue
+                
+                # Check for upload_id subfolder (like "someuuid/filename.png")
+                val_clean = val.replace("\\", "/")
+                parts = val_clean.split('/')
+                if len(parts) >= 2:
+                    upload_id = parts[0]
+                    # Verify upload_id is a 32-character hex UUID
+                    if len(upload_id) == 32:
+                        dir_to_delete = os.path.join(uploads_dir, upload_id)
+                        if os.path.exists(dir_to_delete) and os.path.isdir(dir_to_delete):
+                            try:
+                                shutil.rmtree(dir_to_delete)
+                            except Exception:
+                                pass
+                
+                # Also try standard path check for flat files or direct references
+                try:
+                    resolved_file_path = val
+                    if not os.path.isabs(resolved_file_path):
+                        resolved_file_path = os.path.join(uploads_dir, val)
+                    if os.path.exists(resolved_file_path) and os.path.isfile(resolved_file_path):
+                        os.remove(resolved_file_path)
+                        # Clean up empty parent folder
+                        parent_dir = os.path.dirname(resolved_file_path)
+                        if parent_dir != uploads_dir and os.path.exists(parent_dir) and not os.listdir(parent_dir):
+                            os.rmdir(parent_dir)
+                except Exception:
+                    pass
+
+
 @router.delete("/{case_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_case(
     case_id: str,
@@ -845,7 +891,10 @@ def delete_case(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
 
     # Delete all dependent data
-    identifier_ids = [i.id for i in db.query(Identifier).filter(Identifier.case_id == case_id).all()]
+    identifiers = db.query(Identifier).filter(Identifier.case_id == case_id).all()
+    _delete_photo_files(identifiers)
+
+    identifier_ids = [i.id for i in identifiers]
     if identifier_ids:
         db.query(Finding).filter(Finding.identifier_id.in_(identifier_ids)).delete(synchronize_session=False)
 

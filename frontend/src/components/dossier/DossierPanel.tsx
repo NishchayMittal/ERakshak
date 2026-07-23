@@ -321,7 +321,6 @@ export default function DossierPanel() {
   const { t } = useTranslation();
   const { evidencePack, selectedEntityId, loading } = useGraphStore();
   const [selectedBreach, setSelectedBreach] = useState<any>(null);
-  const [selectedSuspect, setSelectedSuspect] = useState<any>(null);
 
   const getBaseURL = () => {
     const base = apiClient.defaults.baseURL || '';
@@ -403,8 +402,26 @@ export default function DossierPanel() {
             confidence: f.confidence,
             payload: f.raw_payload || f.rawPayload || {},
           }));
-        break;
       }
+    }
+  }
+
+  if (attributes.length === 0 && selectedEntityId) {
+    const graphNode = useGraphStore.getState().graphData?.nodes.find((n) => n.id === selectedEntityId);
+    if (graphNode) {
+      displayName = graphNode.label || graphNode.id;
+      attributes.push({
+        key: 'entity_type',
+        value: graphNode.type,
+        source: 'correlation_engine',
+        confidence: graphNode.confidence,
+      });
+      attributes.push({
+        key: 'identifier_value',
+        value: graphNode.label || graphNode.id,
+        source: 'system',
+        confidence: graphNode.confidence,
+      });
     }
   }
 
@@ -445,7 +462,7 @@ export default function DossierPanel() {
           color: 'var(--text-primary)', marginTop: 4, fontWeight: 600,
           wordBreak: 'break-all',
         }}>
-          {displayName}
+          {/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(displayName) ? displayName.split(/[/\\]/).pop() : displayName}
         </div>
         <div style={{
           fontFamily: 'var(--font-mono)', fontSize: 8,
@@ -488,7 +505,7 @@ export default function DossierPanel() {
                 value={f.value}
                 redacted={f.redacted}
                 payload={f.payload}
-                onViewDetails={f.label.toLowerCase() === 'face_similarity' ? setSelectedSuspect : setSelectedBreach}
+                onViewDetails={setSelectedBreach}
               />
             );
           })
@@ -597,131 +614,7 @@ export default function DossierPanel() {
           </div>
         </div>
       )}
-      {/* Suspect Face Match Modal */}
-      {selectedSuspect && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
-          zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          backdropFilter: 'blur(6px)',
-        }}>
-          <div style={{
-            background: 'rgba(4, 8, 14, 0.95)', border: '1px solid #39ff14',
-            padding: 20, width: 500, display: 'flex', flexDirection: 'column', gap: 14,
-            boxShadow: '0 0 24px rgba(57,255,20,0.15)',
-            backdropFilter: 'blur(12px)',
-            animation: 'scale-up 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)',
-          }}>
-            <style>{`
-              @keyframes scanline {
-                0% { top: 0%; }
-                50% { top: 100%; }
-                100% { top: 0%; }
-              }
-            `}</style>
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--struct-line)', paddingBottom: 8 }}>
-              <div>
-                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: '#39ff14', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-                  FACIAL RECOGNITION ANALYSIS
-                </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', marginTop: 2 }}>
-                  CORRELATED TARGET DOSSIER MATCH
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedSuspect(null)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14 }}
-              >
-                ✕
-              </button>
-            </div>
 
-            {/* Side-by-Side Images */}
-            <div style={{ display: 'flex', gap: 20, justifyContent: 'center', alignItems: 'center' }}>
-              {/* Target Image */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1 }}>
-                <span style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>INPUT TARGET SEED</span>
-                <div style={{ position: 'relative', border: '1px solid var(--struct-line)', background: '#000', width: 140, height: 140, overflow: 'hidden' }}>
-                  {(() => {
-                    const targetFilename = displayName;
-                    const isUpload = targetFilename.startsWith('upload_');
-                    const targetUrl = isUpload ? `${getBaseURL()}/static/uploads/${targetFilename}` : `${getBaseURL()}/static/suspects/${targetFilename}`;
-                    return (
-                      <img
-                        src={targetUrl}
-                        alt="Target Seed"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        onError={(e) => {
-                          e.currentTarget.src = `${getBaseURL()}/static/uploads/${targetFilename}`;
-                        }}
-                      />
-                    );
-                  })()}
-                  {/* Neon Scanline overlay animation */}
-                  <div style={{
-                    position: 'absolute', inset: '0 0 auto 0', height: 2, background: '#39ff14',
-                    boxShadow: '0 0 8px #39ff14',
-                    animation: 'scanline 2s linear infinite',
-                  }} />
-                </div>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {displayName}
-                </span>
-              </div>
-
-              {/* Match Connection Line */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 'bold', color: '#39ff14' }}>
-                  {(selectedSuspect.similarity_score || selectedSuspect.confidence * 100 || 0).toFixed(1)}%
-                </span>
-                <div style={{ width: 40, height: 1, background: 'linear-gradient(90deg, #39ff14, #39ff14)' }} />
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 7, color: 'var(--text-muted)', textTransform: 'uppercase' }}>match</span>
-              </div>
-
-              {/* Suspect Image */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1 }}>
-                <span style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>ENROLLED SUSPECT PROFILE</span>
-                <div style={{ position: 'relative', border: '1px solid var(--struct-line)', background: '#000', width: 140, height: 140, overflow: 'hidden' }}>
-                  {(() => {
-                    const suspectFilename = selectedSuspect.suspect_image ? selectedSuspect.suspect_image.split(/[/\\]/).pop() : '';
-                    const suspectUrl = `${getBaseURL()}/static/suspects/${suspectFilename}`;
-                    return (
-                      <img
-                        src={suspectUrl}
-                        alt={selectedSuspect.suspect_name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    );
-                  })()}
-                </div>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#39ff14', fontWeight: 'bold' }}>
-                  {selectedSuspect.suspect_name || selectedSuspect.suspect_name || 'Suspect'}
-                </span>
-              </div>
-            </div>
-
-            {/* Details Table */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, background: '#000000', border: '1px solid var(--struct-line)', padding: 10 }}>
-              <div>
-                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>SUSPECT REGISTERED NAME</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: '#ffffff', marginTop: 2 }}>{selectedSuspect.suspect_name || 'Suspect'}</div>
-              </div>
-              <div>
-                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>CONFIDENCE RATING</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: '#39ff14', marginTop: 2 }}>{(selectedSuspect.similarity_score || selectedSuspect.confidence * 100 || 0).toFixed(1)}% SIMILARITY</div>
-              </div>
-              <div>
-                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>ALGORITHM METHOD</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: '#ffffff', marginTop: 2 }}>{selectedSuspect.method || 'HOG Cosine Similarity'}</div>
-              </div>
-              <div>
-                <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>OFF-LINE INTEGRATION</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: '#a855f7', marginTop: 2, textTransform: 'uppercase' }}>verified suspect</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

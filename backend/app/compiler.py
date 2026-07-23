@@ -185,14 +185,7 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
                 target_node_id = result_val.split("Profile: ")[1].strip()
             else:
                 target_node_id = result_val.strip()
-            target_type = "username" # map to username or person
-        elif result_type == "face_similarity":
-            lower_val = result_val.lower()
-            if "match: " in lower_val:
-                target_node_id = lower_val.split("match: ")[1].split(" (similarity:")[0].strip().title()
-            else:
-                target_node_id = result_val.strip().title()
-            target_type = "person"
+            target_type = "username"
         elif result_type == "leak_record":
             payload = finding.raw_payload or {}
             breach_name = payload.get("breach")
@@ -266,6 +259,9 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
         elif result_type in ("reddit_profile", "instagram_profile", "linkedin_profile"):
             target_node_id = result_val
             target_type = "username"
+        elif result_type in ("image_hosting_page", "image_exact_match"):
+            target_node_id = result_val.strip()
+            target_type = "domain"
 
         elif result_type == "wikipedia_entry":
             payload = finding.raw_payload or {}
@@ -287,7 +283,7 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
                     id=finding.id,
                     confidence=float(confidence),
                     timestamp=timestamp_str,
-                    profile_url=(finding.raw_payload or {}).get("profile_url", "")
+                    profile_url=(finding.raw_payload or {}).get("profile_url") or (finding.raw_payload or {}).get("url") or (target_node_id if target_node_id.startswith("http") else "")
                 )
             G.add_edge(
                 parent_node_id,

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useCallback } from 'react';
 import CytoscapeComponent from 'react-cytoscapejs';
 import cytoscape from 'cytoscape';
 import cola from 'cytoscape-cola';
@@ -22,7 +22,7 @@ interface GraphViewProps {
 export default function GraphView({ onSelectNode }: GraphViewProps) {
   const { t } = useTranslation();
   const transliterate = useTransliteration();
-  const { graphData, confidenceThreshold, selectedSources, timelineMaxTime } = useGraphStore();
+  const { graphData, confidenceThreshold, selectedSources, timelineMaxTime, selectedEntityId } = useGraphStore();
   const cyRef = useRef<cytoscape.Core | null>(null);
   const reticleRef = useRef<HTMLDivElement | null>(null);
 
@@ -50,9 +50,23 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
       return matchesConfidence && matchesSource && matchesTime && sourceExists && targetExists;
     });
 
-    const cyNodes = filteredNodes.map((n) => ({
-      data: { id: n.id, label: transliterate(n.label), type: n.type, confidence: n.confidence },
-    }));
+    const cyNodes = filteredNodes.map((n) => {
+      let cleanLabel = transliterate(n.label);
+      if (/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(n.label)) {
+        cleanLabel = n.label.split(/[/\\]/).pop()!;
+      } else if (n.label.startsWith('http://') || n.label.startsWith('https://')) {
+        try {
+          const parsed = new URL(n.label);
+          cleanLabel = parsed.hostname + (parsed.pathname !== '/' ? parsed.pathname : '');
+        } catch (e) {
+          cleanLabel = n.label;
+        }
+      }
+      return {
+        data: { id: n.id, label: cleanLabel, type: n.type, confidence: n.confidence },
+        selected: n.id === selectedEntityId,
+      };
+    });
     const cyEdges = filteredEdges.map((e) => ({
       data: {
         id: e.id,
@@ -67,7 +81,7 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
     }));
 
     return [...cyNodes, ...cyEdges];
-  }, [graphData, confidenceThreshold, selectedSources, timelineMaxTime]);
+  }, [graphData, confidenceThreshold, selectedSources, timelineMaxTime, selectedEntityId]);
 
   // Re-run layout when element count changes
   useEffect(() => {
@@ -86,6 +100,19 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
     }
   }, [elements.length]);
 
+  // Synchronize visual node selection state in Cytoscape instance
+  useEffect(() => {
+    if (cyRef.current) {
+      cyRef.current.nodes().unselect();
+      if (selectedEntityId) {
+        const selNode = cyRef.current.getElementById(selectedEntityId);
+        if (selNode && selNode.length > 0) {
+          selNode.select();
+        }
+      }
+    }
+  }, [selectedEntityId]);
+
   // Position the reticle overlay over a node
   const showReticle = (x: number, y: number) => {
     const el = reticleRef.current;
@@ -99,7 +126,13 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
     el.style.animation = 'reticle-ring 0.6s ease-out forwards';
   };
 
-  const setupCytoscape = (cy: cytoscape.Core) => {
+  const onSelectNodeRef = useRef(onSelectNode);
+  onSelectNodeRef.current = onSelectNode;
+
+  const showReticleRef = useRef(showReticle);
+  showReticleRef.current = showReticle;
+
+  const setupCytoscape = useCallback((cy: cytoscape.Core) => {
     cyRef.current = cy;
 
     cy.off('tap', 'node');
@@ -109,7 +142,7 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
     // Node click → navigate
     cy.on('tap', 'node', (evt) => {
       const node = evt.target;
-      onSelectNode(node.id());
+      onSelectNodeRef.current(node.id());
     });
 
     // Hover → cyan flash + reticle ring
@@ -117,15 +150,13 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
       const node = evt.target;
       node.addClass('hovered');
       const pos = node.renderedPosition();
-      showReticle(pos.x, pos.y);
+      showReticleRef.current(pos.x, pos.y);
     });
 
     cy.on('mouseout', 'node', (evt) => {
       evt.target.removeClass('hovered');
     });
-
-    cy.fit();
-  };
+  }, []);
 
   return (
     <div

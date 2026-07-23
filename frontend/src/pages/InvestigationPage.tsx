@@ -52,7 +52,7 @@ export default function InvestigationPage({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const welcomedCaseRef = useRef<string | undefined>(undefined);
   const navigate = useNavigate();
-  const { loadEntityGraph, clearGraph } = useGraphStore();
+  const { loadEntityGraph, clearGraph, setSelectedEntityId } = useGraphStore();
   const { activeTab, setActiveTab } = useUIStore();
   const { selectCase } = useCaseStore();
 
@@ -90,19 +90,24 @@ export default function InvestigationPage({
       selectCase(caseId);
       loadEntityGraph(caseId, entityId);
     }
+  }, [caseId, entityId, loadEntityGraph, selectCase]);
+
+  // Clear graph only when leaving the page (unmount)
+  useEffect(() => {
     return () => {
       clearGraph();
     };
-  }, [caseId, entityId, loadEntityGraph, clearGraph, selectCase]);
+  }, [clearGraph]);
 
   const handleSelectNode = (selectedNodeId: string) => {
+    // Update the store directly — no URL navigation needed.
+    // Navigating would unmount/remount this page, wiping the evidencePack
+    // from the store before it can be re-fetched, causing the node to appear
+    // "unclicked" while loading. Directly setting selectedEntityId keeps the
+    // component mounted and DossierPanel shows instantly.
+    setSelectedEntityId(selectedNodeId);
     if (onSelectNode) {
       onSelectNode(selectedNodeId);
-      setLocalEntityId(selectedNodeId);
-    } else if (caseId) {
-      navigate(
-        `/cases/${caseId}/entities/${encodeURIComponent(selectedNodeId)}`,
-      );
     }
   };
 

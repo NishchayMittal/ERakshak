@@ -74,15 +74,30 @@ class BaseConnector(ABC):
 
     @classmethod
     def _get_redis_client(cls) -> Optional[redis.Redis]:
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if cls._redis_client is not None and getattr(cls, "_loop", None) != loop:
+            try:
+                cls._redis_client.connection_pool.disconnect()
+            except Exception:
+                pass
+            cls._redis_client = None
+
         if cls._redis_client is None:
             try:
                 redis_url = "redis://localhost:6379/0"  # Default, can be overridden by env
                 import os
                 redis_url = os.environ.get("REDIS_URL", redis_url)
                 cls._redis_client = redis.from_url(redis_url)
+                cls._loop = loop
             except Exception:
                 # If Redis is not available, we disable caching
                 cls._redis_client = None
+                cls._loop = None
         return cls._redis_client
 
     async def _get_from_cache(self, identifier_value: str) -> Optional[List[Finding]]:

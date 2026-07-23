@@ -79,11 +79,6 @@ def canonicalize_findings(findings: list[Finding]) -> list[Finding]:
             # Romanize using anyascii and convert to lowercase/strip
             result_value = anyascii(result_value).strip().lower()
             
-        elif result_type == "face_similarity":
-            # Example value: "Match: Suspect Alpha (Developer Profile) (Similarity: 92.5%)"
-            # Romanize the result value
-            result_value = anyascii(result_value).strip().lower()
-            
         elif result_type == "social_profile":
             # Lowercase the entire profile link or username part
             result_value = result_value.strip().lower()
@@ -260,18 +255,6 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
 
     elif result_type == "registrant_name":
         name = val.split(" (")[0].strip()
-        if name and "profile" not in name.lower() and "leak" not in name.lower():
-            return IdentifierType.name, name
-
-    elif result_type == "face_similarity":
-        name = None
-        if isinstance(payload, dict):
-            name = payload.get("suspect_name")
-        if not name:
-            cleaned_val = val
-            if cleaned_val.startswith("match: "):
-                cleaned_val = cleaned_val[7:]
-            name = cleaned_val.split(" (similarity:")[0].split(" (")[0].strip()
         if name and "profile" not in name.lower() and "leak" not in name.lower():
             return IdentifierType.name, name
 

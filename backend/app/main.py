@@ -5,34 +5,14 @@ from fastapi.staticfiles import StaticFiles
 
 resources_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "resources"))
 
+from app.connectors import register_all
 from app.connectors.base import registry
-from app.connectors.crtsh import CrtShConnector
-from app.connectors.whois import WhoisConnector
-from app.connectors.wayback import WaybackConnector
-from app.connectors.username_enum import UsernameEnumConnector
-from app.connectors.breach_lookup import BreachLookupConnector
-from app.connectors.face_matcher import FaceMatcherConnector
-from app.connectors.name_search import NameSearchConnector
-from app.connectors.phone_lookup import PhoneLookupConnector
-from app.connectors.wallet_lookup import WalletLookupConnector
-from app.connectors.dns_resolver import DnsResolverConnector
-from app.connectors.github_commits import GithubCommitEmailConnector
-from app.connectors.ip_geoloc import IpGeolocConnector
-from app.connectors.shodan_idb import ShodanIdbConnector
-from app.connectors.social_profiler import SocialProfilerConnector
 from app.database import Base, engine
 from app.routers import auth as auth_router
 from app.routers import cases as cases_router
 from app.routers import identifiers as identifiers_router
 from app.routers import model as model_router
 from app.routers import ws as ws_router
-
-from app.connectors.ocr_extractor import OcrExtractorConnector
-from app.connectors.bucket_enum import BucketEnumConnector
-from app.connectors.hibp import HaveIBeenPwnedConnector
-from app.connectors.wikipedia_lookup import WikipediaConnector
-from app.connectors.reverse_image import ReverseImageConnector
-from app.connectors.exif_extractor import ExifExtractorConnector
 
 app = FastAPI(title="e-Rakshak API", version="0.1.0")
 
@@ -52,26 +32,7 @@ app.include_router(identifiers_router.router)
 app.include_router(model_router.router)
 app.include_router(ws_router.router)
 
-registry.register(CrtShConnector())
-registry.register(WhoisConnector())
-registry.register(WaybackConnector())
-registry.register(UsernameEnumConnector())
-registry.register(BreachLookupConnector())
-registry.register(HaveIBeenPwnedConnector())
-registry.register(FaceMatcherConnector())
-registry.register(NameSearchConnector())
-registry.register(PhoneLookupConnector())
-registry.register(WalletLookupConnector())
-registry.register(DnsResolverConnector())
-registry.register(GithubCommitEmailConnector())
-registry.register(IpGeolocConnector())
-registry.register(ShodanIdbConnector())
-registry.register(OcrExtractorConnector())
-registry.register(BucketEnumConnector())
-registry.register(SocialProfilerConnector())
-registry.register(WikipediaConnector())
-registry.register(ReverseImageConnector())
-registry.register(ExifExtractorConnector())
+register_all()
 
 
 async def retention_cleanup_loop():

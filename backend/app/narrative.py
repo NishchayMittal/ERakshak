@@ -6,11 +6,15 @@ logger = logging.getLogger(__name__)
 
 def sanitize_evidence(data):
     if isinstance(data, dict):
-        return {k: sanitize_evidence(v) for k, v in data.items()}
+        # Strip out raw_payload completely to save massive amounts of tokens
+        return {k: sanitize_evidence(v) for k, v in data.items() if k != "raw_payload"}
     elif isinstance(data, list):
+        # Cap lists at 15 items to prevent hundreds of findings from overloading the prompt
+        if len(data) > 15:
+            return [sanitize_evidence(item) for item in data[:15]] + [f"... [TRUNCATED {len(data)-15} MORE ITEMS]"]
         return [sanitize_evidence(item) for item in data]
-    elif isinstance(data, str) and len(data) > 500:
-        return data[:500] + "... [TRUNCATED]"
+    elif isinstance(data, str) and len(data) > 300:
+        return data[:300] + "... [TRUNCATED]"
     return data
 def generate_narrative(evidence_pack: dict) -> str:
     """

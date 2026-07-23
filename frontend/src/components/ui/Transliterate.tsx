@@ -40,6 +40,7 @@ export function Transliterate({
 }
 
 // Utility hook for non-JSX contexts
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTransliteration() {
   const { i18n } = useTranslation();
 

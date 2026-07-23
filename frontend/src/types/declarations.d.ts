@@ -1,9 +1,10 @@
 declare module 'react-cytoscapejs' {
-  const CytoscapeComponent: any;
+  import { ComponentType } from 'react';
+  const CytoscapeComponent: ComponentType<Record<string, unknown>>;
   export default CytoscapeComponent;
 }
 
 declare module 'cytoscape-cola' {
-  const cola: any;
+  const cola: (cytoscape: unknown) => void;
   export default cola;
 }

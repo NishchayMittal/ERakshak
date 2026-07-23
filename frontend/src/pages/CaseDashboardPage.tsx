@@ -1,42 +1,23 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useCaseStore } from '../state/caseStore';
-import type { GraphData } from '../types/graph';
+import type { GraphData, GraphNode } from '../types/graph';
 import { useUIStore } from '../state/uiStore';
 import { useAuth } from '../hooks/useAuth';
 import { useGraphStore } from '../state/graphStore';
 import { useWebSocket } from '../hooks/useWebSocket';
 import {
   Folder,
-  Database,
   Network,
-  Settings,
-  Users,
   User,
   X,
   Minimize2,
   Maximize2,
-  Monitor,
   LogOut,
   Plus,
   Compass,
-  FileText,
-  Activity,
   Shield,
-  Zap,
-  Play,
-  Search,
   Terminal,
-  Sliders,
-  Download,
-  Lock,
-  RefreshCw,
-  AlertTriangle,
-  CheckCircle,
-  Link,
-  ThumbsUp,
-  ThumbsDown,
   Edit,
-  Clock,
   Globe,
   Minus
 } from 'lucide-react';
@@ -53,14 +34,10 @@ import {
   triggerModelRetrain,
   updateInvestigatorProfile,
   submitIdentifiers,
-  getNotes,
-  addNote,
-  submitLinkFeedback,
   getNarrative,
   exportCaseJSON,
   exportCaseCSV,
   exportCasePDF,
-  getEvidencePack,
   getPendingApprovals,
   approveInvestigator,
   rejectInvestigator,
@@ -114,50 +91,75 @@ const MOCK_HUD_LOGS = [
   'SECURE: Session token encrypted on active badge.'
 ];
 
-const detectSeedType = (val: string): string => {
-  const trimmed = val.trim();
-  if (!trimmed) return 'email';
-
-  if (trimmed.includes('@')) {
-    return 'email';
-  } else if (/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(trimmed)) {
-    return 'photo';
-  } else if (/^\+?\d[\d-\s()]{7,}\d$/.test(trimmed)) {
-    return 'phone';
-  } else if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(trimmed)) {
-    return 'ip';
-  } else if (/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(trimmed) || (trimmed.includes('.') && !trimmed.includes(' '))) {
-    return 'domain';
-  } else if (/^(0x)?[0-9a-fA-F]{40}$/.test(trimmed) || /^[139][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(trimmed)) {
-    return 'wallet';
-  } else if (trimmed.includes(' ') && trimmed.length > 3) {
-    return 'name';
-  } else if (trimmed.length > 2) {
-    return 'username';
-  }
-  return 'email';
-};
-
 import { LanguageSwitcher } from '../components/ui/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 
+export interface PendingApproval {
+  id: string;
+  badge_id: string;
+  full_name: string;
+  created_at: string;
+}
+
 export default function CaseDashboardPage() {
   const { t } = useTranslation();
-  const { cases, loading, loadCases, selectCase, initializeNewCase, deleteCase, renameCase } = useCaseStore();
+  const { cases, loadCases, initializeNewCase, deleteCase, renameCase } = useCaseStore();
   const { showToast } = useUIStore();
   const { user, logout } = useAuth();
-  const { loadEntityGraph, graphData, clearGraph } = useGraphStore();
+  const { loadEntityGraph, graphData } = useGraphStore();
 
+  // --- STATE DECLARATIONS ---
   const [windows, setWindows] = useState<WindowState[]>([]);
-  // Ref that always holds the latest windows — used inside interval callbacks
-  // to avoid stale closures when checking whether a case window is still open.
-  const windowsRef = useRef(windows);
-  windowsRef.current = windows;
   const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
   const [maxZIndex, setMaxZIndex] = useState(10);
   const [wallpaperIdx, setWallpaperIdx] = useState(0);
   const [customWallpaper, setCustomWallpaper] = useState<string | null>(null);
   const [showWallpaperMenu, setShowWallpaperMenu] = useState(false);
+
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; caseId: string; title: string } | null>(null);
+  const [dockContextMenu, setDockContextMenu] = useState<{ x: number; y: number; windowId: string; title: string } | null>(null);
+  const [renameCaseState, setRenameCaseState] = useState<{ id: string; title: string; newTitle: string } | null>(null);
+  const [deleteConfirmCase, setDeleteConfirmCase] = useState<{ id: string; title: string } | null>(null);
+
+  const [hudLogs, setHudLogs] = useState<string[]>(MOCK_HUD_LOGS);
+
+  const [profileName, setProfileName] = useState(user?.name || '');
+  const [profilePass, setProfilePass] = useState('');
+  const [profileUpdating, setProfileUpdating] = useState(false);
+  const [pendingApprovals, setPendingApprovals] = useState<PendingApproval[]>([]);
+  const [loadingPending, setLoadingPending] = useState(false);
+
+  const [retrainLogs, setRetrainLogs] = useState<string[]>([]);
+  const [retrainProgress, setRetrainProgress] = useState<number | null>(null);
+
+  const [activeEntityPerCase, setActiveEntityPerCase] = useState<Record<string, string>>({});
+  const [nodePositionsPerCase, setNodePositionsPerCase] = useState<Record<string, Record<string, { x: number; y: number }>>>({});
+  const [caseSeedsInput, setCaseSeedsInput] = useState<Record<string, { type: string; value: string }>>({});
+  const [casePendingSeeds, setCasePendingSeeds] = useState<Record<string, Array<{ type: string; value: string }>>>({});
+  const [caseIngestProgress, setCaseIngestProgress] = useState<Record<string, number | null>>({});
+  const [caseIngestLogs, setCaseIngestLogs] = useState<Record<string, string[]>>({});
+  const [caseReportNarrative, setCaseReportNarrative] = useState<Record<string, string>>({});
+  const [caseZoom, setCaseZoom] = useState<Record<string, number>>({});
+  const [casePan, setCasePan] = useState<Record<string, { x: number; y: number }>>({});
+  const [graphDataPerCase, setGraphDataPerCase] = useState<Record<string, GraphData>>({});
+  const [dossierSearchQuery, setDossierSearchQuery] = useState<Record<string, string>>({});
+  const [caseOrder, setCaseOrder] = useState<string[]>(() => {
+    const saved = localStorage.getItem('erakshak_case_order');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [draggedCaseId, setDraggedCaseId] = useState<string | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showProfilePassInput, setShowProfilePassInput] = useState(false);
+  const [lastAccessedCaseId, setLastAccessedCaseId] = useState<string | null>(() => {
+    return localStorage.getItem('er_last_accessed_case') || null;
+  });
+  const [explorerSearchQuery, setExplorerSearchQuery] = useState('');
+  const desktopRef = useRef<HTMLDivElement>(null);
+
+  const windowsRef = useRef(windows);
+  useEffect(() => {
+    windowsRef.current = windows;
+  }, [windows]);
 
   const activeCaseId = windows.find(w => w.id === activeWindowId && w.type === 'case_workspace')?.caseId;
   const hasOpenCaseWindow = windows.some(w => w.type === 'case_workspace' && !w.isMinimized);
@@ -165,40 +167,38 @@ export default function CaseDashboardPage() {
 
   useEffect(() => {
     if (graphData && activeCaseId) {
-      setGraphDataPerCase(prev => ({
-        ...prev,
-        [activeCaseId]: graphData
-      }));
+      Promise.resolve().then(() => {
+        setGraphDataPerCase(prev => ({
+          ...prev,
+          [activeCaseId]: graphData
+        }));
 
-      if (graphData.nodes) {
-        const cx = 350;
-        const cy = 200;
-        const radius = 130;
-        setNodePositionsPerCase(prev => {
-          const existing = prev[activeCaseId] || {};
-          const nextPos = { ...existing };
-          graphData.nodes.forEach((n, idx) => {
-            if (!nextPos[n.id]) {
-              const angle = (idx / graphData.nodes.length) * 2 * Math.PI;
-              nextPos[n.id] = {
-                x: cx + radius * Math.cos(angle),
-                y: cy + radius * Math.sin(angle)
-              };
-            }
+        if (graphData.nodes) {
+          const cx = 350;
+          const cy = 200;
+          const radius = 130;
+          setNodePositionsPerCase(prev => {
+            const existing = prev[activeCaseId] || {};
+            const nextPos = { ...existing };
+            graphData.nodes.forEach((n, idx) => {
+              if (!nextPos[n.id]) {
+                const angle = (idx / graphData.nodes.length) * 2 * Math.PI;
+                nextPos[n.id] = {
+                  x: cx + radius * Math.cos(angle),
+                  y: cy + radius * Math.sin(angle)
+                };
+              }
+            });
+            return {
+              ...prev,
+              [activeCaseId]: nextPos
+            };
           });
-          return {
-            ...prev,
-            [activeCaseId]: nextPos
-          };
-        });
-      }
+        }
+      });
     }
   }, [graphData, activeCaseId]);
 
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; caseId: string; title: string } | null>(null);
-  const [dockContextMenu, setDockContextMenu] = useState<{ x: number; y: number; windowId: string; title: string } | null>(null);
-  const [renameCaseState, setRenameCaseState] = useState<{ id: string; title: string; newTitle: string } | null>(null);
-  const [deleteConfirmCase, setDeleteConfirmCase] = useState<{ id: string; title: string } | null>(null);
 
   const handleContextMenu = (e: React.MouseEvent, caseId: string, title: string) => {
     e.preventDefault();
@@ -237,52 +237,11 @@ export default function CaseDashboardPage() {
       closeWindow(`workspace-${deleteConfirmCase.id}`);
       showToast(`Case ${deleteConfirmCase.id} deleted`, 'success');
       setDeleteConfirmCase(null);
-    } catch (err) {
+    } catch {
       showToast('Failed to delete case', 'error');
     }
   };
 
-  // System statistics widgets
-  const [cpuUsage, setCpuUsage] = useState(28);
-  const [ramUsage, setRamUsage] = useState(45);
-  const [hudLogs, setHudLogs] = useState<string[]>(MOCK_HUD_LOGS);
-
-  // Profile Form state
-  const [profileName, setProfileName] = useState(user?.name || '');
-  const [profilePass, setProfilePass] = useState('');
-  const [profileUpdating, setProfileUpdating] = useState(false);
-  const [pendingApprovals, setPendingApprovals] = useState<any[]>([]);
-  const [loadingPending, setLoadingPending] = useState(false);
-
-  // Settings Trainer state
-  const [retrainLogs, setRetrainLogs] = useState<string[]>([]);
-  const [retrainProgress, setRetrainProgress] = useState<number | null>(null);
-
-  // Active Case Window Custom States
-  // Tracks active selected entity/nodes per caseId to dynamically populate dossiers
-  const [activeEntityPerCase, setActiveEntityPerCase] = useState<Record<string, string>>({});
-  const [nodePositionsPerCase, setNodePositionsPerCase] = useState<Record<string, Record<string, { x: number; y: number }>>>({});
-  const [caseSeedsInput, setCaseSeedsInput] = useState<Record<string, { type: string; value: string }>>({});
-  const [casePendingSeeds, setCasePendingSeeds] = useState<Record<string, Array<{ type: string; value: string }>>>({});
-  const [caseIngestProgress, setCaseIngestProgress] = useState<Record<string, number | null>>({});
-  const [caseIngestLogs, setCaseIngestLogs] = useState<Record<string, string[]>>({});
-  const [caseReportNarrative, setCaseReportNarrative] = useState<Record<string, string>>({});
-  const [caseZoom, setCaseZoom] = useState<Record<string, number>>({});
-  const [casePan, setCasePan] = useState<Record<string, { x: number; y: number }>>({});
-  const [graphDataPerCase, setGraphDataPerCase] = useState<Record<string, GraphData>>({});
-  const [dossierSearchQuery, setDossierSearchQuery] = useState<Record<string, string>>({});
-  const [caseOrder, setCaseOrder] = useState<string[]>(() => {
-    const saved = localStorage.getItem('erakshak_case_order');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [draggedCaseId, setDraggedCaseId] = useState<string | null>(null);
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [showProfilePassInput, setShowProfilePassInput] = useState(false);
-  const [lastAccessedCaseId, setLastAccessedCaseId] = useState<string | null>(() => {
-    return localStorage.getItem('er_last_accessed_case') || null;
-  });
-  const [explorerSearchQuery, setExplorerSearchQuery] = useState('');
-  const desktopRef = useRef<HTMLDivElement>(null);
 
   const handleZoom = (e: React.WheelEvent, caseId: string) => {
     // Zoom around center point of canvas (350, 200) with increased speed
@@ -370,27 +329,29 @@ export default function CaseDashboardPage() {
 
   useEffect(() => {
     if (cases.length > 0) {
-      setCaseOrder(prev => {
-        const caseIds = cases.map(c => c.caseId);
-        const next = prev.filter(id => caseIds.includes(id));
-        const missing = caseIds.filter(id => !next.includes(id));
-        if (missing.length > 0 || next.length !== prev.length) {
-          const updated = [...next, ...missing];
-          localStorage.setItem('erakshak_case_order', JSON.stringify(updated));
-          return updated;
-        }
-        return prev;
-      });
+      const caseIds = cases.map(c => c.caseId);
+      const next = caseOrder.filter(id => caseIds.includes(id));
+      const missing = caseIds.filter(id => !next.includes(id));
+      if (missing.length > 0 || next.length !== caseOrder.length) {
+        const updated = [...next, ...missing];
+        localStorage.setItem('erakshak_case_order', JSON.stringify(updated));
+        const timer = setTimeout(() => {
+          setCaseOrder(updated);
+        }, 0);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [cases]);
+  }, [cases, caseOrder]);
 
   // Fetch real backend audit logs periodically
   useEffect(() => {
     const fetchLogs = async () => {
+      const hasActiveWindows = windowsRef.current.length > 0 && windowsRef.current.some(w => !w.isMinimized);
+      if (!hasActiveWindows) return;
       try {
         const data = await getAuditLogs();
         if (data && Array.isArray(data)) {
-          const formatted = data.map((log: any) => {
+          const formatted = (data as Array<{ timestamp: string; action: string; detail?: Record<string, string> }>).map((log) => {
             const date = new Date(log.timestamp);
             const time = date.toTimeString().split(' ')[0];
             const action = log.action.toLowerCase();
@@ -435,14 +396,9 @@ export default function CaseDashboardPage() {
 
     fetchLogs();
 
-    // Only poll when at least one window is open — reduces backend load
-    // when nothing is being worked on
-    const hasActiveWindows = windows.length > 0 && windows.some(w => !w.isMinimized);
-    const POLL_INTERVAL = hasActiveWindows ? 5000 : 30000;
-
-    const timer = setInterval(fetchLogs, POLL_INTERVAL);
+    const timer = setInterval(fetchLogs, 10000);
     return () => clearInterval(timer);
-  }, [windows.length]);
+  }, []);
 
   const currentWallpaper = WALLPAPERS[wallpaperIdx];
 
@@ -678,7 +634,7 @@ export default function CaseDashboardPage() {
   const getNodeAbbreviation = (caseId: string, nodeId: string) => {
     const graph = graphDataPerCase[caseId];
     if (!graph || !graph.nodes) return nodeId;
-    const idx = graph.nodes.findIndex((n: any) => n.id === nodeId);
+    const idx = graph.nodes.findIndex((n: GraphNode) => n.id === nodeId);
     return idx !== -1 ? `N${idx + 1}` : nodeId;
   };
 
@@ -754,14 +710,16 @@ export default function CaseDashboardPage() {
     const targetId = validCase ? validCase.caseId : cases[0].caseId;
 
     if (!validCase) {
-      setLastAccessedCaseId(targetId);
       localStorage.setItem('er_last_accessed_case', targetId);
+      Promise.resolve().then(() => {
+        setLastAccessedCaseId(targetId);
+      });
     }
 
     loadGraphForCase(targetId, 'n1').catch(err => {
       console.warn("Failed to prefetch graph for case:", err);
     });
-  }, [lastAccessedCaseId, cases.length, hasOpenCaseWindow, loadGraphForCase]);
+  }, [lastAccessedCaseId, cases, hasOpenCaseWindow, loadGraphForCase]);
 
   const handleMatrixWheel = (e: React.WheelEvent) => {
     if (!lastAccessedCaseId) return;
@@ -858,7 +816,7 @@ export default function CaseDashboardPage() {
           })}
 
           {/* Draw Nodes */}
-          {nodes.map((n, idx) => {
+          {nodes.map((n) => {
             const pos = casePositions[n.id] || { x: 350, y: 200 };
             const isSeed = n.type === 'email' || n.type === 'phone' || n.type === 'username';
 
@@ -1049,7 +1007,7 @@ export default function CaseDashboardPage() {
           if (windowStillOpen) {
             loadGraphForCase(caseId, seeds[0].value.trim().toLowerCase());
           }
-        } catch (err) {
+        } catch {
           showToast('Backend ingestion pipeline failed', 'error');
           setCaseIngestProgress(prev => ({ ...prev, [caseId]: null }));
         }
@@ -1057,16 +1015,6 @@ export default function CaseDashboardPage() {
     }, 400);
   };
 
-  // Submit confirms/reject link feedback
-  const handleFeedback = async (caseId: string, sourceId: string, targetId: string, status: 'confirmed' | 'rejected') => {
-    try {
-      await submitLinkFeedback(caseId, { case_id: caseId, source_id: sourceId, target_id: targetId, status });
-      showToast(`Link feedback logged: ${status.toUpperCase()}`, 'success');
-      loadGraphForCase(caseId, activeEntityPerCase[caseId] || 'n1');
-    } catch (err) {
-      showToast('Failed to record link feedback', 'error');
-    }
-  };
 
   // Fetch and display narrative AI report (caches existing report unless forceRegenerate is true)
   const fetchNarrativeReport = async (caseId: string, forceRegenerate = false) => {
@@ -1080,7 +1028,7 @@ export default function CaseDashboardPage() {
         ...prev,
         [caseId]: res.narrative
       }));
-    } catch (err) {
+    } catch {
       showToast('Failed to generate report narrative', 'error');
     }
   };
@@ -1092,32 +1040,32 @@ export default function CaseDashboardPage() {
       await updateInvestigatorProfile(profileName, profilePass || undefined);
       showToast('Credentials updated successfully', 'success');
       setProfilePass('');
-    } catch (err) {
+    } catch {
       showToast('Failed to update credentials', 'error');
     } finally {
       setProfileUpdating(false);
     }
   };
 
-  const fetchPendingApprovals = async () => {
+  const fetchPendingApprovals = useCallback(async () => {
     if (user?.badgeNumber !== 'INV-001') return;
-    setLoadingPending(true);
+    Promise.resolve().then(() => setLoadingPending(true));
     try {
       const res = await getPendingApprovals();
-      setPendingApprovals(res);
+      setPendingApprovals(res as PendingApproval[]);
     } catch (err) {
       console.error('Failed to fetch pending approvals', err);
     } finally {
       setLoadingPending(false);
     }
-  };
+  }, [user]);
 
   const handleApprove = async (id: string, name: string) => {
     try {
       await approveInvestigator(id);
       showToast(`APPROVED REGISTRATION FOR ${name.toUpperCase()}`, 'success');
       fetchPendingApprovals();
-    } catch (err) {
+    } catch {
       showToast('FAILED TO APPROVE INVESTIGATOR', 'error');
     }
   };
@@ -1127,14 +1075,16 @@ export default function CaseDashboardPage() {
       await rejectInvestigator(id);
       showToast(`DENIED REGISTRATION FOR ${name.toUpperCase()}`, 'success');
       fetchPendingApprovals();
-    } catch (err) {
+    } catch {
       showToast('FAILED TO DENY INVESTIGATOR', 'error');
     }
   };
 
   useEffect(() => {
-    fetchPendingApprovals();
-  }, [user]);
+    Promise.resolve().then(() => {
+      fetchPendingApprovals();
+    });
+  }, [fetchPendingApprovals]);
 
   const handleRetrain = async () => {
     setRetrainProgress(0);
@@ -1164,7 +1114,7 @@ export default function CaseDashboardPage() {
           await apiPromise;
           setRetrainProgress(null);
           showToast('Neural retrainer completed', 'success');
-        } catch (err) {
+        } catch {
           showToast('Model retraining failed', 'error');
           setRetrainProgress(null);
         }
@@ -1192,7 +1142,7 @@ export default function CaseDashboardPage() {
       a.click();
       document.body.removeChild(a);
       showToast('Download initialized', 'success');
-    } catch (err) {
+    } catch {
       showToast('Failed to export data', 'error');
     }
   };
@@ -1531,7 +1481,7 @@ export default function CaseDashboardPage() {
             <div className="flex-1 overflow-hidden relative flex flex-col p-4">
 
 
-              {win.type === 'case_workspace' && <CaseWindow win={win} />}
+              {win.type === 'case_workspace' && <CaseWindow win={win as { id: string; type: string; caseId: string; activeTab?: 'intake' | 'graph' | 'dossier' | 'report' }} />}
               {win.type === 'profile' && <ProfileWindow />}
               {win.type === 'cases_explorer' && <ExplorerWindow win={win} />}
               {win.type === 'temporal_analysis' && (

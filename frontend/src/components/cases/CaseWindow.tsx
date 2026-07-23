@@ -5,11 +5,23 @@ import { useDashboardContext } from '../../pages/DashboardContext';
 import { useCaseWebSocket } from '../../hooks/useCaseWebSocket';
 import { useGraphStore } from '../../state/graphStore';
 import { uploadImage, getIdentifiers, deleteIdentifier } from '../../api/endpoints';
-import { apiClient } from '../../api/client';
 import TemporalWindow from './TemporalWindow';
 import ChatPanel from './ChatPanel';
+import type { GraphNode, GraphEdge } from '../../types/graph';
+import type { EvidenceIdentifier } from '../../types/evidence';
 
-export function CaseWindow({ win }: { win: any }) {
+interface WindowItem {
+  id: string;
+  type: string;
+  caseId: string;
+  activeTab?: string;
+}
+
+interface CaseWindowProps {
+  win: WindowItem;
+}
+
+export function CaseWindow({ win }: CaseWindowProps) {
   const { t } = useTranslation();
   useCaseWebSocket(win.caseId);
   const [isUploading, setIsUploading] = useState(false);
@@ -17,7 +29,6 @@ export function CaseWindow({ win }: { win: any }) {
     activeEntityPerCase,
     setActiveEntityPerCase,
     nodePositionsPerCase,
-    setNodePositionsPerCase,
     caseSeedsInput,
     setCaseSeedsInput,
     casePendingSeeds,
@@ -49,23 +60,22 @@ export function CaseWindow({ win }: { win: any }) {
   const activeEntity = activeEntityPerCase[caseId] || 'n1';
   const zoom = caseZoom[caseId] || 1.0;
   const pan = casePan[caseId] || { x: 0, y: 0 };
-  const currentGraph = graphData;
-
+  
   const { evidencePack } = useGraphStore();
   
-  const caseGraph = graphDataPerCase[caseId] || graphData;
-  const nodeInfo = caseGraph?.nodes?.find((n: any) => n.id === activeEntity);
 
-  const getFindingsForEntity = (nodeInfo: any) => {
-    if (!evidencePack || !evidencePack.identifiers || !nodeInfo) return [];
+
+
+  const getFindingsForEntity = (node: GraphNode | undefined) => {
+    if (!evidencePack || !evidencePack.identifiers || !node) return [];
     
     // 1. Match by normalized_value label
     const activeIdent = evidencePack.identifiers.find(
-      (i: any) => {
+      (i) => {
         const normVal = (i.normalizedValue || i.normalized_value || '').toLowerCase();
         const rawVal = (i.raw_value || '').toLowerCase();
-        const label = nodeInfo.label.toLowerCase();
-        return normVal === label || rawVal === label || i.id === nodeInfo.id;
+        const label = node.label.toLowerCase();
+        return normVal === label || rawVal === label || i.id === node.id;
       }
     );
     
@@ -76,10 +86,10 @@ export function CaseWindow({ win }: { win: any }) {
     // 2. Fallback: check if this node is derived from a finding of some identifier
     for (const ident of evidencePack.identifiers) {
       const match = ident.findings.find(
-        (f: any) => {
+        (f) => {
           const fval = (f.value || '').toLowerCase();
-          const label = nodeInfo.label.toLowerCase();
-          return fval === label || f.id === nodeInfo.id;
+          const label = node.label.toLowerCase();
+          return fval === label || f.id === node.id;
         }
       );
       if (match) {
@@ -90,29 +100,7 @@ export function CaseWindow({ win }: { win: any }) {
     return [];
   };
 
-  // Helper: get face_similarity findings for a photo node from evidencePack
-  const getFaceMatchFindings = (nodeLabel: string) => {
-    if (!evidencePack || !evidencePack.identifiers) return [];
-    const allFaceFindings: any[] = [];
-    const label = nodeLabel.toLowerCase();
-    // Also compute basename in case the node label is a subpath like uuid/filename.jpg
-    const labelBasename = label.split('/').pop() || label;
-    for (const ident of evidencePack.identifiers) {
-      const normVal = (ident.normalizedValue || ident.normalized_value || '').toLowerCase();
-      const rawVal = (ident.raw_value || '').toLowerCase();
-      const normBasename = normVal.split('/').pop() || normVal;
-      const rawBasename = rawVal.split('/').pop()?.split('?')[0] || rawVal;
-      const matches = normVal === label || rawVal === label ||
-                      normBasename === labelBasename || rawBasename === labelBasename;
-      if (matches) {
-        const faceFindings = ident.findings.filter((f: any) => f.type === 'face_similarity');
-        allFaceFindings.push(...faceFindings);
-      }
-    }
-    return allFaceFindings;
-  };
-
-  const [existingSeeds, setExistingSeeds] = React.useState<any[]>([]);
+  const [existingSeeds, setExistingSeeds] = React.useState<EvidenceIdentifier[]>([]);
 
   const fetchExistingSeeds = React.useCallback(async () => {
     try {
@@ -124,10 +112,20 @@ export function CaseWindow({ win }: { win: any }) {
   }, [caseId]);
 
   React.useEffect(() => {
+    let active = true;
     if (tab === 'intake') {
-      fetchExistingSeeds();
+      getIdentifiers(caseId).then(identifiers => {
+        if (active) {
+          setExistingSeeds(identifiers);
+        }
+      }).catch(err => {
+        console.error("Failed to fetch seeds", err);
+      });
     }
-  }, [tab, fetchExistingSeeds]);
+    return () => {
+      active = false;
+    };
+  }, [tab, caseId]);
 
   const removeExistingSeed = async (identifierId: string) => {
     try {
@@ -136,13 +134,6 @@ export function CaseWindow({ win }: { win: any }) {
     } catch (err) {
       console.error("Failed to delete seed", err);
     }
-  };
-
-
-
-  const getBaseURL = () => {
-    const base = apiClient.defaults.baseURL || '';
-    return base.endsWith('/') ? base.slice(0, -1) : base;
   };
 
   const detectSeedType = (val: string): string => {
@@ -174,7 +165,7 @@ export function CaseWindow({ win }: { win: any }) {
                         <button
                           key={t.id}
                           onClick={() => {
-                            setWindows((prev: any) => prev.map((w: any) => w.id === win.id ? { ...w, activeTab: t.id as any } : w));
+                            setWindows((prev: WindowItem[]) => prev.map((w) => w.id === win.id ? { ...w, activeTab: t.id } : w));
                             if (t.id === 'report') fetchNarrativeReport(caseId);
                           }}
                           className={`px-3 py-1.5 border transition ${tab === t.id ? 'bg-[#39ff14]/15 border-[#39ff14] text-[#39ff14]' : 'bg-transparent border-white/10 text-gray-400 hover:text-white hover:border-white/20'}`}
@@ -199,7 +190,7 @@ export function CaseWindow({ win }: { win: any }) {
                                 <span className="text-[8px] text-gray-500 font-bold">{t('case_window.vector_type')}</span>
                                 <select
                                   value={caseSeedsInput[caseId]?.type || 'email'}
-                                  onChange={(e) => setCaseSeedsInput((prev: any) => ({
+                                  onChange={(e) => setCaseSeedsInput((prev: Record<string, { type: string; value: string }>) => ({
                                     ...prev,
                                     [caseId]: { ...(prev[caseId] || { value: '' }), type: e.target.value }
                                   }))}
@@ -237,7 +228,7 @@ export function CaseWindow({ win }: { win: any }) {
                                         })()}
                                         onChange={(e) => {
                                           const val = e.target.value;
-                                          setCaseSeedsInput((prev: any) => ({
+                                          setCaseSeedsInput((prev: Record<string, { type: string; value: string }>) => ({
                                             ...prev,
                                             [caseId]: {
                                               type: 'photo',
@@ -260,7 +251,7 @@ export function CaseWindow({ win }: { win: any }) {
                                             setIsUploading(true);
                                             try {
                                               const res = await uploadImage(file);
-                                              setCaseSeedsInput((prev: any) => ({
+                                              setCaseSeedsInput((prev: Record<string, { type: string; value: string }>) => ({
                                                 ...prev,
                                                 [caseId]: {
                                                   type: 'photo',
@@ -285,7 +276,7 @@ export function CaseWindow({ win }: { win: any }) {
                                       onChange={(e) => {
                                         const val = e.target.value;
                                         const autoType = detectSeedType(val);
-                                        setCaseSeedsInput((prev: any) => ({
+                                        setCaseSeedsInput((prev: Record<string, { type: string; value: string }>) => ({
                                           ...prev,
                                           [caseId]: {
                                             type: autoType,
@@ -353,7 +344,7 @@ export function CaseWindow({ win }: { win: any }) {
                                 existingSeeds.map((s, idx) => (
                                   <div key={idx} className="flex justify-between items-center bg-white/5 border border-white/5 px-2.5 py-1 rounded">
                                     <span className="text-[8px] uppercase font-bold text-gray-300">
-                                      <span className="text-[#a855f7] mr-1.5">[{s.type}]</span> {s.type === 'photo' ? s.raw_value.split(/[/\\]/).pop() : s.raw_value}
+                                      <span className="text-[#a855f7] mr-1.5">[{s.type}]</span> {s.type === 'photo' ? (s.raw_value || '').split(/[/\\]/).pop() : (s.raw_value || '')}
                                     </span>
                                     <button onClick={() => removeExistingSeed(s.id)} className="text-gray-500 hover:text-red-400 text-[8px] font-bold border border-transparent hover:border-red-400 px-1 rounded transition-colors">REMOVE</button>
                                   </div>
@@ -423,7 +414,7 @@ export function CaseWindow({ win }: { win: any }) {
                                   <rect width="100%" height="100%" fill={`url(#matrix-grid-${caseId})`} />
                                   <g transform={`translate(${350 * (1 - zoom) + pan.x}, ${200 * (1 - zoom) + pan.y}) scale(${zoom})`}>
                                     {/* Draw edges */}
-                                    {caseGraph.edges && caseGraph.edges.map((e: any, idx: number) => {
+                                    {caseGraph.edges && caseGraph.edges.map((e: GraphEdge, idx: number) => {
                                       const posSource = nodePositionsPerCase[caseId]?.[e.source] || { x: 200, y: 150 };
                                       const posTarget = nodePositionsPerCase[caseId]?.[e.target] || { x: 400, y: 150 };
 
@@ -454,7 +445,7 @@ export function CaseWindow({ win }: { win: any }) {
                                     })}
 
                                     {/* Draw nodes */}
-                                    {caseGraph.nodes && caseGraph.nodes.map((n: any) => {
+                                    {caseGraph.nodes && caseGraph.nodes.map((n: GraphNode) => {
                                       const pos = nodePositionsPerCase[caseId]?.[n.id] || { x: 300, y: 180 };
                                       const isActive = activeEntity === n.id;
                                       const isSeed = n.type === 'email' || n.type === 'phone' || n.type === 'username';
@@ -465,7 +456,7 @@ export function CaseWindow({ win }: { win: any }) {
                                           key={n.id}
                                           onMouseDown={(e) => handleNodeDrag(e, caseId, n.id)}
                                           onClick={() => {
-                                            setActiveEntityPerCase((prev: any) => ({
+                                            setActiveEntityPerCase((prev: Record<string, string>) => ({
                                               ...prev,
                                               [caseId]: n.id
                                             }));
@@ -473,7 +464,7 @@ export function CaseWindow({ win }: { win: any }) {
                                           onDoubleClick={() => {
                                             // Open dossier tab and load node info
                                             loadGraphForCase(caseId, n.id);
-                                            setWindows((prev: any) => prev.map((w: any) => w.id === `workspace-${caseId}` ? { ...w, activeTab: 'dossier' } : w));
+                                            setWindows((prev: WindowItem[]) => prev.map((w) => w.id === `workspace-${caseId}` ? { ...w, activeTab: 'dossier' } : w));
                                           }}
                                           className="cursor-pointer select-none"
                                         >
@@ -511,7 +502,7 @@ export function CaseWindow({ win }: { win: any }) {
                             <span className="text-[8.5px] text-gray-500 font-bold border-b border-white/5 pb-1 uppercase tracking-wider">{t('case_window.node_details')}</span>
                             {(() => {
                               const caseGraph = graphDataPerCase[caseId] || graphData;
-                              const nodeInfo = caseGraph?.nodes?.find((n: any) => n.id === activeEntity);
+                              const nodeInfo = caseGraph?.nodes?.find((n: GraphNode) => n.id === activeEntity);
                               if (!nodeInfo) {
                                 return (
                                   <div className="text-[8px] text-gray-500 italic">{t('case_window.no_node_selected')}</div>
@@ -573,7 +564,7 @@ export function CaseWindow({ win }: { win: any }) {
                                 type="text"
                                 placeholder={t('case_window.filter_placeholder')}
                                 value={dossierSearchQuery[caseId] || ''}
-                                onChange={(e) => setDossierSearchQuery((prev: any) => ({
+                                onChange={(e) => setDossierSearchQuery((prev: Record<string, string>) => ({
                                   ...prev,
                                   [caseId]: e.target.value
                                 }))}
@@ -584,7 +575,7 @@ export function CaseWindow({ win }: { win: any }) {
                             {(() => {
                               const caseGraph = graphDataPerCase[caseId] || graphData;
                               const query = (dossierSearchQuery[caseId] || '').toLowerCase().trim();
-                              const filteredNodes = caseGraph?.nodes?.filter((n: any) =>
+                              const filteredNodes = caseGraph?.nodes?.filter((n: GraphNode) =>
                                 n.label.toLowerCase().includes(query) ||
                                 n.id.toLowerCase().includes(query) ||
                                 n.type.toLowerCase().includes(query) ||
@@ -595,7 +586,7 @@ export function CaseWindow({ win }: { win: any }) {
                                 return <span className="text-[8px] text-gray-600 font-mono italic">{t('case_window.no_traces')}</span>;
                               }
 
-                              return filteredNodes.map((n: any) => (
+                              return filteredNodes.map((n: GraphNode) => (
                                 <div
                                   key={n.id}
                                   onClick={() => loadGraphForCase(caseId, n.id)}
@@ -612,7 +603,7 @@ export function CaseWindow({ win }: { win: any }) {
                                           try {
                                             const urlObj = new URL(n.label);
                                             return urlObj.hostname + (urlObj.pathname !== '/' ? urlObj.pathname : '');
-                                          } catch (e) {
+                                          } catch {
                                             return n.label;
                                           }
                                         }
@@ -651,7 +642,7 @@ export function CaseWindow({ win }: { win: any }) {
                             <div className="flex flex-col gap-3">
                               {(() => {
                                 const caseGraph = graphDataPerCase[caseId] || graphData;
-                                const nodeInfo = caseGraph?.nodes?.find((n: any) => n.id === activeEntity);
+                                const nodeInfo = caseGraph?.nodes?.find((n: GraphNode) => n.id === activeEntity);
                                 if (!nodeInfo) {
                                   return <span className="text-[9px] font-mono text-gray-500 italic">{t('case_window.no_dossiers')}</span>;
                                 }
@@ -667,7 +658,7 @@ export function CaseWindow({ win }: { win: any }) {
                                     <div className="flex flex-col gap-1.5">
                                       <span className="text-[8.5px] font-bold text-gray-400 uppercase tracking-wide">INGESTED CRAWLER PAYLOADS</span>
                                       <div className="flex flex-col gap-1.5 font-mono text-[8px] text-gray-300">
-                                        {entityFindings.map((f: any, idx: number) => {
+                                        {entityFindings.map((f, idx: number) => {
                                           return (
                                             <div key={idx} className="p-2.5 bg-black border border-white/5 rounded flex justify-between items-center gap-4">
                                               <div className="flex flex-col gap-0.5">

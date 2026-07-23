@@ -19,31 +19,30 @@ async def redis_listener():
         pubsub = r.pubsub()
         await pubsub.psubscribe("case_updates:*")
         
-        async for message in pubsub.listen():
-            if message["type"] == "pmessage":
-                channel = message["channel"].decode("utf-8")
-                case_id = channel.split(":")[1]
-                data = json.loads(message["data"].decode("utf-8"))
-                await manager.broadcast_to_case(case_id, data)
+        try:
+            async for message in pubsub.listen():
+                if message["type"] == "pmessage":
+                    channel = message["channel"].decode("utf-8")
+                    case_id = channel.split(":")[1]
+                    data = json.loads(message["data"].decode("utf-8"))
+                    await manager.broadcast_to_case(case_id, data)
+        finally:
+            if pubsub:
+                try:
+                    await pubsub.punsubscribe("case_updates:*")
+                except Exception:
+                    pass
+                try:
+                    await pubsub.close()
+                except Exception:
+                    pass
     except asyncio.CancelledError:
-        if pubsub:
-            try:
-                await pubsub.punsubscribe("case_updates:*")
-                await pubsub.close()
-            except Exception:
-                pass
+        pass
     except Exception as e:
         logger.info(f"Local Environment: Redis is offline ({e}). WebSocket manager will operate in local fallback memory mode.")
     finally:
         if r:
             try:
-                # Safely disconnect pool if it is a coroutine
-                disconnect_func = r.connection_pool.disconnect
-                if asyncio.iscoroutinefunction(disconnect_func):
-                    await disconnect_func()
-                else:
-                    disconnect_func()
-                # Use aclose() for async client close
                 await r.aclose()
             except Exception:
                 pass

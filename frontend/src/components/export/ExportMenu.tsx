@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, FileCheck, RefreshCw, FileText, ChevronDown } from 'lucide-react';
+import { Download, RefreshCw, ChevronDown } from 'lucide-react';
 import { exportCaseCSV, exportCaseJSON, exportCasePDF } from '../../api/endpoints';
 import { useUIStore } from '../../state/uiStore';
 import { useTranslation } from 'react-i18next';

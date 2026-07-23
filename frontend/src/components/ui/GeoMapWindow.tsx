@@ -12,6 +12,7 @@ const GLOBE_SIZE = 1400; // render at a large fixed size
 export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
   const [data, setData] = useState<GeoIntelligenceResult | null>(null);
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const globeEl = useRef<any>(null);
   const { showToast } = useUIStore();
 
@@ -109,12 +110,12 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
           labelsData={data?.nodes || []}
           labelLat="lat"
           labelLng="lng"
-          labelText={(d: any) => (d.label || '').replace(/^Domain:\s*/, '').replace(/\s*\([A-Z]{2}\)$/, '')}
+          labelText={(d: { label?: string }) => (d.label || '').replace(/^Domain:\s*/, '').replace(/\s*\([A-Z]{2}\)$/, '')}
           labelSize={0.35}
           labelDotRadius={0.15}
           labelColor={() => 'rgba(255, 255, 255, 0.9)'}
           labelResolution={4}
-          labelAltitude={(d: any) => 0.02 + ((d.label || '').length % 5) * 0.02}
+          labelAltitude={(d: { label?: string }) => 0.02 + ((d.label || '').length % 5) * 0.02}
 
           arcsData={data?.arcs || []}
           arcStartLat="startLat"

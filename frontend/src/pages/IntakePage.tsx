@@ -50,7 +50,7 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
   const params = useParams<{ caseId: string }>();
   const caseId = propCaseId || params.caseId;
   const navigate = useNavigate();
-  const { activeCase, selectCase } = useCaseStore();
+  const { selectCase } = useCaseStore();
   const { showToast } = useUIStore();
   const { t } = useTranslation();
 
@@ -104,7 +104,10 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
     // Trigger API request immediately in the background
     const apiCallPromise = (async () => {
       const payload = seeds.map(s => {
-        const item: any = { type: s.type, rawValue: s.value };
+        const item: { type: string; rawValue: string; metadata?: Record<string, string> } = {
+          type: s.type,
+          rawValue: s.value
+        };
         if (s.type === 'name' && metadataAnchors) {
           item.metadata = { 
             city: metadataAnchors.city,

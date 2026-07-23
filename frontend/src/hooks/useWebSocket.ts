@@ -8,12 +8,13 @@ export function useWebSocket(
 ) {
   const ws = useRef<WebSocket | null>(null);
   const loadEntityGraph = useGraphStore((state) => state.loadEntityGraph);
-  const selectedEntityId = useGraphStore((state) => state.selectedEntityId);
 
   // Keep a ref so the WebSocket handler always reads the latest value
   // without needing to re-create the effect every time graphReloadActive changes.
   const graphReloadActiveRef = useRef(graphReloadActive);
-  graphReloadActiveRef.current = graphReloadActive;
+  useEffect(() => {
+    graphReloadActiveRef.current = graphReloadActive;
+  });
 
   useEffect(() => {
     if (!caseId) return;
@@ -22,13 +23,9 @@ export function useWebSocket(
     const host = window.location.host;
     // Base URL or fallback to host
     const apiBase = import.meta.env.VITE_API_BASE_URL;
-    let wsUrl = '';
-
-    if (apiBase) {
-      wsUrl = `${apiBase.replace(/^http/, 'ws')}/ws/cases/${caseId}`;
-    } else {
-      wsUrl = `${protocol}//${host}/ws/cases/${caseId}`;
-    }
+    const wsUrl = apiBase
+      ? `${apiBase.replace(/^http/, 'ws')}/ws/cases/${caseId}`
+      : `${protocol}//${host}/ws/cases/${caseId}`;
 
     ws.current = new WebSocket(wsUrl);
 
@@ -66,6 +63,4 @@ export function useWebSocket(
       }
     };
   }, [caseId, loadEntityGraph]);
-
-  return ws.current;
 }

@@ -33,23 +33,30 @@ export function appendMockCase(newCase: CaseSummary) {
   mockCasesStore = [newCase, ...mockCasesStore];
 }
 
-export function getMockGraph(_caseId: string, _entityId: string): Promise<GraphData> {
+export function getMockGraph(caseId: string, entityId: string): Promise<GraphData> {
+  void caseId;
+  void entityId;
   return delay(mockGraph as unknown as GraphData);
 }
 
-export function getMockProfile(_caseId: string, _entityId: string): Promise<ProfileData> {
+export function getMockProfile(caseId: string, entityId: string): Promise<ProfileData> {
+  void caseId;
+  void entityId;
   return delay(mockProfile as ProfileData);
 }
 
-export function getMockTimeline(_caseId: string, _entityId: string): Promise<TimelineEntry[]> {
+export function getMockTimeline(caseId: string, entityId: string): Promise<TimelineEntry[]> {
+  void caseId;
+  void entityId;
   return delay(mockTimeline as TimelineEntry[]);
 }
 
-export function submitMockIdentifiers(_caseId: string, identifiers: unknown[]) {
+export function submitMockIdentifiers(caseId: string, identifiers: unknown[]) {
+  void caseId;
   // simulate the "ambiguous name" branch from the intake flowchart roughly 1 in 3 submissions,
   // so DisambiguationModal has something real to trigger against during dev
   const looksLikeNameSubmission = Array.isArray(identifiers) && identifiers.some(
-    (i: any) => i?.type === 'name'
+    (i) => (i as Record<string, unknown>)?.type === 'name'
   );
   const isAmbiguous = looksLikeNameSubmission && Math.random() < 0.34;
 

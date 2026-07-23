@@ -2,8 +2,9 @@ import React from 'react';
 import { Folder, Search, X } from 'lucide-react';
 import { useDashboardContext } from '../../pages/DashboardContext';
 import { useTranslation } from 'react-i18next';
+import type { CaseSummary } from '../../types/case';
 
-export function ExplorerWindow({ win }: { win: any }) {
+export function ExplorerWindow({ win }: { win: { id: string } }) {
   const { 
     explorerSearchQuery, 
     setExplorerSearchQuery, 
@@ -48,7 +49,7 @@ export function ExplorerWindow({ win }: { win: any }) {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        {cases.filter((c: any) => c.title.toLowerCase().includes(explorerSearchQuery.toLowerCase())).map((c: any) => (
+        {cases.filter((c: CaseSummary) => c.title.toLowerCase().includes(explorerSearchQuery.toLowerCase())).map((c: CaseSummary) => (
           <div
             key={c.caseId}
             onClick={() => {

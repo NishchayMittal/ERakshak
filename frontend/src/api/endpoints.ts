@@ -6,16 +6,16 @@ import type { CaseSummary, CaseNote } from '../types/case';
 import type { EvidencePack } from '../types/evidence';
 import * as mock from './mocks/mockHandlers';
 
-function normalizeCaseSummary(item: any): CaseSummary {
+function normalizeCaseSummary(item: Record<string, unknown>): CaseSummary {
   return {
-    caseId: item.id || item.caseId,
-    title: item.title || 'Untitled Case',
-    investigatorId: item.leadInvestigatorId || item.investigatorId || 'unknown',
+    caseId: (item.id || item.caseId) as string,
+    title: (item.title || 'Untitled Case') as string,
+    investigatorId: (item.leadInvestigatorId || item.investigatorId || 'unknown') as string,
     status: (item.status === 'closed' ? 'closed' : 'active') as CaseSummary['status'],
-    createdAt: item.created_at || item.createdAt || new Date().toISOString(),
-    lastActivity: item.updated_at || item.lastActivity || item.created_at || item.createdAt || new Date().toISOString(),
-    tags: item.tags || [],
-    entityCount: item.entityCount || 0,
+    createdAt: (item.created_at || item.createdAt || new Date().toISOString()) as string,
+    lastActivity: (item.updated_at || item.lastActivity || item.created_at || item.createdAt || new Date().toISOString()) as string,
+    tags: (item.tags || []) as string[],
+    entityCount: (item.entityCount || 0) as number,
   };
 }
 
@@ -49,7 +49,7 @@ export async function getGraph(caseId: string, entityId: string): Promise<GraphD
   try {
     const res = await apiClient.get(`/cases/${caseId}/graph`);
     return res.data || { nodes: [], edges: [] };
-  } catch (err) {
+  } catch {
     return { nodes: [], edges: [] };
   }
 }
@@ -72,7 +72,9 @@ export async function submitIdentifiers(caseId: string, identifiers: unknown[]) 
   return res.data;
 }
 
-export async function getIdentifiers(caseId: string): Promise<any[]> {
+import type { EvidenceIdentifier } from '../types/evidence';
+
+export async function getIdentifiers(caseId: string): Promise<EvidenceIdentifier[]> {
   if (isMockMode()) {
     // Return mock identifiers based on pending seeds?
     // In mock mode, we don't have an endpoint for this currently, just returning empty.
@@ -160,7 +162,7 @@ export async function getEvidencePack(caseId: string): Promise<EvidencePack> {
   try {
     const res = await apiClient.get(`/cases/${caseId}/evidence`);
     return res.data;
-  } catch (error) {
+  } catch {
     return { caseId, summary: {}, findings: [] } as unknown as EvidencePack;
   }
 }
@@ -171,9 +173,9 @@ export async function triggerModelRetrain(): Promise<{ message: string }> {
   return res.data;
 }
 
-export async function updateInvestigatorProfile(fullName?: string, password?: string): Promise<any> {
+export async function updateInvestigatorProfile(fullName?: string, password?: string): Promise<unknown> {
   if (isMockMode()) return mock.updateMockProfile(fullName || 'Leon Lobo');
-  const payload: any = {};
+  const payload: Record<string, unknown> = {};
   if (fullName) payload.full_name = fullName;
   if (password) payload.password = password;
   const res = await apiClient.patch('/auth/profile', payload);
@@ -198,12 +200,20 @@ export async function deleteCase(caseId: string): Promise<void> {
   await apiClient.delete(`/cases/${caseId}`);
 }
 
-let mockPendingApprovals: any[] = [
+let mockPendingApprovals: Array<Record<string, string>> = [
   { id: 'mock-1', badge_id: 'INV-043', full_name: 'Asha Mehta', created_at: new Date().toISOString() },
   { id: 'mock-2', badge_id: 'INV-044', full_name: 'John Doe', created_at: new Date().toISOString() }
 ];
 
-export async function loginRequest(badgeId: string, password?: string): Promise<any> {
+interface LoginError extends Error {
+  response?: {
+    data: {
+      detail: string;
+    };
+  };
+}
+
+export async function loginRequest(badgeId: string, password?: string): Promise<unknown> {
   if (isMockMode()) {
     const lowerBadge = badgeId.toLowerCase().trim();
     
@@ -212,21 +222,21 @@ export async function loginRequest(badgeId: string, password?: string): Promise<
       (a) => a.badge_id.toLowerCase().trim() === lowerBadge
     );
     if (isPending) {
-      const err: any = new Error("Account pending approval by Lead Investigator.");
+      const err = new Error("Account pending approval by Lead Investigator.") as LoginError;
       err.response = { data: { detail: "Account pending approval by Lead Investigator." } };
       throw err;
     }
 
     // Check if badge is recognized
     if (lowerBadge !== 'inv-001' && lowerBadge !== 'leon' && lowerBadge !== 'inv-042') {
-      const err: any = new Error("Badge ID is not registered.");
+      const err = new Error("Badge ID is not registered.") as LoginError;
       err.response = { data: { detail: "Badge ID is not registered." } };
       throw err;
     }
 
     // Validate security passphrase (password)
     if (password !== 'Password123!') {
-      const err: any = new Error("Invalid security passphrase.");
+      const err = new Error("Invalid security passphrase.") as LoginError;
       err.response = { data: { detail: "Invalid security passphrase." } };
       throw err;
     }
@@ -246,7 +256,7 @@ export async function loginRequest(badgeId: string, password?: string): Promise<
   return res.data;
 }
 
-export async function signupRequest(badgeId: string, fullName: string, securityPassphrase?: string): Promise<any> {
+export async function signupRequest(badgeId: string, fullName: string, securityPassphrase?: string): Promise<unknown> {
   if (isMockMode()) {
     const newMock = { id: `mock-${Date.now()}`, badge_id: badgeId, full_name: fullName, created_at: new Date().toISOString() };
     mockPendingApprovals.push(newMock);
@@ -261,13 +271,13 @@ export async function signupRequest(badgeId: string, fullName: string, securityP
   return res.data;
 }
 
-export async function getPendingApprovals(): Promise<any[]> {
+export async function getPendingApprovals(): Promise<unknown[]> {
   if (isMockMode()) return mockPendingApprovals;
   const res = await apiClient.get('/auth/pending-approvals');
   return res.data;
 }
 
-export async function approveInvestigator(id: string): Promise<any> {
+export async function approveInvestigator(id: string): Promise<unknown> {
   if (isMockMode()) {
     mockPendingApprovals = mockPendingApprovals.filter(a => a.id !== id);
     return { status: 'approved' };
@@ -276,7 +286,7 @@ export async function approveInvestigator(id: string): Promise<any> {
   return res.data;
 }
 
-export async function rejectInvestigator(id: string): Promise<any> {
+export async function rejectInvestigator(id: string): Promise<unknown> {
   if (isMockMode()) {
     mockPendingApprovals = mockPendingApprovals.filter(a => a.id !== id);
     return { status: 'rejected' };
@@ -285,7 +295,7 @@ export async function rejectInvestigator(id: string): Promise<any> {
   return res.data;
 }
 
-export async function getAuditLogs(): Promise<any[]> {
+export async function getAuditLogs(): Promise<unknown[]> {
   if (isMockMode()) {
     return [
       { id: '1', action: 'investigator.login', timestamp: new Date().toISOString(), detail: { badge_id: 'INV-001' } },

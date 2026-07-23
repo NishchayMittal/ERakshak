@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useUIStore } from "../../state/uiStore";
 import { signupRequest } from "../../api/endpoints";
@@ -62,15 +62,23 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
         );
         setIsSignUp(false);
         setPassword("");
-      } catch (err: any) {
+      } catch (err) {
+        const errorVal = err as {
+          response?: {
+            data?: {
+              detail?: string | Array<{ msg: string }>;
+            };
+          };
+        };
         let msg = t("login.signup_failed");
-        if (err.response?.data?.detail) {
-          if (typeof err.response.data.detail === "string") {
-            msg = err.response.data.detail;
-          } else if (Array.isArray(err.response.data.detail)) {
-            msg = err.response.data.detail.map((d: any) => d.msg).join(", ");
+        if (errorVal.response?.data?.detail) {
+          const detail = errorVal.response.data.detail;
+          if (typeof detail === "string") {
+            msg = detail;
+          } else if (Array.isArray(detail)) {
+            msg = detail.map((d) => d.msg).join(", ");
           } else {
-            msg = JSON.stringify(err.response.data.detail);
+            msg = JSON.stringify(detail);
           }
         }
         showToast(msg.toUpperCase(), "error");
@@ -87,15 +95,23 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
         } else {
           showToast(t("login.invalid_credentials"), "error");
         }
-      } catch (err: any) {
+      } catch (err) {
+        const errorVal = err as {
+          response?: {
+            data?: {
+              detail?: string | Array<{ msg: string }>;
+            };
+          };
+        };
         let msg = t("login.invalid_fallback");
-        if (err.response?.data?.detail) {
-          if (typeof err.response.data.detail === "string") {
-            msg = err.response.data.detail;
-          } else if (Array.isArray(err.response.data.detail)) {
-            msg = err.response.data.detail.map((d: any) => d.msg).join(", ");
+        if (errorVal.response?.data?.detail) {
+          const detail = errorVal.response.data.detail;
+          if (typeof detail === "string") {
+            msg = detail;
+          } else if (Array.isArray(detail)) {
+            msg = detail.map((d) => d.msg).join(", ");
           } else {
-            msg = JSON.stringify(err.response.data.detail);
+            msg = JSON.stringify(detail);
           }
         }
         showToast(msg.toUpperCase(), "error");

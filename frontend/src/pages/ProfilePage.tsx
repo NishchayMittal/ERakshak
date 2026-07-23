@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Shield, Award, Terminal, Lock, Edit2, Check, X } from 'lucide-react';
+import { User, Shield, Terminal, Lock, Edit2, Check, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useUIStore } from '../state/uiStore';
 import { updateInvestigatorProfile } from '../api/endpoints';
@@ -32,7 +32,7 @@ export default function ProfilePage() {
     if (!editedName.trim()) return;
     setUpdating(true);
     try {
-      const updated = await updateInvestigatorProfile(editedName.trim());
+      const updated = (await updateInvestigatorProfile(editedName.trim())) as { full_name?: string };
       setUser({
         ...user,
         name: updated.full_name || editedName.trim(),

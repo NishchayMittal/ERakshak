@@ -1,14 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import * as THREE from 'three';
-import { ArrowRight, Shield } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { CyberCard } from '../components/ui/CyberCard';
 import { CyberButton } from '../components/ui/CyberButton';
 import { LoginForm } from '../components/auth/LoginForm';
 import { LanguageSwitcher } from '../components/ui/LanguageSwitcher';
 import { useSciFiSounds } from '../hooks/useSciFiSounds';
 
+
+interface MovingParticle {
+  mesh: THREE.Mesh;
+  curve: THREE.QuadraticBezierCurve3;
+  t: number;
+  speed: number;
+}
 
 // ── THREE.JS EARTH EFFECT BACKGROUND ──
 function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
@@ -18,7 +24,8 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
   const animationFrameIdRef = useRef<number>(0);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
     let isCancelled = false;
     let mouseX = 0;
@@ -78,8 +85,8 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
     renderer.domElement.style.height = '100%';
     renderer.domElement.style.zIndex = '0';
 
-    containerRef.current.innerHTML = '';
-    containerRef.current.appendChild(renderer.domElement);
+    container.innerHTML = '';
+    container.appendChild(renderer.domElement);
 
     const globeGroup = new THREE.Group();
     scene.add(globeGroup);
@@ -283,7 +290,7 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
     const arcsGroup = new THREE.Group();
     globeGroup.add(arcsGroup);
 
-    const movingParticles: any[] = [];
+    const movingParticles: MovingParticle[] = [];
     for (let i = 0; i < 8; i++) {
       const p1 = getRandomSpherePoint(radius);
       const p2 = getRandomSpherePoint(radius);
@@ -531,21 +538,22 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
       }
       document.body.style.cursor = 'default';
 
-      scene.traverse((object: any) => {
-        if (object.geometry) object.geometry.dispose();
-        if (object.material) {
-          if (Array.isArray(object.material)) {
-            object.material.forEach((m: any) => m.dispose());
+      scene.traverse((object: THREE.Object3D) => {
+        const mesh = object as THREE.Mesh;
+        if (mesh.geometry) mesh.geometry.dispose();
+        if (mesh.material) {
+          if (Array.isArray(mesh.material)) {
+            mesh.material.forEach((m: THREE.Material) => m.dispose());
           } else {
-            object.material.dispose();
+            mesh.material.dispose();
           }
         }
       });
 
       renderer.dispose();
 
-      if (containerRef.current && renderer.domElement) {
-        containerRef.current.removeChild(renderer.domElement);
+      if (container && renderer.domElement) {
+        container.removeChild(renderer.domElement);
       }
     };
   }, []);
@@ -566,7 +574,6 @@ function EarthEffect({ phase }: { phase: 'splash' | 'ready' | 'login' }) {
 
 // ── PORTAL PAGE RENDERER ──
 export default function PortalPage() {
-  const navigate = useNavigate();
   const { t } = useTranslation();
   const [isZooming, setIsZooming] = useState(false);
   const [phase, setPhase] = useState<'splash' | 'ready' | 'login'>('splash');
@@ -583,7 +590,8 @@ export default function PortalPage() {
     try {
       playClick();
       playWhoosh();
-    } catch (e) {}
+    // eslint-disable-next-line no-empty
+    } catch {}
     setIsZooming(false);
     setPhase('splash');
   };
@@ -601,7 +609,8 @@ export default function PortalPage() {
     try {
       playClick();
       playWhoosh();
-    } catch (e) {}
+    // eslint-disable-next-line no-empty
+    } catch {}
     setIsZooming(true);
     window.dispatchEvent(new Event('trigger-zoom'));
   };

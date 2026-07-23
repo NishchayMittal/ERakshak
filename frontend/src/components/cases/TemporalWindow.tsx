@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Clock, Globe, Activity, Moon, Sun, Shield, RefreshCw, X, FileText, Database, Key, Info, ExternalLink } from 'lucide-react';
+import { Clock, Globe, Activity, Moon, Sun, Shield, RefreshCw, X, Info, ExternalLink } from 'lucide-react';
 import { getTemporalAnalysis, type TemporalAnalysisResult, type FootprintEvent } from '../../api/endpoints';
 import { useSciFiSounds } from '../../hooks/useSciFiSounds';
 import { useDashboardContext } from '../../pages/DashboardContext';
@@ -17,12 +17,9 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
     
     const caseGraph = graphDataPerCase?.[caseId] || graphData;
     if (caseGraph?.nodes && caseGraph.nodes.length > 0) {
-      return caseGraph.nodes.some((n: any) => 
+      return caseGraph.nodes.some((n) => 
         n.id === nodeId || 
-        n.data?.id === nodeId || 
-        n.label === nodeId || 
-        n.data?.label === nodeId ||
-        n.normalized_value === nodeId
+        n.label === nodeId
       );
     }
     
@@ -42,20 +39,19 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
 
   const { playHover, playClick } = useSciFiSounds();
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const res = await getTemporalAnalysis(caseId);
-      setData(res);
-    } catch (err) {
-      console.error('Failed to load temporal analysis:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadData();
+    let active = true;
+    getTemporalAnalysis(caseId)
+      .then(res => {
+        if (active) { setData(res); setLoading(false); }
+      })
+      .catch(err => {
+        if (active) {
+          console.error('Failed to load temporal analysis:', err);
+          setLoading(false);
+        }
+      });
+    return () => { active = false; };
   }, [caseId]);
 
   if (loading) {

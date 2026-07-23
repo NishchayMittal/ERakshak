@@ -1,5 +1,6 @@
 // Cytoscape styles for the e-RAKSHAK black-ops forensics theme
 // Node shapes: rectangle=org, diamond=domain, ellipse=person, triangle=flagged
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const graphStyles: any[] = [
   // ── Base node defaults ──
   {

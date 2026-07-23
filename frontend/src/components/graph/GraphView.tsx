@@ -58,7 +58,7 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
         try {
           const parsed = new URL(n.label);
           cleanLabel = parsed.hostname + (parsed.pathname !== '/' ? parsed.pathname : '');
-        } catch (e) {
+        } catch {
           cleanLabel = n.label;
         }
       }
@@ -81,6 +81,7 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
     }));
 
     return [...cyNodes, ...cyEdges];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graphData, confidenceThreshold, selectedSources, timelineMaxTime, selectedEntityId]);
 
   // Re-run layout when element count changes
@@ -95,6 +96,7 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
         fit: true,
         padding: 40,
         nodeSpacing: () => 50,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any);
       layout.run();
     }
@@ -127,10 +129,14 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
   };
 
   const onSelectNodeRef = useRef(onSelectNode);
-  onSelectNodeRef.current = onSelectNode;
+  useEffect(() => {
+    onSelectNodeRef.current = onSelectNode;
+  });
 
   const showReticleRef = useRef(showReticle);
-  showReticleRef.current = showReticle;
+  useEffect(() => {
+    showReticleRef.current = showReticle;
+  });
 
   const setupCytoscape = useCallback((cy: cytoscape.Core) => {
     cyRef.current = cy;
@@ -233,6 +239,7 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
           style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }}
           stylesheet={graphStyles}
           cy={setupCytoscape}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           layout={{ name: 'cola' } as any}
         />
       )}

@@ -99,7 +99,7 @@ export default function IntroSequence({ onComplete }: IntroSequenceProps) {
     if (phase === 'done') {
       schedule(() => onComplete(), 400);
     }
-  }, [phase]);
+  }, [phase, onComplete]);
 
   return (
     <div
@@ -142,7 +142,7 @@ export default function IntroSequence({ onComplete }: IntroSequenceProps) {
           {LOG_LINES.slice(Math.max(0, logIndex - 14), logIndex).map((line, i) => (
             <div key={i} style={{ opacity: 0.7 + (i / 14) * 0.3, marginBottom: 3 }}>
               <span style={{ color: 'var(--text-muted)', marginRight: 8 }}>
-                {String(Date.now()).slice(-6)}
+                {String(1784800000000 + logIndex * 1000).slice(-6)}
               </span>
               {line}
             </div>

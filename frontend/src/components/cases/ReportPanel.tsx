@@ -13,7 +13,7 @@ const playDiagnosticTone = () => {};
 
 export default function ReportPanel({ caseId }: ReportPanelProps) {
   const [report, setReport] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!!caseId);
   const { showToast } = useUIStore();
   const { t } = useTranslation();
 
@@ -32,10 +32,25 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
   };
 
   useEffect(() => {
-    if (caseId) {
-      loadReport();
-    }
-  }, [caseId]);
+    if (!caseId) return;
+    let active = true;
+    getNarrative(caseId)
+      .then(data => {
+        if (active) {
+          setReport(data.narrative);
+          playDiagnosticTone();
+          setLoading(false);
+        }
+      })
+      .catch(err => {
+        if (active) {
+          console.error(err);
+          showToast(t('report.load_failed'), 'error');
+          setLoading(false);
+        }
+      });
+    return () => { active = false; };
+  }, [caseId, showToast, t]);
 
   // Pure React Markdown renderer matching cyber style
   const renderMarkdown = (text: string) => {

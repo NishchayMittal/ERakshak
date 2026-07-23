@@ -59,15 +59,23 @@ export default function LoginPage() {
         );
         setIsSignUp(false);
         setPassword("");
-      } catch (err: any) {
+      } catch (err) {
+        const error = err as {
+          response?: {
+            data?: {
+              detail?: string | Array<{ msg: string }> | unknown;
+            };
+          };
+        };
         let msg = "REGISTRATION REQUEST FAILED";
-        if (err.response?.data?.detail) {
-          if (typeof err.response.data.detail === "string") {
-            msg = err.response.data.detail;
-          } else if (Array.isArray(err.response.data.detail)) {
-            msg = err.response.data.detail.map((d: any) => d.msg).join(", ");
+        if (error.response?.data?.detail) {
+          const detail = error.response.data.detail;
+          if (typeof detail === "string") {
+            msg = detail;
+          } else if (Array.isArray(detail)) {
+            msg = detail.map((d: { msg?: string }) => d.msg || "").join(", ");
           } else {
-            msg = JSON.stringify(err.response.data.detail);
+            msg = JSON.stringify(detail);
           }
         }
         showToast(msg.toUpperCase(), "error");
@@ -84,15 +92,23 @@ export default function LoginPage() {
         } else {
           showToast("INVALID BADGE ID OR SECURITY PASSPHRASE", "error");
         }
-      } catch (err: any) {
+      } catch (err) {
+        const error = err as {
+          response?: {
+            data?: {
+              detail?: string | Array<{ msg: string }> | unknown;
+            };
+          };
+        };
         let msg = "INVALID CREDENTIALS";
-        if (err.response?.data?.detail) {
-          if (typeof err.response.data.detail === "string") {
-            msg = err.response.data.detail;
-          } else if (Array.isArray(err.response.data.detail)) {
-            msg = err.response.data.detail.map((d: any) => d.msg).join(", ");
+        if (error.response?.data?.detail) {
+          const detail = error.response.data.detail;
+          if (typeof detail === "string") {
+            msg = detail;
+          } else if (Array.isArray(detail)) {
+            msg = detail.map((d: { msg?: string }) => d.msg || "").join(", ");
           } else {
-            msg = JSON.stringify(err.response.data.detail);
+            msg = JSON.stringify(detail);
           }
         }
         showToast(msg.toUpperCase(), "error");
@@ -150,7 +166,7 @@ export default function LoginPage() {
           "bottom:16px;right:16px",
           "borderBottom:1px solid #39ff14;borderRight:1px solid #39ff14",
         ],
-      ].map(([pos], i) => {
+      ].map((_, i) => {
         const borders = [
           {
             borderTop: "1px solid rgba(57,255,20,0.4)",

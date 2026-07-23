@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { IdentifierType } from '../../types/identifier';
 import { useTranslation } from 'react-i18next';
 import { uploadImage } from '../../api/endpoints';
@@ -7,35 +7,24 @@ interface IdentifierFormProps {
   onAdd: (type: IdentifierType, value: string) => void;
 }
 
+function detectType(trimmed: string): IdentifierType {
+  if (!trimmed) return 'email';
+  if (trimmed.includes('@')) return 'email';
+  if (/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(trimmed)) return 'photo';
+  if (/^\+?\d[\d-\s()]{7,}\d$/.test(trimmed)) return 'phone';
+  if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(trimmed)) return 'ip';
+  if (/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(trimmed) || (trimmed.includes('.') && !trimmed.includes(' '))) return 'domain';
+  if (/^(0x)?[0-9a-fA-F]{40}$/.test(trimmed) || /^[139][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(trimmed)) return 'wallet';
+  if (trimmed.includes(' ') && trimmed.length > 3) return 'name';
+  if (trimmed.length > 2) return 'username';
+  return 'email';
+}
+
 export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
   const { t } = useTranslation();
   const [value, setValue] = useState('');
   const [type, setType] = useState<IdentifierType>('email');
   const [isUploading, setIsUploading] = useState(false);
-
-  // Simple heuristic router for auto-detecting identifier types
-  useEffect(() => {
-    const trimmed = value.trim();
-    if (!trimmed) return;
-
-    if (trimmed.includes('@')) {
-      setType('email');
-    } else if (/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(trimmed)) {
-      setType('photo');
-    } else if (/^\+?\d[\d-\s()]{7,}\d$/.test(trimmed)) {
-      setType('phone');
-    } else if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(trimmed)) {
-      setType('ip');
-    } else if (/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(trimmed) || trimmed.includes('.') && !trimmed.includes(' ')) {
-      setType('domain');
-    } else if (/^(0x)?[0-9a-fA-F]{40}$/.test(trimmed) || /^[139][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(trimmed)) {
-      setType('wallet');
-    } else if (trimmed.includes(' ') && trimmed.length > 3) {
-      setType('name');
-    } else if (trimmed.length > 2) {
-      setType('username');
-    }
-  }, [value]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +60,7 @@ export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
                   }
                   return value;
                 })()}
-                onChange={(e) => setValue(e.target.value)}
+                onChange={(e) => { const v = e.target.value; setValue(v); if (v.trim()) setType(detectType(v.trim())); }}
                 className="flex-grow bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono placeholder:text-slate-600"
                 placeholder={isUploading ? "Uploading file..." : "Paste face URL or select file →"}
                 disabled={isUploading}
@@ -103,7 +92,7 @@ export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
             <input
               type="text"
               value={value}
-              onChange={(e) => setValue(e.target.value)}
+              onChange={(e) => { const v = e.target.value; setValue(v); if (v.trim()) setType(detectType(v.trim())); }}
               className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono placeholder:text-slate-600"
               placeholder={t('intake_form.placeholder')}
               required

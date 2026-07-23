@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { useCaseStore } from '../../state/caseStore';
 
 export default function TopBar() {
@@ -9,7 +9,6 @@ export default function TopBar() {
   const { activeCase } = useCaseStore();
   const location = useLocation();
   const params = useParams<{ caseId: string }>();
-  const navigate = useNavigate();
 
   // Live 24-hr clock
   useEffect(() => {

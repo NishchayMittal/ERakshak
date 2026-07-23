@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { MessageCircle, Activity, BookOpen, FileText } from "lucide-react";
 import GraphView from "../components/graph/GraphView";
 import GraphFilterBar from "../components/graph/GraphFilterBar";
@@ -40,18 +40,37 @@ export default function InvestigationPage({
   const params = useParams<{ caseId: string; entityId: string }>();
   const caseId = propCaseId || params.caseId;
 
-  const [localEntityId, setLocalEntityId] = React.useState<string | undefined>(
-    propEntityId,
-  );
+  const [prevPropEntityId, setPrevPropEntityId] = React.useState<string | undefined>(propEntityId);
+  const [localEntityId, setLocalEntityId] = React.useState<string | undefined>(propEntityId);
+
+  if (propEntityId !== prevPropEntityId) {
+    setPrevPropEntityId(propEntityId);
+    setLocalEntityId(propEntityId);
+  }
 
   // Chat state lifted up to persist across tab switches
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [prevCaseId, setPrevCaseId] = useState(caseId);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => [{
+    id: "welcome",
+    content: "Hello! I'm your AI assistant for the e-Rakshak OSINT platform. I can help you analyze your case evidence by answering questions about linked entities, discovered findings, breach data, and more. What would you like to know about your case?",
+    isUser: false,
+    timestamp: new Date().toISOString()
+  }]);
+
+  if (caseId !== prevCaseId) {
+    setPrevCaseId(caseId);
+    setChatMessages([{
+      id: "welcome",
+      content: "Hello! I'm your AI assistant for the e-Rakshak OSINT platform. I can help you analyze your case evidence by answering questions about linked entities, discovered findings, breach data, and more. What would you like to know about your case?",
+      isUser: false,
+      timestamp: new Date().toISOString()
+    }]);
+  }
   const [chatInputValue, setChatInputValue] = useState("");
   const [chatIsLoading, setChatIsLoading] = useState(false);
   const chatMessagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const welcomedCaseRef = useRef<string | undefined>(undefined);
-  const navigate = useNavigate();
+
   const { loadEntityGraph, clearGraph, setSelectedEntityId } = useGraphStore();
   const { activeTab, setActiveTab } = useUIStore();
   const { selectCase } = useCaseStore();
@@ -74,11 +93,7 @@ export default function InvestigationPage({
     CHAT: "chat",
   };
 
-  useEffect(() => {
-    if (propEntityId) {
-      setLocalEntityId(propEntityId);
-    }
-  }, [propEntityId]);
+  // Synchronized propEntityId changes directly in render
 
   const entityId = localEntityId || params.entityId;
 
@@ -139,7 +154,7 @@ export default function InvestigationPage({
     } catch (err) {
       console.error(err);
       // Use toast from uiStore if available, otherwise console error only
-      const showToast = (useUIStore.getState() as any)?.showToast;
+      const showToast = (useUIStore.getState() as { showToast?: (msg: string, type?: 'success' | 'error' | 'info') => void }).showToast;
       if (showToast) {
         showToast("Failed to get AI response", "error");
       }
@@ -170,32 +185,7 @@ export default function InvestigationPage({
     chatMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
 
-  // Welcome message for chat (only shown once when chat first loads)
-  // Guards the welcome message so it's only ever injected once per case,
-  // instead of being re-derived from chatMessages.length on every render.
-
-  // Welcome message for chat (only shown once per case)
-  useEffect(() => {
-    if (!caseId) return;
-    if (welcomedCaseRef.current === caseId) return;
-
-    if (chatMessages.length > 0) {
-      // Chat already has messages (e.g. loaded from history) — don't inject.
-      welcomedCaseRef.current = caseId;
-      return;
-    }
-
-    welcomedCaseRef.current = caseId;
-    const welcomeMessage: ChatMessage = {
-      id: "welcome",
-      content:
-        "Hello! I'm your AI assistant for the e-Rakshak OSINT platform. I can help you analyze your case evidence by answering questions about linked entities, discovered findings, breach data, and more. What would you like to know about your case?",
-      isUser: false,
-      timestamp: new Date().toISOString(),
-    };
-    setChatMessages([welcomeMessage]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [caseId]);
+  // Scroll chat messages when updated
 
   // Focus textarea when chat tab is active
   useEffect(() => {
@@ -314,7 +304,7 @@ export default function InvestigationPage({
               return (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(reverseTabMap[tab] as any)}
+                  onClick={() => setActiveTab(reverseTabMap[tab] as 'graph' | 'timeline' | 'notes' | 'report' | 'chat')}
                   style={{
                     display: "flex",
                     alignItems: "center",

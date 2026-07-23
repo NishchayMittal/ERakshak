@@ -62,6 +62,8 @@ async def retention_cleanup_loop():
         await asyncio.sleep(3600)
 
 
+redis_tasks = []
+
 @app.on_event("startup")
 def on_startup() -> None:
     from sqlalchemy import text
@@ -77,8 +79,21 @@ def on_startup() -> None:
     Base.metadata.create_all(bind=engine)
     import asyncio
     from app.routers.ws import redis_listener
-    asyncio.create_task(redis_listener())
-    asyncio.create_task(retention_cleanup_loop())
+    t1 = asyncio.create_task(redis_listener())
+    t2 = asyncio.create_task(retention_cleanup_loop())
+    redis_tasks.extend([t1, t2])
+
+
+@app.on_event("shutdown")
+async def on_shutdown() -> None:
+    import asyncio
+    for t in redis_tasks:
+        if not t.done():
+            t.cancel()
+            try:
+                await t
+            except asyncio.CancelledError:
+                pass
 
 
 @app.get("/health")

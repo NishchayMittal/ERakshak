@@ -55,8 +55,12 @@ export function useAuth() {
   const { user, setUser } = useAuthStore();
 
   const login = async (badgeId: string, password?: string) => {
-    const data = await loginRequest(badgeId, password);
-    if (data && data.access_token) {
+    const data = (await loginRequest(badgeId, password)) as {
+      access_token?: string;
+      badge_id?: string;
+      full_name?: string;
+    };
+    if (data && data.access_token && data.badge_id && data.full_name) {
       localStorage.setItem('er_token', data.access_token);
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${data.access_token}`;
       

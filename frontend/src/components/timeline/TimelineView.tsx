@@ -47,10 +47,11 @@ export default function TimelineView() {
       .filter((f) => f.discoveredAt || f.discovered_at)
       .map((f) => {
         const dAt = f.discoveredAt || f.discovered_at;
+        const payload = f.rawPayload as { label?: string } | undefined;
         return {
           id: f.id,
           date: dAt ? dAt.split('T')[0] : new Date().toISOString().split('T')[0],
-          label: f.rawPayload?.label || `${f.connector.toUpperCase()} — Detected ${f.type.replace(/_/g, ' ')}: ${f.value}`,
+          label: payload?.label || `${f.connector.toUpperCase()} — Detected ${f.type.replace(/_/g, ' ')}: ${f.value}`,
           source: f.connector,
           entityId: selectedEntityId,
         };
@@ -61,21 +62,22 @@ export default function TimelineView() {
         (f) =>
           f.value.toLowerCase() === selectedEntityId.toLowerCase() ||
           f.id === selectedEntityId ||
-          (f.type === 'leak_record' && (f.rawPayload?.breach || '').toLowerCase() === selectedEntityId.toLowerCase())
+          (f.type === 'leak_record' && ((f.rawPayload as { breach?: string })?.breach || '').toLowerCase() === selectedEntityId.toLowerCase())
       );
       if (match) {
         events = ident.findings
           .filter((f) =>
             f.value.toLowerCase() === match.value.toLowerCase() ||
-            (f.type === 'leak_record' && f.rawPayload?.breach === match.rawPayload?.breach)
+            (f.type === 'leak_record' && (f.rawPayload as { breach?: string })?.breach === (match.rawPayload as { breach?: string })?.breach)
           )
           .filter((f) => f.discoveredAt || f.discovered_at)
           .map((f) => {
             const dAt = f.discoveredAt || f.discovered_at;
+            const payload = f.rawPayload as { label?: string } | undefined;
             return {
               id: f.id,
               date: dAt ? dAt.split('T')[0] : new Date().toISOString().split('T')[0],
-              label: f.rawPayload?.label || `${f.connector.toUpperCase()} — Detected ${f.type.replace(/_/g, ' ')}: ${f.value}`,
+              label: payload?.label || `${f.connector.toUpperCase()} — Detected ${f.type.replace(/_/g, ' ')}: ${f.value}`,
               source: f.connector,
               entityId: selectedEntityId,
             };

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGraphStore } from '../../state/graphStore';
-import { apiClient } from '../../api/client';
+
 
 // Animated risk gauge that counts up to the risk percentage
 function RiskGauge({ pct }: { pct: number }) {
@@ -78,8 +78,8 @@ interface FieldProps {
   label: string;
   value: string;
   redacted?: boolean;
-  payload?: any;
-  onViewDetails?: (payload: any) => void;
+  payload?: Record<string, unknown>;
+  onViewDetails?: (payload: Record<string, unknown>) => void;
 }
 
 function Field({ label, value, redacted = false, payload, onViewDetails }: FieldProps) {
@@ -188,18 +188,30 @@ function Field({ label, value, redacted = false, payload, onViewDetails }: Field
   );
 }
 
-function LeakRecordField({ value, payload }: { value: string; payload: any }) {
+interface BreachRecord {
+  breach?: string;
+  email?: string;
+  xposed_date?: string | number;
+  exposed_records_count?: number;
+  domain?: string;
+  password_risk?: string;
+  xposed_fields?: string[];
+  description?: string;
+}
+
+function LeakRecordField({ payload }: { value: string; payload: Record<string, unknown> }) {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   
-  const breach = payload.breach || t('dossier.unknown');
-  const year = payload.xposed_date || "Unknown";
-  const fields = payload.xposed_fields || [];
-  const risk = payload.password_risk || "unknown";
-  const desc = payload.description || "";
-  const domain = payload.domain || "";
-  const records = payload.exposed_records_count || 0;
-  const samples = payload.leak_samples || [];
+  const p = payload as BreachRecord & { leak_samples?: Array<{ email?: string; ip_address?: string; password?: string; phone?: string }> };
+  const breach = p.breach || t('dossier.unknown');
+  const year = p.xposed_date || "Unknown";
+  const fields = p.xposed_fields || [];
+  const risk = p.password_risk || "unknown";
+  const desc = p.description || "";
+  const domain = p.domain || "";
+  const records = p.exposed_records_count || 0;
+  const samples = p.leak_samples || [];
 
   return (
     <div style={{
@@ -281,7 +293,7 @@ function LeakRecordField({ value, payload }: { value: string; payload: any }) {
                     {t('dossier.raw_samples')}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {samples.map((s: any, idx: number) => (
+                    {(samples as Array<{ email?: string; ip_address?: string; password?: string; phone?: string }>).map((s, idx: number) => (
                       <div key={idx} style={{
                         background: 'rgba(255,255,255,0.02)', padding: 6, border: '1px solid rgba(255,255,255,0.04)',
                         display: 'flex', flexDirection: 'column', gap: 2, fontFamily: 'var(--font-mono)', fontSize: 8
@@ -320,12 +332,7 @@ function LeakRecordField({ value, payload }: { value: string; payload: any }) {
 export default function DossierPanel() {
   const { t } = useTranslation();
   const { evidencePack, selectedEntityId, loading } = useGraphStore();
-  const [selectedBreach, setSelectedBreach] = useState<any>(null);
-
-  const getBaseURL = () => {
-    const base = apiClient.defaults.baseURL || '';
-    return base.endsWith('/') ? base.slice(0, -1) : base;
-  };
+  const [selectedBreach, setSelectedBreach] = useState<BreachRecord | null>(null);
 
   if (loading) {
     return (
@@ -361,7 +368,7 @@ export default function DossierPanel() {
 
   // Resolve matching attributes from Evidence Pack
   let displayName = selectedEntityId;
-  let attributes: Array<{ key: string; value: string; source: string; confidence: number; payload?: any }> = [];
+  let attributes: Array<{ key: string; value: string; source: string; confidence: number; payload?: Record<string, unknown> }> = [];
 
   // 1. Direct match on identifier values
   const activeIdentifier = evidencePack.identifiers.find(
@@ -375,7 +382,7 @@ export default function DossierPanel() {
       value: f.value,
       source: f.connector,
       confidence: f.confidence,
-      payload: f.raw_payload || f.rawPayload || {},
+      payload: (f.raw_payload || f.rawPayload || {}) as Record<string, unknown>,
     }));
   } else {
     // 2. Search inside child findings values or payloads
@@ -384,23 +391,23 @@ export default function DossierPanel() {
         (f) =>
           f.value.toLowerCase() === selectedEntityId.toLowerCase() ||
           f.id === selectedEntityId ||
-          (f.type === 'leak_record' && (f.raw_payload?.breach || '').toLowerCase() === selectedEntityId.toLowerCase())
+          (f.type === 'leak_record' && ((f.raw_payload as { breach?: string })?.breach || '').toLowerCase() === selectedEntityId.toLowerCase())
       );
       if (match) {
-        displayName = (match.type === 'leak_record' && match.raw_payload?.breach) 
-          ? `Breach: ${match.raw_payload.breach}` 
+        displayName = (match.type === 'leak_record' && (match.raw_payload as { breach?: string })?.breach) 
+          ? `Breach: ${(match.raw_payload as { breach?: string }).breach}` 
           : match.value;
         attributes = ident.findings
           .filter((f) =>
             f.value.toLowerCase() === match.value.toLowerCase() ||
-            (f.type === 'leak_record' && f.raw_payload?.breach === match.raw_payload?.breach)
+            (f.type === 'leak_record' && (f.raw_payload as { breach?: string })?.breach === (match.raw_payload as { breach?: string })?.breach)
           )
           .map((f) => ({
             key: f.type,
             value: f.value,
             source: f.connector,
             confidence: f.confidence,
-            payload: f.raw_payload || f.rawPayload || {},
+            payload: (f.raw_payload || f.rawPayload || {}) as Record<string, unknown>,
           }));
       }
     }
@@ -429,7 +436,7 @@ export default function DossierPanel() {
   const riskPct = Math.min(95, 30 + attributes.length * 8);
 
   // Separate redacted vs normal fields for demo
-  const fields = attributes.map((attr, i) => ({
+  const fields = attributes.map((attr) => ({
     label: attr.key,
     value: attr.value,
     redacted: false,
@@ -541,10 +548,10 @@ export default function DossierPanel() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--struct-line)', paddingBottom: 8 }}>
               <div>
                 <div style={{ fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: '#ff3b30', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-                  BREACH REPORT: {selectedBreach.breach}
+                  BREACH REPORT: {selectedBreach.breach || ''}
                 </div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', marginTop: 2 }}>
-                  TARGET EMAIL: {selectedBreach.email}
+                  TARGET EMAIL: {selectedBreach.email || ''}
                 </div>
               </div>
               <button
@@ -559,7 +566,7 @@ export default function DossierPanel() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, background: '#000000', border: '1px solid var(--struct-line)', padding: 10 }}>
               <div>
                 <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{t('dossier.date_exposure')}</div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 650, color: '#ffffff', marginTop: 2 }}>{selectedBreach.xposed_date}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 650, color: '#ffffff', marginTop: 2 }}>{selectedBreach.xposed_date || ''}</div>
               </div>
               <div>
                 <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{t('dossier.records_exposed')}</div>
@@ -568,7 +575,7 @@ export default function DossierPanel() {
               <div>
                 <div style={{ fontFamily: 'var(--font-heading)', fontSize: 7, color: 'var(--text-muted)', letterSpacing: '0.05em' }}>{t('dossier.associated_domain')}</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 650, color: '#ffffff', marginTop: 2 }}>
-                  {selectedBreach.domain ? <a href={`https://${selectedBreach.domain}`} target="_blank" rel="noreferrer" style={{ color: '#39ff14', textDecoration: 'none' }}>{selectedBreach.domain}</a> : t('dossier.na')}
+                  {selectedBreach.domain ? <a href={`https://${selectedBreach.domain}`} target="_blank" rel="noreferrer" style={{ color: '#39ff14', textDecoration: 'none' }}>{selectedBreach.domain}</a> : (t('dossier.na') || '')}
                 </div>
               </div>
               <div>
@@ -578,7 +585,7 @@ export default function DossierPanel() {
                   color: selectedBreach.password_risk === 'plaintext' ? '#FF3B30' : selectedBreach.password_risk === 'easytocrack' ? '#FF9500' : '#4CD964',
                   marginTop: 2, textTransform: 'uppercase'
                 }}>
-                  {selectedBreach.password_risk}
+                  {selectedBreach.password_risk || ''}
                 </div>
               </div>
             </div>
@@ -608,7 +615,7 @@ export default function DossierPanel() {
                 lineHeight: 1.4, background: '#000000', border: '1px solid var(--struct-line)',
                 padding: 10, overflowY: 'auto', maxHeight: 80, wordBreak: 'break-word'
               }}>
-                {selectedBreach.description || t('dossier.no_description')}
+                {selectedBreach.description || t('dossier.no_description') || ''}
               </div>
             </div>
           </div>

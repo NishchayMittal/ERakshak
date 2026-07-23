@@ -5,7 +5,7 @@ import { useDashboardContext } from '../../pages/DashboardContext';
 import { useUIStore } from '../../state/uiStore';
 import { useTranslation } from 'react-i18next';
 
-export function CrossCorrelationWindow({ win }: { win: any }) {
+export function CrossCorrelationWindow({ win }: { win: { id: string } }) {
   const [data, setData] = useState<CrossCorrelationResult | null>(null);
   const [loading, setLoading] = useState(true);
   const { openWindow, closeWindow } = useDashboardContext();
@@ -26,8 +26,24 @@ export function CrossCorrelationWindow({ win }: { win: any }) {
   };
 
   useEffect(() => {
-    fetchCorrelations();
-  }, []);
+    let active = true;
+    // loading starts true via initial useState(true)
+    getCrossCorrelations().then(result => {
+      if (active) {
+        setData(result);
+        setLoading(false);
+      }
+    }).catch(err => {
+      if (active) {
+        console.error('Cross-correlate failed:', err);
+        showToast(t('cross_correlation.scan_failed'), 'error');
+        setLoading(false);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [t, showToast]);
 
   return (
     <div className="flex flex-col gap-3 h-full overflow-y-auto pr-1 select-none text-gray-200">

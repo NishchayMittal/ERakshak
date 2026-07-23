@@ -5,7 +5,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization
 
-KEY_FILE = "system_key.pem"
+KEY_FILE = "/tmp/system_key.pem"
 
 def get_or_create_private_key():
     if os.environ.get("AUDIT_PRIVATE_KEY"):

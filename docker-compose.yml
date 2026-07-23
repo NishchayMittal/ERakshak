@@ -1,3 +1,6 @@
+# Development docker-compose — uses Vite dev server with hot-reload
+# For production, use: docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+
 services:
   redis:
     image: redis:7-alpine
@@ -7,12 +10,15 @@ services:
   api:
     build:
       context: ./backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
       DATABASE_URL: sqlite:////app/erakshak.db
       REDIS_URL: redis://redis:6379/0
       JWT_SECRET: change-me
       JWT_ALGORITHM: HS256
       JWT_EXPIRE_MINUTES: 480
+      CORS_ORIGINS: "*"
+      DEBUG: "true"
     ports:
       - "8000:8000"
     volumes:
@@ -36,9 +42,10 @@ services:
   frontend:
     build:
       context: ./frontend
-    depends_on:
-      - api
+      target: build
+    command: npx vite --host 0.0.0.0 --port 5173
     environment:
+      VITE_API_URL: http://localhost:8000
       VITE_API_BASE_URL: http://localhost:8000
       VITE_USE_MOCKS: "false"
     ports:
@@ -46,3 +53,5 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    depends_on:
+      - api

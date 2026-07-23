@@ -37,4 +37,4 @@ yarn-debug.log*
 *.sw?
 *.pem
 
-backend\secrets\infinite-glow-503217-b6-cc30afc0bad1.json
+backend/secrets/infinite-glow-503217-b6-cc30afc0bad1.json

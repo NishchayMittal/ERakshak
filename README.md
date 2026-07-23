@@ -58,10 +58,14 @@ For production environments, e-Rakshak provides a separate configuration that us
    ```bash
    cp .env.prod.example .env.prod
    ```
-2. Edit `.env.prod` to replace the default secrets with secure passwords, API keys, and set `CORS_ORIGINS` to your domain.
+2. Edit `.env.prod` and fill in all values:
+   - Generate a secure JWT secret: `python -c "import secrets; print(secrets.token_hex(32))"`
+   - Set `CORS_ORIGINS` to your domain (e.g., `https://erakshak.com`)
+   - Set `VITE_API_URL` and `VITE_API_BASE_URL` to your API's public URL
+   - Add your `GROQ_API_KEY` if using AI dossiers
 3. Build and run the production stack in detached mode:
    ```bash
-   docker compose -f docker-compose.prod.yml up -d --build
+   docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
    ```
 4. Access the API on port `8000` and the Frontend on port `80`.
 

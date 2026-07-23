@@ -8,6 +8,13 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 480
     groq_api_key: str | None = None
     ollama_model: str = "llama3"
+    redis_url: str = "redis://localhost:6379/0"
+    cors_origins: str = "*"
+    debug: bool = False
+    
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_origins.split(",")]
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

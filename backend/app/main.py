@@ -14,11 +14,16 @@ from app.routers import identifiers as identifiers_router
 from app.routers import model as model_router
 from app.routers import ws as ws_router
 
+from app.config import settings
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+
 app = FastAPI(title="e-Rakshak API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

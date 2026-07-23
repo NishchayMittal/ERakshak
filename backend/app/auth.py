@@ -50,9 +50,9 @@ def get_current_investigator(token: str | None = Depends(oauth2_scheme), db: Ses
             pass
 
     if not investigator:
-        # Fallback to the first investigator or create a default one
-        investigator = db.query(Investigator).first()
-        if not investigator:
+        # Check if this is the first run / development bootstrap
+        investigator_count = db.query(Investigator).count()
+        if investigator_count == 0 and settings.debug:
             investigator = Investigator(
                 badge_id="INV-001",
                 full_name="Leon Lobo",
@@ -63,6 +63,8 @@ def get_current_investigator(token: str | None = Depends(oauth2_scheme), db: Ses
             db.add(investigator)
             db.commit()
             db.refresh(investigator)
+        else:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
     if investigator and investigator.badge_id == "INV-001" and not investigator.is_approved:
         investigator.is_approved = True

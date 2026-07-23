@@ -50,6 +50,23 @@ The easiest way to run the entire stack (API, Frontend, Redis, and Celery Worker
 
 ### 3. Local Setup (Without Docker)
 
+#### Production Deployment (Docker Compose)
+
+For production environments, e-Rakshak provides a separate configuration that uses a production-grade PostgreSQL database, Gunicorn for the Python backend, and Nginx for serving the React frontend.
+
+1. Copy the production environment template:
+   ```bash
+   cp .env.prod.example .env.prod
+   ```
+2. Edit `.env.prod` to replace the default secrets with secure passwords, API keys, and set `CORS_ORIGINS` to your domain.
+3. Build and run the production stack in detached mode:
+   ```bash
+   docker compose -f docker-compose.prod.yml up -d --build
+   ```
+4. Access the API on port `8000` and the Frontend on port `80`.
+
+### 4. Local Development (Without Docker)
+
 #### Backend & Worker Setup
 
 1. Open a terminal and navigate to the `backend` directory:

@@ -11,8 +11,9 @@ logger = logging.getLogger(__name__)
 
 from app.connectors import register_all
 register_all()
+from app.config import settings
 
-redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+redis_url = settings.redis_url
 
 celery_app = Celery(
     "erakshak_worker",

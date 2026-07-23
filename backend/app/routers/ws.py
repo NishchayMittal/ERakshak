@@ -14,8 +14,8 @@ async def redis_listener():
     pubsub = None
     r = None
     try:
-        redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-        r = await redis_async.from_url(redis_url)
+        from app.config import settings
+        r = await redis_async.from_url(settings.redis_url)
         pubsub = r.pubsub()
         await pubsub.psubscribe("case_updates:*")
         

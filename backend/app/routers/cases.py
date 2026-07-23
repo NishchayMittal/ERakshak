@@ -620,7 +620,7 @@ def chat_with_evidence(
         pass
 
     # Import here to avoid circular imports
-    from app.narrative import generate_narrative
+    from app.narrative import generate_narrative, sanitize_evidence
     from groq import Groq
     from app.config import settings
     import logging
@@ -648,9 +648,10 @@ def chat_with_evidence(
             "Do not speculate beyond what the evidence shows."
         )
 
+        sanitized_pack = sanitize_evidence(evidence_pack)
         user_prompt = f"""Evidence Pack:
 ```json
-{json.dumps(evidence_pack, indent=2, default=str)}
+{json.dumps(sanitized_pack, indent=2, default=str)}
 ```
 
 Investigator's Question: {chat_request.question}

@@ -3,7 +3,7 @@ set -e
 
 # Start Celery Worker in the background
 echo "Starting Celery Worker..."
-celery -A app.worker.celery_app worker --loglevel=info &
+celery -A app.worker.celery_app worker --loglevel=info --pool=solo &
 
 # Start Celery Beat in the background
 echo "Starting Celery Beat..."

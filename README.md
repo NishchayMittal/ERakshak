@@ -14,7 +14,7 @@ The system is composed of two main parts:
 - **Pluggable Connector Architecture**: Concurrent asynchronous registry loop to query various OSINT sources like WHOIS/RDAP, crt.sh, Web Archive CDX, Breach Repositories, and Face Similarity Matcher.
 - **Ingestion & Normalization**: Translates native text scripts to normalized Latin form, dynamically categorizes inputs (emails, domains, phones, etc.), and sanitizes data.
 - **NetworkX Link Correlation Engine**: Maps case-wide associations, disambiguates suspects using fuzzy string comparison, and detects key hub entities (pivots). It utilizes a Fellegi-Sunter baseline matcher and an XGBoost refinement layer.
-- **Evidentiary Dossier Reports**: Compiles a single source of truth "Evidence Pack" and generates comprehensive case reports in JSON, CSV, and PDF formats, accompanied by LLM narrative synthesis using Ollama.
+- **Evidentiary Dossier Reports**: Compiles a single source of truth "Evidence Pack" and generates comprehensive case reports in JSON, CSV, and PDF formats, accompanied by LLM narrative synthesis using the Groq Cloud API.
 
 ## Project Structure
 
@@ -25,123 +25,63 @@ The system is composed of two main parts:
 
 ---
 
-## Installation & Setup Guide
+## Recommended Deployment: 100% Free Cloud Architecture
+
+e-Rakshak is engineered to be deployed entirely for free using a combination of **Vercel** (Frontend), **Render** (Backend), and **Neon** (PostgreSQL).
+
+To achieve this within Render's strict 512MB RAM free-tier limit, this deployment path runs in a **stateless, synchronous mode** (`USE_CELERY=false`) and offloads heavy AI reasoning to **Groq's Cloud API** instead of local Ollama models.
+
+### Step 1: Database Setup (Neon)
+1. Create a free PostgreSQL database on [Neon.tech](https://neon.tech).
+2. Copy your Connection String (e.g., `postgresql://...`).
+
+### Step 2: Backend Deployment (Render)
+1. Fork or push this repository to your GitHub account.
+2. Go to [Render](https://render.com) and create a new **Web Service**.
+3. Connect your repository and select the `backend` folder as the Root Directory (or use the provided `render.yaml` blueprint).
+4. Render will automatically detect the Python environment and run `./start.sh`.
+5. Add the following Environment Variables in the Render dashboard:
+   - `DATABASE_URL`: Your Neon connection string.
+   - `JWT_SECRET`: A secure random string (generate with `openssl rand -hex 32`).
+   - `GROQ_API_KEY`: Your free API key from [console.groq.com](https://console.groq.com).
+   - `USE_CELERY`: `false` (forces synchronous execution to fit within free-tier limits).
+6. Deploy the service and copy your new backend URL (e.g., `https://erakshak-api.onrender.com`).
+
+### Step 3: Frontend Deployment (Vercel)
+1. Go to [Vercel](https://vercel.com) and create a new Project from your repository.
+2. Set the Root Directory to `frontend`.
+3. Add the following Environment Variables in Vercel:
+   - `VITE_API_URL`: Your Render backend URL (e.g., `https://erakshak-api.onrender.com/api/v1`).
+   - `VITE_API_BASE_URL`: Your Render backend URL.
+4. Deploy the frontend! Vercel handles SPA routing automatically via the provided `vercel.json`.
+
+---
+
+## Alternative Setup: Local & Heavy Production (Docker Compose)
+
+If you have dedicated server hardware and wish to utilize asynchronous task queues (Celery/Redis) and strictly isolated local AI (Ollama) for maximum data sovereignty, use the Docker-based deployment.
 
 ### 1. Prerequisites
+- **Docker & Docker Compose**
+- **Ollama** (Running locally on port 11434 for local AI processing)
 
-- **Python 3.10+** (For the backend)
-- **Node.js 18+** (For the frontend)
-- **Git**
-- **Ollama** (Optional, for generating AI PDF dossiers completely for free)
-- **Redis** (If running locally without Docker)
-- **Docker & Docker Compose** (Highly Recommended for easiest setup)
+### 2. Quick Local Start
+Run the entire stack (API, Frontend, Redis, and Celery Worker) using Docker:
+```bash
+docker compose up --build
+```
+- **Frontend:** http://localhost:5173
+- **Backend API:** http://localhost:8000
 
-### 2. Recommended Setup: Docker Compose
+### 3. Dedicated Production Deployment
+For heavy-duty production environments, e-Rakshak provides a separate configuration utilizing a persistent PostgreSQL database, Gunicorn, and Nginx.
 
-The easiest way to run the entire stack (API, Frontend, Redis, and Celery Worker) is using Docker.
-
-1. Build and start all services from the root directory:
-   ```bash
-   docker compose up --build
-   ```
-2. The services will be available at:
-   - **Frontend:** http://localhost:5173
-   - **Backend API:** http://localhost:8000
-
-### 3. Local Setup (Without Docker)
-
-#### Production Deployment (Docker Compose)
-
-For production environments, e-Rakshak provides a separate configuration that uses a production-grade PostgreSQL database, Gunicorn for the Python backend, and Nginx for serving the React frontend.
-
-1. Copy the production environment template:
+1. Copy the production template:
    ```bash
    cp .env.prod.example .env.prod
    ```
-2. Edit `.env.prod` and fill in all values:
-   - Generate a secure JWT secret: `python -c "import secrets; print(secrets.token_hex(32))"`
-   - Set `CORS_ORIGINS` to your domain (e.g., `https://erakshak.com`)
-   - Set `VITE_API_URL` and `VITE_API_BASE_URL` to your API's public URL
-   - Add your `GROQ_API_KEY` if using AI dossiers
-3. Build and run the production stack in detached mode:
+2. Edit `.env.prod` and supply your secrets, domain CORS rules, and API URLs.
+3. Build and run in detached mode:
    ```bash
    docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
    ```
-4. Access the API on port `8000` and the Frontend on port `80`.
-
-### 4. Local Development (Without Docker)
-
-#### Backend & Worker Setup
-
-1. Open a terminal and navigate to the `backend` directory:
-   ```bash
-   cd backend
-   ```
-2. Create and activate a Python virtual environment:
-
-   ```bash
-   python -m venv .venv
-
-   # Windows:
-   .\.venv\Scripts\activate
-
-   # Mac/Linux:
-   source .venv/bin/activate
-   ```
-
-3. Install the required Python packages:
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Create a `.env` file in the `backend/` directory with the following variables:
-   ```ini
-   DATABASE_URL="sqlite:///./erakshak.db"
-   JWT_SECRET="your-super-secret-key-here"
-   OLLAMA_BASE_URL="http://localhost:11434"
-   REDIS_URL="redis://localhost:6379/0"
-   ```
-5. Start **Redis** locally on port 6379.
-6. Start the Celery worker (in a new terminal, with the virtual environment activated):
-   ```bash
-   cd backend
-   # Windows:
-   celery -A app.worker.celery_app worker --loglevel=info --pool=solo
-
-   # Mac/Linux:
-   celery -A app.worker.celery_app worker --loglevel=info
-   ```
-7. Start the backend API (in a new terminal, with the virtual environment activated):
-   ```bash
-   cd backend
-   uvicorn app.main:app --reload
-   ```
-   _The backend API will now be running at http://127.0.0.1:8000_
-
-#### Frontend Setup
-
-1. Open a **new** terminal and navigate to the `frontend` directory:
-   ```bash
-   cd frontend
-   ```
-2. Install the Node modules:
-   ```bash
-   npm install
-   ```
-3. Start the React development server:
-   ```bash
-   npm run dev
-   ```
-   _The frontend UI will automatically open in your browser at http://localhost:5173_
-
-### 4. Setting up the Local AI (Ollama)
-
-e-Rakshak uses a local, 100% free AI model to generate intelligent summaries for your PDF dossiers without requiring paid API keys.
-
-1. Download and install **Ollama** from [ollama.com](https://ollama.com).
-2. Open a terminal and run the following command to download the `llama3` model (this takes a few minutes but you only have to do it once):
-   ```bash
-   ollama run llama3
-   ```
-3. Once the model is downloaded and running, the e-Rakshak backend will automatically connect to it to generate dossier narratives! If Ollama is not running, the system will gracefully degrade and output a mock placeholder narrative.
-
----

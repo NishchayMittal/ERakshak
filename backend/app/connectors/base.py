@@ -26,13 +26,20 @@ class TokenBucketLimiter:
         self.rate = rate  # tokens per second
         self.capacity = capacity
         self.tokens = capacity
-        self.last_update = asyncio.get_event_loop().time()
-        self.lock = asyncio.Lock()
+        self.last_update = None
+        self._lock = None
+        self._loop = None
 
     async def acquire(self):
-        async with self.lock:
+        loop = asyncio.get_running_loop()
+        if self._lock is None or self._loop != loop:
+            self._lock = asyncio.Lock()
+            self._loop = loop
+            self.last_update = loop.time()
+
+        async with self._lock:
             while True:
-                now = asyncio.get_event_loop().time()
+                now = loop.time()
                 elapsed = now - self.last_update
                 self.last_update = now
                 self.tokens = min(self.capacity, self.tokens + elapsed * self.rate)

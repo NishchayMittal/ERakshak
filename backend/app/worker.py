@@ -121,26 +121,20 @@ def dispatch_task(case_id: str, identifier_id: str, investigator_id: str, depth:
     """
     Dispatches task to Celery queue, falling back to local thread/asyncio execution if no Celery worker is active.
     """
-    if is_celery_worker_active():
+    if is_redis_available():
         try:
             task_run_connectors_and_pivot.delay(case_id, identifier_id, investigator_id, depth)
             logger.info("Successfully dispatched task to Celery queue.")
             return
         except Exception as e:
-            logger.warning(f"Celery dispatch failed despite worker check ({e}). Falling back to local background execution.")
+            logger.warning(f"Celery dispatch failed ({e}). Falling back to local background execution.")
     else:
-        logger.info("Celery worker is offline. Bypassing Celery queue, using local background execution.")
+        logger.info("Redis is offline. Bypassing Celery queue, using local background execution.")
 
     import threading
     from app.connectors.runner import run_connectors_and_pivot_background
     
     coro = run_connectors_and_pivot_background(case_id, identifier_id, investigator_id, depth)
-    try:
-        loop = asyncio.get_running_loop()
-        if loop.is_running():
-            loop.create_task(coro)
-            return
-    except RuntimeError:
-        pass
-    
+    # Always spawn a separate background thread for local fallback execution to prevent
+    # task destruction and SQLite database closure warnings when the parent event loop terminates.
     threading.Thread(target=asyncio.run, args=(coro,), daemon=True).start()

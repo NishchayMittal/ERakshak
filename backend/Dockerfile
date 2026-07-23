@@ -16,6 +16,7 @@ RUN useradd -m appuser
 USER appuser
 
 COPY app ./app
+COPY haarcascade_frontalface_default.xml ./haarcascade_frontalface_default.xml
 
 EXPOSE 8000
 

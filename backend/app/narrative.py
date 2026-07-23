@@ -4,6 +4,14 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
+def sanitize_evidence(data):
+    if isinstance(data, dict):
+        return {k: sanitize_evidence(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [sanitize_evidence(item) for item in data]
+    elif isinstance(data, str) and len(data) > 500:
+        return data[:500] + "... [TRUNCATED]"
+    return data
 def generate_narrative(evidence_pack: dict) -> str:
     """
     Generates an intelligence dossier narrative using the Groq API.
@@ -44,7 +52,8 @@ def generate_narrative(evidence_pack: dict) -> str:
             "Do not include the raw JSON. Highlight critical links and pivot points."
         )
 
-        user_prompt = f"Evidence Pack:\n```json\n{json.dumps(evidence_pack, indent=2, default=str)}\n```\n\nGenerate the dossier."
+        sanitized_pack = sanitize_evidence(evidence_pack)
+        user_prompt = f"Evidence Pack:\n```json\n{json.dumps(sanitized_pack, indent=2, default=str)}\n```\n\nGenerate the dossier."
 
         chat_completion = client.chat.completions.create(
             messages=[
@@ -144,9 +153,10 @@ Bad Assistant: [A multi-paragraph case overview including case title, investigat
 """
         )
 
+        sanitized_pack = sanitize_evidence(evidence_pack)
         user_prompt = f"""Evidence Pack:
 ```json
-{json.dumps(evidence_pack, indent=2, default=str)}
+{json.dumps(sanitized_pack, indent=2, default=str)}
 ```
 
 Question: {question}

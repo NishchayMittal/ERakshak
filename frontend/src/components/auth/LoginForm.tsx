@@ -96,7 +96,14 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
           showToast(t("login.invalid_credentials"), "error");
         }
       } catch (err) {
-        const errorVal = err as any;
+        const errorVal = err as {
+          response?: {
+            status?: number;
+            data?: {
+              detail?: string | Array<{ msg: string }>;
+            };
+          };
+        };
         let msg = t("login.invalid_fallback");
         
         if (errorVal.response?.data?.detail) {
@@ -104,11 +111,11 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
           if (typeof detail === "string") {
             msg = detail;
           } else if (Array.isArray(detail)) {
-            msg = detail.map((d: any) => d.msg).join(", ");
+            msg = detail.map((d) => d.msg).join(", ");
           } else {
             msg = JSON.stringify(detail);
           }
-        } else if (errorVal.response?.status >= 500) {
+        } else if (errorVal.response?.status && errorVal.response.status >= 500) {
           msg = "SERVER ERROR. PLEASE TRY AGAIN.";
         } else if (!errorVal.response) {
           msg = "NETWORK ERROR. SERVER MIGHT BE WAKING UP.";

@@ -1,6 +1,8 @@
-# e-Rakshak
+# Orion
 
-**e-Rakshak** is an OSINT link-analysis and suspect correlation engine built to assist investigative teams in mapping cybercrime networks. The system automates ingestion, normalizes raw suspect data, queries external intelligence databases, detects pivots, and generates evidentiary dossier reports.
+**Live Demo:** [https://orionerakshak.vercel.app/](https://orionerakshak.vercel.app/)
+
+**Orion** is an OSINT link-analysis and suspect correlation engine built to assist investigative teams in mapping cybercrime networks. The system automates ingestion, normalizes raw suspect data, queries external intelligence databases, detects pivots, and generates evidentiary dossier reports.
 
 ## Overview
 
@@ -12,9 +14,11 @@ The system is composed of two main parts:
 ## Key Features
 
 - **Pluggable Connector Architecture**: Concurrent asynchronous registry loop to query various OSINT sources like WHOIS/RDAP, crt.sh, Web Archive CDX, Breach Repositories, and Face Similarity Matcher.
-- **Ingestion & Normalization**: Translates native text scripts to normalized Latin form, dynamically categorizes inputs (emails, domains, phones, etc.), and sanitizes data.
+- **Ingestion & Normalization**: Translates native text scripts to normalized Latin form using a standalone phonetic transliteration engine, dynamically categorizes inputs (emails, domains, phones, etc.), and sanitizes data.
 - **NetworkX Link Correlation Engine**: Maps case-wide associations, disambiguates suspects using fuzzy string comparison, and detects key hub entities (pivots). It utilizes a Fellegi-Sunter baseline matcher and an XGBoost refinement layer.
+- **Background Monitoring & Alerts**: Automated Celery task scheduling to continuously scan active cases for new intelligence, triggering real-time UI notifications in the investigator's dashboard.
 - **Evidentiary Dossier Reports**: Compiles a single source of truth "Evidence Pack" and generates comprehensive case reports in JSON, CSV, and PDF formats, accompanied by LLM narrative synthesis using the Groq Cloud API.
+- **Enterprise Security Setup**: Pre-configured HTTP strict security headers (HSTS, Anti-Clickjacking, XSS protection) to fortify against active cyber threats.
 
 ## Project Structure
 
@@ -27,7 +31,7 @@ The system is composed of two main parts:
 
 ## Recommended Deployment: 100% Free Cloud Architecture
 
-e-Rakshak is engineered to be deployed entirely for free using a combination of **Vercel** (Frontend), **Render** (Backend), and **Neon** (PostgreSQL).
+Orion is engineered to be deployed entirely for free using a combination of **Vercel** (Frontend), **Render** (Backend), and **Neon** (PostgreSQL).
 
 To achieve this within Render's strict 512MB RAM free-tier limit, this deployment path runs in a **stateless, synchronous mode** (`USE_CELERY=false`) and offloads heavy AI reasoning to **Groq's Cloud API** instead of local Ollama models.
 
@@ -45,15 +49,59 @@ To achieve this within Render's strict 512MB RAM free-tier limit, this deploymen
    - `JWT_SECRET`: A secure random string (generate with `openssl rand -hex 32`).
    - `GROQ_API_KEY`: Your free API key from [console.groq.com](https://console.groq.com).
    - `USE_CELERY`: `false` (forces synchronous execution to fit within free-tier limits).
-6. Deploy the service and copy your new backend URL (e.g., `https://erakshak-api.onrender.com`).
+6. Deploy the service and copy your new backend URL (e.g., `https://orion-api.onrender.com`).
 
 ### Step 3: Frontend Deployment (Vercel)
 1. Go to [Vercel](https://vercel.com) and create a new Project from your repository.
 2. Set the Root Directory to `frontend`.
 3. Add the following Environment Variables in Vercel:
-   - `VITE_API_URL`: Your Render backend URL (e.g., `https://erakshak-api.onrender.com/api/v1`).
+   - `VITE_API_URL`: Your Render backend URL (e.g., `https://orion-api.onrender.com/api/v1`).
    - `VITE_API_BASE_URL`: Your Render backend URL.
 4. Deploy the frontend! Vercel handles SPA routing automatically via the provided `vercel.json`.
+
+---
+
+## Local Development Setup (Without Docker)
+
+If you prefer to run the application directly on your machine without Docker, follow these steps:
+
+### 1. Backend Setup
+1. Open a terminal and navigate to the `backend` directory:
+   ```bash
+   cd backend
+   ```
+2. Create and activate a virtual environment (optional but recommended):
+   ```bash
+   python -m venv venv
+   # On Windows:
+   venv\Scripts\activate
+   # On macOS/Linux:
+   source venv/bin/activate
+   ```
+3. Install the required Python dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Start the backend server (FastAPI):
+   ```bash
+   uvicorn app.main:app --reload --port 8000
+   ```
+   *The API will be available at http://localhost:8000*
+
+### 2. Frontend Setup
+1. Open a new terminal window and navigate to the `frontend` directory:
+   ```bash
+   cd frontend
+   ```
+2. Install the Node dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the Vite development server:
+   ```bash
+   npm run dev
+   ```
+   *The frontend UI will be available at http://localhost:5173*
 
 ---
 
@@ -74,7 +122,7 @@ docker compose up --build
 - **Backend API:** http://localhost:8000
 
 ### 3. Dedicated Production Deployment
-For heavy-duty production environments, e-Rakshak provides a separate configuration utilizing a persistent PostgreSQL database, Gunicorn, and Nginx.
+For heavy-duty production environments, Orion provides a separate configuration utilizing a persistent PostgreSQL database, Gunicorn, and Nginx.
 
 1. Copy the production template:
    ```bash

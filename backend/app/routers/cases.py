@@ -903,6 +903,9 @@ def delete_case(
     db.query(CaseNote).filter(CaseNote.case_id == case_id).delete(synchronize_session=False)
     db.query(LinkFeedback).filter(LinkFeedback.case_id == case_id).delete(synchronize_session=False)
     db.query(AuditLog).filter(AuditLog.case_id == case_id).delete(synchronize_session=False)
+    
+    from app.models import Notification
+    db.query(Notification).filter(Notification.case_id == case_id).delete(synchronize_session=False)
 
     db.delete(case)
     db.commit()
@@ -1106,3 +1109,49 @@ def get_case_geo(
         })
 
     return {"nodes": nodes, "arcs": arcs}
+
+@router.get("/notifications", response_model=list[dict])
+def get_notifications(
+    db: Session = Depends(get_db),
+    current_user: Investigator = Depends(get_current_investigator)
+):
+    """
+    Get recent background monitor notifications for all cases owned by the investigator.
+    """
+    from app.models import Notification
+    from sqlalchemy import desc
+    
+    # Get all case IDs for this investigator
+    case_ids = [c.id for c in db.query(Case).filter(Case.lead_investigator_id == current_user.id).all()]
+    if not case_ids:
+        return []
+        
+    notifications = db.query(Notification).filter(
+        Notification.case_id.in_(case_ids)
+    ).order_by(desc(Notification.created_at)).limit(50).all()
+    
+    return [
+        {
+            "id": n.id,
+            "case_id": n.case_id,
+            "message": n.message,
+            "is_read": n.is_read,
+            "created_at": n.created_at.isoformat()
+        } for n in notifications
+    ]
+
+@router.post("/notifications/{notification_id}/read")
+def mark_notification_read(
+    notification_id: str,
+    db: Session = Depends(get_db),
+    current_user: Investigator = Depends(get_current_investigator)
+):
+    from app.models import Notification
+    notif = db.query(Notification).filter(Notification.id == notification_id).first()
+    # Simple check that it belongs to one of their cases
+    if notif:
+        case = db.query(Case).filter(Case.id == notif.case_id).first()
+        if case and case.lead_investigator_id == current_user.id:
+            notif.is_read = True
+            db.commit()
+    return {"status": "ok"}

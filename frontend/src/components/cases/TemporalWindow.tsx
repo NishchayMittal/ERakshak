@@ -4,6 +4,7 @@ import { Clock, Globe, Activity, Moon, Sun, Shield, RefreshCw, X, Info, External
 import { getTemporalAnalysis, type TemporalAnalysisResult, type FootprintEvent } from '../../api/endpoints';
 import { useSciFiSounds } from '../../hooks/useSciFiSounds';
 import { useDashboardContext } from '../../pages/DashboardContext';
+import { Transliterate } from '../ui/Transliterate';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -380,7 +381,7 @@ export default function TemporalWindow({ caseId }: { caseId: string }) {
                     </div>
 
                     <div className="text-[10.5px] font-bold text-gray-200">
-                      {evt.title}
+                      <Transliterate>{evt.title}</Transliterate>
                     </div>
 
                     {evt.value && (

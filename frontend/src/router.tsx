@@ -1,5 +1,5 @@
 // src/router.tsx
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router';
 import AppShell from './components/layout/AppShell';
 import LoginPage from './pages/LoginPage';
 import CaseDashboardPage from './pages/CaseDashboardPage';

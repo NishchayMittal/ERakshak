@@ -5,22 +5,9 @@ import { useUIStore } from '../state/uiStore';
 import { useAuth } from '../hooks/useAuth';
 import { useGraphStore } from '../state/graphStore';
 import { useWebSocket } from '../hooks/useWebSocket';
-import {
-  Folder,
-  Network,
-  User,
-  X,
-  Minimize2,
-  Maximize2,
-  LogOut,
-  Plus,
-  Compass,
-  Shield,
-  Terminal,
-  Edit,
-  Globe,
-  Minus
-} from 'lucide-react';
+import { Plus, X, Maximize2, Minimize2, Terminal, Shield, Folder, Network, Search, Filter, History, Share2, Compass, Edit, FileText, Download, User, Menu, Globe, LogOut, Minus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Transliterate, useTransliterate } from '../components/ui/Transliterate';
 
 import { DashboardContext } from './DashboardContext';
 import { CaseWindow } from '../components/cases/CaseWindow';
@@ -29,6 +16,7 @@ import { ExplorerWindow } from '../components/cases/ExplorerWindow';
 import TemporalWindow from '../components/cases/TemporalWindow';
 import { CrossCorrelationWindow } from '../components/cases/CrossCorrelationWindow';
 import { GeoMapWindow } from '../components/ui/GeoMapWindow';
+import { NotificationPanel } from '../components/ui/NotificationPanel';
 
 import {
   triggerModelRetrain,
@@ -92,7 +80,6 @@ const MOCK_HUD_LOGS = [
 ];
 
 import { LanguageSwitcher } from '../components/ui/LanguageSwitcher';
-import { useTranslation } from 'react-i18next';
 
 export interface PendingApproval {
   id: string;
@@ -102,6 +89,7 @@ export interface PendingApproval {
 }
 
 export default function CaseDashboardPage() {
+  const transliterate = useTransliterate();
   const { t } = useTranslation();
   const { cases, loadCases, initializeNewCase, deleteCase, renameCase } = useCaseStore();
   const { showToast } = useUIStore();
@@ -163,9 +151,28 @@ export default function CaseDashboardPage() {
     windowsRef.current = windows;
   }, [windows]);
 
+  const handlePipelineCompleted = useCallback((caseId: string) => {
+    setCaseIngestProgress(prev => {
+      if (prev[caseId] !== undefined && prev[caseId] !== null) {
+        return { ...prev, [caseId]: 100 };
+      }
+      return prev;
+    });
+
+    setTimeout(() => {
+      setCaseIngestProgress(prev => {
+        if (prev[caseId] !== undefined && prev[caseId] !== null) {
+          showToast('Correlation mesh constructed successfully', 'success');
+          return { ...prev, [caseId]: null };
+        }
+        return prev;
+      });
+    }, 500);
+  }, [showToast]);
+
   const activeCaseId = windows.find(w => w.id === activeWindowId && w.type === 'case_workspace')?.caseId;
   const hasOpenCaseWindow = windows.some(w => w.type === 'case_workspace' && !w.isMinimized);
-  useWebSocket(activeCaseId, hasOpenCaseWindow);
+  useWebSocket(activeCaseId, hasOpenCaseWindow, handlePipelineCompleted);
 
   useEffect(() => {
     if (graphData && activeCaseId) {
@@ -856,7 +863,7 @@ export default function CaseDashboardPage() {
                     fontWeight="bold"
                     style={{ pointerEvents: 'none' }}
                   >
-                    {n.label.substring(0, 10).toUpperCase()}
+                    {transliterate(n.label.substring(0, 10).toUpperCase())}
                   </text>
                 )}
               </g>
@@ -982,48 +989,55 @@ export default function CaseDashboardPage() {
       'MATRIX: Audit entry signed. Jaro-Winkler map completed.'
     ];
 
-    const timer = setInterval(async () => {
-      progress += 10;
-      setCaseIngestProgress(prev => ({ ...prev, [caseId]: progress }));
-
-      const stageIdx = Math.floor(progress / 20);
-      if (stages[stageIdx]) {
-        setCaseIngestLogs(prev => {
-          const current = prev[caseId] || [];
-          if (!current.includes(stages[stageIdx])) {
-            return { ...prev, [caseId]: [...current, stages[stageIdx]] };
+    const timer = setInterval(() => {
+      setCaseIngestProgress(prev => {
+        const currentProgress = prev[caseId] || 0;
+        if (currentProgress < 90) {
+          const nextProgress = currentProgress + 10;
+          
+          const stageIdx = Math.floor(nextProgress / 20);
+          if (stages[stageIdx]) {
+            setCaseIngestLogs(logsPrev => {
+              const current = logsPrev[caseId] || [];
+              if (!current.includes(stages[stageIdx])) {
+                return { ...logsPrev, [caseId]: [...current, stages[stageIdx]] };
+              }
+              return logsPrev;
+            });
           }
+
+          return { ...prev, [caseId]: nextProgress };
+        } else {
+          clearInterval(timer);
           return prev;
-        });
-      }
-
-      if (progress >= 100) {
-        clearInterval(timer);
-        try {
-          await apiPromise;
-          setCaseIngestProgress(prev => ({ ...prev, [caseId]: null }));
-          setCasePendingSeeds(prev => ({ ...prev, [caseId]: [] }));
-          showToast('Correlation mesh constructed successfully', 'success');
-          // Switch to Graph tab and load
-          setWindows(prev =>
-            prev.map(w => (w.caseId === caseId ? { ...w, activeTab: 'graph' } : w))
-          );
-          // Only reload graph if the case window is still open — the user may have
-          // closed it during ingestion, and we don't want a background HTTP flood.
-          // Uses windowsRef.current (not the closure-captured `windows`) so the
-          // check is accurate even after the setInterval callback fires late.
-          const windowStillOpen = windowsRef.current.some(
-            w => w.caseId === caseId && !w.isMinimized
-          );
-          if (windowStillOpen) {
-            loadGraphForCase(caseId, seeds[0].value.trim().toLowerCase());
-          }
-        } catch {
-          showToast('Backend ingestion pipeline failed', 'error');
-          setCaseIngestProgress(prev => ({ ...prev, [caseId]: null }));
         }
-      }
+      });
     }, 400);
+
+    try {
+      await apiPromise;
+      
+      setCasePendingSeeds(prev => ({ ...prev, [caseId]: [] }));
+      
+      // Switch to Graph tab
+      setWindows(prev =>
+        prev.map(w => (w.caseId === caseId ? { ...w, activeTab: 'graph' } : w))
+      );
+
+      const windowStillOpen = windowsRef.current.some(
+        w => w.caseId === caseId && !w.isMinimized
+      );
+      if (windowStillOpen) {
+        // Await graph data fetch before hiding progress bar (this ensures data is there for graph)
+        await loadGraphForCase(caseId, seeds[0].value.trim().toLowerCase());
+      }
+      
+      // We do NOT clear the loading bar here. The WebSocket handlePipelineCompleted callback will do it!
+    } catch {
+      clearInterval(timer);
+      showToast('Backend ingestion pipeline failed', 'error');
+      setCaseIngestProgress(prev => ({ ...prev, [caseId]: null }));
+    }
   };
 
 
@@ -1372,7 +1386,7 @@ export default function CaseDashboardPage() {
                   <Folder size={36} className="group-hover:scale-105 transition-transform" />
                 </div>
                 <span className="mt-1 text-[11px] font-semibold text-gray-300 group-hover:text-white tracking-wider line-clamp-2 uppercase leading-tight">
-                  {c.title.replace('Investigation', 'FILE')}
+                  {transliterate(c.title.replace('Investigation', 'FILE'))}
                 </span>
               </div>
             );
@@ -1406,7 +1420,7 @@ export default function CaseDashboardPage() {
             <span className="text-[7.5px] text-[#39ff14] font-semibold uppercase tracking-wider">
               {(() => {
                 const lastAccessedCase = cases.find(c => c.caseId === lastAccessedCaseId);
-                return lastAccessedCase ? lastAccessedCase.title.replace('Investigation', 'FILE').toUpperCase() : t('dashboard.no_active_mesh');
+                return lastAccessedCase ? transliterate(lastAccessedCase.title.replace('Investigation', 'FILE').toUpperCase()) : t('dashboard.no_active_mesh');
               })()}
             </span>
           </div>
@@ -1426,7 +1440,7 @@ export default function CaseDashboardPage() {
             {hudLogs.map((log, idx) => (
               <div key={idx} className="whitespace-nowrap flex items-start gap-1">
                 <span className="text-[#39ff14]">&gt;</span>
-                <span className={log.includes('AUDIT') ? 'text-[#39ff14]' : 'text-gray-300'}>{log}</span>
+                <span className={log.includes('AUDIT') ? 'text-[#39ff14]' : 'text-gray-300'}>{transliterate(log)}</span>
               </div>
             ))}
           </div>
@@ -1465,9 +1479,9 @@ export default function CaseDashboardPage() {
                   {(() => {
                     if (win.type === 'case_workspace' && win.caseId) {
                       const targetCase = cases.find(c => c.caseId === win.caseId);
-                      return targetCase ? t('dashboard.case_workspace', { title: targetCase.title }) : win.title;
+                      return targetCase ? t('dashboard.case_workspace', { title: transliterate(targetCase.title) }) : transliterate(win.title);
                     }
-                    return win.title;
+                    return transliterate(win.title);
                   })()}
                 </span>
                 {win.type === 'case_workspace' && win.caseId && (
@@ -1627,6 +1641,8 @@ export default function CaseDashboardPage() {
           <User size={20} />
         </button>
 
+        <NotificationPanel />
+
         <div className="h-6 w-[1px] bg-white/10" />
 
         {/* Minimized / Active Window Task list */}
@@ -1643,7 +1659,7 @@ export default function CaseDashboardPage() {
               className={`px-3 h-10 rounded-xl transition-all flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider ${isOpen ? 'bg-[#39ff14]/10 border border-[#39ff14]/30 text-[#39ff14]' : 'bg-white/5 border border-white/5 text-gray-500 hover:text-white'}`}
             >
               <div className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-[#39ff14] animate-pulse' : 'bg-gray-600'}`} />
-              <span className="max-w-[70px] truncate">{w.title.replace('Case Workspace: ', '').replace('Case Analysis: ', '')}</span>
+              <span className="max-w-[70px] truncate"><Transliterate>{w.title.replace('Case Workspace: ', '').replace('Case Analysis: ', '')}</Transliterate></span>
             </button>
           );
         })}

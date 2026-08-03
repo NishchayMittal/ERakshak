@@ -29,9 +29,9 @@ celery_app.conf.update(
     timezone="UTC",
     enable_utc=True,
     beat_schedule={
-        "monitor-active-cases-hourly": {
+        "monitor-active-cases-every-3-hours": {
             "task": "monitor_active_cases",
-            "schedule": 3600.0, # Every 1 hour
+            "schedule": 10800.0, # Every 3 hours
         }
     }
 )

@@ -200,6 +200,16 @@ async def run_connectors_and_pivot(
 
         connector_db_findings = []
         for res in canonicalized_results:
+            # Prevent duplicate findings
+            existing_finding = db.query(Finding).filter(
+                Finding.identifier_id == identifier.id,
+                Finding.connector_name == res.connector_name,
+                Finding.result_value == res.result_value
+            ).first()
+            
+            if existing_finding:
+                continue
+
             finding = Finding(
                 identifier_id=identifier.id,
                 connector_name=res.connector_name,
@@ -212,29 +222,39 @@ async def run_connectors_and_pivot(
             connector_db_findings.append(finding)
             db_findings.append(finding)
 
-        db.commit()
-        for f in connector_db_findings:
-            db.refresh(f)
-
-        log_action(
-            db,
-            "connector.run",
-            investigator_id=investigator_id,
-            case_id=identifier.case_id,
-            detail={
-                "identifier_id": identifier.id,
-                "connector": connector.name,
-                "result_count": len(canonicalized_results),
-            },
-        )
-        
-        # Publish to WebSockets
         if connector_db_findings:
+            db.commit()
+            for f in connector_db_findings:
+                db.refresh(f)
+
+            log_action(
+                db,
+                "connector.run",
+                investigator_id=investigator_id,
+                case_id=identifier.case_id,
+                detail={
+                    "identifier_id": identifier.id,
+                    "connector": connector.name,
+                    "result_count": len(connector_db_findings),
+                },
+            )
+            
+            # Publish to WebSockets
             await publish_update(
                 identifier.case_id,
                 "findings_discovered",
                 {"identifier_id": identifier.id, "count": len(connector_db_findings)}
             )
+            
+            # If this is a background monitor check (depth == 1 usually means background pivot or monitor), 
+            # or just any background event where new evidence is found, create a Notification.
+            from app.models import Notification
+            notif = Notification(
+                case_id=identifier.case_id,
+                message=f"Discovered {len(connector_db_findings)} new findings from {connector.name} for {identifier.normalized_value}."
+            )
+            db.add(notif)
+            db.commit()
 
     # ─── Pivot-Back Loop: extract new identifiers from findings ───
     if depth < 2:

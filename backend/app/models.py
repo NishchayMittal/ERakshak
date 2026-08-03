@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from uuid import uuid4
 
-from sqlalchemy import JSON, Boolean, DateTime, Enum as SAEnum, Float, ForeignKey, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Enum as SAEnum, Float, ForeignKey, String, Text, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -128,4 +128,16 @@ class LinkFeedback(Base):
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     case = relationship("Case")
-    investigator = relationship("Investigator")
+    investigator = relationship("Investigator")
+
+
+class SystemQuota(Base):
+    """
+    Persistent monthly counter for external API quotas (e.g., Google Cloud Vision).
+    Key format: "{service}_{YYYY}_{MM}"  e.g. "google_vision_2026_08"
+    """
+    __tablename__ = "system_quotas"
+
+    key: Mapped[str] = mapped_column(String, primary_key=True, nullable=False)
+    count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)

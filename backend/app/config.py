@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     database_url: str
     jwt_secret: str
     jwt_algorithm: str = "HS256"
-    jwt_expire_minutes: int = 480
+    jwt_expire_minutes: int = 60
     groq_api_key: str | None = None
     ollama_model: str = "llama3"
     redis_url: str = "redis://localhost:6379/0"

@@ -115,6 +115,8 @@ export default function CaseDashboardPage() {
   const [wallpaperIdx, setWallpaperIdx] = useState(0);
   const [customWallpaper, setCustomWallpaper] = useState<string | null>(null);
   const [showWallpaperMenu, setShowWallpaperMenu] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showSidebarOnMobile, setShowSidebarOnMobile] = useState(false);
 
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; caseId: string; title: string } | null>(null);
   const [dockContextMenu, setDockContextMenu] = useState<{ x: number; y: number; windowId: string; title: string } | null>(null);
@@ -398,6 +400,15 @@ export default function CaseDashboardPage() {
 
     const timer = setInterval(fetchLogs, 10000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024); // 1024px represents tailwind 'lg' boundary where right HUD + folders collide
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const currentWallpaper = WALLPAPERS[wallpaperIdx];

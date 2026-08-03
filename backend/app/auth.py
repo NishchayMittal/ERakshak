@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, HTTPException, status
@@ -13,6 +14,22 @@ from app.models import Investigator
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+_PASSWORD_PATTERN = re.compile(
+    r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=]).{8,}$'
+)
+
+
+def is_strong_password(password: str) -> bool:
+    """Returns True if password meets complexity requirements:
+    - At least 8 characters
+    - At least 1 uppercase letter
+    - At least 1 lowercase letter
+    - At least 1 digit
+    - At least 1 special character (!@#$%^&*()_+-=)
+    """
+    return bool(_PASSWORD_PATTERN.match(password))
+
 
 
 def hash_password(password: str) -> str:

@@ -1,10 +1,55 @@
 import os
 import logging
 import httpx
+from datetime import datetime, timezone
 from app.connectors.base import BaseConnector, Finding
 from app.models import IdentifierType
 
 logger = logging.getLogger(__name__)
+
+GOOGLE_VISION_MONTHLY_LIMIT = 1000
+
+
+def _check_and_increment_image_quota() -> int:
+    """
+    Atomically checks and increments the Google Vision API monthly quota
+    using the DB-backed SystemQuota table (Redis-free, crash-safe).
+    Returns the current count AFTER increment, or raises RuntimeError if limit hit.
+    """
+    from app.database import SessionLocal
+    from app.models import SystemQuota
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc)
+    quota_key = f"google_vision_{now.year}_{now.month:02d}"
+
+    db = SessionLocal()
+    try:
+        quota = db.get(SystemQuota, quota_key)
+        if quota is None:
+            quota = SystemQuota(key=quota_key, count=0)
+            db.add(quota)
+            db.flush()
+
+        if quota.count >= GOOGLE_VISION_MONTHLY_LIMIT:
+            raise RuntimeError(
+                f"Google Vision API monthly quota of {GOOGLE_VISION_MONTHLY_LIMIT} requests exceeded. "
+                f"Current count: {quota.count}. Quota resets next month."
+            )
+
+        quota.count += 1
+        db.commit()
+        logger.info(f"Google Vision quota: {quota.count}/{GOOGLE_VISION_MONTHLY_LIMIT} used this month.")
+        return quota.count
+    except RuntimeError:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to check image quota from DB: {e}")
+        raise RuntimeError("Could not verify API quota. Request blocked for safety.") from e
+    finally:
+        db.close()
 
 MOCK_DATA = {
     "alpha": [
@@ -147,39 +192,8 @@ class ReverseImageConnector(BaseConnector):
 
         # 2. Run Google Vision API
         try:
-            # Check rate limit using Redis (fail-open)
-            r = self._get_redis_client()
-            if r is None:
-                logger.warning("Redis is unavailable for Google Vision API rate limiting. Proceeding without rate limit (fail-open).")
-            else:
-                from datetime import datetime, timezone
-                current_month = datetime.now(timezone.utc).strftime("%Y-%m")
-                redis_key = f"rate_limit:google_vision:{current_month}"
-                limit = 1000
-                ttl = 32 * 86400  # 32 days
-                lua_script = """
-                local current = tonumber(redis.call('get', KEYS[1]))
-                if current and current >= tonumber(ARGV[1]) then
-                    return 0
-                else
-                    local val = redis.call('incr', KEYS[1])
-                    if val == 1 then
-                        redis.call('expire', KEYS[1], tonumber(ARGV[2]))
-                    end
-                    return val
-                end
-                """
-                try:
-                    res = await r.eval(lua_script, 1, redis_key, limit, ttl)
-                    if res == 0:
-                        logger.warning(f"Google Vision API monthly rate limit of {limit} reached. Blocking request.")
-                        raise Exception(f"Google Vision API rate limit of {limit}/month reached.")
-                    else:
-                        logger.info(f"Google Vision API request allowed. Monthly count: {res}/{limit}")
-                except Exception as re:
-                    if "rate limit of" in str(re):
-                        raise re
-                    logger.warning(f"Redis error during rate limiting check: {re}. Proceeding without rate limit (fail-open).")
+            # Check monthly quota using DB-backed counter (Redis-free, fail-CLOSED for safety)
+            _check_and_increment_image_quota()
 
             from google.cloud import vision
 

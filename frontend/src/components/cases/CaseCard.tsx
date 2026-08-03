@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router';
-import { Edit2, Trash2, Check, X } from 'lucide-react';
+import { Edit2, Trash2, Check, X, Eye } from 'lucide-react';
 import type { CaseSummary } from '../../types/case';
+import { toggleCaseWatch } from '../../api/endpoints';
 import { useCaseStore } from '../../state/caseStore';
 import { useUIStore } from '../../state/uiStore';
 import { Transliterate } from '../ui/Transliterate';
@@ -19,6 +20,16 @@ export default function CaseCard({ caseItem, onSelect }: CaseCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [newTitle, setNewTitle] = useState(caseItem.title);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isWatched, setIsWatched] = useState(caseItem.is_watched || false);
+
+  const handleWatchToggle = async () => {
+    try {
+      const res = await toggleCaseWatch(caseItem.caseId);
+      setIsWatched(res.is_watched);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleRename = async () => {
     if (!newTitle.trim()) return;
@@ -57,6 +68,14 @@ export default function CaseCard({ caseItem, onSelect }: CaseCardProps) {
             }`}>
               {caseItem.status}
             </span>
+            <button
+              onClick={handleWatchToggle}
+              className={`p-0.5 transition-all ${isWatched ? 'text-[var(--accent-primary)]' : 'text-slate-500 hover:text-slate-300'}`}
+              style={isWatched ? { textShadow: '0 0 8px rgba(0,255,194,0.6)' } : {}}
+              title={isWatched ? 'Unwatch Case' : 'Watch Case'}
+            >
+              <Eye size={13} />
+            </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
               className="text-slate-500 hover:text-rose-500 p-0.5 transition-colors"

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useParams } from 'react-router';
 import { useCaseStore } from '../../state/caseStore';
+import AlertBell from '../alerts/AlertBell';
 
 export default function TopBar() {
   const [time, setTime] = useState('');
@@ -116,6 +117,8 @@ export default function TopBar() {
             {caseLabel}
           </div>
         )}
+
+        <AlertBell />
 
         {/* Separator */}
         <div style={{ width: 1, height: 28, background: 'var(--struct-line)' }} />

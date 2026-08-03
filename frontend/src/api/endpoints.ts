@@ -16,6 +16,7 @@ function normalizeCaseSummary(item: Record<string, unknown>): CaseSummary {
     lastActivity: (item.updated_at || item.lastActivity || item.created_at || item.createdAt || new Date().toISOString()) as string,
     tags: (item.tags || []) as string[],
     entityCount: (item.entityCount || 0) as number,
+    is_watched: (item.is_watched || false) as boolean,
   };
 }
 
@@ -441,22 +442,3 @@ export async function uploadImage(file: File): Promise<{ filepath: string; filen
   });
   return res.data;
 }
-
-export interface NotificationData {
-  id: string;
-  case_id: string;
-  message: string;
-  is_read: boolean;
-  created_at: string;
-}
-
-export async function getNotifications(): Promise<NotificationData[]> {
-  if (isMockMode()) return [];
-  const res = await apiClient.get('/cases/notifications');
-  return res.data;
-}
-
-export async function markNotificationRead(id: string): Promise<void> {
-  if (isMockMode()) return;
-  await apiClient.post(`/cases/notifications/${id}/read`);
-}

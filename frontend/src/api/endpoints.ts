@@ -16,6 +16,7 @@ function normalizeCaseSummary(item: Record<string, unknown>): CaseSummary {
     lastActivity: (item.updated_at || item.lastActivity || item.created_at || item.createdAt || new Date().toISOString()) as string,
     tags: (item.tags || []) as string[],
     entityCount: (item.entityCount || 0) as number,
+    is_watched: (item.is_watched || false) as boolean,
   };
 }
 
@@ -439,5 +440,48 @@ export async function uploadImage(file: File): Promise<{ filepath: string; filen
       'Content-Type': 'multipart/form-data',
     },
   });
+  return res.data;
+}
+
+// ─── Watchlist & Alerts ───
+
+export interface AlertItem {
+  id: string;
+  case_id: string;
+  investigator_id: string;
+  alert_type: string;
+  title: string;
+  detail: Record<string, unknown> | null;
+  is_read: boolean;
+  created_at: string;
+}
+
+export async function toggleCaseWatch(caseId: string): Promise<{ case_id: string; is_watched: boolean }> {
+  if (isMockMode()) return { case_id: caseId, is_watched: true };
+  const res = await apiClient.patch(`/cases/${caseId}/watch`);
+  return res.data;
+}
+
+export async function getAlerts(): Promise<AlertItem[]> {
+  if (isMockMode()) return [];
+  const res = await apiClient.get('/cases/alerts/list');
+  return res.data;
+}
+
+export async function getUnreadAlertCount(): Promise<{ unread_count: number }> {
+  if (isMockMode()) return { unread_count: 0 };
+  const res = await apiClient.get('/cases/alerts/unread-count');
+  return res.data;
+}
+
+export async function markAlertRead(alertId: string): Promise<unknown> {
+  if (isMockMode()) return { status: 'ok' };
+  const res = await apiClient.patch(`/cases/alerts/${alertId}/read`);
+  return res.data;
+}
+
+export async function markAllAlertsRead(): Promise<unknown> {
+  if (isMockMode()) return { status: 'ok' };
+  const res = await apiClient.patch('/cases/alerts/read-all');
   return res.data;
 }

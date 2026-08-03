@@ -9,6 +9,7 @@ export interface CaseSummary {
   lastActivity: string;
   tags: string[];
   entityCount: number;
+  is_watched?: boolean;
 }
 
 export interface CaseNote {

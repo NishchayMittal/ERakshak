@@ -13,8 +13,8 @@ from datetime import datetime
 from app.audit import log_action
 from app.auth import get_current_investigator
 from app.database import get_db
-from app.models import Case, Investigator, Identifier, Finding, CaseNote, LinkFeedback, AuditLog
-from app.schemas import CaseCreate, CaseOut, CaseUpdate, LinkFeedbackCreate, LinkFeedbackOut, EvidencePackOut
+from app.models import Case, Investigator, Identifier, Finding, CaseNote, LinkFeedback, AuditLog, Alert
+from app.schemas import CaseCreate, CaseOut, CaseUpdate, LinkFeedbackCreate, LinkFeedbackOut, EvidencePackOut, AlertOut
 from app.correlation.matcher import trigger_background_retrain
 from app.narrative import generate_narrative
 
@@ -132,6 +132,81 @@ def cross_correlate_cases(
         "total_shared_identifiers": len(correlations),
         "cases_analyzed": len(cases),
     }
+
+
+# ─── Watchlist & Alerts ───
+
+@router.patch("/{case_id}/watch")
+def toggle_watch(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator),
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    case.is_watched = not case.is_watched
+    db.commit()
+    db.refresh(case)
+    log_action(db, "case.watch_toggle", investigator_id=current_investigator.id, case_id=case.id,
+               detail={"is_watched": case.is_watched})
+    return {"case_id": case.id, "is_watched": case.is_watched}
+
+
+@router.get("/alerts/list", response_model=list[AlertOut])
+def list_alerts(
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator),
+):
+    return (
+        db.query(Alert)
+        .filter(Alert.investigator_id == current_investigator.id)
+        .order_by(Alert.created_at.desc())
+        .limit(50)
+        .all()
+    )
+
+
+@router.get("/alerts/unread-count")
+def unread_alert_count(
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator),
+):
+    count = db.query(Alert).filter(
+        Alert.investigator_id == current_investigator.id,
+        Alert.is_read == False,
+    ).count()
+    return {"unread_count": count}
+
+
+@router.patch("/alerts/{alert_id}/read")
+def mark_alert_read(
+    alert_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator),
+):
+    alert = db.query(Alert).filter(
+        Alert.id == alert_id,
+        Alert.investigator_id == current_investigator.id,
+    ).first()
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    alert.is_read = True
+    db.commit()
+    return {"status": "ok"}
+
+
+@router.patch("/alerts/read-all")
+def mark_all_alerts_read(
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator),
+):
+    db.query(Alert).filter(
+        Alert.investigator_id == current_investigator.id,
+        Alert.is_read == False,
+    ).update({"is_read": True})
+    db.commit()
+    return {"status": "ok"}
 
 
 @router.get("/{case_id}", response_model=CaseOut)

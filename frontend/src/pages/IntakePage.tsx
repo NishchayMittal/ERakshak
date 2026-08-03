@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router';
 import { ArrowLeft, Play, Cpu, Database, Terminal } from 'lucide-react';
 import IdentifierForm from '../components/intake/IdentifierForm';
 import IdentifierChip from '../components/intake/IdentifierChip';

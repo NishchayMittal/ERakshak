@@ -4,7 +4,9 @@ import { useGraphStore } from '../state/graphStore';
 export function useWebSocket(
   caseId: string | undefined,
   /** Whether graph reloads are allowed — derived from window open/minimize state */
-  graphReloadActive?: boolean
+  graphReloadActive?: boolean,
+  /** Callback fired when pipeline completes */
+  onPipelineCompleted?: (caseId: string) => void
 ) {
   const ws = useRef<WebSocket | null>(null);
   const loadEntityGraph = useGraphStore((state) => state.loadEntityGraph);
@@ -12,8 +14,10 @@ export function useWebSocket(
   // Keep a ref so the WebSocket handler always reads the latest value
   // without needing to re-create the effect every time graphReloadActive changes.
   const graphReloadActiveRef = useRef(graphReloadActive);
+  const onPipelineCompletedRef = useRef(onPipelineCompleted);
   useEffect(() => {
     graphReloadActiveRef.current = graphReloadActive;
+    onPipelineCompletedRef.current = onPipelineCompleted;
   });
 
   useEffect(() => {
@@ -47,6 +51,10 @@ export function useWebSocket(
 
           const latestEntityId = useGraphStore.getState().selectedEntityId;
           loadEntityGraph(caseId, latestEntityId || 'n1');
+          
+          if (onPipelineCompletedRef.current) {
+            onPipelineCompletedRef.current(caseId);
+          }
         }
       } catch (err) {
         console.error('WebSocket message parsing error:', err);

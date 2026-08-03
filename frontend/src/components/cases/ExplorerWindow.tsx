@@ -2,6 +2,7 @@ import React from 'react';
 import { Folder, Search, X } from 'lucide-react';
 import { useDashboardContext } from '../../pages/DashboardContext';
 import { useTranslation } from 'react-i18next';
+import { Transliterate } from '../ui/Transliterate';
 import type { CaseSummary } from '../../types/case';
 
 export function ExplorerWindow({ win }: { win: { id: string } }) {
@@ -66,7 +67,7 @@ export function ExplorerWindow({ win }: { win: { id: string } }) {
             <div className="flex items-center gap-3">
               <Folder size={18} className="text-[#a855f7] group-hover:text-[#39ff14] transition-colors" />
               <div className="flex flex-col">
-                <span className="text-[9px] font-bold uppercase tracking-wide text-gray-200">{c.title}</span>
+                <span className="text-[9px] font-bold uppercase tracking-wide text-gray-200"><Transliterate>{c.title}</Transliterate></span>
                 <span className="text-[8px] text-gray-500 font-mono mt-0.5">{c.caseId}</span>
               </div>
             </div>

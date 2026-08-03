@@ -443,6 +443,26 @@ export async function uploadImage(file: File): Promise<{ filepath: string; filen
   return res.data;
 }
 
+export interface NotificationData {
+  id: string;
+  case_id: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export async function getNotifications(): Promise<NotificationData[]> {
+  if (isMockMode()) return [];
+  const res = await apiClient.get('/cases/notifications');
+  return res.data;
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  if (isMockMode()) return;
+  await apiClient.post(`/cases/notifications/${id}/read`);
+}
+
+
 // ─── Watchlist & Alerts ───
 
 export interface AlertItem {

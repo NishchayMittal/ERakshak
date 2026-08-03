@@ -15,6 +15,7 @@ from app.routers import identifiers as identifiers_router
 from app.routers import model as model_router
 from app.routers import ws as ws_router
 from app.middleware.rate_limit import RateLimitMiddleware
+from app.middleware.security import SecurityHeadersMiddleware
 
 from app.config import settings
 import logging
@@ -30,6 +31,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
 
 app.mount("/static", StaticFiles(directory=resources_dir), name="static")

@@ -34,7 +34,7 @@ export default function ExportMenu({ caseId }: ExportMenuProps) {
     setExporting(true);
     try {
       const blob = await exportCaseJSON(caseId);
-      downloadBlob(blob, `ERakshak_Dossier_${caseId}_Export.json`);
+      downloadBlob(blob, `Orion_Dossier_${caseId}_Export.json`);
       showToast(t('export.json_success'), 'success');
     } catch (error) {
       console.error(error);
@@ -50,7 +50,7 @@ export default function ExportMenu({ caseId }: ExportMenuProps) {
     setExporting(true);
     try {
       const blob = await exportCaseCSV(caseId);
-      downloadBlob(blob, `ERakshak_Findings_${caseId}.csv`);
+      downloadBlob(blob, `Orion_Findings_${caseId}.csv`);
       showToast(t('export.csv_success'), 'success');
     } catch (error) {
       console.error(error);
@@ -68,7 +68,7 @@ export default function ExportMenu({ caseId }: ExportMenuProps) {
 
     try {
       const blob = await exportCasePDF(caseId);
-      downloadBlob(blob, `ERakshak_Dossier_${caseId}.pdf`);
+      downloadBlob(blob, `Orion_Dossier_${caseId}.pdf`);
       showToast(t('export.pdf_success'), 'success');
     } catch (error) {
       console.error(error);

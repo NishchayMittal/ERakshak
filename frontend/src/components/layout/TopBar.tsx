@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router';
 import { useCaseStore } from '../../state/caseStore';
 import AlertBell from '../alerts/AlertBell';
 

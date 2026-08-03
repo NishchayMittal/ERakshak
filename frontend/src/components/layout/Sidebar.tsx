@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate, useParams, useLocation } from 'react-router-dom';
+import { NavLink, useNavigate, useParams, useLocation } from 'react-router';
 import { useUIStore } from '../../state/uiStore';
 import { useCaseStore } from '../../state/caseStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useGraphStore } from '../../state/graphStore';
+import { Transliterate } from '../ui/Transliterate';
 
 // Hard-edged SVG icons – no libraries needed
 const Icons = {
@@ -228,7 +229,9 @@ export default function Sidebar() {
             <option value="" disabled>SELECT CASE...</option>
             {cases.map((c) => (
               <option key={c.caseId} value={c.caseId}>
-                {c.title.length > 22 ? `${c.title.substring(0, 22)}…` : c.title}
+                <span className="truncate">
+                  <Transliterate>{c.title.length > 22 ? `${c.title.substring(0, 22)}…` : c.title}</Transliterate>
+                </span>
               </option>
             ))}
           </select>

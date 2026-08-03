@@ -1242,6 +1242,17 @@ export default function CaseDashboardPage() {
           >
             {t('dashboard.wallpaper')}
           </button>
+          {isMobile && (
+            <>
+              <div className="h-3 w-[1px] bg-white/10" />
+              <button
+                onClick={() => setShowSidebarOnMobile(!showSidebarOnMobile)}
+                className={`text-[9px] uppercase tracking-wider transition-colors flex items-center gap-1.5 ${showSidebarOnMobile ? 'text-[#39ff14] font-bold' : 'text-gray-400 hover:text-white'}`}
+              >
+                <Terminal size={10} /> {showSidebarOnMobile ? t('dashboard.hide_hud', 'HIDE HUD') : t('dashboard.show_hud', 'SHOW HUD')}
+              </button>
+            </>
+          )}
         </div>
         <div className="flex items-center gap-4 text-[9px] text-gray-400 font-medium pointer-events-auto">
           <LanguageSwitcher />
@@ -1306,7 +1317,7 @@ export default function CaseDashboardPage() {
 
       {/* Scrollable Desktop Area for Folders */}
       <div
-        className="absolute top-12 bottom-20 left-6 right-[460px] overflow-y-auto pointer-events-auto z-10 pr-2 custom-desktop-scrollbar"
+        className={`absolute top-12 bottom-20 left-6 ${isMobile ? 'right-6' : 'right-[460px]'} overflow-y-auto pointer-events-auto z-10 pr-2 custom-desktop-scrollbar`}
         style={{ scrollbarWidth: 'thin' }}
       >
         <div className="grid grid-cols-8 gap-3 pb-6">
@@ -1369,8 +1380,22 @@ export default function CaseDashboardPage() {
         </div>
       </div>
 
-      {/* RIGHT SIDE WIDGETS HUD (Custom panels) */}
-      <div className="absolute top-12 right-6 bottom-20 w-[420px] flex flex-col gap-4 pointer-events-none z-10 select-none">
+      {/* Backdrop overlay for mobile sidebar */}
+      {isMobile && showSidebarOnMobile && (
+        <div
+          className="fixed inset-0 bg-black/65 backdrop-blur-sm z-[990] pointer-events-auto"
+          onClick={() => setShowSidebarOnMobile(false)}
+        />
+      )}
+
+      {/* RIGHT SIDE WIDGETS HUD (Custom panels / Mobile Drawer) */}
+      <div
+        className={
+          isMobile
+            ? `fixed top-12 right-0 bottom-20 w-[420px] max-w-[85vw] bg-[#050b14]/95 border-l border-[#39ff14]/20 p-4 flex flex-col gap-4 z-[991] transition-transform duration-300 pointer-events-auto select-none overflow-y-auto ${showSidebarOnMobile ? 'translate-x-0 shadow-[0_0_50px_rgba(57,255,20,0.15)]' : 'translate-x-full'}`
+            : "absolute top-12 right-6 bottom-20 w-[420px] flex flex-col gap-4 pointer-events-none z-10 select-none"
+        }
+      >
 
         {/* Animated Cyber Link graph */}
         <div className="w-full bg-black/40 border border-white/5 backdrop-blur-md rounded-xl p-3 flex flex-col gap-2 pointer-events-auto">

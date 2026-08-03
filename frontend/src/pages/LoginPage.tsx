@@ -93,23 +93,22 @@ export default function LoginPage() {
           showToast("INVALID BADGE ID OR SECURITY PASSPHRASE", "error");
         }
       } catch (err) {
-        const error = err as {
-          response?: {
-            data?: {
-              detail?: string | Array<{ msg: string }> | unknown;
-            };
-          };
-        };
+        const error = err as any;
         let msg = "INVALID CREDENTIALS";
+        
         if (error.response?.data?.detail) {
           const detail = error.response.data.detail;
           if (typeof detail === "string") {
             msg = detail;
           } else if (Array.isArray(detail)) {
-            msg = detail.map((d: { msg?: string }) => d.msg || "").join(", ");
+            msg = detail.map((d: any) => d.msg || "").join(", ");
           } else {
             msg = JSON.stringify(detail);
           }
+        } else if (error.response?.status >= 500) {
+          msg = "SERVER ERROR. PLEASE TRY AGAIN.";
+        } else if (!error.response) {
+          msg = "NETWORK ERROR. SERVER MIGHT BE WAKING UP.";
         }
         showToast(msg.toUpperCase(), "error");
       }

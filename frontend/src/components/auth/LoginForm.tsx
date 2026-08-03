@@ -96,23 +96,22 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
           showToast(t("login.invalid_credentials"), "error");
         }
       } catch (err) {
-        const errorVal = err as {
-          response?: {
-            data?: {
-              detail?: string | Array<{ msg: string }>;
-            };
-          };
-        };
+        const errorVal = err as any;
         let msg = t("login.invalid_fallback");
+        
         if (errorVal.response?.data?.detail) {
           const detail = errorVal.response.data.detail;
           if (typeof detail === "string") {
             msg = detail;
           } else if (Array.isArray(detail)) {
-            msg = detail.map((d) => d.msg).join(", ");
+            msg = detail.map((d: any) => d.msg).join(", ");
           } else {
             msg = JSON.stringify(detail);
           }
+        } else if (errorVal.response?.status >= 500) {
+          msg = "SERVER ERROR. PLEASE TRY AGAIN.";
+        } else if (!errorVal.response) {
+          msg = "NETWORK ERROR. SERVER MIGHT BE WAKING UP.";
         }
         showToast(msg.toUpperCase(), "error");
       }

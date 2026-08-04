@@ -110,7 +110,7 @@ def generate_username_variants(username: str) -> list[str]:
 
 class SocialProfilerConnector(BaseConnector):
     name = "social_profiler"
-    applies_to = (IdentifierType.username, IdentifierType.name)
+    applies_to = (IdentifierType.username,)
     timeout_seconds = 10.0
     max_retries = 1
 

@@ -368,6 +368,23 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                     {showPassword ? <Eye size={16} /> : <EyeOff size={16} />}
                   </button>
                 </div>
+
+                {isSignUp && (
+                  <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+                    {[
+                      { label: "8+ CHARS", passed: password.length >= 8 },
+                      { label: "UPPERCASE", passed: /[A-Z]/.test(password) },
+                      { label: "LOWERCASE", passed: /[a-z]/.test(password) },
+                      { label: "NUMBER", passed: /[0-9]/.test(password) },
+                      { label: "SPECIAL (!@#$)", passed: /[!@#$%^&*()_+\-=]/.test(password) }
+                    ].map((req, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.05em", color: req.passed ? "#39ff14" : "rgba(255,255,255,0.3)" }}>
+                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: req.passed ? "#39ff14" : "rgba(255,255,255,0.1)", border: `1px solid ${req.passed ? "#39ff14" : "rgba(255,255,255,0.3)"}`, transition: "all 0.2s" }} />
+                        {req.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div

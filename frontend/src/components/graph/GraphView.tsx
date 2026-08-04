@@ -7,19 +7,18 @@ import React, {
 } from "react";
 import CytoscapeComponent from "react-cytoscapejs";
 import cytoscape from "cytoscape";
-import fcose from "cytoscape-fcose";
+import cola from "cytoscape-cola";
 import { useGraphStore } from "../../state/graphStore";
 import { graphStyles } from "./graphStyles";
-import TimelineSlider from "./TimelineSlider";
-import { useTranslation } from "react-i18next";
-import { useTransliteration } from "../ui/Transliterate";
 
-// Register cytoscape-fcose layout algorithm
 try {
-  cytoscape.use(fcose);
+  cytoscape.use(cola);
 } catch (e) {
   console.warn("Cytoscape extension registration warning:", e);
 }
+import TimelineSlider from "./TimelineSlider";
+import { useTranslation } from "react-i18next";
+import { useTransliteration } from "../ui/Transliterate";
 
 interface GraphViewProps {
   onSelectNode: (entityId: string) => void;
@@ -59,13 +58,6 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
   const elements = useMemo(() => {
     if (!graphData) return [];
 
-    const typesPresent = Array.from(
-      new Set(graphData.nodes.map((n) => n.type)),
-    );
-    const clusterParents = typesPresent.map((type) => ({
-      data: { id: `${CLUSTER_PREFIX}${type}`, label: type.toUpperCase() },
-    }));
-
     const cyNodes = graphData.nodes.map((n) => {
       let cleanLabel = transliterate(n.label);
       if (/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(n.label)) {
@@ -88,7 +80,6 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
           label: cleanLabel,
           type: n.type,
           confidence: n.confidence,
-          parent: `${CLUSTER_PREFIX}${n.type}`,
         },
       };
     });
@@ -106,7 +97,7 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
       },
     }));
 
-    return [...clusterParents, ...cyNodes, ...cyEdges];
+    return [...cyNodes, ...cyEdges];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graphData]);
 
@@ -115,27 +106,19 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
   useEffect(() => {
     if (cyRef.current && elements.length > 0) {
       const layout = cyRef.current.layout({
-        name: "fcose",
-        quality: "default",
-        randomize: true,
+        name: "cola",
         animate: true,
+        randomize: true,
+        maxSimulationTime: 2000,
+        nodeSpacing: (node: any) => 30, // extra spacing around nodes
+        edgeLength: (edge: any) => {
+          const c = edge.data("confidence") ?? 0.5;
+          // Vary the edge length significantly based on hash of target to break symmetric rings
+          const hash = edge.data("target").charCodeAt(0) % 5;
+          return 100 + (1 - c) * 200 + hash * 30;
+        },
         fit: true,
         padding: 40,
-        nodeDimensionsIncludeLabels: true,
-        nodeRepulsion: () => 6000,
-        nodeSeparation: 90,
-        packComponents: true,
-        idealEdgeLength: (edge: any) => {
-          // Higher confidence pulls closer, low confidence is pushed further out —
-          // edge length becomes a visual signal, not just aesthetics.
-          const c = edge.data("confidence") ?? 0.5;
-          return 60 + (1 - c) * 140;
-        },
-        edgeElasticity: () => 0.45,
-        nestingFactor: 0.1,
-        gravity: 0.3,
-        numIter: 2500,
-        tile: true,
       } as any);
       layout.run();
     }
@@ -417,7 +400,7 @@ export default function GraphView({ onSelectNode }: GraphViewProps) {
           stylesheet={graphStyles}
           cy={setupCytoscape}
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          layout={{ name: "fcose" } as any}
+          layout={{ name: "cola" } as any}
         />
       )}
 

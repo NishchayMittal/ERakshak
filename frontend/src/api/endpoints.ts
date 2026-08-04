@@ -505,3 +505,84 @@ export async function markAllAlertsRead(): Promise<unknown> {
   const res = await apiClient.patch('/cases/alerts/read-all');
   return res.data;
 }
+
+// ─── Indian Legal Section Mapping ───
+
+export interface LegalFlag {
+  act: 'IT Act 2000' | 'BNS 2023' | 'PMLA 2002';
+  section: string;
+  title: string;
+  description: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  punishment: string;
+  bailable: boolean;
+  confidence: number;
+  notes: string;
+  triggered_by: Array<{
+    connector: string;
+    type: string;
+    value: string;
+    confidence: number;
+  }>;
+}
+
+export interface LegalMappingResult {
+  case_id: string;
+  total_flags: number;
+  critical_count: number;
+  high_count: number;
+  summary: string;
+  flags: LegalFlag[];
+}
+
+export async function getLegalMapping(caseId: string): Promise<LegalMappingResult> {
+  if (isMockMode()) {
+    return {
+      case_id: caseId,
+      total_flags: 3,
+      critical_count: 1,
+      high_count: 1,
+      summary: '1 CRITICAL and 1 HIGH severity legal provisions flagged. Immediate legal review recommended.',
+      flags: [
+        {
+          act: 'IT Act 2000',
+          section: 'Section 66C',
+          title: 'Identity Theft',
+          description: 'Covers fraudulent or dishonest use of another person\'s electronic signature, password, or any other unique identification feature.',
+          severity: 'CRITICAL',
+          punishment: 'Imprisonment up to 3 years and fine up to ₹1 Lakh.',
+          bailable: false,
+          confidence: 0.92,
+          notes: 'Presence of leaked credentials strongly indicates identity theft under Section 66C.',
+          triggered_by: [{ connector: 'hibp', type: 'breach', value: 'LinkedIn (2021)', confidence: 0.95 }],
+        },
+        {
+          act: 'IT Act 2000',
+          section: 'Section 43',
+          title: 'Penalty & Compensation for Damage to Computer',
+          description: 'Applies when a person accesses or downloads data from a computer system without the owner\'s permission.',
+          severity: 'HIGH',
+          punishment: 'Compensation up to ₹1 Crore payable to the affected person.',
+          bailable: true,
+          confidence: 0.82,
+          notes: 'Open ports and exposed services indicate potential for unauthorised access.',
+          triggered_by: [{ connector: 'shodan_idb', type: 'open_port', value: '22, 3306, 5432', confidence: 0.88 }],
+        },
+        {
+          act: 'BNS 2023',
+          section: 'Section 318',
+          title: 'Cheating',
+          description: 'Covers deceiving any person and fraudulently inducing them to deliver property or to do or omit to do any act.',
+          severity: 'MEDIUM',
+          punishment: 'Imprisonment up to 3 years and/or fine.',
+          bailable: false,
+          confidence: 0.65,
+          notes: 'Crypto wallet activity may constitute digital cheating if associated with fraud.',
+          triggered_by: [{ connector: 'wallet_lookup', type: 'balance', value: '0.48 BTC', confidence: 0.70 }],
+        },
+      ],
+    };
+  }
+  const res = await apiClient.get(`/cases/${caseId}/legal-mapping`);
+  return res.data;
+}

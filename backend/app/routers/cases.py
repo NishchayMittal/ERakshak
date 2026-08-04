@@ -1230,3 +1230,26 @@ def mark_notification_read(
             notif.is_read = True
             db.commit()
     return {"status": "ok"}
+
+
+# ─── Indian Legal Section Mapping ───
+
+@router.get("/{case_id}/legal-mapping")
+def get_legal_mapping(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator),
+):
+    """
+    Maps all OSINT findings for a case to relevant Indian legal provisions:
+    IT Act 2000, Bharatiya Nyaya Sanhita 2023, and PMLA 2002.
+    """
+    case = db.query(Case).filter(
+        Case.id == case_id,
+        Case.lead_investigator_id == current_investigator.id,
+    ).first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+
+    from app.analytics.legal_mapping import run_legal_mapping
+    return run_legal_mapping(db, case_id)

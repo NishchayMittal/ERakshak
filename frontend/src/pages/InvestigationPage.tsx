@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
-import { MessageCircle, Activity, BookOpen, FileText } from "lucide-react";
+import { MessageCircle, Activity, BookOpen, FileText, Scale } from "lucide-react";
 import GraphView from "../components/graph/GraphView";
 import GraphFilterBar from "../components/graph/GraphFilterBar";
 import GraphLegend from "../components/graph/GraphLegend";
@@ -10,6 +10,7 @@ import ReportPanel from "../components/cases/ReportPanel";
 import ExportMenu from "../components/export/ExportMenu";
 import DossierPanel from "../components/dossier/DossierPanel";
 import ChatPanel from "../components/cases/ChatPanel";
+import LegalPanel from "../components/legal/LegalPanel";
 import { useGraphStore } from "../state/graphStore";
 import { useUIStore } from "../state/uiStore";
 import { useCaseStore } from "../state/caseStore";
@@ -23,7 +24,7 @@ interface ChatMessage {
   timestamp: string;
 }
 
-const TABS = ["DOSSIER", "TIMELINE", "NOTES", "REPORT", "CHAT"] as const;
+const TABS = ["DOSSIER", "TIMELINE", "NOTES", "REPORT", "LEGAL", "CHAT"] as const;
 type Tab = (typeof TABS)[number];
 
 interface InvestigationPageProps {
@@ -82,6 +83,7 @@ export default function InvestigationPage({
     timeline: "TIMELINE",
     notes: "NOTES",
     report: "REPORT",
+    legal: "LEGAL",
     chat: "CHAT",
   };
   const activeDisplay = tabMap[activeTab] ?? "DOSSIER";
@@ -90,6 +92,7 @@ export default function InvestigationPage({
     TIMELINE: "timeline",
     NOTES: "notes",
     REPORT: "report",
+    LEGAL: "legal",
     CHAT: "chat",
   };
 
@@ -293,10 +296,11 @@ export default function InvestigationPage({
                 React.FC<React.SVGProps<SVGSVGElement>> & { size?: number }
               > = {
                 DOSSIER: MessageCircle,
-                TIMELINE: Activity, // Using Activity for timeline
+                TIMELINE: Activity,
                 NOTES: BookOpen,
                 REPORT: FileText,
-                CHAT: MessageCircle, // Using MessageCircle for chat
+                LEGAL: Scale,
+                CHAT: MessageCircle,
               };
 
               const IconComponent = tabIcons[tab];
@@ -304,7 +308,7 @@ export default function InvestigationPage({
               return (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(reverseTabMap[tab] as 'graph' | 'timeline' | 'notes' | 'report' | 'chat')}
+                  onClick={() => setActiveTab(reverseTabMap[tab] as 'graph' | 'timeline' | 'notes' | 'report' | 'legal' | 'chat')}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -428,6 +432,20 @@ export default function InvestigationPage({
                   textareaRef={textareaRef}
                 />
               )}
+            </div>
+
+            {/* Legal Section Mapping Panel */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                display: activeDisplay === "LEGAL" && caseId ? "block" : "none",
+              }}
+            >
+              {caseId && <LegalPanel caseId={caseId} />}
             </div>
           </div>
         </div>

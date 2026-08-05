@@ -6,7 +6,6 @@ from app.connectors.username_enum import UsernameEnumConnector
 from app.connectors.breach_lookup import BreachLookupConnector
 from app.connectors.hibp import HaveIBeenPwnedConnector
 from app.connectors.name_search import NameSearchConnector
-from app.connectors.phone_lookup import PhoneLookupConnector
 from app.connectors.wallet_lookup import WalletLookupConnector
 from app.connectors.dns_resolver import DnsResolverConnector
 from app.connectors.github_commits import GithubCommitEmailConnector
@@ -32,7 +31,6 @@ def register_all():
     registry.register(BreachLookupConnector())
     registry.register(HaveIBeenPwnedConnector())
     registry.register(NameSearchConnector())
-    registry.register(PhoneLookupConnector())
     registry.register(WalletLookupConnector())
     registry.register(DnsResolverConnector())
     registry.register(GithubCommitEmailConnector())

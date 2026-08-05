@@ -105,49 +105,17 @@ def compute_temporal_analysis(case_id: str, db: Session) -> dict[str, Any]:
 
     raw_records: list[tuple[datetime, str | None, dict[str, Any]]] = []
 
-    # 1. Collect from Identifiers
+    # 1. Collect from Identifiers (Only for mapping nodes, no timestamps)
     identifiers = db.query(Identifier).filter(Identifier.case_id == case_id).all()
     identifier_ids = [i.id for i in identifiers]
     id_norm_map = {i.id: (i.normalized_value or i.id) for i in identifiers}
 
-    for i in identifiers:
-        if i.timestamp:
-            dt = parse_any_timestamp(i.timestamp)
-            if dt:
-                timestamps.append(dt)
-                evt_obj = {
-                    "source": "IDENTIFIER",
-                    "type": i.type.upper(),
-                    "title": f"Target {i.type.capitalize()} Vector",
-                    "value": format_event_sentence("IDENTIFIER", i.type.upper(), f"Target {i.type.capitalize()} Vector", i.raw_value),
-                    "timestamp_utc": dt.strftime("%Y-%m-%d %H:%M:%S UTC"),
-                    "node_id": i.normalized_value or i.id
-                }
-                raw_records.append((dt, f"id_{i.id}", evt_obj))
-                sources_breakdown["identifiers"] += 1
-
     # 2. Collect from Findings
+    # Filter out findings with confidence < 0.8 to remove false positives
     if identifier_ids:
-        findings = db.query(Finding).filter(Finding.identifier_id.in_(identifier_ids)).all()
+        findings = db.query(Finding).filter(Finding.identifier_id.in_(identifier_ids), Finding.confidence >= 0.8).all()
         for f in findings:
             target_graph_node = id_norm_map.get(f.identifier_id) or f.id
-            if f.discovered_at:
-                dt = parse_any_timestamp(f.discovered_at)
-                if dt:
-                    timestamps.append(dt)
-                    f_type = (getattr(f, "result_type", None) or "OSINT FINDING").upper()
-                    f_title = f"{getattr(f, 'connector_name', 'OSINT').capitalize()} Discovery"
-                    f_val = getattr(f, "result_value", "") or ""
-                    evt_obj = {
-                        "source": "FINDING",
-                        "type": f_type,
-                        "title": f_title,
-                        "value": format_event_sentence("FINDING", f_type, f_title, f_val, getattr(f, "raw_payload", None)),
-                        "timestamp_utc": dt.strftime("%Y-%m-%d %H:%M:%S UTC"),
-                        "node_id": target_graph_node
-                    }
-                    raw_records.append((dt, f"finding_{f.id}", evt_obj))
-                    sources_breakdown["findings"] += 1
             if f.raw_payload and isinstance(f.raw_payload, dict):
                 for key in ["timestamp", "last_updated", "created_at", "date", "cdx_timestamp", "posted_at"]:
                     if key in f.raw_payload:
@@ -166,44 +134,8 @@ def compute_temporal_analysis(case_id: str, db: Session) -> dict[str, Any]:
                             raw_records.append((dt, None, evt_obj))
                             sources_breakdown["findings"] += 1
 
-    # 3. Collect from Case Notes & Audit Logs
-    notes = db.query(CaseNote).filter(CaseNote.case_id == case_id).all()
-    for n in notes:
-        if n.created_at:
-            dt = parse_any_timestamp(n.created_at)
-            if dt:
-                timestamps.append(dt)
-                n_title = n.title or "Case Annotation"
-                n_val = (n.content[:120] + "...") if n.content and len(n.content) > 120 else (n.content or "")
-                evt_obj = {
-                    "source": "NOTE",
-                    "type": "INVESTIGATOR NOTE",
-                    "title": n_title,
-                    "value": format_event_sentence("NOTE", "INVESTIGATOR NOTE", n_title, n_val),
-                    "timestamp_utc": dt.strftime("%Y-%m-%d %H:%M:%S UTC"),
-                    "node_id": n.id
-                }
-                raw_records.append((dt, f"note_{n.id}", evt_obj))
-                sources_breakdown["notes"] += 1
-
-    audits = db.query(AuditLog).filter(AuditLog.case_id == case_id).all()
-    for a in audits:
-        if a.timestamp:
-            dt = parse_any_timestamp(a.timestamp)
-            if dt:
-                timestamps.append(dt)
-                a_title = a.action
-                a_detail = getattr(a, "detail", None)
-                evt_obj = {
-                    "source": "AUDIT",
-                    "type": "SYSTEM EVENT",
-                    "title": a_title,
-                    "value": format_event_sentence("AUDIT", "SYSTEM EVENT", a_title, a_detail),
-                    "timestamp_utc": dt.strftime("%Y-%m-%d %H:%M:%S UTC"),
-                    "node_id": a.id
-                }
-                raw_records.append((dt, f"audit_{a.id}", evt_obj))
-                sources_breakdown["audits"] += 1
+    # 3. Case Notes & Audit Logs are deliberately excluded from Temporal Matrix 
+    # to avoid profiling the investigator's schedule instead of the target's.
 
     total_count = len(timestamps)
 

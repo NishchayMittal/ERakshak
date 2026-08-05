@@ -63,6 +63,40 @@ export function CaseWindow({ win }: CaseWindowProps) {
   const pan = casePan[caseId] || { x: 0, y: 0 };
   
   const { evidencePack } = useGraphStore();
+
+  const [displayProgress, setDisplayProgress] = React.useState<number | null>(null);
+
+  React.useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    const realProgress = caseIngestProgress[caseId];
+
+    if (realProgress === undefined || realProgress === null) {
+      setDisplayProgress(null);
+      return;
+    }
+
+    if (realProgress < 90) {
+      setDisplayProgress(realProgress);
+    } else if (realProgress === 90) {
+      setDisplayProgress(90);
+      interval = setInterval(() => {
+        setDisplayProgress(prev => {
+          if (prev === null) return 90;
+          if (prev >= 99) {
+            clearInterval(interval);
+            return 99;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    } else {
+      setDisplayProgress(realProgress);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [caseIngestProgress, caseId]);
   
 
 
@@ -360,10 +394,10 @@ export function CaseWindow({ win }: CaseWindowProps) {
                             <div className="w-full bg-black/45 border border-[#39ff14]/30 p-4 rounded-xl flex flex-col gap-2">
                               <div className="flex justify-between text-[9px] font-bold text-[#39ff14]">
                                 <span className="animate-pulse">CRAWLER PIPELINE CARRYING SCAN...</span>
-                                <span>{caseIngestProgress[caseId]}%</span>
+                                <span>{displayProgress ?? caseIngestProgress[caseId]}%</span>
                               </div>
                               <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden relative">
-                                <div className="h-full bg-[#39ff14]" style={{ width: `${caseIngestProgress[caseId]}%` }} />
+                                <div className="h-full bg-[#39ff14]" style={{ width: `${displayProgress ?? caseIngestProgress[caseId]}%` }} />
                                 {/* Cyber scanning line */}
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#39ff14]/30 to-transparent w-20 animate-loading-scan" />
                               </div>
@@ -390,6 +424,8 @@ export function CaseWindow({ win }: CaseWindowProps) {
                             {/* Network Canvas */}
                             {(() => {
                               const caseGraph = graphDataPerCase[caseId] || graphData;
+                              const isScanning = caseIngestProgress[caseId] !== undefined && caseIngestProgress[caseId] !== null;
+
                               if (!caseGraph || !caseGraph.nodes || caseGraph.nodes.length === 0) {
                                 return (
                                   <div className="flex-1 flex flex-col items-center justify-center text-[9px] text-[#39ff14]/60 font-mono tracking-widest gap-2">
@@ -397,6 +433,30 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                   </div>
                                 );
                               }
+
+                              // If scanning and no edges are found yet (only seeds), show loader
+                              if (isScanning && (!caseGraph.edges || caseGraph.edges.length === 0)) {
+                                return (
+                                  <div className="flex-1 flex flex-col items-center justify-center p-8">
+                                    <div className="w-full max-w-md bg-black/45 border border-[#39ff14]/30 p-6 rounded-xl flex flex-col gap-3 shadow-[0_0_15px_rgba(57,255,20,0.1)]">
+                                      <div className="flex justify-between text-[10px] font-bold text-[#39ff14] font-mono tracking-widest">
+                                        <span className="animate-pulse">CRAWLER PIPELINE CARRYING SCAN...</span>
+                                        <span>{displayProgress ?? caseIngestProgress[caseId]}%</span>
+                                      </div>
+                                      <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden relative">
+                                        <div className="h-full bg-[#39ff14] transition-all duration-300" style={{ width: `${displayProgress ?? caseIngestProgress[caseId]}%` }} />
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#39ff14]/30 to-transparent w-20 animate-loading-scan" />
+                                      </div>
+                                      <div className="flex-1 max-h-20 overflow-y-hidden font-mono text-[8px] text-gray-500 flex flex-col justify-end gap-0.5 mt-2">
+                                        {(caseIngestLogs[caseId] || []).slice(-4).map((l, i) => (
+                                          <div key={i} className="truncate"><span className="text-[#39ff14] mr-1.5">&gt;</span>{l}</div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              }
+
                               return (
                                 <svg
                                   className="w-full h-full cursor-grab active:cursor-grabbing"

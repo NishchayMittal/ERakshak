@@ -1,7 +1,5 @@
 import re
 
-import phonenumbers
-
 from app.models import IdentifierType
 
 
@@ -11,6 +9,7 @@ USERNAME_RE = re.compile(r"^@?[A-Za-z0-9_.]{3,64}$")
 ETH_RE = re.compile(r"^0x[a-fA-F0-9]{40}$")
 BTC_RE = re.compile(r"^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$")
 IP_RE = re.compile(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$")
+PHONE_RE = re.compile(r"^\+?[1-9]\d{9,14}$")
 
 
 def detect_type(raw_value: str) -> IdentifierType:
@@ -25,12 +24,9 @@ def detect_type(raw_value: str) -> IdentifierType:
     if IP_RE.match(value):
         return IdentifierType.ip
 
-    try:
-        parsed = phonenumbers.parse(value, "IN")
-        if phonenumbers.is_possible_number(parsed) and phonenumbers.is_valid_number(parsed):
-            return IdentifierType.phone
-    except phonenumbers.NumberParseException:
-        pass
+    val_clean = re.sub(r'[^\d+]', '', value)
+    if PHONE_RE.match(val_clean):
+        return IdentifierType.phone
 
     if ETH_RE.match(value) or BTC_RE.match(value):
         return IdentifierType.wallet
@@ -61,8 +57,7 @@ def normalize(raw_value: str, id_type: IdentifierType) -> str:
         return value.strip()
 
     if id_type == IdentifierType.phone:
-        parsed = phonenumbers.parse(value, "IN")
-        return phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+        return re.sub(r'[^\d+]', '', value)
 
     if id_type == IdentifierType.photo:
         val = value.replace("\\", "/").strip("/")

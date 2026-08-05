@@ -255,7 +255,7 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
             target_type = "domain"
         elif result_type == "discovered_path":
             target_node_id = result_val.replace("Active Path: ", "").strip()
-            target_type = "domain"
+            target_type = "url"
         elif result_type in ("reddit_profile", "instagram_profile", "linkedin_profile"):
             target_node_id = result_val
             target_type = "username"

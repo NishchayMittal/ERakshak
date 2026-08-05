@@ -264,7 +264,9 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
     elif result_type in ("image_hosting_page", "image_exact_match"):
         domain = clean_domain(val)
         if domain and "." in domain and not domain.startswith("localhost"):
-            return IdentifierType.domain, domain
+            mega_domains = {"wikipedia.org", "twitter.com", "x.com", "instagram.com", "facebook.com", "linkedin.com", "github.com", "youtube.com", "google.com", "pinterest.com", "tiktok.com", "reddit.com", "apple.com", "amazon.com"}
+            if not any(domain == md or domain.endswith("." + md) for md in mega_domains):
+                return IdentifierType.domain, domain
 
     elif result_type == "image_entity_label":
         entity_name = val.strip()
@@ -275,14 +277,7 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
                 return IdentifierType.name, entity_name.title()
 
     elif result_type == "wikipedia_entry":
-        # Extract the Wikipedia page URL as a domain for further pivoting
-        if isinstance(payload, dict):
-            page_url = payload.get("page_url", "")
-            if page_url:
-                # Extract domain from URL
-                domain_match = re.search(r'https?://([^/]+)', page_url)
-                if domain_match:
-                    return IdentifierType.domain, domain_match.group(1)
+        # Do not pivot into en.wikipedia.org as a generic domain
         return None
 
     return None

@@ -164,19 +164,24 @@ async def watchlist_monitor_loop():
 @app.on_event("startup")
 def on_startup() -> None:
     from sqlalchemy import text
-    with engine.begin() as conn:
+    with engine.connect() as conn:
         try:
             conn.execute(text("ALTER TABLE investigators ADD COLUMN is_approved BOOLEAN DEFAULT FALSE"))
+            conn.commit()
         except Exception:
-            pass
+            conn.rollback()
+            
         try:
-            conn.execute(text("UPDATE investigators SET is_approved = 1 WHERE badge_id = 'INV-001'"))
+            conn.execute(text("UPDATE investigators SET is_approved = TRUE WHERE badge_id = 'INV-001'"))
+            conn.commit()
         except Exception:
-            pass
+            conn.rollback()
+            
         try:
             conn.execute(text("ALTER TABLE cases ADD COLUMN is_watched BOOLEAN DEFAULT FALSE"))
+            conn.commit()
         except Exception:
-            pass
+            conn.rollback()
     Base.metadata.create_all(bind=engine)
     import asyncio
     from app.routers.ws import redis_listener

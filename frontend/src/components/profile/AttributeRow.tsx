@@ -28,7 +28,7 @@ export default function AttributeRow({ attribute }: AttributeRowProps) {
         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-sans">
           {formatKey(key)}
         </span>
-        
+
         {/* Source badge */}
         <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-950 text-indigo-400 border border-slate-800">
           {source}
@@ -42,7 +42,7 @@ export default function AttributeRow({ attribute }: AttributeRowProps) {
       {/* Confidence rating indicator */}
       <div className="flex items-center gap-2 mt-0.5">
         <div className="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden">
-          <div 
+          <div
             className={`h-full rounded-full ${getConfidenceColor(confidence)}`}
             style={{ width: `${confidence * 100}%` }}
           ></div>

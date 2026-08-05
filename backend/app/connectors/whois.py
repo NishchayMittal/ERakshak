@@ -147,7 +147,6 @@ class WhoisConnector(BaseConnector):
                 fn    = vcard_field(vcard, "fn")
                 org   = vcard_field(vcard, "org")
                 email = vcard_field(vcard, "email")
-                tel   = vcard_field(vcard, "tel")
                 role_label = ", ".join(sorted(roles)) if roles else "contact"
 
                 if entity_is_infra and not entity_is_relevant:
@@ -194,14 +193,6 @@ class WhoisConnector(BaseConnector):
                         result_type="registrant_email",
                         result_value=email.strip().lower(),
                         confidence=1.0,
-                        raw_payload={"role": role_label}
-                    ))
-                if tel and not is_redacted(tel):
-                    findings.append(Finding(
-                        connector_name=self.name,
-                        result_type="registrant_phone",
-                        result_value=tel.strip(),
-                        confidence=0.95,
                         raw_payload={"role": role_label}
                     ))
 

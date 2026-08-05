@@ -45,8 +45,6 @@ def generate_username_variants(username: str) -> list[str]:
             f"{first}-{last}",          # virat-kohli
             f"{first[0]}{last}",         # vkohli
             f"{first}{last[0]}",         # viratk
-            last,                        # kohli (last name)
-            first,                       # virat (first name)
             f"iam{first}{last}",         # iamviratkohli
             f"official{first}{last}",     # officialviratkohli
             f"real{first}{last}",         # realviratkohli

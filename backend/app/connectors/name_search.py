@@ -306,9 +306,18 @@ class NameSearchConnector(BaseConnector):
                         else:
                             confidence = 0.70
 
-                        # Check for profile path specificity
+                        # Check for profile path specificity and name relevance
                         profile_path = self._extract_profile_path(url, site_key)
                         if profile_path:
+                            path_clean = profile_path.lower().replace("-", "").replace("_", "")
+                            queried_words = [w.lower() for w in name.split() if len(w) > 2]
+                            
+                            if queried_words:
+                                # For Wikipedia, Instagram, LinkedIn, etc., the URL usually contains the name.
+                                # If the path doesn't contain ANY part of the queried name, drop it to avoid false positives.
+                                if not any(w in path_clean for w in queried_words):
+                                    continue
+                                    
                             # Has a username/profile path → more likely a real profile
                             confidence = min(1.0, confidence + 0.10)
 

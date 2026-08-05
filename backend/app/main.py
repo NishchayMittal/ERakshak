@@ -166,7 +166,7 @@ def on_startup() -> None:
     from sqlalchemy import text
     with engine.begin() as conn:
         try:
-            conn.execute(text("ALTER TABLE investigators ADD COLUMN is_approved BOOLEAN DEFAULT 0"))
+            conn.execute(text("ALTER TABLE investigators ADD COLUMN is_approved BOOLEAN DEFAULT FALSE"))
         except Exception:
             pass
         try:
@@ -174,7 +174,7 @@ def on_startup() -> None:
         except Exception:
             pass
         try:
-            conn.execute(text("ALTER TABLE cases ADD COLUMN is_watched BOOLEAN DEFAULT 0"))
+            conn.execute(text("ALTER TABLE cases ADD COLUMN is_watched BOOLEAN DEFAULT FALSE"))
         except Exception:
             pass
     Base.metadata.create_all(bind=engine)

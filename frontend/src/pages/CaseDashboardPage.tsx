@@ -883,7 +883,7 @@ export default function CaseDashboardPage() {
         title = `Investigation #${caseNumber} — AD HOC`;
       }
       const newCase = await initializeNewCase(title, 'Ad-hoc initialized case file');
-      showToast(`${newCase.caseId} INITIALIZED`, 'success');
+      showToast(`${title.toUpperCase()} INITIALIZED`, 'success');
       openWindow(
         `workspace-${newCase.caseId}`,
         `Case Workspace: ${newCase.title}`,

@@ -4,7 +4,7 @@ import { useUIStore } from '../../state/uiStore';
 import { useCaseStore } from '../../state/caseStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useGraphStore } from '../../state/graphStore';
-import { Transliterate } from '../ui/Transliterate';
+import { Transliterate, useTransliterate } from '../ui/Transliterate';
 
 // Hard-edged SVG icons – no libraries needed
 const Icons = {
@@ -67,6 +67,7 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const params = useParams();
   const location = useLocation();
+  const transliterate = useTransliterate();
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
@@ -229,9 +230,7 @@ export default function Sidebar() {
             <option value="" disabled>SELECT CASE...</option>
             {cases.map((c) => (
               <option key={c.caseId} value={c.caseId}>
-                <span className="truncate">
-                  <Transliterate>{c.title.length > 22 ? `${c.title.substring(0, 22)}…` : c.title}</Transliterate>
-                </span>
+                {transliterate(c.title.length > 22 ? `${c.title.substring(0, 22)}…` : c.title)}
               </option>
             ))}
           </select>

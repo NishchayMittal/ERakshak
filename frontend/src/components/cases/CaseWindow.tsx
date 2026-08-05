@@ -537,15 +537,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                       </a>
                                     </div>
                                   )}
-                                  <div className="flex flex-col gap-0.5">
-                                    <span className="text-gray-500 font-mono font-semibold">{t('case_window.confidence_value')}</span>
-                                    <div className="flex items-center gap-2 bg-white/5 p-1">
-                                      <span className="text-[#39ff14] font-bold">{(nodeInfo.confidence * 100).toFixed(0)}%</span>
-                                      <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
-                                        <div className="h-full bg-[#39ff14]" style={{ width: `${nodeInfo.confidence * 100}%` }} />
-                                      </div>
-                                    </div>
-                                  </div>
+
                                 </div>
                               );
                             })()}
@@ -666,9 +658,6 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                               <div className="flex flex-col gap-0.5">
                                                 <span className="text-gray-500 text-[7px] uppercase tracking-wider">{f.connector || 'connector'}</span>
                                                 <span className="text-gray-200 capitalize">{f.value}</span>
-                                              </div>
-                                              <div className="flex items-center gap-2">
-                                                <span className="text-[#39ff14] font-bold uppercase">{Math.round(f.confidence * 100)}% CONFIDENCE</span>
                                               </div>
                                             </div>
                                           );

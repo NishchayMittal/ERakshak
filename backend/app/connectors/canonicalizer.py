@@ -1,6 +1,5 @@
 import re
 from urllib.parse import urlparse
-import phonenumbers
 from anyascii import anyascii
 
 from app.connectors.base import Finding
@@ -61,20 +60,6 @@ def canonicalize_findings(findings: list[Finding]) -> list[Finding]:
             
         elif result_type == "registrant_email":
             result_value = result_value.strip().lower()
-            
-        elif result_type == "registrant_phone":
-            val = result_value.strip()
-            # Remove common prefixes like tel:
-            if val.startswith("tel:"):
-                val = val[4:]
-            try:
-                parsed = phonenumbers.parse(val, "IN")
-                if phonenumbers.is_possible_number(parsed) and phonenumbers.is_valid_number(parsed):
-                    result_value = phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
-            except Exception:
-                # If parsing fails, fall back to removing non-numeric chars except leading +
-                result_value = re.sub(r'[^\d+]', '', val)
-                
         elif result_type in ("registrant_name", "registrant_org"):
             # Romanize using anyascii and convert to lowercase/strip
             result_value = anyascii(result_value).strip().lower()
@@ -208,16 +193,6 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
     email_matches = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', search_text)
     if email_matches:
         return IdentifierType.email, email_matches[0].strip().lower()
-        
-    # 3. Look for phone numbers in E.164-like format (e.g., +919876543210)
-    if "wayback" not in finding.connector_name.lower():
-        phone_matches = re.findall(r'\+?[1-9]\d{9,14}', search_text)
-        if phone_matches:
-            val_match = phone_matches[0].strip()
-            # Exclude year/timestamp prefixes like 1999... or 2005...
-            if not (len(val_match) >= 12 and (val_match.startswith("19") or val_match.startswith("20"))):
-                return IdentifierType.phone, val_match
-            
     # 4. Check raw_payload for a direct username field
     if isinstance(payload, dict) and payload.get("username"):
         uname = str(payload["username"]).strip().lstrip("@")
@@ -249,9 +224,6 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
     # 6. Map explicit result types
     if result_type == "registrant_email":
         return IdentifierType.email, val.strip().lower()
-
-    elif result_type == "registrant_phone":
-        return IdentifierType.phone, val.strip()
 
     elif result_type == "registrant_name":
         name = val.split(" (")[0].strip()

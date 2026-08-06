@@ -80,7 +80,7 @@ export function useAuth() {
 
   return {
     user,
-    isAuthenticated: !!user && !!savedToken,
+    isAuthenticated: !!user && !!localStorage.getItem('er_token'),
     login,
     logout,
     setUser,

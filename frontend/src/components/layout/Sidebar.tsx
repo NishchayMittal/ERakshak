@@ -184,7 +184,7 @@ export default function Sidebar() {
               key={item.key}
               to={to}
               end={item.key === 'cases'}
-              onClick={(e) => {
+              onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
                 if (!item.path && !activeCaseId) {
                   e.preventDefault();
                   showToast('Please select or initialize a case first', 'error');
@@ -200,7 +200,7 @@ export default function Sidebar() {
                   useUIStore.setState({ activeTab: 'timeline' });
                 }
               }}
-              style={({ isActive }) => ({
+              style={({ isActive }: { isActive: boolean }) => ({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,

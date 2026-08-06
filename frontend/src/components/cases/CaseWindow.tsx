@@ -411,8 +411,8 @@ export function CaseWindow({ win }: CaseWindowProps) {
 
                       {/* Network Matrix drag and drop tab */}
                       {tab === 'graph' && (
-                        <div className="flex flex-1 min-height-0 overflow-hidden relative">
-                          <div className="flex-grow bg-[#0c1220] border border-[#39ff14]/30 rounded-xl relative overflow-hidden shadow-inner flex flex-col">
+                        <div className="flex flex-col sm:flex-row flex-1 min-height-0 overflow-hidden relative gap-3 sm:gap-0">
+                          <div className="flex-grow bg-[#0c1220] border border-[#39ff14]/30 rounded-xl relative overflow-hidden shadow-inner flex flex-col min-h-[300px] sm:min-h-0">
 
                             {/* Drag instructions overlay */}
                             <div className="absolute top-2 left-2 pointer-events-none text-[7px] text-[#39ff14] font-mono uppercase bg-black/85 px-2 py-1 border border-[#39ff14]/20 z-10 tracking-wider">
@@ -558,7 +558,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                           </div>
 
                           {/* Mini side action node menu */}
-                          <div className="w-64 bg-black/35 border border-white/5 rounded-xl ml-3 p-3 flex flex-col gap-3 overflow-y-auto">
+                          <div className="w-full sm:w-64 bg-black/35 border border-white/5 rounded-xl sm:ml-3 p-3 flex flex-col gap-3 overflow-y-auto max-h-48 sm:max-h-full flex-shrink-0">
                             <span className="text-[8.5px] text-gray-500 font-bold border-b border-white/5 pb-1 uppercase tracking-wider">{t('case_window.node_details')}</span>
                             {(() => {
                               const caseGraph = graphDataPerCase[caseId] || graphData;
@@ -605,9 +605,9 @@ export function CaseWindow({ win }: CaseWindowProps) {
 
                       {/* Telemetry Dossier Tab */}
                       {tab === 'dossier' && (
-                        <div className="flex flex-grow overflow-hidden relative min-h-0">
+                        <div className="flex flex-col sm:flex-row flex-grow overflow-hidden relative min-h-0 gap-3 sm:gap-0">
                           {/* Left column case summary profile feeds */}
-                          <div className="w-64 bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col gap-2.5 overflow-y-auto pr-1 flex-shrink-0">
+                          <div className="w-full sm:w-64 bg-black/40 border border-white/5 rounded-xl p-3 flex flex-col gap-2.5 overflow-y-auto pr-1 flex-shrink-0 max-h-64 sm:max-h-full sm:mr-3">
                             <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest border-b border-white/5 pb-1 flex-shrink-0">{t('case_window.trace_matrices')}</span>
 
                             {/* Search box */}

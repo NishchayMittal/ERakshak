@@ -1474,7 +1474,7 @@ export default function CaseDashboardPage() {
               left: (win.isMaximized || isMobile) ? 0 : win.x,
               top: (win.isMaximized || isMobile) ? '2rem' : win.y,
               width: (win.isMaximized || isMobile) ? '100%' : win.width,
-              height: (win.isMaximized || isMobile) ? 'calc(100% - 2rem)' : win.height,
+              height: (win.isMaximized || isMobile) ? (isMobile ? 'calc(100% - 2rem - 120px)' : 'calc(100% - 2rem)') : win.height,
               zIndex: win.zIndex
             }}
           >

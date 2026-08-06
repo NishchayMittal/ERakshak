@@ -273,6 +273,7 @@ class IdentifierInputItem(BaseModel):
 
 class ChatRequest(BaseModel):
     question: str
+    history: list[dict[str, str]] | None = None
 
 
 
@@ -695,8 +696,7 @@ def chat_with_evidence(
     # Compile the evidence pack
     evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
 
-
-    answer = answer_question_about_evidence(evidence_pack, chat_request.question)
+    answer = answer_question_about_evidence(evidence_pack, chat_request.question, chat_request.history)
     return {
         "answer": answer,
         "question": chat_request.question,

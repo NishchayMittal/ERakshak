@@ -11,6 +11,75 @@ import { GeoMapWindow } from '../ui/GeoMapWindow';
 import type { GraphNode, GraphEdge } from '../../types/graph';
 import type { EvidenceIdentifier } from '../../types/evidence';
 
+const renderCustomMarkdown = (text: string) => {
+  if (!text) return null;
+  const lines = text.split('\n');
+  const elements: React.ReactNode[] = [];
+  
+  let inList = false;
+  let listItems: React.ReactNode[] = [];
+  let listKey = 0;
+
+  const flushList = () => {
+    if (inList && listItems.length > 0) {
+      elements.push(<ul key={`ul-${listKey++}`} className="pl-4 my-2 list-none">{listItems}</ul>);
+      listItems = [];
+      inList = false;
+    }
+  };
+
+  const parseInline = (line: string, i: number) => {
+    const parts = line.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, idx) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={idx} className="font-bold text-[#00ffc2] bg-[#00ffc2]/5 px-1 border border-[#00ffc2]/20">{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
+  lines.forEach((line, i) => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('#')) {
+      flushList();
+      const level = trimmed.match(/^#+/)?.[0].length || 1;
+      const content = parseInline(trimmed.replace(/^#+\s*/, ''), i);
+      
+      if (level === 1) {
+        elements.push(<h1 key={i} className="font-sans text-sm font-bold text-white border-b border-white/10 pb-2 mt-4 mb-3 tracking-widest uppercase">{content}</h1>);
+      } else if (level === 2) {
+        elements.push(<h2 key={i} className="font-sans text-xs font-bold text-[#00ffc2] border-b border-[#00ffc2]/20 pb-1 mt-4 mb-2 tracking-widest uppercase">{content}</h2>);
+      } else if (level === 3) {
+        elements.push(<h3 key={i} className="font-sans text-[10px] font-bold text-[#00ffc2] border-b border-white/10 pb-1 mt-3 mb-2 tracking-widest uppercase flex items-center gap-1.5"><FileText size={12} className="text-[#00ffc2] shrink-0" />{content}</h3>);
+      } else {
+        elements.push(<h4 key={i} className="font-sans text-[9px] font-bold text-gray-200 mt-3 mb-2 tracking-wider uppercase">{content}</h4>);
+      }
+    } else if (trimmed.startsWith('>')) {
+      flushList();
+      const content = parseInline(trimmed.replace(/^>\s*/, ''), i);
+      elements.push(<blockquote key={i} className="border-l-2 border-[#00ffc2] bg-[#00ffc2]/5 p-2 my-3 text-gray-400 italic">{content}</blockquote>);
+    } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.startsWith('+ ')) {
+      inList = true;
+      const content = parseInline(trimmed.substring(2), i);
+      listItems.push(
+        <li key={i} className="relative pl-3 text-[9px] font-mono text-gray-300 py-1 leading-relaxed">
+          <span className="absolute left-0 top-2.5 w-1 h-1 rounded-full bg-[#00ffc2]" />
+          {content}
+        </li>
+      );
+    } else if (trimmed === '') {
+      flushList();
+    } else {
+      flushList();
+      const content = parseInline(trimmed, i);
+      elements.push(<p key={i} className="font-mono text-[9px] text-gray-300 leading-relaxed mb-3">{content}</p>);
+    }
+  });
+  
+  flushList();
+  return elements;
+};
+
 interface WindowItem {
   id: string;
   type: string;
@@ -387,6 +456,17 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                 ))
                               )}
                             </div>
+                            <button
+                              onClick={async () => {
+                                const mappedSeeds = existingSeeds.map(s => ({ type: s.type, value: s.raw_value || '' }));
+                                await runIngestPipeline(caseId, mappedSeeds);
+                                setTimeout(fetchExistingSeeds, 2000);
+                              }}
+                              disabled={existingSeeds.length === 0 || (caseIngestProgress[caseId] !== undefined && caseIngestProgress[caseId] !== null)}
+                              className="w-full bg-[#39ff14]/20 hover:bg-[#39ff14]/30 border border-[#39ff14]/50 disabled:bg-white/5 disabled:border-transparent disabled:text-gray-600 text-[#39ff14] text-[9px] font-bold py-2 tracking-widest text-center uppercase mt-1"
+                            >
+                              RERUN SCAN ON EXISTING
+                            </button>
                           </div>
 
                           {/* Scanner loader console */}
@@ -755,8 +835,8 @@ export function CaseWindow({ win }: CaseWindowProps) {
                             </div>
                           </div>
 
-                          <div className="flex-grow overflow-y-auto font-mono text-[9px] text-gray-300 pr-1 select-text bg-black/25 p-3 border border-white/5 whitespace-pre-wrap leading-relaxed">
-                            {caseReportNarrative[caseId] || t('case_window.synthesizing')}
+                          <div className="flex-grow overflow-y-auto pr-1 select-text bg-black/25 p-3 border border-white/5">
+                            {caseReportNarrative[caseId] ? renderCustomMarkdown(caseReportNarrative[caseId]) : t('case_window.synthesizing')}
                           </div>
                         </div>
                       )}

@@ -11,6 +11,90 @@ interface ReportPanelProps {
 // Audio click synth
 const playDiagnosticTone = () => {};
 
+const renderCustomMarkdown = (text: string) => {
+  if (!text) return null;
+  const lines = text.split('\n');
+  const elements: React.ReactNode[] = [];
+  
+  let inList = false;
+  let listItems: React.ReactNode[] = [];
+  let listKey = 0;
+
+  const flushList = () => {
+    if (inList && listItems.length > 0) {
+      elements.push(<ul key={`ul-${listKey++}`} style={{ paddingLeft: 14, margin: '8px 0', listStyleType: 'none' }}>{listItems}</ul>);
+      listItems = [];
+      inList = false;
+    }
+  };
+
+  const parseInline = (line: string, i: number) => {
+    // Basic bold parsing: **text**
+    const parts = line.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, idx) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={idx} style={{
+          fontWeight: 750, color: 'var(--accent-primary)', fontFamily: 'var(--font-mono)',
+          background: 'rgba(0,255,194,0.05)', padding: '1px 3px', border: '1px solid rgba(0,255,194,0.15)',
+        }}>{part.slice(2, -2)}</strong>;
+      }
+      return part;
+    });
+  };
+
+  lines.forEach((line, i) => {
+    const trimmed = line.trim();
+    
+    // Handle headings
+    if (trimmed.startsWith('#')) {
+      flushList();
+      const level = trimmed.match(/^#+/)?.[0].length || 1;
+      const content = parseInline(trimmed.replace(/^#+\s*/, ''), i);
+      
+      if (level === 1) {
+        elements.push(<h1 key={i} style={{ fontFamily: 'var(--font-heading)', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', borderBottom: '1px solid var(--struct-line)', paddingBottom: 8, marginTop: 18, marginBottom: 12, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{content}</h1>);
+      } else if (level === 2) {
+        elements.push(<h2 key={i} style={{ fontFamily: 'var(--font-heading)', fontSize: 12, fontWeight: 700, color: 'var(--accent-primary)', borderBottom: '1px solid rgba(0, 255, 194, 0.2)', paddingBottom: 6, marginTop: 18, marginBottom: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{content}</h2>);
+      } else if (level === 3) {
+        elements.push(<h3 key={i} style={{ fontFamily: 'var(--font-heading)', fontSize: 10, fontWeight: 700, color: 'var(--accent-primary)', borderBottom: '1px solid var(--struct-line)', paddingBottom: 6, marginTop: 16, marginBottom: 10, letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}><Sparkles className="w-3 h-3" style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />{content}</h3>);
+      } else {
+        elements.push(<h4 key={i} style={{ fontFamily: 'var(--font-heading)', fontSize: 9, fontWeight: 700, color: 'var(--text-primary)', marginTop: 14, marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{content}</h4>);
+      }
+    } 
+    // Handle blockquotes
+    else if (trimmed.startsWith('>')) {
+      flushList();
+      const content = parseInline(trimmed.replace(/^>\s*/, ''), i);
+      elements.push(<blockquote key={i} style={{ borderLeft: '2px solid var(--accent-primary)', background: 'rgba(0,255,194,0.05)', padding: '8px 12px', margin: '12px 0', color: 'var(--text-muted)', fontStyle: 'italic' }}>{content}</blockquote>);
+    }
+    // Handle Unordered Lists
+    else if (trimmed.startsWith('- ') || trimmed.startsWith('* ') || trimmed.startsWith('+ ')) {
+      inList = true;
+      const content = parseInline(trimmed.substring(2), i);
+      listItems.push(
+        <li key={i} style={{ position: 'relative', paddingLeft: 12, fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', padding: '4px 0 4px 12px', lineHeight: 1.5 }}>
+          <span style={{ position: 'absolute', left: 0, top: 10, width: 5, height: 5, borderRadius: '50%', background: 'var(--accent-primary)' }} />
+          {content}
+        </li>
+      );
+    } 
+    // Empty line
+    else if (trimmed === '') {
+      flushList();
+      // elements.push(<br key={i} />); // optional, usually paragraphs handle spacing
+    }
+    // Paragraph
+    else {
+      flushList();
+      const content = parseInline(trimmed, i);
+      elements.push(<p key={i} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-primary)', lineHeight: 1.5, marginBottom: 12 }}>{content}</p>);
+    }
+  });
+  
+  flushList();
+  return elements;
+};
+
 export default function ReportPanel({ caseId }: ReportPanelProps) {
   const [report, setReport] = useState<string | null>(null);
   const [loading, setLoading] = useState(!!caseId);
@@ -52,94 +136,7 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
     return () => { active = false; };
   }, [caseId, showToast, t]);
 
-  // Pure React Markdown renderer matching cyber style
-  const renderMarkdown = (text: string) => {
-    return text.split('\n').map((line, idx) => {
-      const trimmed = line.trim();
 
-      // Heading 3
-      if (trimmed.startsWith('### ')) {
-        return (
-          <h3 key={idx} style={{
-            fontFamily: 'var(--font-heading)', fontSize: 10, fontWeight: 700,
-            color: 'var(--accent-primary)', borderBottom: '1px solid var(--struct-line)',
-            paddingBottom: 6, marginTop: 16, marginBottom: 10,
-            letterSpacing: '0.1em', textTransform: 'uppercase',
-            display: 'flex', alignItems: 'center', gap: 6,
-          }}>
-            <Sparkles className="w-3 h-3" style={{ color: 'var(--accent-primary)' }} />
-            {trimmed.slice(4)}
-          </h3>
-        );
-      }
-
-      // Heading 4
-      if (trimmed.startsWith('#### ')) {
-        return (
-          <h4 key={idx} style={{
-            fontFamily: 'var(--font-heading)', fontSize: 9, fontWeight: 700,
-            color: 'var(--text-primary)', marginTop: 14, marginBottom: 8,
-            letterSpacing: '0.08em', textTransform: 'uppercase',
-          }}>
-            {trimmed.slice(5)}
-          </h4>
-        );
-      }
-
-      // Bullet Lists
-      if (trimmed.startsWith('- ')) {
-        return (
-          <li key={idx} style={{
-            marginLeft: 14, listStyleType: 'none', position: 'relative',
-            paddingLeft: 12, fontSize: 9, fontFamily: 'var(--font-mono)',
-            color: 'var(--text-primary)', padding: '2px 0',
-            lineHeight: 1.4,
-          }}>
-            <span style={{
-              position: 'absolute', left: 0, top: 6,
-              width: 5, height: 5, borderRadius: '50%',
-              background: 'var(--accent-primary)',
-            }} />
-            {parseInlineStyles(trimmed.slice(2))}
-          </li>
-        );
-      }
-
-      if (!trimmed) {
-        return <div key={idx} style={{ height: 6 }} />;
-      }
-
-      // Normal paragraph
-      return (
-        <p key={idx} style={{
-          fontFamily: 'var(--font-mono)', fontSize: 9,
-          color: 'var(--text-primary)', lineHeight: 1.4,
-          marginBottom: 10,
-        }}>
-          {parseInlineStyles(trimmed)}
-        </p>
-      );
-    });
-  };
-
-  // Helper to parse simple bold markdown: **text**
-  const parseInlineStyles = (text: string) => {
-    const parts = text.split('**');
-    return parts.map((part, index) => {
-      if (index % 2 === 1) {
-        return (
-          <strong key={index} style={{
-            fontWeight: 750, color: 'var(--accent-primary)',
-            fontFamily: 'var(--font-mono)', background: 'rgba(0,255,194,0.05)',
-            padding: '1px 3px', border: '1px solid rgba(0,255,194,0.15)',
-          }}>
-            {part}
-          </strong>
-        );
-      }
-      return part;
-    });
-  };
 
   return (
     <div style={{ padding: '0 0 12px 0', display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -217,7 +214,7 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
           </div>
         ) : report ? (
           <div style={{ userSelect: 'text' }}>
-            {renderMarkdown(report)}
+            {renderCustomMarkdown(report)}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 8 }}>

@@ -965,8 +965,8 @@ export default function CaseDashboardPage() {
   };
 
   // Run Ingestion Pipeline
-  const runIngestPipeline = async (caseId: string) => {
-    const seeds = casePendingSeeds[caseId] || [];
+  const runIngestPipeline = async (caseId: string, overrideSeeds?: Array<{ type: string; value: string }>) => {
+    const seeds = overrideSeeds || casePendingSeeds[caseId] || [];
     if (seeds.length === 0) {
       showToast('Please add at least one seed first', 'error');
       return;
@@ -1022,14 +1022,6 @@ export default function CaseDashboardPage() {
       setWindows(prev =>
         prev.map(w => (w.caseId === caseId ? { ...w, activeTab: 'graph' } : w))
       );
-
-      const windowStillOpen = windowsRef.current.some(
-        w => w.caseId === caseId && !w.isMinimized
-      );
-      if (windowStillOpen) {
-        // Await graph data fetch before hiding progress bar (this ensures data is there for graph)
-        await loadGraphForCase(caseId, seeds[0].value.trim().toLowerCase());
-      }
       
       // We do NOT clear the loading bar here. The WebSocket handlePipelineCompleted callback will do it!
     } catch {

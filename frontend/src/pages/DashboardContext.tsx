@@ -65,7 +65,7 @@ export interface DashboardContextType {
   handleSvgMouseDown: (e: React.MouseEvent, caseId: string) => void;
   addCaseSeed: (caseId: string) => void;
   removeCaseSeed: (caseId: string, idx: number) => void;
-  runIngestPipeline: (caseId: string) => void;
+  runIngestPipeline: (caseId: string, overrideSeeds?: Array<{ type: string; value: string }>) => void;
   fetchNarrativeReport: (caseId: string, forceRegenerate?: boolean) => void;
   triggerExport: (caseId: string, format: 'json' | 'csv' | 'pdf') => void;
   handleGoToNode: (caseId: string, nodeId: string) => void;

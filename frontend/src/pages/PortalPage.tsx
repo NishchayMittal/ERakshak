@@ -765,6 +765,8 @@ export default function PortalPage() {
           top: '35%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
+          width: '90%',
+          maxWidth: 600,
           zIndex: 20,
           display: 'flex',
           flexDirection: 'column',
@@ -781,7 +783,7 @@ export default function PortalPage() {
             style={{
               margin: 0,
               fontFamily: 'var(--font-display)',
-              fontSize: '96px',
+              fontSize: 'clamp(2.5rem, 10vw, 6rem)',
               fontWeight: 900,
               color: '#39ff14',
               letterSpacing: '0.15em',
@@ -809,7 +811,7 @@ export default function PortalPage() {
 
         {/* ENTER DASHBOARD CARD CENTERED */}
         <CyberCard
-          innerStyle={{ alignItems: 'center', gap: '20px', padding: '24px 48px' }}
+          innerStyle={{ alignItems: 'center', gap: '20px', padding: 'clamp(16px, 4vw, 24px) clamp(16px, 6vw, 48px)' }}
         >
           <div style={{ textAlign: 'center' }}>
             <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 600, letterSpacing: '0.15em', color: 'var(--text-primary)' }}>SYSTEM READY</h2>

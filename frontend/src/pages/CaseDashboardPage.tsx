@@ -1331,10 +1331,10 @@ export default function CaseDashboardPage() {
 
       {/* Scrollable Desktop Area for Folders */}
       <div
-        className={`absolute top-12 bottom-20 left-6 ${isMobile ? 'right-6' : 'right-[460px]'} overflow-y-auto pointer-events-auto z-10 pr-2 custom-desktop-scrollbar`}
+        className={`absolute top-12 bottom-20 left-6 ${isMobile ? 'right-6' : 'right-[440px]'} overflow-y-auto pointer-events-auto z-10 pr-2 custom-desktop-scrollbar`}
         style={{ scrollbarWidth: 'thin' }}
       >
-        <div className="grid grid-cols-8 gap-3 pb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 pb-6">
           {/* Initialize Case Icon */}
           <div
             onClick={handleCreateCase}
@@ -1406,7 +1406,7 @@ export default function CaseDashboardPage() {
       <div
         className={
           isMobile
-            ? `fixed top-12 right-0 bottom-20 w-[420px] max-w-[85vw] bg-[#050b14]/95 border-l border-[#39ff14]/20 p-4 flex flex-col gap-4 z-[991] transition-transform duration-300 pointer-events-auto select-none overflow-y-auto ${showSidebarOnMobile ? 'translate-x-0 shadow-[0_0_50px_rgba(57,255,20,0.15)]' : 'translate-x-full'}`
+            ? `fixed top-12 right-0 bottom-20 w-full max-w-[420px] bg-[#050b14]/95 border-l border-[#39ff14]/20 p-4 flex flex-col gap-4 z-[991] transition-transform duration-300 pointer-events-auto select-none overflow-y-auto ${showSidebarOnMobile ? 'translate-x-0 shadow-[0_0_50px_rgba(57,255,20,0.15)]' : 'translate-x-full'}`
             : "absolute top-12 right-6 bottom-20 w-[420px] flex flex-col gap-4 pointer-events-none z-10 select-none"
         }
       >
@@ -1460,10 +1460,10 @@ export default function CaseDashboardPage() {
             onClick={() => focusWindow(win.id)}
             className={`absolute flex flex-col border shadow-2xl transition-all duration-100 bg-[#04080e]/95 backdrop-blur-xl ${isFocused ? 'border-[#39ff14] shadow-[#39ff14]/5' : 'border-white/10 shadow-black/80'}`}
             style={{
-              left: win.isMaximized ? 0 : win.x,
-              top: win.isMaximized ? '2rem' : win.y,
-              width: win.isMaximized ? '100vw' : win.width,
-              height: win.isMaximized ? 'calc(100vh - 2rem)' : win.height,
+              left: (win.isMaximized || isMobile) ? 0 : win.x,
+              top: (win.isMaximized || isMobile) ? '2rem' : win.y,
+              width: (win.isMaximized || isMobile) ? '100%' : win.width,
+              height: (win.isMaximized || isMobile) ? 'calc(100% - 2rem)' : win.height,
               zIndex: win.zIndex
             }}
           >
@@ -1597,7 +1597,7 @@ export default function CaseDashboardPage() {
       })}
 
       {/* Floating System Dock (Taskbar) */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 h-14 bg-[#080d16]/75 border border-white/10 backdrop-blur-xl rounded-2xl flex items-center px-4 gap-3 z-[999] shadow-2xl">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 h-14 bg-[#080d16]/75 border border-white/10 backdrop-blur-xl rounded-2xl flex items-center px-2 sm:px-4 gap-2 sm:gap-3 z-[999] shadow-2xl max-w-[calc(100vw-2rem)] overflow-x-auto">
         <button
           onClick={handleCreateCase}
           title={t('dashboard.create_case')}

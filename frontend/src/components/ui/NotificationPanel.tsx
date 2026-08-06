@@ -57,7 +57,7 @@ export function NotificationPanel() {
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-0 bottom-full mb-2 w-80 bg-[#111827] border border-gray-800 rounded-xl shadow-2xl overflow-hidden z-50">
+          <div className="absolute right-0 bottom-full mb-2 w-[min(320px,calc(100vw-2rem))] bg-[#111827] border border-gray-800 rounded-xl shadow-2xl overflow-hidden z-50">
             <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-white">{t('notifications.title', 'Notifications')}</h3>
               {unreadCount > 0 && (

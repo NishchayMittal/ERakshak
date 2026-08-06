@@ -48,6 +48,23 @@ const useAuthStore = create<AuthState>((set) => ({
   }
 }));
 
+// Global logout handler
+const performLogout = () => {
+  localStorage.removeItem('er_token');
+  delete apiClient.defaults.headers.common['Authorization'];
+  useAuthStore.getState().setUser(null);
+};
+
+// Listen for 401 Unauthorized from Axios
+window.addEventListener('auth:unauthorized', performLogout);
+
+// Listen for cross-tab token removal
+window.addEventListener('storage', (e) => {
+  if (e.key === 'er_token' && !e.newValue) {
+    performLogout();
+  }
+});
+
 export function useAuth() {
   const { user, setUser } = useAuthStore();
 
@@ -73,9 +90,7 @@ export function useAuth() {
   };
 
   const logout = () => {
-    localStorage.removeItem('er_token');
-    delete apiClient.defaults.headers.common['Authorization'];
-    setUser(null);
+    performLogout();
   };
 
   return {

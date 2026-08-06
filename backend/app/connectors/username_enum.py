@@ -1,7 +1,10 @@
+import logging
 import asyncio
 import httpx
 from app.connectors.base import BaseConnector, Finding
 from app.models import IdentifierType
+
+logger = logging.getLogger(__name__)
 
 # High-value OSINT targets only. Low value / noisy sites have been removed to pinpoint identity.
 SITES = [
@@ -46,7 +49,9 @@ class UsernameEnumConnector(BaseConnector):
             async with httpx.AsyncClient(timeout=3.0) as client:
                 res = await client.head("https://github.com/", follow_redirects=True)
                 return res.status_code == 200
-        except Exception:
+        except Exception as e:
+
+            logger.error(f"Unexpected error: {e}", exc_info=True)
             return False
 
     async def run(self, identifier_value: str, metadata: dict | None = None) -> list[Finding]:
@@ -120,7 +125,9 @@ class UsernameEnumConnector(BaseConnector):
                         "verified": True,
                     }
                 )
-            except Exception:
+            except Exception as e:
+
+                logger.error(f"Unexpected error: {e}", exc_info=True)
                 return None
 
         async with httpx.AsyncClient() as client:

@@ -1,14 +1,19 @@
-import logging
+from sqlalchemy.orm import Session
+from app.models import Case
 
-logger = logging.getLogger(__name__)
-
-def compute_temporal_analysis(case_id: str, db) -> dict:
+def compute_temporal_analysis(case_id: int, db: Session) -> dict:
     """
-    Stub fallback for temporal analysis since the feature was removed.
-    Prevents startup/import crashes in routers and RAG modules.
+    Computes a temporal analysis for a given case.
+    Currently a stub to prevent ModuleNotFoundError.
     """
+    # Fetch case to ensure it exists, though not strictly necessary for the stub
+    case = db.query(Case).filter(Case.id == case_id).first()
+    if not case:
+        return {"error": "Case not found"}
+        
     return {
-        "nodes": [],
-        "edges": [],
-        "timeline": []
+        "timeline_events": [],
+        "activity_spikes": [],
+        "temporal_patterns": {},
+        "status": "Stub implementation"
     }

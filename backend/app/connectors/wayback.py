@@ -1,6 +1,9 @@
+import logging
 from datetime import datetime
 from app.connectors.base import BaseConnector, Finding
 from app.models import IdentifierType
+
+logger = logging.getLogger(__name__)
 
 class WaybackConnector(BaseConnector):
     name = "wayback_cdx"
@@ -13,7 +16,9 @@ class WaybackConnector(BaseConnector):
             async with httpx.AsyncClient(timeout=3.0) as client:
                 res = await client.head("https://web.archive.org/", follow_redirects=True)
                 return res.status_code in {200, 301, 302}
-        except Exception:
+        except Exception as e:
+
+            logger.error(f"Unexpected error: {e}", exc_info=True)
             return False
 
     async def run(self, identifier_value: str, metadata: dict | None = None) -> list[Finding]:
@@ -43,8 +48,9 @@ class WaybackConnector(BaseConnector):
                 try:
                     dt = datetime.strptime(timestamp, "%Y%m%d%H%M%S")
                     formatted_date = dt.strftime("%Y-%m-%d %H:%M:%S")
-                except Exception:
-                    pass
+                except Exception as e:
+
+                    logger.warning(f"Silenced exception: {e}", exc_info=True)
 
                 archive_url = f"https://web.archive.org/web/{timestamp}/{original}"
 
@@ -93,7 +99,8 @@ class WaybackConnector(BaseConnector):
                                 raw_payload={"domain": domain, "robots_txt": True}
                             )
                         )
-            except Exception:
-                pass
+            except Exception as e:
+
+                logger.warning(f"Silenced exception: {e}", exc_info=True)
 
         return findings

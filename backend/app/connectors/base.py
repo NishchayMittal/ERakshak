@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 
 import asyncio
 import json
@@ -10,6 +11,8 @@ import httpx
 import redis.asyncio as redis
 
 from app.models import IdentifierType
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -90,8 +93,9 @@ class BaseConnector(ABC):
         if cls._redis_client is not None and getattr(cls, "_loop", None) != loop:
             try:
                 cls._redis_client.connection_pool.disconnect()
-            except Exception:
-                pass
+            except Exception as e:
+
+                logger.warning(f"Silenced exception: {e}", exc_info=True)
             cls._redis_client = None
 
         if cls._redis_client is None:
@@ -101,7 +105,9 @@ class BaseConnector(ABC):
                 redis_url = os.environ.get("REDIS_URL", redis_url)
                 cls._redis_client = redis.from_url(redis_url)
                 cls._loop = loop
-            except Exception:
+            except Exception as e:
+
+                logger.error(f"Unexpected error: {e}", exc_info=True)
                 # If Redis is not available, we disable caching
                 cls._redis_client = None
                 cls._loop = None
@@ -130,10 +136,13 @@ class BaseConnector(ABC):
                     )
                     findings.append(finding)
                 return findings
-        except Exception:
-            # If there's any error in caching, we ignore and return None (no cache)
-            pass
-        return None
+        except redis.exceptions.ConnectionError:
+            logger.debug("Redis cache offline, ignoring cache read.")
+            self.__class__._redis_client = None
+            return None
+        except Exception as e:
+            logger.warning(f"Cache read error: {e}")
+            return None
 
     async def _set_in_cache(self, identifier_value: str, findings: List[Finding]):
         """Cache the findings for this connector and identifier."""
@@ -153,9 +162,11 @@ class BaseConnector(ABC):
                     "raw_payload": f.raw_payload
                 })
             await r.set(key, json.dumps(data), ex=self.cache_ttl)
-        except Exception:
-            # If there's any error in caching, we ignore
-            pass
+        except redis.exceptions.ConnectionError:
+            logger.debug("Redis cache offline, ignoring cache write.")
+            self.__class__._redis_client = None
+        except Exception as e:
+            logger.warning(f"Cache write error: {e}")
 
     @staticmethod
     def _has_mx_record(domain: str) -> bool:
@@ -166,10 +177,14 @@ class BaseConnector(ABC):
             try:
                 answers = dns.resolver.resolve(domain, 'MX')
                 return len(list(answers)) > 0
-            except Exception:
+            except Exception as e:
+
+                logger.error(f"Unexpected error: {e}", exc_info=True)
                 # No MX records or error
                 return False
-        except Exception:
+        except Exception as e:
+
+            logger.error(f"Unexpected error: {e}", exc_info=True)
             # dnspython not installed; assume domain may have MX (fail open)
             return True
 

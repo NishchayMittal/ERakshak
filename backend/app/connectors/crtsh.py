@@ -1,7 +1,10 @@
+import logging
 from urllib.parse import quote_plus
 
 from app.connectors.base import BaseConnector, Finding
 from app.models import IdentifierType
+
+logger = logging.getLogger(__name__)
 
 
 class CrtShConnector(BaseConnector):
@@ -16,7 +19,9 @@ class CrtShConnector(BaseConnector):
             async with httpx.AsyncClient(timeout=3.0) as client:
                 res = await client.head("https://crt.sh/", follow_redirects=True)
                 return res.status_code in {200, 301, 302}
-        except Exception:
+        except Exception as e:
+
+            logger.error(f"Unexpected error: {e}", exc_info=True)
             return False
 
     async def run(self, identifier_value: str, metadata: dict | None = None) -> list[Finding]:
@@ -30,7 +35,9 @@ class CrtShConnector(BaseConnector):
                 loop = asyncio.get_event_loop()
                 await loop.getaddrinfo(host, None, family=socket.AF_INET)
                 return True
-            except Exception:
+            except Exception as e:
+
+                logger.error(f"Unexpected error: {e}", exc_info=True)
                 return False
 
         # Active Brute-Force candidates list

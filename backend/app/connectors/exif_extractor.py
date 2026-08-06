@@ -42,7 +42,9 @@ class ExifExtractorConnector(BaseConnector):
             if gps_info.get("GPSLongitudeRef") == "W":
                 lon = -lon
             return lat, lon
-        except Exception:
+        except Exception as e:
+
+            logger.error(f"Unexpected error: {e}", exc_info=True)
             return None
 
     async def run(self, identifier_value: str, metadata: dict | None = None) -> list[Finding]:

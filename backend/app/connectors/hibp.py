@@ -1,7 +1,10 @@
+import logging
 import hashlib
 import httpx
 from app.connectors.base import BaseConnector, Finding
 from app.models import IdentifierType
+
+logger = logging.getLogger(__name__)
 
 
 class HaveIBeenPwnedConnector(BaseConnector):
@@ -34,7 +37,9 @@ class HaveIBeenPwnedConnector(BaseConnector):
                                              "hibp-api-key": ""})  # No key needed for v3
                 # Returns 200 OK if API is accessible
                 return res.status_code == 200
-        except Exception:
+        except Exception as e:
+
+            logger.error(f"Unexpected error: {e}", exc_info=True)
             return False
 
     async def run(self, identifier_value: str, metadata: dict | None = None) -> list[Finding]:

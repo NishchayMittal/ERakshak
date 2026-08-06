@@ -1,3 +1,4 @@
+import logging
 """
 NameSearchConnector — Resolves a person's name to real digital identities
 using publicly accessible free APIs, boosted by demographic anchors.
@@ -28,6 +29,8 @@ import httpx
 from app.connectors.base import BaseConnector, Finding
 from app.models import IdentifierType
 
+logger = logging.getLogger(__name__)
+
 
 class NameSearchConnector(BaseConnector):
     name = "name_search"
@@ -40,7 +43,9 @@ class NameSearchConnector(BaseConnector):
             async with httpx.AsyncClient(timeout=3.0) as c:
                 r = await c.get("https://api.github.com/zen")
                 return r.status_code == 200
-        except Exception:
+        except Exception as e:
+
+            logger.error(f"Unexpected error: {e}", exc_info=True)
             return False
 
     async def run(self, identifier_value: str, metadata: dict | None = None) -> list[Finding]:
@@ -126,7 +131,9 @@ class NameSearchConnector(BaseConnector):
                 return []
 
             data = resp.json()
-        except Exception:
+        except Exception as e:
+
+            logger.error(f"Unexpected error: {e}", exc_info=True)
             return []
 
         items = data.get("items", [])
@@ -146,8 +153,9 @@ class NameSearchConnector(BaseConnector):
                 pr = await client.get(f"https://api.github.com/users/{login}")
                 if pr.status_code == 200:
                     profile_data = pr.json()
-            except Exception:
-                pass
+            except Exception as e:
+
+                logger.warning(f"Silenced exception: {e}", exc_info=True)
 
             gh_name = profile_data.get("name") or ""
             gh_location = profile_data.get("location") or ""
@@ -336,8 +344,10 @@ class NameSearchConnector(BaseConnector):
                         ))
                         break  # Only add once per URL
 
-        except Exception:
-            pass
+        except Exception as e:
+
+
+            logger.warning(f"Silenced exception: {e}", exc_info=True)
 
         return findings
 
@@ -376,7 +386,9 @@ class NameSearchConnector(BaseConnector):
                 if parts and parts[0] not in ("login", "explore", "home", "search", "notifications", "i"):
                     return parts[0]
 
-        except Exception:
-            pass
+        except Exception as e:
+
+
+            logger.warning(f"Silenced exception: {e}", exc_info=True)
 
         return None

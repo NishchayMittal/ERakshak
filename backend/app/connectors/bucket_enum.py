@@ -1,7 +1,10 @@
+import logging
 import asyncio
 import httpx
 from app.connectors.base import BaseConnector, Finding, get_limiter_for_connector
 from app.models import IdentifierType
+
+logger = logging.getLogger(__name__)
 
 class BucketEnumConnector(BaseConnector):
     name = "bucket_enum"
@@ -43,8 +46,9 @@ class BucketEnumConnector(BaseConnector):
                             confidence=0.9,
                             raw_payload={"status_code": resp.status_code, "url": url}
                         ))
-            except Exception:
-                pass
+            except Exception as e:
+
+                logger.warning(f"Silenced exception: {e}", exc_info=True)
                 
         await asyncio.gather(*(check_url(u) for u in urls_to_check))
         return findings

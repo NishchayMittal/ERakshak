@@ -28,7 +28,9 @@ async def _verify_gravatar_email(email: str) -> bool:
         async with httpx.AsyncClient(timeout=3.0, follow_redirects=True) as client:
             res = await client.head(url)
             return res.status_code == 200
-    except Exception:
+    except Exception as e:
+
+        logger.error(f"Unexpected error: {e}", exc_info=True)
         return False
 
 # Maximum number of pivoted identifiers per depth level (prevents explosion)
@@ -188,7 +190,7 @@ async def run_connectors_and_pivot(
 
             return connector, raw_res
         except Exception as e:
-            logger.error(f"Error running connector {connector.name}: {e}")
+            logger.error(f"Error running connector {connector.name}: {e}", exc_info=True)
             return connector, []
 
     results = await asyncio.gather(*(invoke(c) for c in connectors))
@@ -272,7 +274,8 @@ async def run_connectors_and_pivot(
             p_type, p_value = pivot
             try:
                 p_normalized = normalize(p_value, p_type)
-            except Exception:
+            except Exception as e:
+                logger.warning(f"Failed to normalize pivot {p_value} (type {p_type}): {e}")
                 continue
 
             new_ident = _create_pivot_identifier(
@@ -318,6 +321,6 @@ async def run_connectors_and_pivot_background(
                     {"identifier_id": identifier_id}
                 )
     except Exception as e:
-        logger.error(f"Error in background pivot pipeline: {e}")
+        logger.error(f"Error in background pivot pipeline: {e}", exc_info=True)
     finally:
         db.close()

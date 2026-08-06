@@ -1,7 +1,10 @@
+import logging
 import re
 import httpx
 from app.connectors.base import BaseConnector, Finding
 from app.models import IdentifierType
+
+logger = logging.getLogger(__name__)
 
 
 def detect_chain(address: str) -> str:
@@ -99,8 +102,9 @@ class WalletLookupConnector(BaseConnector):
                                 confidence=1.0,
                                 raw_payload={"txid": tx_hash, "date": tx_date}
                             ))
-        except Exception:
-            pass
+        except Exception as e:
+
+            logger.warning(f"Silenced exception: {e}", exc_info=True)
         return findings
 
     async def _query_ethereum(self, address: str) -> list[Finding]:
@@ -139,8 +143,9 @@ class WalletLookupConnector(BaseConnector):
                         confidence=1.0,
                         raw_payload={"n_tx": n_tx, "total_received_eth": received_eth, "total_sent_eth": sent_eth}
                     ))
-        except Exception:
-            pass
+        except Exception as e:
+
+            logger.warning(f"Silenced exception: {e}", exc_info=True)
         return findings
 
     async def _query_blockchair_generic(self, address: str, chain: str) -> list[Finding]:

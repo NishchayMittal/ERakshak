@@ -27,6 +27,7 @@ def _local_fallback_response(evidence_pack: dict, question: str) -> str:
     temporal = evidence_pack.get("temporal_analysis", {}) or {}
     temporal_summary = normalize_text(temporal.get("tradecraft_summary") or "")
 
+
     response = (
         f"**e-Rakshak AI Assistant**\n\n"
         f"> [!NOTE]\n"

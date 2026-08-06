@@ -12,7 +12,7 @@ from datetime import datetime
 
 from app.audit import log_action
 from app.auth import get_current_investigator
-from app.analytics.temporal import compute_temporal_analysis
+
 from app.database import get_db
 from app.models import Case, Investigator, Identifier, Finding, CaseNote, LinkFeedback, AuditLog, Alert
 from app.schemas import CaseCreate, CaseOut, CaseUpdate, LinkFeedbackCreate, LinkFeedbackOut, EvidencePackOut, AlertOut
@@ -675,10 +675,7 @@ def get_case_narrative(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
 
     evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
-    try:
-        evidence_pack["temporal_analysis"] = compute_temporal_analysis(case_id, db)
-    except Exception:
-        pass
+
     narrative_text = generate_narrative(evidence_pack)
 
     return {
@@ -699,10 +696,7 @@ def retrieve_case_chunks(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
 
     evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
-    try:
-        evidence_pack["temporal_analysis"] = compute_temporal_analysis(case_id, db)
-    except Exception:
-        pass
+
 
     from app.rag import ensure_case_indexed, retrieve_case_chunks as retrieve_indexed_chunks
 
@@ -731,10 +725,7 @@ def chat_with_evidence(
 
     # Compile the evidence pack
     evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
-    try:
-        evidence_pack["temporal_analysis"] = compute_temporal_analysis(case_id, db)
-    except Exception:
-        pass
+
 
     answer = answer_question_about_evidence(evidence_pack, chat_request.question)
     return {
@@ -800,10 +791,7 @@ def export_case_pdf(
     current_investigator: Investigator = Depends(get_current_investigator)
 ):
     evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
-    try:
-        evidence_pack["temporal_analysis"] = compute_temporal_analysis(case_id, db)
-    except Exception:
-        pass
+
     narrative_text = generate_narrative(evidence_pack)
     case_data = evidence_pack["case"]
     

@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import logging
 
-from app.rag import build_local_answer, build_local_narrative, normalize_text
+import re
+from typing import Any
+
+def normalize_text(text: Any) -> str:
+    if text is None:
+        return ""
+    return re.sub(r"\s+", " ", str(text)).strip()
 
 logger = logging.getLogger(__name__)
 
@@ -43,18 +49,10 @@ def _local_fallback_response(evidence_pack: dict, question: str) -> str:
 
 
 def generate_narrative(evidence_pack: dict) -> str:
-    """Generate the dossier narrative using local RAG only."""
-    try:
-        return build_local_narrative(evidence_pack)
-    except Exception as exc:
-        logger.warning("Local RAG narrative generation failed: %s", exc)
-        return _local_fallback_narrative(evidence_pack)
+    """Generate the dossier narrative."""
+    return _local_fallback_narrative(evidence_pack)
 
 
 def answer_question_about_evidence(evidence_pack: dict, question: str) -> str:
-    """Answer a question using local retrieval only."""
-    try:
-        return build_local_answer(evidence_pack, question)
-    except Exception as exc:
-        logger.warning("Local RAG chat generation failed: %s", exc)
-        return _local_fallback_response(evidence_pack, question)
+    """Answer a question."""
+    return _local_fallback_response(evidence_pack, question)

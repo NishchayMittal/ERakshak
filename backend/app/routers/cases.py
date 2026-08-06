@@ -18,7 +18,6 @@ from app.models import Case, Investigator, Identifier, Finding, CaseNote, LinkFe
 from app.schemas import CaseCreate, CaseOut, CaseUpdate, LinkFeedbackCreate, LinkFeedbackOut, EvidencePackOut, AlertOut
 from app.correlation.matcher import trigger_background_retrain
 from app.narrative import answer_question_about_evidence, generate_narrative
-from app.worker import dispatch_rag_reindex
 from app.compiler import compile_evidence_pack
 
 
@@ -42,7 +41,6 @@ def create_case(
     db.commit()
     db.refresh(case)
     log_action(db, "case.create", investigator_id=current_investigator.id, case_id=case.id, detail={"title": case.title})
-    dispatch_rag_reindex(case.id, current_investigator.id)
     return case
 
 
@@ -277,9 +275,7 @@ class ChatRequest(BaseModel):
     question: str
 
 
-class RagRetrieveRequest(BaseModel):
-    question: str
-    top_k: int = 5
+
 
 
 class IdentifiersSubmitPayload(BaseModel):
@@ -682,33 +678,6 @@ def get_case_narrative(
         "case_id": case_id,
         "narrative": narrative_text
     }
-
-
-@router.post("/{case_id}/rag/retrieve")
-def retrieve_case_chunks(
-    case_id: str,
-    payload: RagRetrieveRequest,
-    db: Session = Depends(get_db),
-    current_investigator: Investigator = Depends(get_current_investigator)
-):
-    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
-    if not case:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
-
-    evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
-
-
-    from app.rag import ensure_case_indexed, retrieve_case_chunks as retrieve_indexed_chunks
-
-    ensure_case_indexed(evidence_pack)
-    chunks = retrieve_indexed_chunks(case_id, payload.question, top_k=payload.top_k)
-    return {
-        "case_id": case_id,
-        "question": payload.question,
-        "top_k": payload.top_k,
-        "chunks": chunks,
-    }
-
 
 @router.post("/{case_id}/chat")
 def chat_with_evidence(

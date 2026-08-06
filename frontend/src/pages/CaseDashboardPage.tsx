@@ -124,6 +124,8 @@ export default function CaseDashboardPage() {
   const [caseCreating, setCaseCreating] = useState(false);
   const [approvingIds, setApprovingIds] = useState<Record<string, 'approve' | 'reject' | null>>({});
   const [reportLoadingPerCase, setReportLoadingPerCase] = useState<Record<string, boolean>>({});
+  const [selectedCaseIds, setSelectedCaseIds] = useState<string[]>([]);
+  const [focusedCaseId, setFocusedCaseId] = useState<string | null>(null);
 
   const [activeEntityPerCase, setActiveEntityPerCase] = useState<Record<string, string>>({});
   const [nodePositionsPerCase, setNodePositionsPerCase] = useState<Record<string, Record<string, { x: number; y: number }>>>({});
@@ -245,12 +247,29 @@ export default function CaseDashboardPage() {
   const handleConfirmDelete = async () => {
     if (!deleteConfirmCase) return;
     try {
-      await deleteCase(deleteConfirmCase.id);
-      closeWindow(`workspace-${deleteConfirmCase.id}`);
-      showToast(`Case ${deleteConfirmCase.id} deleted`, 'success');
+      if (deleteConfirmCase.id === 'multiple') {
+        const ids = [...selectedCaseIds];
+        let successCount = 0;
+        for (const id of ids) {
+          try {
+            await deleteCase(id);
+            closeWindow(`workspace-${id}`);
+            successCount++;
+          } catch (e) {
+            console.error(`Failed to delete case ${id}`, e);
+          }
+        }
+        showToast(`${successCount} cases archived successfully`, 'success');
+        setSelectedCaseIds([]);
+      } else {
+        await deleteCase(deleteConfirmCase.id);
+        closeWindow(`workspace-${deleteConfirmCase.id}`);
+        showToast(`Case ${deleteConfirmCase.id} deleted`, 'success');
+        setSelectedCaseIds(prev => prev.filter(id => id !== deleteConfirmCase.id));
+      }
       setDeleteConfirmCase(null);
     } catch {
-      showToast('Failed to delete case', 'error');
+      showToast('Failed to delete case(s)', 'error');
     }
   };
 
@@ -343,16 +362,24 @@ export default function CaseDashboardPage() {
     if (!sourceCaseId || sourceCaseId === targetCaseId) return;
 
     const currentOrder = sortedCases.map(c => c.caseId);
-    const sourceIndex = currentOrder.indexOf(sourceCaseId);
-    const targetIndex = currentOrder.indexOf(targetCaseId);
+    const isMultiple = selectedCaseIds.includes(sourceCaseId);
+    const idsToMove = isMultiple ? selectedCaseIds.filter(id => currentOrder.includes(id)) : [sourceCaseId];
 
-    if (sourceIndex !== -1 && targetIndex !== -1) {
-      const nextOrder = [...currentOrder];
-      nextOrder.splice(sourceIndex, 1);
-      nextOrder.splice(targetIndex, 0, sourceCaseId);
+    if (idsToMove.includes(targetCaseId)) {
+      setDraggedCaseId(null);
+      return;
+    }
+
+    const filteredOrder = currentOrder.filter(id => !idsToMove.includes(id));
+    const targetIndex = filteredOrder.indexOf(targetCaseId);
+
+    if (targetIndex !== -1) {
+      const nextOrder = [...filteredOrder];
+      nextOrder.splice(targetIndex, 0, ...idsToMove);
 
       setCaseOrder(nextOrder);
       localStorage.setItem('erakshak_case_order', JSON.stringify(nextOrder));
+      showToast(`Reordered ${idsToMove.length} case(s)`, 'success');
     }
     setDraggedCaseId(null);
   };
@@ -364,7 +391,7 @@ export default function CaseDashboardPage() {
   useEffect(() => {
     if (cases.length > 0) {
       const caseIds = cases.map(c => c.caseId);
-      const next = caseOrder.filter(id => caseIds.includes(id));
+      const next = caseOrder.filter(id => id.includes('c-') || caseIds.includes(id));
       const missing = caseIds.filter(id => !next.includes(id));
       if (missing.length > 0 || next.length !== caseOrder.length) {
         const updated = [...next, ...missing];
@@ -376,6 +403,98 @@ export default function CaseDashboardPage() {
       }
     }
   }, [cases, caseOrder]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const active = document.activeElement;
+      if (active && (
+        active.tagName === 'INPUT' || 
+        active.tagName === 'TEXTAREA' || 
+        active.getAttribute('contenteditable') === 'true'
+      )) {
+        return;
+      }
+
+      const keys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter', 'Space', ' '];
+      if (!keys.includes(e.key)) return;
+
+      if (sortedCases.length === 0) return;
+
+      e.preventDefault();
+
+      let nextIndex = 0;
+      if (focusedCaseId) {
+        const currentIndex = sortedCases.findIndex(c => c.caseId === focusedCaseId);
+        if (currentIndex !== -1) {
+          nextIndex = currentIndex;
+          
+          let columns = 4;
+          const grid = document.querySelector('.desktop-grid-container');
+          if (grid) {
+            const items = grid.querySelectorAll('.case-folder-item');
+            if (items.length > 0) {
+              const firstTop = items[0].getBoundingClientRect().top;
+              let colCount = 0;
+              for (let i = 0; i < items.length; i++) {
+                if (Math.abs(items[i].getBoundingClientRect().top - firstTop) < 5) {
+                  colCount++;
+                } else {
+                  break;
+                }
+              }
+              if (colCount > 0) columns = colCount;
+            }
+          }
+
+          if (e.key === 'ArrowLeft') {
+            nextIndex = Math.max(0, currentIndex - 1);
+          } else if (e.key === 'ArrowRight') {
+            nextIndex = Math.min(sortedCases.length - 1, currentIndex + 1);
+          } else if (e.key === 'ArrowUp') {
+            nextIndex = Math.max(0, currentIndex - columns);
+          } else if (e.key === 'ArrowDown') {
+            nextIndex = Math.min(sortedCases.length - 1, currentIndex + columns);
+          }
+        }
+      }
+
+      const targetCase = sortedCases[nextIndex];
+      if (!targetCase) return;
+
+      if (e.key === 'Enter') {
+        openWindow(
+          `workspace-${targetCase.caseId}`,
+          t('dashboard.case_workspace', { title: targetCase.title }),
+          'case_workspace',
+          { caseId: targetCase.caseId }
+        );
+      } else if (e.key === 'Space' || e.key === ' ') {
+        setSelectedCaseIds(prev => {
+          if (prev.includes(targetCase.caseId)) {
+            return prev.filter(id => id !== targetCase.caseId);
+          } else {
+            return [...prev, targetCase.caseId];
+          }
+        });
+      } else {
+        setFocusedCaseId(targetCase.caseId);
+        if (e.shiftKey) {
+          setSelectedCaseIds(prev => {
+            if (prev.includes(targetCase.caseId)) {
+              return prev;
+            } else {
+              return [...prev, targetCase.caseId];
+            }
+          });
+        } else {
+          setSelectedCaseIds([targetCase.caseId]);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [focusedCaseId, sortedCases, selectedCaseIds, openWindow, t]);
 
   // Fetch real backend audit logs periodically
   useEffect(() => {
@@ -490,7 +609,7 @@ export default function CaseDashboardPage() {
     );
   };
 
-  const openWindow = (id: string, title: string, type: WindowState['type'], extraProps: Partial<WindowState> = {}) => {
+  function openWindow(id: string, title: string, type: WindowState['type'], extraProps: Partial<WindowState> = {}) {
     const exists = windows.find(w => w.id === id);
     if (exists) {
       focusWindow(id);
@@ -926,7 +1045,11 @@ export default function CaseDashboardPage() {
 
   const handleDeleteCase = (e: React.MouseEvent, caseId: string, title: string) => {
     e.stopPropagation();
-    setDeleteConfirmCase({ id: caseId, title });
+    if (selectedCaseIds.includes(caseId)) {
+      setDeleteConfirmCase({ id: 'multiple', title: `${selectedCaseIds.length} selected cases` });
+    } else {
+      setDeleteConfirmCase({ id: caseId, title });
+    }
   };
 
   // Node Dragging inside active link analysis tab
@@ -1379,12 +1502,37 @@ export default function CaseDashboardPage() {
         </div>
       )}
 
+      {/* Shift-Click Multi-Select Action Bar HUD */}
+      {selectedCaseIds.length > 0 && (
+        <div 
+          className="absolute top-14 left-1/2 -translate-x-1/2 bg-[#080d16]/95 border border-indigo-500/50 rounded-xl px-4 py-2 flex items-center gap-4 z-[99] shadow-2xl shadow-indigo-500/10 backdrop-blur-xl pointer-events-auto"
+        >
+          <span className="font-mono text-[9px] font-bold text-indigo-400 tracking-wider uppercase">
+            {selectedCaseIds.length} {selectedCaseIds.length === 1 ? t('dashboard.case_selected') : t('dashboard.cases_selected')}
+          </span>
+          <div className="h-3 w-[1px] bg-white/10" />
+          <button
+            onClick={() => setDeleteConfirmCase({ id: 'multiple', title: `${selectedCaseIds.length} selected cases` })}
+            className="bg-red-500/15 border border-red-500 hover:bg-red-500/25 text-red-400 text-[9px] font-bold font-mono px-2 py-1 uppercase rounded transition-all flex items-center gap-1.5"
+          >
+            <X size={10} />
+            {t('dashboard.archive_selected')}
+          </button>
+          <button
+            onClick={() => setSelectedCaseIds([])}
+            className="text-gray-400 hover:text-white font-mono text-[9px] font-bold uppercase transition-colors"
+          >
+            {t('dashboard.clear_selection')}
+          </button>
+        </div>
+      )}
+
       {/* Scrollable Desktop Area for Folders */}
       <div
         className={`absolute top-12 bottom-20 left-6 ${isMobile ? 'right-6' : 'right-[440px]'} overflow-y-auto pointer-events-auto z-10 pr-2 custom-desktop-scrollbar`}
         style={{ scrollbarWidth: 'thin' }}
       >
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 pb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 pb-6 desktop-grid-container">
           {/* Initialize Case Icon */}
           <div
             onClick={caseCreating ? undefined : handleCreateCase}
@@ -1405,6 +1553,7 @@ export default function CaseDashboardPage() {
           {/* Dynamic Case Folders */}
           {sortedCases.map(c => {
             const isAnalysisOpen = windows.some(w => w.id === `workspace-${c.caseId}`);
+            const isSelected = selectedCaseIds.includes(c.caseId);
 
             return (
               <div
@@ -1414,17 +1563,43 @@ export default function CaseDashboardPage() {
                 onDragEnd={() => setDraggedCaseId(null)}
                 onDragOver={(e) => { e.preventDefault(); }}
                 onDrop={(e) => handleDropCase(e, c.caseId)}
-                onClick={() =>
-                  openWindow(
-                    `workspace-${c.caseId}`,
-                    t('dashboard.case_workspace', { title: c.title }),
-                    'case_workspace',
-                    { caseId: c.caseId }
-                  )
-                }
+                onClick={(e) => {
+                  setFocusedCaseId(c.caseId);
+                  if (e.shiftKey) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedCaseIds(prev => {
+                      if (prev.includes(c.caseId)) {
+                        return prev.filter(id => id !== c.caseId);
+                      } else {
+                        return [...prev, c.caseId];
+                      }
+                    });
+                  } else {
+                    openWindow(
+                      `workspace-${c.caseId}`,
+                      t('dashboard.case_workspace', { title: c.title }),
+                      'case_workspace',
+                      { caseId: c.caseId }
+                    );
+                  }
+                }}
                 onContextMenu={(e) => handleContextMenu(e, c.caseId, c.title)}
-                className={`flex flex-col items-center justify-center p-2 rounded border group transition-all duration-150 cursor-grab active:cursor-grabbing pointer-events-auto relative text-center select-none h-[110px] w-full max-w-[120px] mx-auto flex-shrink-0 ${isAnalysisOpen ? 'bg-[#39ff14]/10 border-[#39ff14]/40' : 'bg-black/25 border-white/5 hover:bg-[#39ff14]/5 hover:border-[#39ff14]/20'}`}
+                className={`case-folder-item flex flex-col items-center justify-center p-2 rounded border group transition-all duration-150 cursor-grab active:cursor-grabbing pointer-events-auto relative text-center select-none h-[110px] w-full max-w-[120px] mx-auto flex-shrink-0 ${focusedCaseId === c.caseId ? 'ring-1 ring-indigo-400/50' : ''} ${isSelected ? 'bg-indigo-500/20 border-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.35)]' : isAnalysisOpen ? 'bg-[#39ff14]/10 border-[#39ff14]/40' : 'bg-black/25 border-white/5 hover:bg-[#39ff14]/5 hover:border-[#39ff14]/20'}`}
               >
+                {/* Selection Checkbox bubble */}
+                {(selectedCaseIds.length > 0 || isSelected) && (
+                  <div className="absolute top-1 left-1.5 flex items-center justify-center pointer-events-none">
+                    <div className={`w-3.5 h-3.5 border rounded flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-white/30 bg-black/50'}`}>
+                      {isSelected && (
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1436,10 +1611,10 @@ export default function CaseDashboardPage() {
                   <X size={10} />
                 </button>
 
-                <div className={`w-10 h-10 flex items-center justify-center ${isAnalysisOpen ? 'text-[#39ff14]' : 'text-[#a855f7] group-hover:text-[#39ff14]'} transition-colors`}>
+                <div className={`w-10 h-10 flex items-center justify-center ${isSelected ? 'text-indigo-400' : isAnalysisOpen ? 'text-[#39ff14]' : 'text-[#a855f7] group-hover:text-[#39ff14]'} transition-colors`}>
                   <Folder size={36} className="group-hover:scale-105 transition-transform" />
                 </div>
-                <span className="mt-1 text-[11px] font-semibold text-gray-300 group-hover:text-white tracking-wider line-clamp-2 uppercase leading-tight">
+                <span className={`mt-1 text-[11px] font-semibold tracking-wider line-clamp-2 uppercase leading-tight transition-colors ${isSelected ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
                   {transliterate(c.title.replace('Investigation', 'FILE'))}
                 </span>
               </div>
@@ -1770,11 +1945,15 @@ export default function CaseDashboardPage() {
             <button
               onClick={() => {
                 setContextMenu(null);
-                setDeleteConfirmCase({ id: contextMenu.caseId, title: contextMenu.title });
+                if (selectedCaseIds.includes(contextMenu.caseId)) {
+                  setDeleteConfirmCase({ id: 'multiple', title: `${selectedCaseIds.length} selected cases` });
+                } else {
+                  setDeleteConfirmCase({ id: contextMenu.caseId, title: contextMenu.title });
+                }
               }}
               className="text-left font-mono text-[9px] font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 px-3 py-2 w-full transition-colors uppercase tracking-wider"
             >
-              {t('modals.delete_dossier_ctx')}
+              {selectedCaseIds.includes(contextMenu.caseId) ? t('modals.archive_selected_ctx', 'Archive Selected Cases') : t('modals.delete_dossier_ctx')}
             </button>
           </div>
         </div>
@@ -1851,10 +2030,14 @@ export default function CaseDashboardPage() {
         <div className="fixed inset-0 bg-black/80 z-[99999] flex items-center justify-center backdrop-blur-sm">
           <div className="bg-[#04080e]/95 border border-red-500 p-6 w-[360px] flex flex-col gap-4 shadow-2xl shadow-red-500/5 backdrop-blur-xl">
             <div className="font-mono text-[10px] font-bold text-red-500 tracking-widest uppercase pb-2 border-b border-white/5">
-              {t('modals.confirm_delete_title')}
+              {deleteConfirmCase.id === 'multiple' ? t('modals.confirm_delete_multiple_title', 'ARCHIVE MULTIPLE DOSSIERS') : t('modals.confirm_delete_title')}
             </div>
             <div className="font-mono text-[10px] text-gray-400 leading-relaxed">
-              {t('modals.confirm_delete_body')} <span className="text-white font-bold">"{deleteConfirmCase.title}"</span>?
+              {deleteConfirmCase.id === 'multiple' ? t('modals.confirm_delete_multiple_body', 'Are you sure you want to permanently archive the selected dossiers?') : (
+                <>
+                  {t('modals.confirm_delete_body')} <span className="text-white font-bold">"{deleteConfirmCase.title}"</span>?
+                </>
+              )}
               <br /><br />
               {t('modals.confirm_delete_warning')}
             </div>
@@ -1869,7 +2052,7 @@ export default function CaseDashboardPage() {
                 onClick={handleConfirmDelete}
                 className="px-3.5 py-1.5 bg-red-500/10 border border-red-500 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase"
               >
-                {t('modals.delete_dossier')}
+                {deleteConfirmCase.id === 'multiple' ? t('modals.archive_selected') : t('modals.delete_dossier')}
               </button>
             </div>
           </div>

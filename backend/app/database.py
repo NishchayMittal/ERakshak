@@ -8,15 +8,19 @@ from sqlalchemy.pool import NullPool
 from app.config import settings
 
 
-if settings.database_url.startswith("sqlite"):
+db_url = settings.database_url
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+if db_url.startswith("sqlite"):
     engine = create_engine(
-        settings.database_url,
+        db_url,
         connect_args={"check_same_thread": False},
         poolclass=NullPool,
         pool_pre_ping=True
     )
 else:
-    engine = create_engine(settings.database_url, pool_pre_ping=True)
+    engine = create_engine(db_url, pool_pre_ping=True)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

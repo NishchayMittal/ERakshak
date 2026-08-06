@@ -9,29 +9,11 @@ interface ReportPanelProps {
 }
 
 // Audio click synth
-const playDiagnosticTone = () => {
-  try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(800, ctx.currentTime);
-    osc.frequency.setValueAtTime(1200, ctx.currentTime + 0.08);
-    osc.frequency.setValueAtTime(1600, ctx.currentTime + 0.16);
-    gain.gain.setValueAtTime(0.03, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.25);
-  } catch (e) {}
-};
+const playDiagnosticTone = () => {};
 
 export default function ReportPanel({ caseId }: ReportPanelProps) {
   const [report, setReport] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(!!caseId);
   const { showToast } = useUIStore();
   const { t } = useTranslation();
 
@@ -50,10 +32,25 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
   };
 
   useEffect(() => {
-    if (caseId) {
-      loadReport();
-    }
-  }, [caseId]);
+    if (!caseId) return;
+    let active = true;
+    getNarrative(caseId)
+      .then(data => {
+        if (active) {
+          setReport(data.narrative);
+          playDiagnosticTone();
+          setLoading(false);
+        }
+      })
+      .catch(err => {
+        if (active) {
+          console.error(err);
+          showToast(t('report.load_failed'), 'error');
+          setLoading(false);
+        }
+      });
+    return () => { active = false; };
+  }, [caseId, showToast, t]);
 
   // Pure React Markdown renderer matching cyber style
   const renderMarkdown = (text: string) => {

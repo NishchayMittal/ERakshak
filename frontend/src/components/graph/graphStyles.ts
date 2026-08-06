@@ -1,6 +1,27 @@
 // Cytoscape styles for the e-RAKSHAK black-ops forensics theme
 // Node shapes: rectangle=org, diamond=domain, ellipse=person, triangle=flagged
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const graphStyles: any[] = [
+  // ── Compound cluster parents (per node type, e.g. EMAIL / USERNAME / DOMAIN) ──
+  {
+    selector: ':parent',
+    style: {
+      'background-color': '#0a0f14',
+      'background-opacity': 0.4,
+      'border-color': '#2A3038',
+      'border-width': 1,
+      'border-style': 'dashed',
+      label: 'data(label)',
+      'text-valign': 'top',
+      'text-halign': 'center',
+      'font-size': '8px',
+      'font-family': 'JetBrains Mono, monospace',
+      'letter-spacing': '0.08em',
+      color: '#6E7681',
+      padding: '14px',
+    },
+  },
+
   // ── Base node defaults ──
   {
     selector: 'node',
@@ -98,9 +119,11 @@ export const graphStyles: any[] = [
       'background-color': '#001a10',
     },
   },
-  // Flagged / high-risk nodes → triangle warning shape + red
+  // Flagged / high-risk nodes → triangle warning shape + red.
+  // Mapped to GraphNode.pivot since 'flagged' isn't a field on the node type —
+  // swap the selector back to [flagged="true"] if/when that field gets added.
   {
-    selector: 'node[flagged="true"]',
+    selector: 'node[?pivot]',
     style: {
       shape: 'triangle',
       width: 44,

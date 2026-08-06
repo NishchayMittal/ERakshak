@@ -1,6 +1,8 @@
-# e-Rakshak
+# Orion
 
-**e-Rakshak** is an OSINT link-analysis and suspect correlation engine built to assist investigative teams in mapping cybercrime networks. The system automates ingestion, normalizes raw suspect data, queries external intelligence databases, detects pivots, and generates evidentiary dossier reports.
+**Live Demo:** [https://orionerakshak.vercel.app/](https://orionerakshak.vercel.app/)
+
+**Orion** is an OSINT link-analysis and suspect correlation engine built to assist investigative teams in mapping cybercrime networks. The system automates ingestion, normalizes raw suspect data, queries external intelligence databases, detects pivots, and generates evidentiary dossier reports.
 
 ## Overview
 
@@ -12,7 +14,7 @@ The system is composed of two main parts:
 ## Key Features
 
 - **Pluggable Connector Architecture**: Concurrent asynchronous registry loop to query various OSINT sources like WHOIS/RDAP, crt.sh, Web Archive CDX, Breach Repositories, and Face Similarity Matcher.
-- **Ingestion & Normalization**: Translates native text scripts to normalized Latin form, dynamically categorizes inputs (emails, domains, phones, etc.), and sanitizes data.
+- **Ingestion & Normalization**: Translates native text scripts to normalized Latin form using a standalone phonetic transliteration engine, dynamically categorizes inputs (emails, domains, phones, etc.), and sanitizes data.
 - **NetworkX Link Correlation Engine**: Maps case-wide associations, disambiguates suspects using fuzzy string comparison, and detects key hub entities (pivots). It utilizes a Fellegi-Sunter baseline matcher and an XGBoost refinement layer.
 - **Evidentiary Dossier Reports**: Compiles a single source of truth "Evidence Pack" and generates comprehensive case reports in JSON, CSV, and PDF formats, accompanied by local RAG narrative synthesis with optional remote fallback.
 
@@ -25,9 +27,9 @@ The system is composed of two main parts:
 
 ---
 
-## Installation & Setup Guide
+## Recommended Deployment: 100% Free Cloud Architecture
 
-### 1. Prerequisites
+Orion is engineered to be deployed entirely for free using a combination of **Vercel** (Frontend), **Render** (Backend), and **Neon** (PostgreSQL).
 
 - **Python 3.10+** (For the backend)
 - **Node.js 18+** (For the frontend)
@@ -36,39 +38,50 @@ The system is composed of two main parts:
 - **Redis** (If running locally without Docker)
 - **Docker & Docker Compose** (Highly Recommended for easiest setup)
 
-### 2. Recommended Setup: Docker Compose
+### Step 1: Database Setup (Neon)
+1. Create a free PostgreSQL database on [Neon.tech](https://neon.tech).
+2. Copy your Connection String (e.g., `postgresql://...`).
 
-The easiest way to run the entire stack (API, Frontend, Redis, and Celery Worker) is using Docker.
+### Step 2: Backend Deployment (Render)
+1. Fork or push this repository to your GitHub account.
+2. Go to [Render](https://render.com) and create a new **Web Service**.
+3. Connect your repository and select the `backend` folder as the Root Directory (or use the provided `render.yaml` blueprint).
+4. Render will automatically detect the Python environment and run `./start.sh`.
+5. Add the following Environment Variables in the Render dashboard:
+   - `DATABASE_URL`: Your Neon connection string.
+   - `JWT_SECRET`: A secure random string (generate with `openssl rand -hex 32`).
+   - `GROQ_API_KEY`: Your free API key from [console.groq.com](https://console.groq.com).
+   - `USE_CELERY`: `false` (forces synchronous execution to fit within free-tier limits).
+6. Deploy the service and copy your new backend URL (e.g., `https://orion-api.onrender.com`).
 
-1. Build and start all services from the root directory:
-   ```bash
-   docker compose up --build
-   ```
-2. The services will be available at:
-   - **Frontend:** http://localhost:5173
-   - **Backend API:** http://localhost:8000
+### Step 3: Frontend Deployment (Vercel)
+1. Go to [Vercel](https://vercel.com) and create a new Project from your repository.
+2. Set the Root Directory to `frontend`.
+3. Add the following Environment Variables in Vercel:
+   - `VITE_API_URL`: Your Render backend URL (e.g., `https://orion-api.onrender.com/api/v1`).
+   - `VITE_API_BASE_URL`: Your Render backend URL.
+4. Deploy the frontend! Vercel handles SPA routing automatically via the provided `vercel.json`.
 
-### 3. Local Setup (Without Docker)
+---
 
-#### Backend & Worker Setup
+## Local Development Setup (Without Docker)
 
+If you prefer to run the application directly on your machine without Docker, follow these steps:
+
+### 1. Backend Setup
 1. Open a terminal and navigate to the `backend` directory:
    ```bash
    cd backend
    ```
-2. Create and activate a Python virtual environment:
-
+2. Create and activate a virtual environment (optional but recommended):
    ```bash
-   python -m venv .venv
-
-   # Windows:
-   .\.venv\Scripts\activate
-
-   # Mac/Linux:
-   source .venv/bin/activate
+   python -m venv venv
+   # On Windows:
+   venv\Scripts\activate
+   # On macOS/Linux:
+   source venv/bin/activate
    ```
-
-3. Install the required Python packages:
+3. Install the required Python dependencies:
    ```bash
    pip install -r requirements.txt
    ```
@@ -87,27 +100,20 @@ The easiest way to run the entire stack (API, Frontend, Redis, and Celery Worker
 5. Start **Redis** locally on port 6379.
 6. Start the Celery worker (in a new terminal, with the virtual environment activated):
    ```bash
-   cd backend
-   celery -A app.worker.celery_app worker --loglevel=info
+   uvicorn app.main:app --reload --port 8000
    ```
-7. Start the backend API (in a new terminal, with the virtual environment activated):
-   ```bash
-   cd backend
-   uvicorn app.main:app --reload
-   ```
-   _The backend API will now be running at http://127.0.0.1:8000_
+   *The API will be available at http://localhost:8000*
 
-#### Frontend Setup
-
-1. Open a **new** terminal and navigate to the `frontend` directory:
+### 2. Frontend Setup
+1. Open a new terminal window and navigate to the `frontend` directory:
    ```bash
    cd frontend
    ```
-2. Install the Node modules:
+2. Install the Node dependencies:
    ```bash
    npm install
    ```
-3. Start the React development server:
+3. Start the Vite development server:
    ```bash
    npm run dev
    ```
@@ -125,3 +131,32 @@ e-Rakshak now uses a local retrieval-augmented generation path for chat and repo
 Deployment note: for the already-live website, the UI can stay on the same host, but the backend worker and persistent RAG store must stay available or the system will rebuild indexes on demand and chat/report quality will degrade during restarts.
 
 ---
+
+## Alternative Setup: Local & Heavy Production (Docker Compose)
+
+If you have dedicated server hardware and wish to utilize asynchronous task queues (Celery/Redis) and strictly isolated local AI (Ollama) for maximum data sovereignty, use the Docker-based deployment.
+
+### 1. Prerequisites
+- **Docker & Docker Compose**
+- **Ollama** (Running locally on port 11434 for local AI processing)
+
+### 2. Quick Local Start
+Run the entire stack (API, Frontend, Redis, and Celery Worker) using Docker:
+```bash
+docker compose up --build
+```
+- **Frontend:** http://localhost:5173
+- **Backend API:** http://localhost:8000
+
+### 3. Dedicated Production Deployment
+For heavy-duty production environments, Orion provides a separate configuration utilizing a persistent PostgreSQL database, Gunicorn, and Nginx.
+
+1. Copy the production template:
+   ```bash
+   cp .env.prod.example .env.prod
+   ```
+2. Edit `.env.prod` and supply your secrets, domain CORS rules, and API URLs.
+3. Build and run in detached mode:
+   ```bash
+   docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+   ```

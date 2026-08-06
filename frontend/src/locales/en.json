@@ -58,8 +58,6 @@
     "geo_tooltip": "Geo-Intelligence Map",
     "profile_title": "Investigator Credentials",
     "profile_tooltip": "Profile Panel",
-    "settings_title": "Core Parameters Console",
-    "settings_tooltip": "Neural config console",
     "logout_tooltip": "Disconnect Investigator Session",
     "case_renamed": "CASE RENAMED",
     "rename_failed": "Failed to rename case",

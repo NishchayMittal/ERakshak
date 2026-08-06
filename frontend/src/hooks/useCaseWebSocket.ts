@@ -64,7 +64,7 @@ export function useCaseWebSocket(caseId: string | null) {
     };
   }, [caseId]);
 
-  const sendMessage = (message: any) => {
+  const sendMessage = (message: unknown) => {
     if (ws.current && ws.current.readyState === WebSocket.OPEN) {
       ws.current.send(JSON.stringify(message));
     }

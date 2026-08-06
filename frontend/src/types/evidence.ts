@@ -8,8 +8,8 @@ export interface EvidenceFinding {
   confidence: number;
   discoveredAt?: string;
   discovered_at?: string;
-  rawPayload?: any;
-  raw_payload?: any;
+  rawPayload?: unknown;
+  raw_payload?: unknown;
 }
 
 export interface EvidenceIdentifier {

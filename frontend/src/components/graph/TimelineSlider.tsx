@@ -1,15 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useGraphStore } from '../../state/graphStore';
+
+// Stable "now" for fallback — captured once when the module loads
+const INITIAL_NOW = Date.now();
 
 export default function TimelineSlider() {
   const { graphData, timelineMaxTime, setTimelineMaxTime } = useGraphStore();
   const [isPlaying, setIsPlaying] = useState(false);
-  const [minTime, setMinTime] = useState<number>(0);
-  const [maxTime, setMaxTime] = useState<number>(100);
 
-  useEffect(() => {
-    if (!graphData || graphData.nodes.length === 0) return;
-
+  const { minTime, maxTime } = useMemo(() => {
+    const now = INITIAL_NOW;
+    if (!graphData || graphData.nodes.length === 0) {
+      return { minTime: now - 86400000, maxTime: now };
+    }
     let minT = Infinity;
     let maxT = -Infinity;
 
@@ -27,20 +30,20 @@ export default function TimelineSlider() {
     graphData.edges.forEach(e => checkTime(e.timestamp));
 
     if (minT === Infinity) {
-      minT = Date.now() - 86400000;
-      maxT = Date.now();
+      minT = now - 86400000;
+      maxT = now;
     }
     if (minT === maxT) {
       minT -= 3600000;
     }
-
-    setMinTime(minT);
-    setMaxTime(maxT);
-
-    if (timelineMaxTime === null || timelineMaxTime > maxT) {
-      setTimelineMaxTime(maxT);
-    }
+    return { minTime: minT, maxTime: maxT };
   }, [graphData]);
+
+  useEffect(() => {
+    if (timelineMaxTime === null || timelineMaxTime > maxTime) {
+      setTimelineMaxTime(maxTime);
+    }
+  }, [maxTime, timelineMaxTime, setTimelineMaxTime]);
 
   useEffect(() => {
     let interval: number;

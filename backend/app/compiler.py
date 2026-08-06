@@ -67,6 +67,7 @@ def serialize_graph(G: nx.MultiDiGraph) -> dict:
             "wallet_lookup": "wallet_lookup",
             "face_matcher": "face_matcher",
             "breach_repository_demo": "breach_lookup",
+            "wikipedia_lookup": "wikipedia",
         }
         source_prov = source_prov_map.get(source_prov, source_prov)
 
@@ -184,10 +185,7 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
                 target_node_id = result_val.split("Profile: ")[1].strip()
             else:
                 target_node_id = result_val.strip()
-            target_type = "username" # map to username or person
-        elif result_type == "face_similarity":
-            target_node_id = result_val.split("Match: ")[1].split(" (Similarity:")[0].strip()
-            target_type = "person"
+            target_type = "username"
         elif result_type == "leak_record":
             payload = finding.raw_payload or {}
             breach_name = payload.get("breach")
@@ -257,10 +255,23 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
             target_type = "domain"
         elif result_type == "discovered_path":
             target_node_id = result_val.replace("Active Path: ", "").strip()
-            target_type = "domain"
+            target_type = "url"
         elif result_type in ("reddit_profile", "instagram_profile", "linkedin_profile"):
             target_node_id = result_val
             target_type = "username"
+        elif result_type in ("image_hosting_page", "image_exact_match"):
+            target_node_id = result_val.strip()
+            target_type = "domain"
+
+        elif result_type == "wikipedia_entry":
+            payload = finding.raw_payload or {}
+            page_title = payload.get("page_title", "")
+            page_url = payload.get("page_url", "")
+            target_node_id = page_title or result_val
+            target_type = "person"
+            # Store profile_url for frontend linking (use page_url in addition to profile_url)
+            if page_url and not payload.get("profile_url"):
+                payload["profile_url"] = page_url
 
         if target_node_id:
             if not G.has_node(target_node_id):
@@ -272,7 +283,7 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
                     id=finding.id,
                     confidence=float(confidence),
                     timestamp=timestamp_str,
-                    profile_url=(finding.raw_payload or {}).get("profile_url", "")
+                    profile_url=(finding.raw_payload or {}).get("profile_url") or (finding.raw_payload or {}).get("url") or (target_node_id if target_node_id.startswith("http") else "")
                 )
             G.add_edge(
                 parent_node_id,

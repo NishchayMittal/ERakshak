@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Globe from 'react-globe.gl';
 import { getGeoIntelligence, type GeoIntelligenceResult } from '../../api/endpoints';
 import { useUIStore } from '../../state/uiStore';
@@ -7,13 +7,30 @@ interface GeoMapWindowProps {
   caseId: string;
 }
 
-const GLOBE_SIZE = 1400; // render at a large fixed size
-
 export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
   const [data, setData] = useState<GeoIntelligenceResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  const [selectedNode, setSelectedNode] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const globeEl = useRef<any>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { showToast } = useUIStore();
+
+  // Measure container and set globe size to fill it
+  const updateSize = useCallback(() => {
+    if (containerRef.current) {
+      const { width, height } = containerRef.current.getBoundingClientRect();
+      setDimensions({ width: Math.round(width), height: Math.round(height) });
+    }
+  }, []);
+
+  useEffect(() => {
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [updateSize]);
 
   useEffect(() => {
     let mounted = true;
@@ -39,7 +56,7 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
     if (globeEl.current && data?.nodes.length) {
       globeEl.current.controls().autoRotate = true;
       globeEl.current.controls().autoRotateSpeed = 0.8;
-      globeEl.current.pointOfView({ lat: 20, lng: 0, altitude: 3.5 }, 1500);
+      globeEl.current.pointOfView({ lat: 20, lng: 0, altitude: 2.5 }, 1500);
     }
   }, [data]);
 
@@ -55,17 +72,12 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
   }
 
   return (
-    /*
-     * The outer div is the window's content area (full w/h, clips overflow).
-     * The Globe renders at GLOBE_SIZE x GLOBE_SIZE pixels.
-     * We use absolute positioning + translate(-50%,-50%) to pin its CENTER
-     * to the CENTER of the outer div — no matter how big or small the window is.
-     */
     <div
+      ref={containerRef}
       className="relative w-full h-full bg-[#020408] overflow-hidden rounded-md border border-white/5"
       style={{ minHeight: 0, minWidth: 0 }}
     >
-      {/* HUD Overlay — always on top via z-index */}
+      {/* HUD Overlay */}
       <div className="absolute top-4 left-4 z-10 pointer-events-none">
         <div className="text-[12px] font-bold font-mono text-[#39ff14] tracking-widest mb-1 shadow-black drop-shadow-md">
           GEO-INTELLIGENCE MATRIX
@@ -76,25 +88,41 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
         </div>
       </div>
 
+      {/* Selected Node Details Panel */}
+      {selectedNode && (
+        <div className="absolute bottom-4 right-4 z-20 bg-black/80 border border-[#39ff14]/30 p-3 rounded text-white font-mono text-[10px] w-64 backdrop-blur shadow-[0_0_10px_rgba(57,255,20,0.2)]">
+          <div className="flex justify-between items-center mb-2 border-b border-white/20 pb-1">
+            <span className="text-[#39ff14] font-bold">NODE INTEL</span>
+            <button onClick={() => setSelectedNode(null)} className="text-gray-400 hover:text-red-400 font-bold px-1">✖</button>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <div><span className="text-gray-500">LABEL:</span> <span className="break-all">{selectedNode.label}</span></div>
+            <div><span className="text-gray-500">SOURCE:</span> {selectedNode.source || 'UNKNOWN'}</div>
+            <div><span className="text-gray-500">COORDS:</span> {selectedNode.lat?.toFixed(4)}, {selectedNode.lng?.toFixed(4)}</div>
+          </div>
+        </div>
+      )}
 
-
-      {/* Globe — positioned so its centre is always the centre of the container */}
+      {/* Globe — sized to fill container exactly */}
       <div
         style={{
           position: 'absolute',
           top: '50%',
           left: '50%',
-          transform: `translate(-50%, -50%)`,
-          width: GLOBE_SIZE,
-          height: GLOBE_SIZE,
+          transform: 'translate(-50%, -50%)',
+          width: dimensions.width,
+          height: dimensions.height,
           pointerEvents: 'auto',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
         }}
       >
         <Globe
           ref={globeEl}
-          width={GLOBE_SIZE}
-          height={GLOBE_SIZE}
-          globeImageUrl="//unpkg.com/three-globe/example/img/earth-dark.jpg"
+          width={dimensions.width}
+          height={dimensions.height}
+          globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
           bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
           backgroundColor="rgba(2, 4, 8, 0)"
 
@@ -105,16 +133,18 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
           pointAltitude={0.02}
           pointRadius={0.5}
           pointsMerge={false}
+          onPointClick={(point) => setSelectedNode(point)}
 
           labelsData={data?.nodes || []}
           labelLat="lat"
           labelLng="lng"
-          labelText="label"
-          labelSize={1.5}
+          labelText={(d: { label?: string }) => (d.label || '').replace(/^Domain:\s*/, '').replace(/\s*\([A-Z]{2}\)$/, '')}
+          labelSize={1.2}
           labelDotRadius={0.3}
-          labelColor={() => 'rgba(255, 255, 255, 0.8)'}
-          labelResolution={2}
-          labelAltitude={0.05}
+          labelColor={() => 'rgba(255, 255, 255, 1)'}
+          labelResolution={8}
+          labelAltitude={(d: { label?: string }) => 0.02 + ((d.label || '').length % 5) * 0.02}
+          onLabelClick={(label) => setSelectedNode(label)}
 
           arcsData={data?.arcs || []}
           arcStartLat="startLat"

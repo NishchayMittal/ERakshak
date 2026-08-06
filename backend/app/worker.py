@@ -1,5 +1,9 @@
 import os
 import asyncio
+from dotenv import load_dotenv
+backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+load_dotenv(os.path.join(backend_dir, ".env"))
+
 from celery import Celery
 import logging
 import threading
@@ -12,6 +16,11 @@ RAG_REINDEX_LOCK_TTL_SECONDS = int(os.environ.get("RAG_REINDEX_LOCK_TTL_SECONDS"
 
 _rag_reindex_local_lock = threading.Lock()
 _rag_reindex_local_pending: dict[str, float] = {}
+from app.connectors import register_all
+register_all()
+from app.config import settings
+
+redis_url = settings.redis_url
 
 celery_app = Celery(
     "erakshak_worker",
@@ -20,18 +29,22 @@ celery_app = Celery(
 )
 
 celery_app.conf.update(
+    broker_connection_retry_on_startup=True,
     task_serializer="json",
     accept_content=["json"],
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
     beat_schedule={
-        "monitor-active-cases-hourly": {
+        "monitor-active-cases-every-3-hours": {
             "task": "monitor_active_cases",
-            "schedule": 3600.0, # Every 1 hour
+            "schedule": 10800.0, # Every 3 hours
         }
     }
 )
+
+if os.name == "nt":
+    celery_app.conf.update(worker_pool="solo")
 
 @celery_app.task(name="monitor_active_cases")
 def monitor_active_cases():
@@ -167,34 +180,40 @@ def _release_rag_reindex_lock(case_id: str) -> None:
 
     with _rag_reindex_local_lock:
         _rag_reindex_local_pending.pop(case_id, None)
+def is_celery_worker_active() -> bool:
+    """Checks if there are active Celery workers listening to the queue."""
+    if not is_redis_available():
+        return False
+    try:
+        inspect = celery_app.control.inspect(timeout=0.15)
+        if inspect:
+            active = inspect.active()
+            return active is not None and len(active) > 0
+    except Exception:
+        pass
+    return False
 
 
 def dispatch_task(case_id: str, identifier_id: str, investigator_id: str, depth: int):
     """
-    Dispatches task to Celery queue, falling back to local thread/asyncio execution if Redis is unavailable.
+    Dispatches task to Celery queue, falling back to local thread/asyncio execution if no Celery worker is active.
     """
-    if is_redis_available():
+    if is_celery_worker_active():
         try:
             task_run_connectors_and_pivot.delay(case_id, identifier_id, investigator_id, depth)
             logger.info("Successfully dispatched task to Celery queue.")
             return
         except Exception as e:
-            logger.warning(f"Celery dispatch failed despite port check ({e}). Falling back to local background execution.")
+            logger.warning(f"Celery dispatch failed ({e}). Falling back to local background execution.")
     else:
-        logger.info("Redis is offline. Bypassing Celery queue, using local background execution.")
+        logger.info("No active Celery workers found. Bypassing Celery queue, using local background execution.")
 
     import threading
     from app.connectors.runner import run_connectors_and_pivot_background
     
     coro = run_connectors_and_pivot_background(case_id, identifier_id, investigator_id, depth)
-    try:
-        loop = asyncio.get_running_loop()
-        if loop.is_running():
-            loop.create_task(coro)
-            return
-    except RuntimeError:
-        pass
-    
+    # Always spawn a separate background thread for local fallback execution to prevent
+    # task destruction and SQLite database closure warnings when the parent event loop terminates.
     threading.Thread(target=asyncio.run, args=(coro,), daemon=True).start()
 
 

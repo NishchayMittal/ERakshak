@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
+import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { useUIStore } from "../state/uiStore";
 import { signupRequest } from "../api/endpoints";
@@ -19,6 +20,7 @@ export default function LoginPage() {
   const [username, setUsername] = useState("INV-001");
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [bootLine, setBootLine] = useState(0);
   const { login } = useAuth();
@@ -57,15 +59,23 @@ export default function LoginPage() {
         );
         setIsSignUp(false);
         setPassword("");
-      } catch (err: any) {
+      } catch (err) {
+        const error = err as {
+          response?: {
+            data?: {
+              detail?: string | Array<{ msg: string }> | unknown;
+            };
+          };
+        };
         let msg = "REGISTRATION REQUEST FAILED";
-        if (err.response?.data?.detail) {
-          if (typeof err.response.data.detail === "string") {
-            msg = err.response.data.detail;
-          } else if (Array.isArray(err.response.data.detail)) {
-            msg = err.response.data.detail.map((d: any) => d.msg).join(", ");
+        if (error.response?.data?.detail) {
+          const detail = error.response.data.detail;
+          if (typeof detail === "string") {
+            msg = detail;
+          } else if (Array.isArray(detail)) {
+            msg = detail.map((d: { msg?: string }) => d.msg || "").join(", ");
           } else {
-            msg = JSON.stringify(err.response.data.detail);
+            msg = JSON.stringify(detail);
           }
         }
         showToast(msg.toUpperCase(), "error");
@@ -82,16 +92,30 @@ export default function LoginPage() {
         } else {
           showToast("INVALID BADGE ID OR SECURITY PASSPHRASE", "error");
         }
-      } catch (err: any) {
+      } catch (err) {
+        const error = err as {
+          response?: {
+            status?: number;
+            data?: {
+              detail?: string | Array<{ msg: string }>;
+            };
+          };
+        };
         let msg = "INVALID CREDENTIALS";
-        if (err.response?.data?.detail) {
-          if (typeof err.response.data.detail === "string") {
-            msg = err.response.data.detail;
-          } else if (Array.isArray(err.response.data.detail)) {
-            msg = err.response.data.detail.map((d: any) => d.msg).join(", ");
+        
+        if (error.response?.data?.detail) {
+          const detail = error.response.data.detail;
+          if (typeof detail === "string") {
+            msg = detail;
+          } else if (Array.isArray(detail)) {
+            msg = detail.map((d) => d.msg || "").join(", ");
           } else {
-            msg = JSON.stringify(err.response.data.detail);
+            msg = JSON.stringify(detail);
           }
+        } else if (error.response?.status && error.response.status >= 500) {
+          msg = "SERVER ERROR. PLEASE TRY AGAIN.";
+        } else if (!error.response) {
+          msg = "NETWORK ERROR. SERVER MIGHT BE WAKING UP.";
         }
         showToast(msg.toUpperCase(), "error");
       }
@@ -148,7 +172,7 @@ export default function LoginPage() {
           "bottom:16px;right:16px",
           "borderBottom:1px solid #39ff14;borderRight:1px solid #39ff14",
         ],
-      ].map(([pos], i) => {
+      ].map((_, i) => {
         const borders = [
           {
             borderTop: "1px solid rgba(57,255,20,0.4)",
@@ -376,30 +400,54 @@ export default function LoginPage() {
               >
                 SECURITY PASSPHRASE
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  background: "black",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  color: "white",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 12,
-                  padding: "10px 12px",
-                  outline: "none",
-                  caretColor: "#39ff14",
-                  letterSpacing: "0.3em",
-                  transition: "border-color 0.1s",
-                }}
-                onFocus={(e) => (e.target.style.borderColor = "#39ff14")}
-                onBlur={(e) =>
-                  (e.target.style.borderColor = "rgba(255,255,255,0.1)")
-                }
-                placeholder="••••••••"
-              />
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    background: "black",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    color: "white",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 12,
+                    padding: "10px 40px 10px 12px",
+                    outline: "none",
+                    caretColor: "#39ff14",
+                    letterSpacing: showPassword ? "0.1em" : "0.3em",
+                    transition: "border-color 0.1s",
+                  }}
+                  onFocus={(e) => (e.target.style.borderColor = "#39ff14")}
+                  onBlur={(e) =>
+                    (e.target.style.borderColor = "rgba(255,255,255,0.1)")
+                  }
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute",
+                    right: 12,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    color: showPassword ? "#39ff14" : "rgba(255, 255, 255, 0.4)",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                    outline: "none",
+                    transition: "color 0.2s"
+                  }}
+                >
+                  {showPassword ? <Eye size={16} /> : <EyeOff size={16} />}
+                </button>
+              </div>
             </div>
 
             <div

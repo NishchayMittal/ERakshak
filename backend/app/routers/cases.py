@@ -14,8 +14,8 @@ from app.audit import log_action
 from app.auth import get_current_investigator
 from app.analytics.temporal import compute_temporal_analysis
 from app.database import get_db
-from app.models import Case, Investigator, Identifier, Finding, CaseNote, LinkFeedback, AuditLog
-from app.schemas import CaseCreate, CaseOut, CaseUpdate, LinkFeedbackCreate, LinkFeedbackOut, EvidencePackOut
+from app.models import Case, Investigator, Identifier, Finding, CaseNote, LinkFeedback, AuditLog, Alert
+from app.schemas import CaseCreate, CaseOut, CaseUpdate, LinkFeedbackCreate, LinkFeedbackOut, EvidencePackOut, AlertOut
 from app.correlation.matcher import trigger_background_retrain
 from app.narrative import answer_question_about_evidence, generate_narrative
 from app.worker import dispatch_rag_reindex
@@ -136,6 +136,81 @@ def cross_correlate_cases(
         "total_shared_identifiers": len(correlations),
         "cases_analyzed": len(cases),
     }
+
+
+# ─── Watchlist & Alerts ───
+
+@router.patch("/{case_id}/watch")
+def toggle_watch(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator),
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    case.is_watched = not case.is_watched
+    db.commit()
+    db.refresh(case)
+    log_action(db, "case.watch_toggle", investigator_id=current_investigator.id, case_id=case.id,
+               detail={"is_watched": case.is_watched})
+    return {"case_id": case.id, "is_watched": case.is_watched}
+
+
+@router.get("/alerts/list", response_model=list[AlertOut])
+def list_alerts(
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator),
+):
+    return (
+        db.query(Alert)
+        .filter(Alert.investigator_id == current_investigator.id)
+        .order_by(Alert.created_at.desc())
+        .limit(50)
+        .all()
+    )
+
+
+@router.get("/alerts/unread-count")
+def unread_alert_count(
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator),
+):
+    count = db.query(Alert).filter(
+        Alert.investigator_id == current_investigator.id,
+        Alert.is_read == False,
+    ).count()
+    return {"unread_count": count}
+
+
+@router.patch("/alerts/{alert_id}/read")
+def mark_alert_read(
+    alert_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator),
+):
+    alert = db.query(Alert).filter(
+        Alert.id == alert_id,
+        Alert.investigator_id == current_investigator.id,
+    ).first()
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    alert.is_read = True
+    db.commit()
+    return {"status": "ok"}
+
+
+@router.patch("/alerts/read-all")
+def mark_all_alerts_read(
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator),
+):
+    db.query(Alert).filter(
+        Alert.investigator_id == current_investigator.id,
+        Alert.is_read == False,
+    ).update({"is_read": True})
+    db.commit()
+    return {"status": "ok"}
 
 
 @router.get("/{case_id}", response_model=CaseOut)
@@ -305,6 +380,71 @@ async def submit_case_identifiers(
         "ambiguous": is_ambiguous,
         "ambiguousFieldsNeeded": fields_needed
     }
+
+
+@router.get("/{case_id}/identifiers")
+def get_case_identifiers(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    identifiers = db.query(Identifier).filter(
+        Identifier.case_id == case_id,
+        Identifier.source == "manual_intake"
+    ).order_by(Identifier.timestamp.desc()).all()
+    
+    return [
+        {
+            "id": i.id,
+            "type": i.type.value if hasattr(i.type, "value") else str(i.type),
+            "raw_value": i.raw_value,
+            "normalized_value": i.normalized_value,
+            "confidence": i.confidence,
+            "source": i.source,
+            "timestamp": i.timestamp.isoformat()
+        } for i in identifiers
+    ]
+
+
+@router.delete("/{case_id}/identifiers/{identifier_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_case_identifier(
+    case_id: str,
+    identifier_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    identifier = db.query(Identifier).filter(
+        Identifier.id == identifier_id,
+        Identifier.case_id == case_id
+    ).first()
+
+    if not identifier:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Identifier not found")
+
+    # Delete all dependent data
+    _delete_photo_files([identifier])
+    db.query(Finding).filter(Finding.identifier_id == identifier_id).delete(synchronize_session=False)
+
+    db.delete(identifier)
+    db.commit()
+
+    log_action(
+        db,
+        "identifier.delete",
+        investigator_id=current_investigator.id,
+        case_id=case_id,
+        detail={"identifier_id": identifier_id}
+    )
+
+    return None
 
 
 @router.get("/{case_id}/entities/{entity_id}/graph")
@@ -589,7 +729,7 @@ def chat_with_evidence(
     if not case:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
 
-    # Compile the evidence pack and attach temporal behavioral analysis
+    # Compile the evidence pack
     evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
     try:
         evidence_pack["temporal_analysis"] = compute_temporal_analysis(case_id, db)
@@ -759,6 +899,51 @@ def export_case_pdf(
     return StreamingResponse(buffer, headers=headers, media_type="application/pdf")
 
 
+def _delete_photo_files(identifiers: list[Identifier]):
+    """Delete uploaded files associated with photo identifiers."""
+    import os
+    import shutil
+    from app.models import IdentifierType
+
+    uploads_dir = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "resources", "uploads")
+    )
+
+    for i in identifiers:
+        if i.type == IdentifierType.photo:
+            for val in (i.raw_value, i.normalized_value):
+                if not val:
+                    continue
+                
+                # Check for upload_id subfolder (like "someuuid/filename.png")
+                val_clean = val.replace("\\", "/")
+                parts = val_clean.split('/')
+                if len(parts) >= 2:
+                    upload_id = parts[0]
+                    # Verify upload_id is a 32-character hex UUID
+                    if len(upload_id) == 32:
+                        dir_to_delete = os.path.join(uploads_dir, upload_id)
+                        if os.path.exists(dir_to_delete) and os.path.isdir(dir_to_delete):
+                            try:
+                                shutil.rmtree(dir_to_delete)
+                            except Exception:
+                                pass
+                
+                # Also try standard path check for flat files or direct references
+                try:
+                    resolved_file_path = val
+                    if not os.path.isabs(resolved_file_path):
+                        resolved_file_path = os.path.join(uploads_dir, val)
+                    if os.path.exists(resolved_file_path) and os.path.isfile(resolved_file_path):
+                        os.remove(resolved_file_path)
+                        # Clean up empty parent folder
+                        parent_dir = os.path.dirname(resolved_file_path)
+                        if parent_dir != uploads_dir and os.path.exists(parent_dir) and not os.listdir(parent_dir):
+                            os.rmdir(parent_dir)
+                except Exception:
+                    pass
+
+
 @router.delete("/{case_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_case(
     case_id: str,
@@ -770,7 +955,10 @@ def delete_case(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
 
     # Delete all dependent data
-    identifier_ids = [i.id for i in db.query(Identifier).filter(Identifier.case_id == case_id).all()]
+    identifiers = db.query(Identifier).filter(Identifier.case_id == case_id).all()
+    _delete_photo_files(identifiers)
+
+    identifier_ids = [i.id for i in identifiers]
     if identifier_ids:
         db.query(Finding).filter(Finding.identifier_id.in_(identifier_ids)).delete(synchronize_session=False)
 
@@ -778,6 +966,9 @@ def delete_case(
     db.query(CaseNote).filter(CaseNote.case_id == case_id).delete(synchronize_session=False)
     db.query(LinkFeedback).filter(LinkFeedback.case_id == case_id).delete(synchronize_session=False)
     db.query(AuditLog).filter(AuditLog.case_id == case_id).delete(synchronize_session=False)
+    
+    from app.models import Notification
+    db.query(Notification).filter(Notification.case_id == case_id).delete(synchronize_session=False)
 
     db.delete(case)
     db.commit()
@@ -806,18 +997,6 @@ def set_retention(
     log_action(db, "case.set_retention", investigator_id=current_investigator.id, case_id=case.id, detail={"days": payload.days, "expires_at": case.expires_at.isoformat()})
     return case
 
-
-@router.get("/{case_id}/temporal-analysis")
-def get_temporal_analysis(
-    case_id: str,
-    db: Session = Depends(get_db),
-    current_investigator: Investigator = Depends(get_current_investigator)
-):
-    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
-    if not case:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
-    from app.analytics.temporal import compute_temporal_analysis
-    return compute_temporal_analysis(case_id, db)
 
 # Define COUNTRY_COORDS mapping for Geo Map
 COUNTRY_COORDS = {
@@ -851,7 +1030,10 @@ def get_case_geo(
         findings = db.query(Finding).join(Identifier).filter(Identifier.case_id == case_id).all()
     
     nodes = []
-    seen_locations = set()
+    seen_labels = set()
+    used_locations = set()
+    
+    import random
 
     for f in findings:
         payload = f.raw_payload or {}
@@ -859,10 +1041,19 @@ def get_case_geo(
 
         # 1. IP Geolocation (Exact)
         if f.connector_name == "ip_geoloc":
+            if "latitude" in payload and "longitude" in payload:
+                lat = float(payload["latitude"])
+                lon = float(payload["longitude"])
+                label = f"IP: {f.identifier.raw_value}"
+        
+        # 1b. EXIF Photo Geotag (Exact)
+        elif f.connector_name == "exif_extractor" and f.result_type == "geolocation":
             if "lat" in payload and "lon" in payload:
+                import os
                 lat = float(payload["lat"])
                 lon = float(payload["lon"])
-                label = f"IP: {f.identifier.raw_value}"
+                filename = os.path.basename(f.identifier.raw_value)
+                label = f"Photo Geotag ({filename}): {f.result_value}"
         
         # 2. WHOIS / Registrant Country
         elif f.connector_name == "whois_rdap" and "country" in payload:
@@ -873,23 +1064,23 @@ def get_case_geo(
                 
         # 2b. Domain TLD heuristics (for domains like google.com)
         elif f.connector_name in ["whois_rdap", "dns_resolver", "wayback_cdx"]:
-            domain = payload.get("domain", "")
+            domain = f.identifier.raw_value.lower()
             if domain:
                 if domain.endswith(".com") or domain.endswith(".net") or domain.endswith(".org"):
                     lat, lon = COUNTRY_COORDS["US"]
-                    label = f"Domain: {domain} (US)"
+                    label = domain
                 elif domain.endswith(".uk"):
                     lat, lon = COUNTRY_COORDS["GB"]
-                    label = f"Domain: {domain} (GB)"
+                    label = domain
                 elif domain.endswith(".in"):
                     lat, lon = COUNTRY_COORDS["IN"]
-                    label = f"Domain: {domain} (IN)"
+                    label = domain
                 elif domain.endswith(".ru"):
                     lat, lon = COUNTRY_COORDS["RU"]
-                    label = f"Domain: {domain} (RU)"
+                    label = domain
                 elif domain.endswith(".jp"):
                     lat, lon = COUNTRY_COORDS["JP"]
-                    label = f"Domain: {domain} (JP)"
+                    label = domain
 
         # 3. Phone Number Country
         elif f.connector_name == "phone_lookup" and "country_code" in payload:
@@ -907,36 +1098,34 @@ def get_case_geo(
                     break
 
         if lat is not None and lon is not None:
-            loc_key = f"{lat},{lon}"
-            if loc_key not in seen_locations:
-                nodes.append({
-                    "id": str(f.id),
-                    "lat": lat,
-                    "lng": lon,
-                    "label": label or f"Asset: {f.id}",
-                    "source": f.connector_name
-                })
-                seen_locations.add(loc_key)
+            node_label = label or f"Asset: {f.id}"
+            
+            # Avoid duplicate labels
+            if node_label in seen_labels:
+                continue
+            seen_labels.add(node_label)
+            
+            # Add jitter if location is already occupied
+            while True:
+                loc_key = f"{round(lat, 1)},{round(lon, 1)}"
+                if loc_key not in used_locations:
+                    used_locations.add(loc_key)
+                    break
+                # Increased jitter drastically so large text labels don't overlap
+                lat += random.uniform(-12.0, 12.0)
+                lon += random.uniform(-12.0, 12.0)
+
+            nodes.append({
+                "id": str(f.id),
+                "lat": lat,
+                "lng": lon,
+                "label": node_label,
+                "source": f.connector_name
+            })
 
     arcs = []
     
-    # If no nodes, generate mock nodes and arcs for visual demonstration
-    if len(nodes) == 0:
-        nodes = [
-            {"id": "mock1", "lat": 37.7749, "lng": -122.4194, "label": "Mock IP (SF)", "source": "ip_geoloc"},
-            {"id": "mock2", "lat": 55.7558, "lng": 37.6173, "label": "Mock Domain (RU)", "source": "whois_rdap"},
-            {"id": "mock3", "lat": 1.3521, "lng": 103.8198, "label": "Mock Server (SG)", "source": "dns_resolver"},
-            {"id": "mock4", "lat": -23.5505, "lng": -46.6333, "label": "Mock Endpoint (BR)", "source": "breach_lookup"},
-            {"id": "mock5", "lat": 64.1265, "lng": -21.8174, "label": "Mock Proxy (IS)", "source": "ip_geoloc"}
-        ]
-        arcs = [
-            {"startLat": 37.7749, "startLng": -122.4194, "endLat": 55.7558, "endLng": 37.6173, "label": "C2 Traffic"},
-            {"startLat": 55.7558, "startLng": 37.6173, "endLat": 1.3521, "endLng": 103.8198, "label": "Exfiltration"},
-            {"startLat": 1.3521, "startLng": 103.8198, "endLat": -23.5505, "endLng": -46.6333, "label": "Proxy Route"},
-            {"startLat": -23.5505, "startLng": -46.6333, "endLat": 64.1265, "endLng": -21.8174, "label": "Data Drop"},
-            {"startLat": 64.1265, "startLng": -21.8174, "endLat": 37.7749, "endLng": -122.4194, "label": "Callback"}
-        ]
-    elif len(nodes) > 1:
+    if len(nodes) > 1:
         # Generate simple daisy-chain arcs between real nodes for visualization
         for i in range(len(nodes) - 1):
             arcs.append({
@@ -956,3 +1145,72 @@ def get_case_geo(
         })
 
     return {"nodes": nodes, "arcs": arcs}
+
+@router.get("/notifications", response_model=list[dict])
+def get_notifications(
+    db: Session = Depends(get_db),
+    current_user: Investigator = Depends(get_current_investigator)
+):
+    """
+    Get recent background monitor notifications for all cases owned by the investigator.
+    """
+    from app.models import Notification
+    from sqlalchemy import desc
+    
+    # Get all case IDs for this investigator
+    case_ids = [c.id for c in db.query(Case).filter(Case.lead_investigator_id == current_user.id).all()]
+    if not case_ids:
+        return []
+        
+    notifications = db.query(Notification).filter(
+        Notification.case_id.in_(case_ids)
+    ).order_by(desc(Notification.created_at)).limit(50).all()
+    
+    return [
+        {
+            "id": n.id,
+            "case_id": n.case_id,
+            "message": n.message,
+            "is_read": n.is_read,
+            "created_at": n.created_at.isoformat()
+        } for n in notifications
+    ]
+
+@router.post("/notifications/{notification_id}/read")
+def mark_notification_read(
+    notification_id: str,
+    db: Session = Depends(get_db),
+    current_user: Investigator = Depends(get_current_investigator)
+):
+    from app.models import Notification
+    notif = db.query(Notification).filter(Notification.id == notification_id).first()
+    # Simple check that it belongs to one of their cases
+    if notif:
+        case = db.query(Case).filter(Case.id == notif.case_id).first()
+        if case and case.lead_investigator_id == current_user.id:
+            notif.is_read = True
+            db.commit()
+    return {"status": "ok"}
+
+
+# ─── Indian Legal Section Mapping ───
+
+@router.get("/{case_id}/legal-mapping")
+def get_legal_mapping(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator),
+):
+    """
+    Maps all OSINT findings for a case to relevant Indian legal provisions:
+    IT Act 2000, Bharatiya Nyaya Sanhita 2023, and PMLA 2002.
+    """
+    case = db.query(Case).filter(
+        Case.id == case_id,
+        Case.lead_investigator_id == current_investigator.id,
+    ).first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+
+    from app.analytics.legal_mapping import run_legal_mapping
+    return run_legal_mapping(db, case_id)

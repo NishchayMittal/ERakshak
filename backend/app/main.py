@@ -1,40 +1,40 @@
+import os
+from datetime import datetime, timezone
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
+resources_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "resources"))
+
+from app.connectors import register_all
 from app.connectors.base import registry
-from app.connectors.crtsh import CrtShConnector
-from app.connectors.whois import WhoisConnector
-from app.connectors.wayback import WaybackConnector
-from app.connectors.username_enum import UsernameEnumConnector
-from app.connectors.breach_lookup import BreachLookupConnector
-from app.connectors.face_matcher import FaceMatcherConnector
-from app.connectors.name_search import NameSearchConnector
-from app.connectors.phone_lookup import PhoneLookupConnector
-from app.connectors.wallet_lookup import WalletLookupConnector
-from app.connectors.dns_resolver import DnsResolverConnector
-from app.connectors.github_commits import GithubCommitEmailConnector
-from app.connectors.ip_geoloc import IpGeolocConnector
-from app.connectors.shodan_idb import ShodanIdbConnector
-from app.connectors.gravatar_email import GravatarEmailConnector
-from app.connectors.pgp_lookup import PgpLookupConnector
-from app.connectors.social_profiler import SocialProfilerConnector
 from app.database import Base, engine
 from app.routers import auth as auth_router
 from app.routers import cases as cases_router
 from app.routers import identifiers as identifiers_router
 from app.routers import model as model_router
 from app.routers import ws as ws_router
+from app.middleware.rate_limit import RateLimitMiddleware
+from app.middleware.security import SecurityHeadersMiddleware
 
+from app.config import settings
+import logging
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
 app = FastAPI(title="e-Rakshak API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RateLimitMiddleware)
+
+app.mount("/static", StaticFiles(directory=resources_dir), name="static")
 
 app.include_router(auth_router.router)
 app.include_router(cases_router.router)
@@ -42,35 +42,15 @@ app.include_router(identifiers_router.router)
 app.include_router(model_router.router)
 app.include_router(ws_router.router)
 
-from app.connectors.ocr_extractor import OcrExtractorConnector
-from app.connectors.bucket_enum import BucketEnumConnector
-
-registry.register(CrtShConnector())
-registry.register(WhoisConnector())
-registry.register(WaybackConnector())
-registry.register(UsernameEnumConnector())
-registry.register(BreachLookupConnector())
-registry.register(FaceMatcherConnector())
-registry.register(NameSearchConnector())
-registry.register(PhoneLookupConnector())
-registry.register(WalletLookupConnector())
-registry.register(DnsResolverConnector())
-registry.register(GithubCommitEmailConnector())
-registry.register(IpGeolocConnector())
-registry.register(ShodanIdbConnector())
-registry.register(GravatarEmailConnector())
-registry.register(PgpLookupConnector())
-registry.register(OcrExtractorConnector())
-registry.register(BucketEnumConnector())
-registry.register(SocialProfilerConnector())
+register_all()
 
 
 async def retention_cleanup_loop():
     from app.database import SessionLocal
-    from app.models import Case, Identifier, Finding, AuditLog, CaseNote, LinkFeedback
+    from app.models import Case, Identifier, Finding, AuditLog, CaseNote, LinkFeedback, Alert
     from datetime import datetime, timezone
     import asyncio
-    
+
     while True:
         try:
             db = SessionLocal()
@@ -84,6 +64,7 @@ async def retention_cleanup_loop():
                 db.query(CaseNote).filter(CaseNote.case_id == case.id).delete(synchronize_session=False)
                 db.query(LinkFeedback).filter(LinkFeedback.case_id == case.id).delete(synchronize_session=False)
                 db.query(AuditLog).filter(AuditLog.case_id == case.id).delete(synchronize_session=False)
+                db.query(Alert).filter(Alert.case_id == case.id).delete(synchronize_session=False)
                 db.delete(case)
             db.commit()
             db.close()
@@ -92,23 +73,134 @@ async def retention_cleanup_loop():
         await asyncio.sleep(3600)
 
 
+redis_tasks = []
+
+
+async def watchlist_monitor_loop():
+    """Lightweight in-process monitor that re-scans watched cases periodically."""
+    from app.database import SessionLocal
+    from app.models import Case, Identifier, Finding, Alert
+    import asyncio
+
+    # Wait 60 seconds after startup before first scan
+    await asyncio.sleep(60)
+
+    while True:
+        try:
+            db = SessionLocal()
+            now = datetime.now(timezone.utc)
+
+            watched_cases = db.query(Case).filter(
+                Case.is_watched == True,
+                Case.status == "open",
+            ).all()
+
+            for case in watched_cases:
+                seed_identifiers = db.query(Identifier).filter(
+                    Identifier.case_id == case.id,
+                    Identifier.source == "manual_intake"
+                ).all()
+
+                for ident in seed_identifiers:
+                    # Count findings before rescan
+                    before_count = db.query(Finding).filter(
+                        Finding.identifier_id == ident.id
+                    ).count()
+
+                    # Run connectors in background thread (depth=2 means no pivoting)
+                    try:
+                        from app.connectors.runner import run_connectors_and_pivot_background
+                        await run_connectors_and_pivot_background(
+                            case.id, ident.id, case.lead_investigator_id, 2
+                        )
+                    except Exception as e:
+                        logging.getLogger(__name__).error(f"Watchlist rescan error: {e}")
+                        continue
+
+                    # Count findings after rescan
+                    after_count = db.query(Finding).filter(
+                        Finding.identifier_id == ident.id
+                    ).count()
+
+                    new_count = after_count - before_count
+                    if new_count > 0:
+                        alert = Alert(
+                            case_id=case.id,
+                            investigator_id=case.lead_investigator_id,
+                            alert_type="new_findings",
+                            title=f"{new_count} new finding(s) discovered for {ident.normalized_value}",
+                            detail={
+                                "identifier_id": ident.id,
+                                "identifier_value": ident.normalized_value,
+                                "identifier_type": ident.type.value,
+                                "new_findings_count": new_count,
+                                "before_count": before_count,
+                                "after_count": after_count,
+                            }
+                        )
+                        db.add(alert)
+                        db.commit()
+
+                        # Push alert via WebSocket
+                        from app.connectors.runner import publish_update
+                        await publish_update(
+                            case.id,
+                            "watchlist_alert",
+                            {
+                                "alert_id": alert.id,
+                                "title": alert.title,
+                                "type": alert.alert_type,
+                            }
+                        )
+
+            db.close()
+        except Exception as e:
+            logging.getLogger(__name__).error(f"Watchlist monitor error: {e}")
+
+        # Sleep for 4 hours between scans (lightweight on Render free tier)
+        await asyncio.sleep(4 * 3600)
+
+
 @app.on_event("startup")
 def on_startup() -> None:
     from sqlalchemy import text
-    with engine.begin() as conn:
+    with engine.connect() as conn:
         try:
-            conn.execute(text("ALTER TABLE investigators ADD COLUMN is_approved BOOLEAN DEFAULT 0"))
+            conn.execute(text("ALTER TABLE investigators ADD COLUMN is_approved BOOLEAN DEFAULT FALSE"))
+            conn.commit()
         except Exception:
-            pass
+            conn.rollback()
+            
         try:
-            conn.execute(text("UPDATE investigators SET is_approved = 1 WHERE badge_id = 'INV-001'"))
+            conn.execute(text("UPDATE investigators SET is_approved = TRUE WHERE badge_id = 'INV-001'"))
+            conn.commit()
         except Exception:
-            pass
+            conn.rollback()
+            
+        try:
+            conn.execute(text("ALTER TABLE cases ADD COLUMN is_watched BOOLEAN DEFAULT FALSE"))
+            conn.commit()
+        except Exception:
+            conn.rollback()
     Base.metadata.create_all(bind=engine)
     import asyncio
     from app.routers.ws import redis_listener
-    asyncio.create_task(redis_listener())
-    asyncio.create_task(retention_cleanup_loop())
+    t1 = asyncio.create_task(redis_listener())
+    t2 = asyncio.create_task(retention_cleanup_loop())
+    t3 = asyncio.create_task(watchlist_monitor_loop())
+    redis_tasks.extend([t1, t2, t3])
+
+
+@app.on_event("shutdown")
+async def on_shutdown() -> None:
+    import asyncio
+    for t in redis_tasks:
+        if not t.done():
+            t.cancel()
+            try:
+                await t
+            except asyncio.CancelledError:
+                pass
 
 
 @app.get("/health")

@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from uuid import uuid4
 
-from sqlalchemy import JSON, Boolean, DateTime, Enum as SAEnum, Float, ForeignKey, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, Enum as SAEnum, Float, ForeignKey, String, Text, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -50,6 +50,7 @@ class Case(Base):
     lead_investigator_id: Mapped[str] = mapped_column(String, ForeignKey("investigators.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    is_watched: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     lead_investigator = relationship("Investigator", back_populates="led_cases")
     identifiers = relationship("Identifier", back_populates="case")
@@ -128,4 +129,47 @@ class LinkFeedback(Base):
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     case = relationship("Case")
-    investigator = relationship("Investigator")
+    investigator = relationship("Investigator")
+
+
+class SystemQuota(Base):
+    """
+    Persistent monthly counter for external API quotas (e.g., Google Cloud Vision).
+    Key format: "{service}_{YYYY}_{MM}"  e.g. "google_vision_2026_08"
+    """
+    __tablename__ = "system_quotas"
+
+    key: Mapped[str] = mapped_column(String, primary_key=True, nullable=False)
+    count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+
+class Alert(Base):
+    __tablename__ = "alerts"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid4()))
+    case_id: Mapped[str] = mapped_column(String, ForeignKey("cases.id"), nullable=False)
+    investigator_id: Mapped[str] = mapped_column(String, ForeignKey("investigators.id"), nullable=False)
+    alert_type: Mapped[str] = mapped_column(String, nullable=False)  # "new_findings", "new_breach", "new_subdomain", "rescan_complete"
+    title: Mapped[str] = mapped_column(String, nullable=False)
+    detail: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    case = relationship("Case")
+    investigator = relationship("Investigator")
+
+
+class Notification(Base):
+    """
+    Stores system alerts and background monitoring updates.
+    """
+    __tablename__ = "notifications"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid4()))
+    case_id: Mapped[str] = mapped_column(String, ForeignKey("cases.id"), index=True, nullable=False)
+    message: Mapped[str] = mapped_column(String, nullable=False)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    
+    case = relationship("Case")

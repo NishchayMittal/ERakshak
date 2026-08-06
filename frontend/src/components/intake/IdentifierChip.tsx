@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Trash2 } from 'lucide-react';
 import type { IdentifierType } from '../../types/identifier';
 import { useTranslation } from 'react-i18next';
-import { Transliterate } from '../ui/Transliterate';
+
 
 interface IdentifierChipProps {
   id: string;

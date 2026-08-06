@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from app.audit import log_action
-from app.auth import create_access_token, hash_password, verify_password, get_current_investigator
+from app.auth import create_access_token, hash_password, verify_password, get_current_investigator, is_strong_password
 from app.database import get_db
 from app.models import Investigator, AuditLog
 from app.schemas import InvestigatorCreate, InvestigatorOut, Token, AuditLogOut
@@ -22,6 +22,12 @@ def register(payload: InvestigatorCreate, db: Session = Depends(get_db)):
     existing = db.query(Investigator).filter(Investigator.badge_id == payload.badge_id).first()
     if existing:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Badge ID already registered")
+
+    if not is_strong_password(payload.password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password too weak. Must be 8+ chars with uppercase, lowercase, digit, and special character."
+        )
 
     investigator = Investigator(
         badge_id=payload.badge_id,
@@ -84,6 +90,12 @@ def signup(payload: InvestigatorCreate, db: Session = Depends(get_db)):
     existing = db.query(Investigator).filter(Investigator.badge_id == payload.badge_id).first()
     if existing:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Badge ID already registered")
+
+    if not is_strong_password(payload.password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Passphrase too weak. Must be 8+ chars with uppercase, lowercase, digit, and special character (!@#$%^&*()_+-=)."
+        )
 
     investigator = Investigator(
         badge_id=payload.badge_id,
@@ -157,6 +169,11 @@ def update_profile(
     if payload.full_name is not None:
         current_investigator.full_name = payload.full_name
     if payload.password is not None:
+        if not is_strong_password(payload.password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="New passphrase too weak. Must be 8+ chars with uppercase, lowercase, digit, and special character."
+            )
         current_investigator.hashed_password = hash_password(payload.password)
     db.commit()
     db.refresh(current_investigator)

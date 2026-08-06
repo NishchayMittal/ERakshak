@@ -39,30 +39,22 @@ export default function ChatPanel({
   const isControlled = inputValue !== undefined;
 
   // Internal state for uncontrolled usage (e.g. CaseWindow)
-  const [internalMessages, setInternalMessages] = useState<ChatMessage[]>([]);
+  const [internalMessages, setInternalMessages] = useState<ChatMessage[]>(() => [{
+    id: 'welcome',
+    content: t('chat.welcome', "Hello! I'm your AI assistant for the e-Rakshak OSINT platform. I can help you analyze your case evidence by answering questions about linked entities, discovered findings, breach data, and more. What would you like to know about your case?"),
+    isUser: false,
+    timestamp: new Date().toISOString()
+  }]);
   const [internalInputValue, setInternalInputValue] = useState('');
   const [internalIsLoading, setInternalIsLoading] = useState(false);
   const internalMessagesEndRef = useRef<HTMLDivElement>(null);
   const internalTextareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Determine active state based on whether component is controlled
   const activeMessages = isControlled ? messages! : internalMessages;
   const activeInputValue = isControlled ? inputValue! : internalInputValue;
   const activeIsLoading = isControlled ? isLoading! : internalIsLoading;
   const activeMessagesEndRef = isControlled ? messagesEndRef! : internalMessagesEndRef;
   const activeTextareaRef = isControlled ? textareaRef! : internalTextareaRef;
-
-  // Internal welcome message
-  useEffect(() => {
-    if (!isControlled && internalMessages.length === 0) {
-      setInternalMessages([{
-        id: 'welcome',
-        content: t('chat.welcome', "Hello! I'm your AI assistant for the e-Rakshak OSINT platform. I can help you analyze your case evidence by answering questions about linked entities, discovered findings, breach data, and more. What would you like to know about your case?"),
-        isUser: false,
-        timestamp: new Date().toISOString()
-      }]);
-    }
-  }, [isControlled, internalMessages.length, t]);
 
   // Internal scroll
   useEffect(() => {
@@ -236,13 +228,13 @@ export default function ChatPanel({
                       textAlign: msg?.isUser ? "right" : "left",
                     }}
                   >
-                    {new Date(msg?.timestamp || Date.now()).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {new Date(msg?.timestamp || "2026-07-24T00:00:00Z").toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </div>
                 </div>
               </div>
             </div>
           ))}
-        <div ref={activeMessagesEndRef as any} />
+        <div ref={activeMessagesEndRef} />
       </div>
 
       {/* Input Area */}
@@ -255,7 +247,7 @@ export default function ChatPanel({
         }}
       >
         <textarea
-          ref={activeTextareaRef as any}
+          ref={activeTextareaRef}
           value={activeInputValue}
           onChange={handleInputChange}
           onKeyDown={handleKeyPress}

@@ -1,9 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Inbox, Briefcase } from 'lucide-react';
+import { Inbox } from 'lucide-react';
 import CaseCard from './CaseCard';
 import type { CaseSummary } from '../../types/case';
-import { Transliterate } from '../ui/Transliterate';
 
 interface CaseListProps {
   cases: CaseSummary[];

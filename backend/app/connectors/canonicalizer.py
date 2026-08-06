@@ -1,6 +1,5 @@
 import re
 from urllib.parse import urlparse
-import phonenumbers
 from anyascii import anyascii
 
 from app.connectors.base import Finding
@@ -61,32 +60,22 @@ def canonicalize_findings(findings: list[Finding]) -> list[Finding]:
             
         elif result_type == "registrant_email":
             result_value = result_value.strip().lower()
-            
-        elif result_type == "registrant_phone":
-            val = result_value.strip()
-            # Remove common prefixes like tel:
-            if val.startswith("tel:"):
-                val = val[4:]
-            try:
-                parsed = phonenumbers.parse(val, "IN")
-                if phonenumbers.is_possible_number(parsed) and phonenumbers.is_valid_number(parsed):
-                    result_value = phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
-            except Exception:
-                # If parsing fails, fall back to removing non-numeric chars except leading +
-                result_value = re.sub(r'[^\d+]', '', val)
-                
         elif result_type in ("registrant_name", "registrant_org"):
             # Romanize using anyascii and convert to lowercase/strip
-            result_value = anyascii(result_value).strip().lower()
-            
-        elif result_type == "face_similarity":
-            # Example value: "Match: Suspect Alpha (Developer Profile) (Similarity: 92.5%)"
-            # Romanize the result value
             result_value = anyascii(result_value).strip().lower()
             
         elif result_type == "social_profile":
             # Lowercase the entire profile link or username part
             result_value = result_value.strip().lower()
+            
+        elif result_type in ("image_hosting_page", "image_exact_match"):
+            result_value = result_value.strip()
+            
+        elif result_type == "image_entity_label":
+            result_value = result_value.strip()
+            
+        elif result_type == "geolocation":
+            result_value = result_value.strip()
             
         else:
             # Fallback Romanization
@@ -117,15 +106,6 @@ def canonicalize_findings(findings: list[Finding]) -> list[Finding]:
             followers = payload.get("followers", 0)
             if repos > 0 or followers > 0:
                 pf.confidence = min(1.0, pf.confidence + 0.1)
-
-        # Keybase Profile boost
-        elif "keybase.io" in rval or (isinstance(payload, dict) and payload.get("site_name") == "Keybase"):
-            pf.confidence = min(0.98, pf.confidence + 0.1)
-
-        # Empty Patreon/Linktree check
-        elif ("patreon.com" in rval or "linktr.ee" in rval) and isinstance(payload, dict):
-            if not payload.get("bio") and not payload.get("display_name"):
-                pf.confidence = max(0.5, pf.confidence - 0.2)
 
     # Count breach lookup exposures
     breach_findings = [f for f in processed_findings if f.connector_name == "breach_lookup"]
@@ -213,16 +193,6 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
     email_matches = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', search_text)
     if email_matches:
         return IdentifierType.email, email_matches[0].strip().lower()
-        
-    # 3. Look for phone numbers in E.164-like format (e.g., +919876543210)
-    if "wayback" not in finding.connector_name.lower():
-        phone_matches = re.findall(r'\+?[1-9]\d{9,14}', search_text)
-        if phone_matches:
-            val_match = phone_matches[0].strip()
-            # Exclude year/timestamp prefixes like 1999... or 2005...
-            if not (len(val_match) >= 12 and (val_match.startswith("19") or val_match.startswith("20"))):
-                return IdentifierType.phone, val_match
-            
     # 4. Check raw_payload for a direct username field
     if isinstance(payload, dict) and payload.get("username"):
         uname = str(payload["username"]).strip().lstrip("@")
@@ -240,11 +210,8 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
         r'https?://(?:www\.)?(?:'
         r'github\.com'
         r'|reddit\.com/user'
-        r'|linktr\.ee'
-        r'|keybase\.io'
         r'|twitter\.com'
         r'|instagram\.com'
-        r'|patreon\.com'
         r'|news\.ycombinator\.com/user\?id='
         r')/([a-zA-Z0-9_.-]+)',
         search_text, re.IGNORECASE
@@ -257,28 +224,32 @@ def extract_identifier_from_finding(finding: Finding) -> tuple[IdentifierType, s
     # 6. Map explicit result types
     if result_type == "registrant_email":
         return IdentifierType.email, val.strip().lower()
-        
-    elif result_type == "registrant_phone":
-        return IdentifierType.phone, val.strip()
-        
+
     elif result_type == "registrant_name":
         name = val.split(" (")[0].strip()
         if name and "profile" not in name.lower() and "leak" not in name.lower():
             return IdentifierType.name, name
-            
-    elif result_type == "face_similarity":
-        name = None
-        if isinstance(payload, dict):
-            name = payload.get("suspect_name")
-        if not name:
-            cleaned_val = val
-            if cleaned_val.startswith("match: "):
-                cleaned_val = cleaned_val[7:]
-            name = cleaned_val.split(" (similarity:")[0].split(" (")[0].strip()
-        if name and "profile" not in name.lower() and "leak" not in name.lower():
-            return IdentifierType.name, name
-            
+
     elif result_type == "subdomain":
         return IdentifierType.domain, clean_domain(val)
-        
+
+    elif result_type in ("image_hosting_page", "image_exact_match"):
+        domain = clean_domain(val)
+        if domain and "." in domain and not domain.startswith("localhost"):
+            mega_domains = {"wikipedia.org", "twitter.com", "x.com", "instagram.com", "facebook.com", "linkedin.com", "github.com", "youtube.com", "google.com", "pinterest.com", "tiktok.com", "reddit.com", "apple.com", "amazon.com"}
+            if not any(domain == md or domain.endswith("." + md) for md in mega_domains):
+                return IdentifierType.domain, domain
+
+    elif result_type == "image_entity_label":
+        entity_name = val.strip()
+        words = entity_name.split()
+        blacklist = {"vision", "google", "detection", "photo", "image", "logo", "screen", "illustration", "art", "drawing"}
+        if 2 <= len(words) <= 3 and all(w.isalpha() for w in words):
+            if not any(w.lower() in blacklist for w in words):
+                return IdentifierType.name, entity_name.title()
+
+    elif result_type == "wikipedia_entry":
+        # Do not pivot into en.wikipedia.org as a generic domain
+        return None
+
     return None

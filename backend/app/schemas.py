@@ -49,6 +49,7 @@ class CaseOut(CaseBase):
     id: str
     lead_investigator_id: str
     created_at: datetime
+    is_watched: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -187,6 +188,19 @@ class AuditLogOut(BaseModel):
     detail: dict | None
     timestamp: datetime
     signature: str | None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AlertOut(BaseModel):
+    id: str
+    case_id: str
+    investigator_id: str
+    alert_type: str
+    title: str
+    detail: dict | None = None
+    is_read: bool
+    created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 

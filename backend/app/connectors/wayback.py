@@ -65,10 +65,14 @@ class WaybackConnector(BaseConnector):
                 )
 
         # Pathway 2: Active robots.txt path extraction
-        import httpx
-        try:
-            async with httpx.AsyncClient(timeout=3.0, follow_redirects=True) as client:
-                res = await client.get(f"https://{domain}/robots.txt", headers={"User-Agent": "Mozilla/5.0"})
+        mega_domains = {"wikipedia.org", "twitter.com", "x.com", "instagram.com", "facebook.com", "linkedin.com", "github.com", "youtube.com", "google.com", "pinterest.com", "tiktok.com", "reddit.com", "apple.com", "amazon.com"}
+        is_mega_domain = any(domain == md or domain.endswith("." + md) for md in mega_domains)
+        
+        if not is_mega_domain:
+            import httpx
+            try:
+                async with httpx.AsyncClient(timeout=3.0, follow_redirects=True) as client:
+                    res = await client.get(f"https://{domain}/robots.txt", headers={"User-Agent": "Mozilla/5.0"})
                 if res.status_code == 200:
                     paths = set()
                     for line in res.text.splitlines():
@@ -89,7 +93,7 @@ class WaybackConnector(BaseConnector):
                                 raw_payload={"domain": domain, "robots_txt": True}
                             )
                         )
-        except Exception:
-            pass
+            except Exception:
+                pass
 
         return findings

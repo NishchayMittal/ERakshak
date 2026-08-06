@@ -1,37 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { IdentifierType } from '../../types/identifier';
 import { useTranslation } from 'react-i18next';
+import { uploadImage } from '../../api/endpoints';
 
 interface IdentifierFormProps {
   onAdd: (type: IdentifierType, value: string) => void;
+}
+
+function detectType(trimmed: string): IdentifierType {
+  if (!trimmed) return 'email';
+  if (trimmed.includes('@')) return 'email';
+  if (/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(trimmed)) return 'photo';
+  if (/^\+?\d[\d-\s()]{7,}\d$/.test(trimmed)) return 'phone';
+  if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(trimmed)) return 'ip';
+  if (/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(trimmed) || (trimmed.includes('.') && !trimmed.includes(' '))) return 'domain';
+  if (/^(0x)?[0-9a-fA-F]{40}$/.test(trimmed) || /^[139][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(trimmed)) return 'wallet';
+  if (trimmed.includes(' ') && trimmed.length > 3) return 'name';
+  if (trimmed.length > 2) return 'username';
+  return 'email';
 }
 
 export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
   const { t } = useTranslation();
   const [value, setValue] = useState('');
   const [type, setType] = useState<IdentifierType>('email');
-
-  // Simple heuristic router for auto-detecting identifier types
-  useEffect(() => {
-    const trimmed = value.trim();
-    if (!trimmed) return;
-
-    if (trimmed.includes('@')) {
-      setType('email');
-    } else if (/^\+?\d[\d-\s()]{7,}\d$/.test(trimmed)) {
-      setType('phone');
-    } else if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(trimmed)) {
-      setType('ip');
-    } else if (/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(trimmed) || trimmed.includes('.') && !trimmed.includes(' ')) {
-      setType('domain');
-    } else if (/^(0x)?[0-9a-fA-F]{40}$/.test(trimmed) || /^[139][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(trimmed)) {
-      setType('wallet');
-    } else if (trimmed.includes(' ') && trimmed.length > 3) {
-      setType('name');
-    } else if (trimmed.length > 2) {
-      setType('username');
-    }
-  }, [value]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,15 +46,58 @@ export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
 
       <div className="flex flex-col md:flex-row gap-3">
         {/* Value Input */}
-        <div className="flex-1">
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono placeholder:text-slate-600"
-            placeholder={t('intake_form.placeholder')}
-            required
-          />
+        <div className="flex-grow flex gap-2 items-center">
+          {type === 'photo' ? (
+            <div className="flex gap-2 w-full items-center">
+              <input
+                type="text"
+                value={(() => {
+                  if (value.startsWith('http://') || value.startsWith('https://')) {
+                    return value;
+                  }
+                  if (value.includes('/')) {
+                    return value.split('/').pop() || value;
+                  }
+                  return value;
+                })()}
+                onChange={(e) => { const v = e.target.value; setValue(v); if (v.trim()) setType(detectType(v.trim())); }}
+                className="flex-grow bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono placeholder:text-slate-600"
+                placeholder={isUploading ? "Uploading file..." : "Paste face URL or select file →"}
+                disabled={isUploading}
+                required
+              />
+              <label className="cursor-pointer bg-slate-800 border border-slate-700 hover:border-indigo-500 text-slate-300 hover:text-white px-3 py-2 rounded text-xs transition-all flex items-center gap-1.5 flex-shrink-0 font-mono">
+                <span>SELECT FILE</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setIsUploading(true);
+                    try {
+                      const res = await uploadImage(file);
+                      setValue(res.filename);
+                    } catch (err) {
+                      console.error("Upload failed", err);
+                    } finally {
+                      setIsUploading(false);
+                    }
+                  }}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          ) : (
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => { const v = e.target.value; setValue(v); if (v.trim()) setType(detectType(v.trim())); }}
+              className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono placeholder:text-slate-600"
+              placeholder={t('intake_form.placeholder')}
+              required
+            />
+          )}
         </div>
 
         {/* Type Selector */}

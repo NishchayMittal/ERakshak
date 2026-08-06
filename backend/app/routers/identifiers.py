@@ -1,6 +1,9 @@
 import asyncio
+import os
+import uuid
+import shutil
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from sqlalchemy.orm import Session
 
 from app.audit import log_action
@@ -14,6 +17,34 @@ from app.worker import dispatch_rag_reindex
 
 
 router = APIRouter(prefix="/identifiers", tags=["identifiers"])
+
+
+@router.post("/upload")
+def upload_file(
+    file: UploadFile = File(...),
+    current_investigator: Investigator = Depends(get_current_investigator),
+):
+    # Ensure uploads directory exists
+    uploads_dir = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "resources", "uploads")
+    )
+    os.makedirs(uploads_dir, exist_ok=True)
+    
+    # Create a unique directory under uploads to prevent filename collisions
+    upload_id = uuid.uuid4().hex
+    unique_dir = os.path.join(uploads_dir, upload_id)
+    os.makedirs(unique_dir, exist_ok=True)
+    
+    # Format original filename (replace spaces with underscores)
+    orig_name = (file.filename or "upload.png").replace(" ", "_")
+    filepath = os.path.join(unique_dir, orig_name)
+    
+    # Save the file
+    with open(filepath, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+        
+    relative_path = f"{upload_id}/{orig_name}"
+    return {"filepath": filepath, "filename": relative_path}
 
 
 @router.post("/", response_model=IdentifierOut, status_code=status.HTTP_201_CREATED)

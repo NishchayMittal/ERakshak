@@ -162,8 +162,8 @@ class NameSearchConnector(BaseConnector):
             queried_words = [w.lower() for w in name.split() if len(w) > 2]
             profile_name_lower = gh_name.lower()
             if gh_name and queried_words:
-                if not any(w in profile_name_lower for w in queried_words):
-                    continue   # profile display name doesn't match — skip
+                if not all(w in profile_name_lower for w in queried_words):
+                    continue   # profile display name doesn't match all words — skip
 
             profile_url = f"https://github.com/{login}"
 
@@ -203,7 +203,7 @@ class NameSearchConnector(BaseConnector):
         return findings
 
     # ------------------------------------------------------------------ #
-    # DuckDuckGo Instant Answer — free, no auth, no rate limit            #
+    # DuckDuckGo HTML Search — free, no auth, no rate limit              #
     # ------------------------------------------------------------------ #
     async def _search_duckduckgo(
         self,
@@ -213,90 +213,170 @@ class NameSearchConnector(BaseConnector):
         employer: str,
     ) -> list[Finding]:
         """
-        Use DuckDuckGo Instant Answer API to find the person's social profiles.
+        Search DuckDuckGo HTML endpoint to find the person's social/bio profiles.
         This is completely free, no API key, no rate limit.
 
-        Strategy: build targeted queries like:
-          '{name} site:github.com'
-          '{name} site:linkedin.com'
-          '{name} site:twitter.com'
-        and extract profile links from the abstract or related topics.
+        Why the HTML endpoint (html.duckduckgo.com/html/) instead of the
+        Instant Answer API (api.duckduckgo.com)?
+          - The Instant Answer API only returns Wikipedia excerpts and
+            curated "instant answers" — it almost never returns social
+            profile links for real people.
+          - The HTML endpoint returns actual web search results, including
+            social profiles, Wikipedia pages, and bio sites.
+
+        Strategy: search for the person's name and look for known
+        social/bio platform links in the results.
         """
         import re
+        from urllib.parse import quote_plus
 
         # Build a contextual name query
-        context = ""
+        context_parts = []
         if employer:
-            context = f" {employer}"
-        elif location:
-            context = f" {location}"
+            context_parts.append(employer)
+        if location:
+            context_parts.append(location)
+
+        query = name
+        if context_parts:
+            query = f"{name} {' '.join(context_parts)}"
 
         findings: list[Finding] = []
         seen_urls: set[str] = set()
 
-        # Platforms to search via DDG (site: queries)
+        # Platforms to search for via DDG HTML search
         platforms = [
-            ("github.com", "github", "GitHub"),
-            ("linkedin.com/in", "linkedin", "LinkedIn"),
-            ("twitter.com", "twitter", "Twitter/X"),
+            # (domain_fragment, site_key, site_label, result_type)
+            ("github.com", "github", "GitHub", "github_profile"),
+            ("linkedin.com/in", "linkedin", "LinkedIn", "linkedin_profile"),
+            ("twitter.com", "twitter", "Twitter/X", "twitter_profile"),
+            ("instagram.com", "instagram", "Instagram", "instagram_profile"),
+            ("facebook.com", "facebook", "Facebook", "facebook_profile"),
+            ("youtube.com", "youtube", "YouTube", "youtube_profile"),
+            ("wikipedia.org", "wikipedia", "Wikipedia", "wikipedia_bio"),
         ]
 
-        for site_query, site_key, site_label in platforms:
-            query = f'{name}{context} site:{site_query}'
-            try:
-                resp = await client.get(
-                    "https://api.duckduckgo.com/",
-                    params={"q": query, "format": "json", "no_html": "1", "skip_disambig": "1"},
-                    headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0"},
-                )
-                if resp.status_code != 200:
+        try:
+            resp = await client.post(
+                "https://html.duckduckgo.com/html/",
+                data={"q": query},
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+            )
+            if resp.status_code != 200:
+                return []
+
+            html = resp.text
+
+            # Extract result URLs from DDG HTML response
+            # DDG wraps results in <a class="result__a" href="...">
+            # with redirect URLs that contain the actual target
+            all_urls: list[str] = []
+
+            # Pattern 1: Standard result links
+            for match in re.finditer(r'uddg=([^"&]+)', html):
+                from urllib.parse import unquote
+                decoded = unquote(match.group(1))
+                if decoded and decoded.startswith("http"):
+                    all_urls.append(decoded)
+
+            # Pattern 2: Direct links (fallback)
+            for match in re.finditer(r'class="result__a"[^>]*href="([^"]+)"', html):
+                url = match.group(1)
+                if url.startswith("http"):
+                    all_urls.append(url)
+
+            # Check each URL against known platforms
+            for url in all_urls:
+                url_lower = url.lower()
+                if url in seen_urls:
                     continue
 
-                data = resp.json()
-                
-                # Check AbstractURL — DDG's top result URL
-                abstract_url = data.get("AbstractURL", "")
-                abstract_text = data.get("Abstract", "")
-                
-                if abstract_url and site_query.split("/")[0] in abstract_url:
-                    if abstract_url not in seen_urls:
-                        seen_urls.add(abstract_url)
+                for domain_frag, site_key, site_label, result_type in platforms:
+                    if domain_frag in url_lower:
+                        seen_urls.add(url)
+
+                        # Determine confidence based on how specific the match is
+                        if site_key == "wikipedia":
+                            confidence = 0.85
+                        elif site_key in ("linkedin", "github"):
+                            confidence = 0.80
+                        else:
+                            confidence = 0.70
+
+                        # Check for profile path specificity and name relevance
+                        profile_path = self._extract_profile_path(url, site_key)
+                        if profile_path:
+                            path_clean = profile_path.lower().replace("-", "").replace("_", "")
+                            queried_words = [w.lower() for w in name.split() if len(w) > 2]
+                            
+                            if queried_words:
+                                # For Wikipedia, Instagram, LinkedIn, etc., the URL usually contains the name.
+                                # Require all meaningful words of the name to be present in the path to avoid false positives.
+                                if not all(w in path_clean for w in queried_words):
+                                    continue
+                                    
+                            # Has a username/profile path → more likely a real profile
+                            confidence = min(1.0, confidence + 0.10)
+
                         findings.append(Finding(
                             connector_name=self.name,
                             result_type="social_profile",
-                            result_value=f"{site_label} Profile: {abstract_url}",
-                            confidence=0.75,
+                            result_value=f"{site_label} Profile: {url}",
+                            confidence=confidence,
                             raw_payload={
                                 "site": site_key,
-                                "profile_url": abstract_url,
-                                "abstract": abstract_text[:200],
-                                "source": "duckduckgo_instant",
+                                "profile_url": url,
+                                "profile_path": profile_path or "",
+                                "source": "duckduckgo_html",
+                                "verified": False,
                             }
                         ))
+                        break  # Only add once per URL
 
-                # Also check RelatedTopics for profile links
-                for topic in data.get("RelatedTopics", [])[:3]:
-                    if not isinstance(topic, dict):
-                        continue
-                    first_url = topic.get("FirstURL", "")
-                    text = topic.get("Text", "")
-                    if first_url and site_query.split("/")[0] in first_url:
-                        if first_url not in seen_urls:
-                            seen_urls.add(first_url)
-                            findings.append(Finding(
-                                connector_name=self.name,
-                                result_type="social_profile",
-                                result_value=f"{site_label} Profile: {first_url}",
-                                confidence=0.65,
-                                raw_payload={
-                                    "site": site_key,
-                                    "profile_url": first_url,
-                                    "text": text[:200],
-                                    "source": "duckduckgo_related",
-                                }
-                            ))
-
-            except Exception:
-                continue
+        except Exception:
+            pass
 
         return findings
+
+    @staticmethod
+    def _extract_profile_path(url: str, site_key: str) -> str | None:
+        """Extract the username/profile path from a social media URL."""
+        from urllib.parse import urlparse
+
+        try:
+            parsed = urlparse(url)
+            path = parsed.path.strip("/")
+
+            if site_key == "github":
+                # github.com/username or github.com/username/
+                parts = path.split("/")
+                if parts and parts[0] and parts[0] not in ("login", "explore", "topics", "settings", "notifications"):
+                    return parts[0]
+
+            elif site_key == "linkedin":
+                # linkedin.com/in/username
+                if path.startswith("in/"):
+                    return path[3:].split("/")[0]
+
+            elif site_key == "instagram":
+                parts = path.split("/")
+                if parts[0] and parts[0] not in ("p", "explore", "explore", "accounts", "reel"):
+                    return parts[0]
+
+            elif site_key == "wikipedia":
+                # en.wikipedia.org/wiki/Page_Title
+                if "wiki/" in path:
+                    return path.split("wiki/")[-1].replace("_", " ")
+
+            elif site_key == "twitter":
+                parts = path.split("/")
+                if parts and parts[0] not in ("login", "explore", "home", "search", "notifications", "i"):
+                    return parts[0]
+
+        except Exception:
+            pass
+
+        return None

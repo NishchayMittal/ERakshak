@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { MessageCircle, Activity, BookOpen, FileText } from "lucide-react";
+import { useParams } from "react-router";
+import { MessageCircle, Activity, BookOpen, FileText, Scale } from "lucide-react";
 import GraphView from "../components/graph/GraphView";
 import GraphFilterBar from "../components/graph/GraphFilterBar";
 import GraphLegend from "../components/graph/GraphLegend";
@@ -10,6 +10,7 @@ import ReportPanel from "../components/cases/ReportPanel";
 import ExportMenu from "../components/export/ExportMenu";
 import DossierPanel from "../components/dossier/DossierPanel";
 import ChatPanel from "../components/cases/ChatPanel";
+import LegalPanel from "../components/legal/LegalPanel";
 import { useGraphStore } from "../state/graphStore";
 import { useUIStore } from "../state/uiStore";
 import { useCaseStore } from "../state/caseStore";
@@ -23,7 +24,7 @@ interface ChatMessage {
   timestamp: string;
 }
 
-const TABS = ["DOSSIER", "TIMELINE", "NOTES", "REPORT", "CHAT"] as const;
+const TABS = ["DOSSIER", "TIMELINE", "NOTES", "REPORT", "LEGAL", "CHAT"] as const;
 type Tab = (typeof TABS)[number];
 
 interface InvestigationPageProps {
@@ -40,19 +41,38 @@ export default function InvestigationPage({
   const params = useParams<{ caseId: string; entityId: string }>();
   const caseId = propCaseId || params.caseId;
 
-  const [localEntityId, setLocalEntityId] = React.useState<string | undefined>(
-    propEntityId,
-  );
+  const [prevPropEntityId, setPrevPropEntityId] = React.useState<string | undefined>(propEntityId);
+  const [localEntityId, setLocalEntityId] = React.useState<string | undefined>(propEntityId);
+
+  if (propEntityId !== prevPropEntityId) {
+    setPrevPropEntityId(propEntityId);
+    setLocalEntityId(propEntityId);
+  }
 
   // Chat state lifted up to persist across tab switches
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [prevCaseId, setPrevCaseId] = useState(caseId);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => [{
+    id: "welcome",
+    content: "Hello! I'm your AI assistant for the e-Rakshak OSINT platform. I can help you analyze your case evidence by answering questions about linked entities, discovered findings, breach data, and more. What would you like to know about your case?",
+    isUser: false,
+    timestamp: new Date().toISOString()
+  }]);
+
+  if (caseId !== prevCaseId) {
+    setPrevCaseId(caseId);
+    setChatMessages([{
+      id: "welcome",
+      content: "Hello! I'm your AI assistant for the e-Rakshak OSINT platform. I can help you analyze your case evidence by answering questions about linked entities, discovered findings, breach data, and more. What would you like to know about your case?",
+      isUser: false,
+      timestamp: new Date().toISOString()
+    }]);
+  }
   const [chatInputValue, setChatInputValue] = useState("");
   const [chatIsLoading, setChatIsLoading] = useState(false);
   const chatMessagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const welcomedCaseRef = useRef<string | undefined>(undefined);
-  const navigate = useNavigate();
-  const { loadEntityGraph, clearGraph } = useGraphStore();
+
+  const { loadEntityGraph, clearGraph, setSelectedEntityId } = useGraphStore();
   const { activeTab, setActiveTab } = useUIStore();
   const { selectCase } = useCaseStore();
 
@@ -63,6 +83,7 @@ export default function InvestigationPage({
     timeline: "TIMELINE",
     notes: "NOTES",
     report: "REPORT",
+    legal: "LEGAL",
     chat: "CHAT",
   };
   const activeDisplay = tabMap[activeTab] ?? "DOSSIER";
@@ -71,14 +92,11 @@ export default function InvestigationPage({
     TIMELINE: "timeline",
     NOTES: "notes",
     REPORT: "report",
+    LEGAL: "legal",
     CHAT: "chat",
   };
 
-  useEffect(() => {
-    if (propEntityId) {
-      setLocalEntityId(propEntityId);
-    }
-  }, [propEntityId]);
+  // Synchronized propEntityId changes directly in render
 
   const entityId = localEntityId || params.entityId;
 
@@ -90,19 +108,24 @@ export default function InvestigationPage({
       selectCase(caseId);
       loadEntityGraph(caseId, entityId);
     }
+  }, [caseId, entityId, loadEntityGraph, selectCase]);
+
+  // Clear graph only when leaving the page (unmount)
+  useEffect(() => {
     return () => {
       clearGraph();
     };
-  }, [caseId, entityId, loadEntityGraph, clearGraph, selectCase]);
+  }, [clearGraph]);
 
   const handleSelectNode = (selectedNodeId: string) => {
+    // Update the store directly — no URL navigation needed.
+    // Navigating would unmount/remount this page, wiping the evidencePack
+    // from the store before it can be re-fetched, causing the node to appear
+    // "unclicked" while loading. Directly setting selectedEntityId keeps the
+    // component mounted and DossierPanel shows instantly.
+    setSelectedEntityId(selectedNodeId);
     if (onSelectNode) {
       onSelectNode(selectedNodeId);
-      setLocalEntityId(selectedNodeId);
-    } else if (caseId) {
-      navigate(
-        `/cases/${caseId}/entities/${encodeURIComponent(selectedNodeId)}`,
-      );
     }
   };
 
@@ -134,7 +157,7 @@ export default function InvestigationPage({
     } catch (err) {
       console.error(err);
       // Use toast from uiStore if available, otherwise console error only
-      const showToast = (useUIStore.getState() as any)?.showToast;
+      const showToast = (useUIStore.getState() as { showToast?: (msg: string, type?: 'success' | 'error' | 'info') => void }).showToast;
       if (showToast) {
         showToast("Failed to get AI response", "error");
       }
@@ -165,32 +188,7 @@ export default function InvestigationPage({
     chatMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
 
-  // Welcome message for chat (only shown once when chat first loads)
-  // Guards the welcome message so it's only ever injected once per case,
-  // instead of being re-derived from chatMessages.length on every render.
-
-  // Welcome message for chat (only shown once per case)
-  useEffect(() => {
-    if (!caseId) return;
-    if (welcomedCaseRef.current === caseId) return;
-
-    if (chatMessages.length > 0) {
-      // Chat already has messages (e.g. loaded from history) — don't inject.
-      welcomedCaseRef.current = caseId;
-      return;
-    }
-
-    welcomedCaseRef.current = caseId;
-    const welcomeMessage: ChatMessage = {
-      id: "welcome",
-      content:
-        "Hello! I'm your AI assistant for the e-Rakshak OSINT platform. I can help you analyze your case evidence by answering questions about linked entities, discovered findings, breach data, and more. What would you like to know about your case?",
-      isUser: false,
-      timestamp: new Date().toISOString(),
-    };
-    setChatMessages([welcomeMessage]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [caseId]);
+  // Scroll chat messages when updated
 
   // Focus textarea when chat tab is active
   useEffect(() => {
@@ -298,10 +296,11 @@ export default function InvestigationPage({
                 React.FC<React.SVGProps<SVGSVGElement>> & { size?: number }
               > = {
                 DOSSIER: MessageCircle,
-                TIMELINE: Activity, // Using Activity for timeline
+                TIMELINE: Activity,
                 NOTES: BookOpen,
                 REPORT: FileText,
-                CHAT: MessageCircle, // Using MessageCircle for chat
+                LEGAL: Scale,
+                CHAT: MessageCircle,
               };
 
               const IconComponent = tabIcons[tab];
@@ -309,7 +308,7 @@ export default function InvestigationPage({
               return (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(reverseTabMap[tab] as any)}
+                  onClick={() => setActiveTab(reverseTabMap[tab] as 'graph' | 'timeline' | 'notes' | 'report' | 'legal' | 'chat')}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -433,6 +432,20 @@ export default function InvestigationPage({
                   textareaRef={textareaRef}
                 />
               )}
+            </div>
+
+            {/* Legal Section Mapping Panel */}
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                display: activeDisplay === "LEGAL" && caseId ? "block" : "none",
+              }}
+            >
+              {caseId && <LegalPanel caseId={caseId} />}
             </div>
           </div>
         </div>

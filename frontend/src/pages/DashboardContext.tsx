@@ -1,4 +1,8 @@
 import React, { createContext, useContext } from 'react';
+import type { GraphData } from '../types/graph';
+import type { CaseSummary } from '../types/case';
+import type { PendingApproval } from './CaseDashboardPage';
+import type { Investigator } from '../hooks/useAuth';
 
 export interface DashboardContextType {
   activeEntityPerCase: Record<string, string>;
@@ -27,8 +31,8 @@ export interface DashboardContextType {
   casePan: Record<string, { x: number; y: number }>;
   setCasePan: React.Dispatch<React.SetStateAction<Record<string, { x: number; y: number }>>>;
   
-  graphDataPerCase: Record<string, any>;
-  graphData: any;
+  graphDataPerCase: Record<string, GraphData>;
+  graphData: GraphData | null;
   dossierSearchQuery: Record<string, string>;
   setDossierSearchQuery: React.Dispatch<React.SetStateAction<Record<string, string>>>;
   
@@ -48,12 +52,12 @@ export interface DashboardContextType {
   showProfilePassInput: boolean;
   setShowProfilePassInput: React.Dispatch<React.SetStateAction<boolean>>;
   
-  pendingApprovals: any[];
+  pendingApprovals: PendingApproval[];
   loadingPending: boolean;
   
   // User/Cases
-  cases: any[];
-  user: any;
+  cases: CaseSummary[];
+  user: Investigator | null;
 
   // Actions
   handleNodeDrag: (e: React.MouseEvent, caseId: string, nodeId: string) => void;
@@ -75,8 +79,10 @@ export interface DashboardContextType {
   handleCreateCase: () => void;
   handleDeleteCase: (e: React.MouseEvent, caseId: string, title: string) => void;
   
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setWindows: React.Dispatch<React.SetStateAction<any[]>>;
   closeWindow: (id: string) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   openWindow: (id: string, title: string, type: any, extraProps?: any) => void;
 }
 

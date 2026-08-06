@@ -6,8 +6,8 @@ interface UIState {
   setSidebarCollapsed: (collapsed: boolean) => void;
   disambiguationOpen: boolean;
   setDisambiguationOpen: (open: boolean) => void;
-  activeTab: 'graph' | 'timeline' | 'notes' | 'report';
-  setActiveTab: (tab: 'graph' | 'timeline' | 'notes' | 'report') => void;
+  activeTab: 'graph' | 'timeline' | 'notes' | 'report' | 'legal' | 'chat';
+  setActiveTab: (tab: 'graph' | 'timeline' | 'notes' | 'report' | 'legal' | 'chat') => void;
   toast: { message: string; type: 'success' | 'error' | 'info' } | null;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   clearToast: () => void;

@@ -1,28 +1,11 @@
 import React, { useState } from 'react';
-import { User, Shield, Award, Terminal, Lock, Edit2, Check, X } from 'lucide-react';
+import { User, Shield, Terminal, Lock, Edit2, Check, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useUIStore } from '../state/uiStore';
 import { updateInvestigatorProfile } from '../api/endpoints';
 
 // Audio click synth
-const playClickTone = () => {
-  try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(1200, ctx.currentTime);
-    osc.frequency.setValueAtTime(800, ctx.currentTime + 0.05);
-    gain.gain.setValueAtTime(0.04, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.1);
-  } catch (e) {}
-};
+const playClickTone = () => {};
 
 export default function ProfilePage() {
   const { user, setUser } = useAuth();
@@ -49,7 +32,7 @@ export default function ProfilePage() {
     if (!editedName.trim()) return;
     setUpdating(true);
     try {
-      const updated = await updateInvestigatorProfile(editedName.trim());
+      const updated = (await updateInvestigatorProfile(editedName.trim())) as { full_name?: string };
       setUser({
         ...user,
         name: updated.full_name || editedName.trim(),
@@ -82,7 +65,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, minHeight: 0, overflow: 'hidden', userSelect: 'none' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, flex: 1, minHeight: 0, overflowY: 'auto', userSelect: 'none' }}>
       
       {/* Header Panel */}
       <div className="hud-panel" style={{
@@ -112,7 +95,7 @@ export default function ProfilePage() {
       {/* Main Grid Content */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '320px 1fr',
+        gridTemplateColumns: 'min(320px, 100%) 1fr',
         gap: 16,
         flex: 1,
         minHeight: 0,
@@ -190,7 +173,7 @@ export default function ProfilePage() {
               </h2>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: '14px 20px', alignItems: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'min(150px, 40%) 1fr', gap: '14px 20px', alignItems: 'center' }}>
               <label style={{ fontFamily: 'var(--font-heading)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
                 INVESTIGATOR NAME:
               </label>

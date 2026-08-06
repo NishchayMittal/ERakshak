@@ -28,7 +28,8 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   selectedSources: [
     'whois', 'crt.sh', 'wayback', 'sherlock', 'breach_demo',
     'dns_resolver', 'github_commit_email', 'phone_lookup',
-    'wallet_lookup', 'face_matcher', 'breach_lookup'
+    'wallet_lookup', 'face_matcher', 'breach_lookup',
+    'wikipedia',
   ],
   timelineMaxTime: null,
   loading: false,
@@ -45,26 +46,28 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   setTimelineMaxTime: (val) => set({ timelineMaxTime: val }),
   setSelectedEntityId: (entityId) => set({ selectedEntityId: entityId }),
   loadEntityGraph: async (caseId, entityId) => {
-    set({ loading: true, selectedEntityId: entityId });
+    const currentSelected = get().selectedEntityId;
+    set({ loading: true });
     try {
       const [graph, evidence] = await Promise.all([
         getGraph(caseId, entityId),
         getEvidencePack(caseId),
       ]);
       
-      // Auto-resolve 'n1' or nonexistent entityId to the first available node in the graph
-      let resolvedEntityId = entityId;
+      // Auto-resolve 'n1' or nonexistent entityId to the first available node in the graph,
+      // but prioritize the currently selected entity if already set by user click.
+      let targetEntityId = currentSelected || entityId;
       if (graph && graph.nodes && graph.nodes.length > 0) {
-        const hasSelected = graph.nodes.some((n) => n.id === entityId);
-        if (!hasSelected || entityId === 'n1') {
-          resolvedEntityId = graph.nodes[0].id;
+        const hasTarget = graph.nodes.some((n) => n.id === targetEntityId);
+        if (!hasTarget || targetEntityId === 'n1') {
+          targetEntityId = graph.nodes[0].id;
         }
       }
 
       set({
         graphData: graph || { nodes: [], edges: [] },
         evidencePack: evidence || null,
-        selectedEntityId: resolvedEntityId,
+        selectedEntityId: targetEntityId,
       });
     } catch (err) {
       console.error('Failed to load entity graph data:', err);

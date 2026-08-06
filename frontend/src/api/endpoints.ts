@@ -462,6 +462,16 @@ export async function markNotificationRead(id: string): Promise<void> {
   await apiClient.post(`/cases/notifications/${id}/read`);
 }
 
+export async function markAllNotificationsRead(): Promise<void> {
+  if (isMockMode()) return;
+  await apiClient.post('/cases/notifications/read-all');
+}
+
+export async function clearAllNotifications(): Promise<void> {
+  if (isMockMode()) return;
+  await apiClient.delete('/cases/notifications/clear');
+}
+
 
 // ─── Watchlist & Alerts ───
 

@@ -30,6 +30,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
     activeEntityPerCase,
     setActiveEntityPerCase,
     nodePositionsPerCase,
+    setNodePositionsPerCase,
     caseSeedsInput,
     setCaseSeedsInput,
     casePendingSeeds,
@@ -37,7 +38,9 @@ export function CaseWindow({ win }: CaseWindowProps) {
     caseIngestLogs,
     caseReportNarrative,
     caseZoom,
+    setCaseZoom,
     casePan,
+    setCasePan,
     graphDataPerCase,
     graphData,
     dossierSearchQuery,
@@ -61,6 +64,261 @@ export function CaseWindow({ win }: CaseWindowProps) {
   const activeEntity = activeEntityPerCase[caseId] || 'n1';
   const zoom = caseZoom[caseId] || 1.0;
   const pan = casePan[caseId] || { x: 0, y: 0 };
+
+  // DOM refs to bypass React render cycle for 60fps zooming and panning
+  const graphGroupRef = React.useRef<SVGGElement | null>(null);
+  const currentZoomRef = React.useRef(zoom);
+  const currentPanRef = React.useRef(pan);
+  const debounceTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync ref values when prop values change from outside (e.g., initial load or manual selection)
+  React.useEffect(() => {
+    currentZoomRef.current = zoom;
+    currentPanRef.current = pan;
+    updateTransform();
+  }, [zoom, pan]);
+
+  const updateTransform = () => {
+    const gEl = graphGroupRef.current;
+    if (!gEl) return;
+    const z = currentZoomRef.current;
+    const p = currentPanRef.current;
+    gEl.setAttribute('transform', `translate(${350 * (1 - z) + p.x}, ${200 * (1 - z) + p.y}) scale(${z})`);
+  };
+
+  const debounceSaveState = () => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      setCaseZoom((prev: any) => {
+        if (prev[caseId] === currentZoomRef.current) return prev;
+        return { ...prev, [caseId]: currentZoomRef.current };
+      });
+      setCasePan((prev: any) => {
+        const prevVal = prev[caseId] || { x: 0, y: 0 };
+        if (prevVal.x === currentPanRef.current.x && prevVal.y === currentPanRef.current.y) return prev;
+        return { ...prev, [caseId]: currentPanRef.current };
+      });
+    }, 100);
+  };
+
+  // 1. High Performance Native Mouse Panning (Bypasses React renders during drag)
+  const handleLocalSvgMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0 && e.button !== 2) return;
+    const target = e.target as SVGElement;
+    if (e.button === 0 && target.tagName !== 'svg' && target.tagName !== 'rect') {
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const initPan = { ...currentPanRef.current };
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+
+      currentPanRef.current = {
+        x: initPan.x + dx,
+        y: initPan.y + dy
+      };
+      updateTransform();
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      
+      // Commit final pan to React context
+      setCasePan((prev: any) => ({
+        ...prev,
+        [caseId]: currentPanRef.current
+      }));
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
+  // Touch panning, zooming, and node dragging logic inside CaseWindow.tsx
+  const touchStartRef = React.useRef<{ x: number; y: number } | null>(null);
+  const touchStartPanRef = React.useRef<{ x: number; y: number } | null>(null);
+  const touchStartZoomRef = React.useRef<number | null>(null);
+  const touchStartDistRef = React.useRef<number | null>(null);
+  const activeTouchNodeRef = React.useRef<string | null>(null);
+  const touchStartNodePosRef = React.useRef<{ x: number; y: number } | null>(null);
+
+  const handleTouchStart = (e: TouchEvent) => {
+    const caseId = win.caseId;
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      const target = e.target as SVGElement;
+      
+      const nodeEl = target.closest('g.graph-node-group');
+      if (nodeEl) {
+        const nodeId = nodeEl.getAttribute('data-node-id');
+        if (nodeId) {
+          activeTouchNodeRef.current = nodeId;
+          const initPos = nodePositionsPerCase[caseId]?.[nodeId] || { x: 350, y: 200 };
+          touchStartNodePosRef.current = initPos;
+          touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+          e.stopPropagation();
+          return;
+        }
+      }
+      
+      touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+      touchStartPanRef.current = { ...currentPanRef.current };
+    } else if (e.touches.length === 2) {
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const dist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+      touchStartDistRef.current = dist;
+      touchStartZoomRef.current = currentZoomRef.current;
+      
+      touchStartRef.current = {
+        x: (touch1.clientX + touch2.clientX) / 2,
+        y: (touch1.clientY + touch2.clientY) / 2
+      };
+      touchStartPanRef.current = { ...currentPanRef.current };
+    }
+  };
+
+  const handleTouchMove = (e: TouchEvent) => {
+    // Prevent default viewport pan/zoom behavior to keep graph moves butter-smooth
+    e.preventDefault();
+    const caseId = win.caseId;
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      if (!touchStartRef.current) return;
+      
+      const dx = touch.clientX - touchStartRef.current.x;
+      const dy = touch.clientY - touchStartRef.current.y;
+      
+      if (activeTouchNodeRef.current && touchStartNodePosRef.current) {
+        const nodeId = activeTouchNodeRef.current;
+        const initPos = touchStartNodePosRef.current;
+        setNodePositionsPerCase((prev: any) => ({
+          ...prev,
+          [caseId]: {
+            ...(prev[caseId] || {}),
+            [nodeId]: {
+              x: initPos.x + dx / currentZoomRef.current,
+              y: initPos.y + dy / currentZoomRef.current
+            }
+          }
+        }));
+        e.stopPropagation();
+      } else if (touchStartPanRef.current) {
+        const initPan = touchStartPanRef.current;
+        currentPanRef.current = {
+          x: initPan.x + dx,
+          y: initPan.y + dy
+        };
+        updateTransform();
+      }
+    } else if (e.touches.length === 2) {
+      if (!touchStartDistRef.current || touchStartZoomRef.current === null || !touchStartRef.current || !touchStartPanRef.current) return;
+      
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      
+      const dist = Math.hypot(touch1.clientX - touch2.clientX, touch1.clientY - touch2.clientY);
+      const scale = dist / touchStartDistRef.current;
+      currentZoomRef.current = Math.min(3.0, Math.max(0.3, touchStartZoomRef.current * scale));
+      
+      const midX = (touch1.clientX + touch2.clientX) / 2;
+      const midY = (touch1.clientY + touch2.clientY) / 2;
+      const dx = midX - touchStartRef.current.x;
+      const dy = midY - touchStartRef.current.y;
+      const initPan = touchStartPanRef.current;
+      
+      currentPanRef.current = {
+        x: initPan.x + dx,
+        y: initPan.y + dy
+      };
+      updateTransform();
+    }
+  };
+
+  const handleTouchEnd = () => {
+    // Commit final touch scale/pan to React context
+    setCaseZoom((prev: any) => ({
+      ...prev,
+      [caseId]: currentZoomRef.current
+    }));
+    setCasePan((prev: any) => ({
+      ...prev,
+      [caseId]: currentPanRef.current
+    }));
+
+    touchStartRef.current = null;
+    touchStartPanRef.current = null;
+    touchStartDistRef.current = null;
+    touchStartZoomRef.current = null;
+    activeTouchNodeRef.current = null;
+    touchStartNodePosRef.current = null;
+  };
+
+  // 2. High Performance Native Wheel Zoom and Touch Gestures (using callback ref for conditional mounting support)
+  const svgCleanupRef = React.useRef<(() => void) | null>(null);
+  const svgRef = React.useCallback((node: SVGSVGElement | null) => {
+    if (svgCleanupRef.current) {
+      svgCleanupRef.current();
+      svgCleanupRef.current = null;
+    }
+
+    if (node) {
+      const handleNativeWheel = (e: WheelEvent) => {
+        e.preventDefault();
+        
+        const delta = e.deltaY;
+        let factor = 0.0025;
+        if (e.ctrlKey) {
+          factor = 0.015; // Pinch-to-zoom is highly sensitive
+        }
+        
+        if (Math.abs(delta) < 1.0 && !e.ctrlKey) return;
+
+        const scaleFactor = Math.exp(-delta * factor);
+        const nextZoom = Math.min(3.0, Math.max(0.3, currentZoomRef.current * scaleFactor));
+
+        if (Math.abs(currentZoomRef.current - nextZoom) < 0.002) return;
+
+        currentZoomRef.current = nextZoom;
+        updateTransform();
+        debounceSaveState();
+      };
+
+      const handleNativeTouchStart = (e: TouchEvent) => {
+        handleTouchStart(e);
+      };
+
+      const handleNativeTouchMove = (e: TouchEvent) => {
+        handleTouchMove(e);
+      };
+
+      const handleNativeTouchEnd = (e: TouchEvent) => {
+        handleTouchEnd();
+      };
+
+      node.addEventListener('wheel', handleNativeWheel, { passive: false });
+      node.addEventListener('touchstart', handleNativeTouchStart, { passive: true });
+      node.addEventListener('touchmove', handleNativeTouchMove, { passive: false });
+      node.addEventListener('touchend', handleNativeTouchEnd, { passive: true });
+
+      svgCleanupRef.current = () => {
+        node.removeEventListener('wheel', handleNativeWheel);
+        node.removeEventListener('touchstart', handleNativeTouchStart);
+        node.removeEventListener('touchmove', handleNativeTouchMove);
+        node.removeEventListener('touchend', handleNativeTouchEnd);
+      };
+    }
+  }, [caseId, setCaseZoom, setCasePan]);
+
+
   
   const { evidencePack } = useGraphStore();
 
@@ -459,9 +717,9 @@ export function CaseWindow({ win }: CaseWindowProps) {
 
                               return (
                                 <svg
+                                  ref={svgRef}
                                   className="w-full h-full cursor-grab active:cursor-grabbing"
-                                  onWheel={(e) => handleZoom(e, caseId)}
-                                  onMouseDown={(e) => handleSvgMouseDown(e, caseId)}
+                                  onMouseDown={handleLocalSvgMouseDown}
                                   onContextMenu={(e) => e.preventDefault()}
                                 >
                                   <defs>
@@ -474,7 +732,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                     </pattern>
                                   </defs>
                                   <rect width="100%" height="100%" fill={`url(#matrix-grid-${caseId})`} />
-                                  <g transform={`translate(${350 * (1 - zoom) + pan.x}, ${200 * (1 - zoom) + pan.y}) scale(${zoom})`}>
+                                  <g ref={graphGroupRef} transform={`translate(${350 * (1 - zoom) + pan.x}, ${200 * (1 - zoom) + pan.y}) scale(${zoom})`}>
                                     {/* Draw edges */}
                                     {caseGraph.edges && caseGraph.edges.map((e: GraphEdge, idx: number) => {
                                       const posSource = nodePositionsPerCase[caseId]?.[e.source] || { x: 200, y: 150 };
@@ -516,6 +774,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                       return (
                                         <g
                                           key={n.id}
+                                          data-node-id={n.id}
                                           onMouseDown={(e) => handleNodeDrag(e, caseId, n.id)}
                                           onClick={() => {
                                             setActiveEntityPerCase((prev: Record<string, string>) => ({
@@ -528,7 +787,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                             loadGraphForCase(caseId, n.id);
                                             setWindows((prev: WindowItem[]) => prev.map((w) => w.id === `workspace-${caseId}` ? { ...w, activeTab: 'dossier' } : w));
                                           }}
-                                          className="cursor-pointer select-none"
+                                          className="graph-node-group cursor-pointer select-none"
                                         >
                                           <circle
                                             cx={pos.x}

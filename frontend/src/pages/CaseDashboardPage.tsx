@@ -251,23 +251,45 @@ export default function CaseDashboardPage() {
   };
 
 
-  const handleZoom = (e: React.WheelEvent, caseId: string) => {
-    // Zoom around center point of canvas (350, 200) with increased speed
-    const zoomIntensity = 0.15;
+  const handleZoom = (e: any, caseId: string) => {
     const currentZoom = caseZoom[caseId] || 1.0;
-    const nextZoom = e.deltaY < 0
-      ? Math.min(3.0, currentZoom + zoomIntensity)
-      : Math.max(0.3, currentZoom - zoomIntensity);
+    
+    // Differentiate between pinch-to-zoom (ctrlKey) and normal mouse scrolls
+    let factor = 0.002;
+    if (e.ctrlKey) {
+      factor = 0.02; // Boost sensitivity for pinch gestures
+    }
+    
+    const delta = e.deltaY;
+    // Suppress tiny trackpad drift scrolling to minimize event flooding
+    if (Math.abs(delta) < 1.5 && !e.ctrlKey) return;
+    
+    const scaleFactor = Math.exp(-delta * factor);
+    const nextZoom = Math.min(3.0, Math.max(0.3, currentZoom * scaleFactor));
+    
+    // Avoid triggering heavy DOM updates for negligible scale changes
+    if (Math.abs(currentZoom - nextZoom) < 0.01) return;
 
-    setCaseZoom(prev => ({
-      ...prev,
-      [caseId]: nextZoom
-    }));
+    setCaseZoom(prev => {
+      const prevVal = prev[caseId] || 1.0;
+      if (Math.abs(prevVal - nextZoom) < 0.01) return prev;
+      return {
+        ...prev,
+        [caseId]: nextZoom
+      };
+    });
   };
 
   const handleSvgMouseDown = (e: React.MouseEvent, caseId: string) => {
-    // Pan only on right click (button 2)
-    if (e.button !== 2) return;
+    // Pan on left click (button 0) or right click (button 2)
+    if (e.button !== 0 && e.button !== 2) return;
+
+    // For left-click, only pan if clicked directly on background
+    const target = e.target as SVGElement;
+    if (e.button === 0 && target.tagName !== 'svg' && target.tagName !== 'rect') {
+      return;
+    }
+
     e.preventDefault();
     e.stopPropagation();
 
@@ -1243,7 +1265,7 @@ export default function CaseDashboardPage() {
       <div className="absolute inset-0 pointer-events-none bg-radial-vignette mix-blend-overlay opacity-30 z-50" />
 
       {/* Top Menu Bar */}
-      <div className="absolute top-0 left-0 right-0 h-8 bg-black/60 backdrop-blur-md border-b border-[#39ff14]/15 flex items-center justify-between px-2 sm:px-4 z-[999] text-[10px] overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 h-8 bg-black/60 backdrop-blur-md border-b border-[#39ff14]/15 flex items-center justify-between px-2 sm:px-4 z-[999] text-[10px]">
         <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink-0">
           <span className="font-bold tracking-wider text-[#39ff14] flex items-center gap-1.5 animate-pulse whitespace-nowrap">
             <Shield size={12} />
@@ -1626,7 +1648,7 @@ export default function CaseDashboardPage() {
       )}
 
       {/* Floating System Dock (Taskbar) */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 h-14 bg-[#080d16]/75 border border-white/10 backdrop-blur-xl rounded-2xl flex items-center px-2 sm:px-4 gap-2 sm:gap-3 z-[999] shadow-2xl max-w-[calc(100vw-2rem)] overflow-x-auto">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 h-14 bg-[#080d16]/75 border border-white/10 backdrop-blur-xl rounded-2xl flex items-center px-2 sm:px-4 gap-2 sm:gap-3 z-[999] shadow-2xl max-w-[calc(100vw-2rem)]">
         <button
           onClick={handleCreateCase}
           title={t('dashboard.create_case')}
@@ -1677,6 +1699,7 @@ export default function CaseDashboardPage() {
                 e.preventDefault();
                 setDockContextMenu({ x: e.clientX, y: e.clientY - 50, windowId: w.id, title: w.title });
               }}
+              title={w.title}
               className={`px-3 h-10 rounded-xl transition-all flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider ${isOpen ? 'bg-[#39ff14]/10 border border-[#39ff14]/30 text-[#39ff14]' : 'bg-white/5 border border-white/5 text-gray-500 hover:text-white'}`}
             >
               <div className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-[#39ff14] animate-pulse' : 'bg-gray-600'}`} />

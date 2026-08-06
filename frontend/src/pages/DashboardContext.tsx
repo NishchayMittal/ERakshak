@@ -61,7 +61,7 @@ export interface DashboardContextType {
 
   // Actions
   handleNodeDrag: (e: React.MouseEvent, caseId: string, nodeId: string) => void;
-  handleZoom: (e: React.WheelEvent, caseId: string) => void;
+  handleZoom: (e: any, caseId: string) => void;
   handleSvgMouseDown: (e: React.MouseEvent, caseId: string) => void;
   addCaseSeed: (caseId: string) => void;
   removeCaseSeed: (caseId: string, idx: number) => void;

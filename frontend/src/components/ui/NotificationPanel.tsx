@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, CheckCircle2, Circle } from 'lucide-react';
-import { getNotifications, markNotificationRead } from '../../api/endpoints';
+import { getNotifications, markNotificationRead, markAllNotificationsRead, clearAllNotifications } from '../../api/endpoints';
 import type { NotificationData } from '../../api/endpoints';
 import { useTranslation } from 'react-i18next';
 import { useTransliterate } from './Transliterate';
@@ -10,6 +10,7 @@ export function NotificationPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const { t } = useTranslation();
   const transliterate = useTransliterate();
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
   const fetchNotifications = async () => {
     try {
@@ -22,10 +23,27 @@ export function NotificationPanel() {
 
   useEffect(() => {
     fetchNotifications();
-    // Poll every 60 seconds
     const interval = setInterval(fetchNotifications, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isOpen]);
 
   const handleMarkRead = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -37,59 +55,92 @@ export function NotificationPanel() {
     }
   };
 
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllNotificationsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await clearAllNotifications();
+      setNotifications([]);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative font-mono">
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-400 hover:text-white transition-colors"
+        title={t('notifications.title', 'Notifications')}
+        className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center relative ${
+          isOpen 
+            ? 'text-[#39ff14] bg-white/5 border border-white/10' 
+            : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'
+        }`}
       >
         <Bell size={20} />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border border-[#0a0f18]"></span>
+          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-[#0a0f18]"></span>
         )}
       </button>
 
       {isOpen && (
-        <>
-          <div 
-            className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
-          />
-          <div className="absolute right-0 bottom-full mb-2 w-[min(320px,calc(100vw-2rem))] bg-[#111827] border border-gray-800 rounded-xl shadow-2xl overflow-hidden z-50">
-            <div className="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white">{t('notifications.title', 'Notifications')}</h3>
+        <div className="absolute right-0 bottom-full mb-2 w-[min(320px,calc(100vw-2rem))] bg-[#080d16]/95 border border-[#39ff14]/20 backdrop-blur-xl rounded-xl shadow-2xl overflow-hidden z-50">
+            <div className="px-4 py-3 border-b border-[#39ff14]/15 flex items-center justify-between font-mono">
+              <h3 className="text-xs font-bold text-[#39ff14] uppercase tracking-widest">{t('notifications.title', 'Notifications')}</h3>
               {unreadCount > 0 && (
-                <span className="text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">
+                <span className="text-[9px] bg-red-500/10 border border-red-500/35 text-red-400 px-2 py-0.5 rounded uppercase font-bold tracking-wider">
                   {unreadCount} {t('notifications.unread', 'unread')}
                 </span>
               )}
             </div>
             
-            <div className="max-h-96 overflow-y-auto">
+            <div className="px-4 py-2 bg-white/5 border-b border-[#39ff14]/10 flex justify-between gap-4 text-[9px] font-mono select-none">
+              <button 
+                onClick={handleMarkAllRead} 
+                className="text-gray-400 hover:text-[#39ff14] transition-colors uppercase tracking-wider font-bold"
+              >
+                ✓ {t('notifications.read_all', 'Read All')}
+              </button>
+              <button 
+                onClick={handleClearAll} 
+                className="text-gray-400 hover:text-red-400 transition-colors uppercase tracking-wider font-bold"
+              >
+                ✗ {t('notifications.clear_all', 'Clear All')}
+              </button>
+            </div>
+            
+            <div className="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
               {notifications.length === 0 ? (
-                <div className="p-4 text-center text-gray-500 text-sm">
+                <div className="p-4 text-center text-gray-500 text-xs font-mono uppercase tracking-wider">
                   {t('notifications.empty', 'No notifications yet.')}
                 </div>
               ) : (
-                <div className="divide-y divide-gray-800/50">
+                <div className="divide-y divide-[#39ff14]/10">
                   {notifications.map(n => (
                     <div 
                       key={n.id} 
-                      className={`p-4 flex gap-3 hover:bg-white/5 transition-colors ${!n.is_read ? 'bg-[#39ff14]/5' : ''}`}
+                      className={`p-3.5 flex gap-3 hover:bg-[#39ff14]/5 transition-colors ${!n.is_read ? 'bg-[#39ff14]/5' : ''}`}
                     >
                       <button 
                         onClick={(e) => handleMarkRead(n.id, e)}
-                        className="mt-1 flex-shrink-0 text-gray-500 hover:text-[#39ff14] transition-colors"
+                        className="mt-0.5 flex-shrink-0 text-gray-500 hover:text-[#39ff14] transition-colors"
                       >
-                        {n.is_read ? <CheckCircle2 size={16} /> : <Circle size={16} className="text-[#39ff14]" />}
+                        {n.is_read ? <CheckCircle2 size={14} className="text-[#39ff14]/60" /> : <Circle size={14} className="text-[#39ff14]" />}
                       </button>
-                      <div>
-                        <p className={`text-sm ${!n.is_read ? 'text-gray-200' : 'text-gray-400'}`}>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-[10px] font-mono leading-relaxed break-words ${!n.is_read ? 'text-gray-200' : 'text-gray-400'}`}>
                           {transliterate(n.message)}
                         </p>
-                        <span className="text-xs text-gray-500 mt-1 block">
+                        <span className="text-[8px] font-mono text-gray-500 mt-1 block tracking-wider">
                           {new Date(n.created_at).toLocaleString()}
                         </span>
                       </div>
@@ -99,7 +150,6 @@ export function NotificationPanel() {
               )}
             </div>
           </div>
-        </>
       )}
     </div>
   );

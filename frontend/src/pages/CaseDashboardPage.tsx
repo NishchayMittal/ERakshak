@@ -1608,6 +1608,27 @@ export default function CaseDashboardPage() {
         );
       })}
 
+      {/* On mobile: open window task buttons float ABOVE the dock in their own row */}
+      {isMobile && windows.length > 0 && (
+        <div className="absolute bottom-20 left-0 right-0 flex items-center justify-center px-3 z-[998]">
+          <div className="flex gap-2 overflow-x-auto max-w-full pb-1" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+            {windows.map(w => {
+              const isOpen = !w.isMinimized;
+              return (
+                <button
+                  key={`task-mobile-${w.id}`}
+                  onClick={() => toggleMinimize(w.id)}
+                  className={`flex-shrink-0 px-3 h-8 rounded-xl transition-all flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-wider ${isOpen ? 'bg-[#39ff14]/10 border border-[#39ff14]/30 text-[#39ff14]' : 'bg-white/5 border border-white/5 text-gray-500'}`}
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isOpen ? 'bg-[#39ff14] animate-pulse' : 'bg-gray-600'}`} />
+                  <span className="max-w-[80px] truncate"><Transliterate>{w.title.replace('Case Workspace: ', '').replace('Case Analysis: ', '')}</Transliterate></span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Floating System Dock (Taskbar) */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 h-14 bg-[#080d16]/75 border border-white/10 backdrop-blur-xl rounded-2xl flex items-center px-2 sm:px-4 gap-2 sm:gap-3 z-[999] shadow-2xl max-w-[calc(100vw-2rem)] overflow-x-auto">
         <button
@@ -1655,10 +1676,10 @@ export default function CaseDashboardPage() {
 
         <NotificationPanel />
 
-        <div className="h-6 w-[1px] bg-white/10" />
+        {/* On desktop: window task buttons stay inline in the dock */}
+        {!isMobile && windows.length > 0 && <div className="h-6 w-[1px] bg-white/10" />}
 
-        {/* Minimized / Active Window Task list */}
-        {windows.map(w => {
+        {!isMobile && windows.map(w => {
           const isOpen = !w.isMinimized;
           return (
             <button
@@ -1676,7 +1697,7 @@ export default function CaseDashboardPage() {
           );
         })}
 
-        {windows.length > 0 && <div className="h-6 w-[1px] bg-white/10" />}
+        {!isMobile && windows.length > 0 && <div className="h-6 w-[1px] bg-white/10" />}
 
         {/* Disconnect */}
         <button

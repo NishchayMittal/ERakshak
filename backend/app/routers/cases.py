@@ -329,7 +329,7 @@ def update_case(
         db.commit()
         db.refresh(case)
         log_action(db, "case.update", investigator_id=current_investigator.id, case_id=case.id, detail=updated_fields)
-        dispatch_rag_reindex(case.id, current_investigator.id)
+
 
     return case
 
@@ -448,7 +448,7 @@ async def submit_case_identifiers(
     is_ambiguous = any(item.type == "name" for item in payload.identifiers)
     fields_needed = ["city", "age", "employer"] if is_ambiguous else []
 
-    dispatch_rag_reindex(case_id, current_investigator.id)
+
 
     return {
         "ok": True,
@@ -676,7 +676,7 @@ def create_case_note(
     db.add(note)
     db.commit()
     db.refresh(note)
-    dispatch_rag_reindex(case_id, current_investigator.id)
+
 
     return {
         "id": note.id,
@@ -720,7 +720,7 @@ def submit_link_feedback(
 
     # Trigger model retraining in background thread (P2's implementation)
     trigger_background_retrain(db)
-    dispatch_rag_reindex(case_id, current_investigator.id)
+
 
     return feedback
 

@@ -719,7 +719,7 @@ export default function PortalPage() {
           textShadow: '0 0 10px rgba(57,255,20,0.5)',
           whiteSpace: 'nowrap'
         }}>
-          &gt; INITIALIZING OSINT CORE // ORION PROTOCOLS ACTIVE...
+          &gt; {t('portal.initializing')}
         </div>
       </div>
 
@@ -814,8 +814,8 @@ export default function PortalPage() {
           innerStyle={{ alignItems: 'center', gap: '20px', padding: 'clamp(16px, 4vw, 24px) clamp(16px, 6vw, 48px)' }}
         >
           <div style={{ textAlign: 'center' }}>
-            <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 600, letterSpacing: '0.15em', color: 'var(--text-primary)' }}>SYSTEM READY</h2>
-            <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.1em' }}>Secure connection established.</p>
+            <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 600, letterSpacing: '0.15em', color: 'var(--text-primary)' }}>{t('portal.system_ready')}</h2>
+            <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.1em' }}>{t('portal.secure_connection')}</p>
           </div>
           <CyberButton
             onClick={handleEnterClick}

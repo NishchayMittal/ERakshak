@@ -8,4 +8,14 @@ export const apiClient = axios.create({
   timeout: 45000,
 });
 
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      window.dispatchEvent(new Event('auth:unauthorized'));
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const isMockMode = () => USE_MOCKS;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Folder, Search, X } from 'lucide-react';
+import { Folder, Search, X, RefreshCw } from 'lucide-react';
 import { useDashboardContext } from '../../pages/DashboardContext';
 import { useTranslation } from 'react-i18next';
 import { Transliterate } from '../ui/Transliterate';
@@ -13,7 +13,8 @@ export function ExplorerWindow({ win }: { win: { id: string } }) {
     cases, 
     closeWindow, 
     openWindow, 
-    handleDeleteCase 
+    handleDeleteCase,
+    caseCreating
   } = useDashboardContext();
   const { t } = useTranslation();
 
@@ -23,8 +24,10 @@ export function ExplorerWindow({ win }: { win: { id: string } }) {
         <span className="text-[10px] font-bold text-gray-300 uppercase">{t('explorer.file_path')}</span>
         <button
           onClick={handleCreateCase}
-          className="text-[8px] font-bold border border-[#39ff14]/50 hover:bg-[#39ff14]/10 text-[#39ff14] px-2 py-1 uppercase"
+          disabled={caseCreating}
+          className="text-[8px] font-bold border border-[#39ff14]/50 hover:bg-[#39ff14]/10 text-[#39ff14] px-2 py-1 uppercase flex items-center gap-1 disabled:opacity-50 disabled:pointer-events-none"
         >
+          {caseCreating && <RefreshCw size={8} className="animate-spin" />}
           {t('explorer.init_file')}
         </button>
       </div>

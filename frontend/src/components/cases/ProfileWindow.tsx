@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDashboardContext } from '../../pages/DashboardContext';
+import { RefreshCw } from 'lucide-react';
 
 export function ProfileWindow() {
   const { 
@@ -16,7 +17,8 @@ export function ProfileWindow() {
     pendingApprovals,
     loadingPending,
     handleApprove,
-    handleReject
+    handleReject,
+    approvingIds
   } = useDashboardContext();
   const { t } = useTranslation();
 
@@ -88,8 +90,9 @@ export function ProfileWindow() {
         <button
           type="submit"
           disabled={profileUpdating}
-          className="w-full bg-[#a855f7] hover:bg-[#a855f7]/85 text-black disabled:bg-white/5 disabled:text-gray-600 text-[9px] font-bold py-2 uppercase text-center mt-2"
+          className="w-full bg-[#a855f7] hover:bg-[#a855f7]/85 text-black disabled:bg-white/5 disabled:text-gray-600 text-[9px] font-bold py-2 uppercase text-center mt-2 flex items-center justify-center gap-1.5"
         >
+          {profileUpdating && <RefreshCw size={9} className="animate-spin" />}
           {profileUpdating ? t('profile.updating') : t('profile.update_config')}
         </button>
       </form>
@@ -117,15 +120,19 @@ export function ProfileWindow() {
                     <button
                       type="button"
                       onClick={() => handleApprove(req.id, req.full_name)}
-                      className="px-2 py-1 bg-[#39ff14]/15 border border-[#39ff14] hover:bg-[#39ff14]/25 text-[#39ff14] text-[8px] font-bold uppercase transition-all"
+                      disabled={!!approvingIds[req.id]}
+                      className="px-2 py-1 bg-[#39ff14]/15 border border-[#39ff14] hover:bg-[#39ff14]/25 text-[#39ff14] text-[8px] font-bold uppercase transition-all flex items-center gap-1 disabled:opacity-50 disabled:pointer-events-none"
                     >
+                      {approvingIds[req.id] === 'approve' && <RefreshCw size={8} className="animate-spin" />}
                       {t('profile.approve')}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleReject(req.id, req.full_name)}
-                      className="px-2 py-1 bg-red-500/10 border border-red-500 hover:bg-red-500/20 text-red-400 text-[8px] font-bold uppercase transition-all"
+                      disabled={!!approvingIds[req.id]}
+                      className="px-2 py-1 bg-red-500/10 border border-red-500 hover:bg-red-500/20 text-red-400 text-[8px] font-bold uppercase transition-all flex items-center gap-1 disabled:opacity-50 disabled:pointer-events-none"
                     >
+                      {approvingIds[req.id] === 'reject' && <RefreshCw size={8} className="animate-spin" />}
                       {t('profile.deny')}
                     </button>
                   </div>

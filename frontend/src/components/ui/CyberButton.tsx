@@ -32,7 +32,7 @@ export const CyberButton: React.FC<CyberButtonProps> = ({
 
   return (
     <div 
-      className={`cyber-button-container ${containerClassName}`} 
+      className={`cyber-button-container ${containerClassName} ${props.disabled ? 'opacity-50 pointer-events-none' : ''}`} 
       style={containerStyle}
     >
       <button 

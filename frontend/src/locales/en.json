@@ -4,7 +4,8 @@
     "subtitle": "Global Cyber Threat Intelligence Matrix",
     "system_ready": "SYSTEM READY",
     "secure_connection": "Secure connection established.",
-    "enter_dashboard": "ENTER DASHBOARD"
+    "enter_dashboard": "ENTER DASHBOARD",
+    "initializing": "INITIALIZING OSINT CORE // ORION PROTOCOLS ACTIVE..."
   },
   "login": {
     "brand": "ORION",
@@ -29,7 +30,20 @@
     "signup_failed": "REGISTRATION REQUEST FAILED",
     "access_granted": "ACCESS GRANTED // AGENT {{username}}",
     "invalid_credentials": "INVALID BADGE ID OR SECURITY PASSPHRASE",
-    "invalid_fallback": "INVALID CREDENTIALS"
+    "invalid_fallback": "INVALID CREDENTIALS",
+    "boot_enclave": "SECURE ENCLAVE READY...",
+    "boot_tls": "VERIFYING TLS CERTIFICATE...",
+    "boot_identity": "LOADING IDENTITY MATRIX...",
+    "boot_awaiting": "AWAITING INVESTIGATOR AUTH...",
+    "go_to_home": "← GO TO HOME",
+    "req_chars": "8+ CHARS",
+    "req_uppercase": "UPPERCASE",
+    "req_lowercase": "LOWERCASE",
+    "req_number": "NUMBER",
+    "req_special": "SPECIAL (!@#$)",
+    "server_error": "SERVER ERROR. PLEASE TRY AGAIN.",
+    "network_error": "NETWORK ERROR. SERVER MIGHT BE WAKING UP.",
+    "processing": "PROCESSING..."
   },
   "dashboard": {
     "console_title": "ORION HOLOGRAPHIC CONSOLE",
@@ -59,6 +73,10 @@
     "profile_title": "Investigator Credentials",
     "profile_tooltip": "Profile Panel",
     "logout_tooltip": "Disconnect Investigator Session",
+    "case_selected": "CASE SELECTED",
+    "cases_selected": "CASES SELECTED",
+    "archive_selected": "ARCHIVE SELECTED",
+    "clear_selection": "CLEAR SELECTION",
     "case_renamed": "CASE RENAMED",
     "rename_failed": "Failed to rename case",
     "case_deleted": "Case {{id}} deleted",
@@ -414,5 +432,12 @@
     "pipeline_dispatched": "PIPELINE DISPATCHED",
     "dispatch_crawl_pipeline": "DISPATCH CRAWL PIPELINE",
     "parsing_seeds": "PARSING SEEDS..."
+  },
+  "notifications": {
+    "title": "Notifications",
+    "unread": "unread",
+    "empty": "No notifications yet.",
+    "read_all": "Read All",
+    "clear_all": "Clear All"
   }
 }

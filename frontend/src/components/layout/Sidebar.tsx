@@ -161,14 +161,20 @@ export default function Sidebar() {
         )}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          title={sidebarCollapsed ? 'Expand' : 'Collapse'}
+          className="group relative"
           style={{
             background: 'none', border: '1px solid var(--struct-line)',
             color: 'var(--text-muted)', cursor: 'pointer',
             padding: '4px 5px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            position: 'relative',
           }}
         >
           {sidebarCollapsed ? Icons.expand : Icons.collapse}
+          {sidebarCollapsed && (
+            <div className="absolute left-full ml-3 px-2 py-1 bg-[#080d16]/95 border border-[#39ff14]/30 text-[#39ff14] text-[9px] font-mono font-bold tracking-widest uppercase rounded shadow-[0_0_10px_rgba(57,255,20,0.2)] opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-75 z-[9999] whitespace-nowrap">
+              EXPAND
+            </div>
+          )}
         </button>
       </div>
 
@@ -200,6 +206,7 @@ export default function Sidebar() {
                   useUIStore.setState({ activeTab: 'timeline' });
                 }
               }}
+              className="group"
               style={({ isActive }: { isActive: boolean }) => ({
                 display: 'flex',
                 alignItems: 'center',
@@ -226,6 +233,11 @@ export default function Sidebar() {
                 {Icons[item.key as keyof typeof Icons] as React.ReactNode}
               </span>
               {!sidebarCollapsed && <span>{item.label}</span>}
+              {sidebarCollapsed && (
+                <div className="absolute left-full ml-3 px-2 py-1 bg-[#080d16]/95 border border-[#39ff14]/30 text-[#39ff14] text-[9px] font-mono font-bold tracking-widest uppercase rounded shadow-[0_0_10px_rgba(57,255,20,0.2)] opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-75 z-[9999] whitespace-nowrap">
+                  {item.label}
+                </div>
+              )}
 
               {pendingApprovalsCount > 0 && (
                 <span
@@ -294,7 +306,7 @@ export default function Sidebar() {
                 {user.badgeNumber}
               </div>
             </div>
-             <button
+            <button
               onClick={() => setShowLogoutConfirm(true)}
               title="Disconnect"
               style={{

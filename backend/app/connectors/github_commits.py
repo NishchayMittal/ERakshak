@@ -1,6 +1,9 @@
+import logging
 import httpx
 from app.connectors.base import BaseConnector, Finding
 from app.models import IdentifierType
+
+logger = logging.getLogger(__name__)
 
 
 class GithubCommitEmailConnector(BaseConnector):
@@ -48,7 +51,9 @@ class GithubCommitEmailConnector(BaseConnector):
                     headers={"User-Agent": "e-Rakshak-OSINT/1.0"}
                 )
                 return res.status_code == 200
-        except Exception:
+        except Exception as e:
+
+            logger.error(f"Unexpected error: {e}", exc_info=True)
             return False
 
     async def run(self, identifier_value: str, metadata: dict | None = None) -> list[Finding]:
@@ -160,7 +165,9 @@ class GithubCommitEmailConnector(BaseConnector):
                     if seen_emails:
                         break
 
-        except Exception:
-            pass
+        except Exception as e:
+
+
+            logger.warning(f"Silenced exception: {e}", exc_info=True)
 
         return findings

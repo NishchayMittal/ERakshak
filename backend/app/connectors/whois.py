@@ -1,5 +1,8 @@
+import logging
 from app.connectors.base import BaseConnector, Finding
 from app.models import IdentifierType
+
+logger = logging.getLogger(__name__)
 
 # Roles that belong to the domain owner or technical operator — worth pivoting on
 RELEVANT_ROLES = {"registrant", "technical", "administrative", "billing"}
@@ -18,7 +21,9 @@ class WhoisConnector(BaseConnector):
             async with httpx.AsyncClient(timeout=3.0) as client:
                 res = await client.head("https://rdap.org/", follow_redirects=True)
                 return res.status_code in {200, 301, 302}
-        except Exception:
+        except Exception as e:
+
+            logger.error(f"Unexpected error: {e}", exc_info=True)
             return False
 
     async def run(self, identifier_value: str, metadata: dict | None = None) -> list[Finding]:
@@ -59,8 +64,9 @@ class WhoisConnector(BaseConnector):
                 import asyncio
                 loop = asyncio.get_event_loop()
                 raw_text = await loop.run_in_executor(None, get_whois)
-            except Exception:
-                pass
+            except Exception as e:
+
+                logger.warning(f"Silenced exception: {e}", exc_info=True)
             
             if raw_text:
                 findings = []

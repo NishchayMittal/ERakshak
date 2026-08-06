@@ -1,8 +1,11 @@
+import logging
 import httpx
 import re
 import urllib.parse
 from app.connectors.base import BaseConnector, Finding
 from app.models import IdentifierType
+
+logger = logging.getLogger(__name__)
 
 
 def generate_username_variants(username: str) -> list[str]:
@@ -165,7 +168,9 @@ class SocialProfilerConnector(BaseConnector):
                                         }
                                     )
                                 ]
-                except Exception:
+                except Exception as e:
+
+                    logger.error(f"Unexpected error: {e}", exc_info=True)
                     continue  # Try next variant
 
         # Fallback/Name search via Yahoo Search - use flexible matching
@@ -202,8 +207,9 @@ class SocialProfilerConnector(BaseConnector):
                                 }
                             )
                         ]
-        except Exception:
-            pass
+        except Exception as e:
+
+            logger.warning(f"Silenced exception: {e}", exc_info=True)
         return []
 
     async def _check_instagram(self, val: str) -> list[Finding]:
@@ -293,7 +299,9 @@ class SocialProfilerConnector(BaseConnector):
                                             }
                                         )
                                     ]
-                except Exception:
+                except Exception as e:
+
+                    logger.error(f"Unexpected error: {e}", exc_info=True)
                     continue  # Try next variant
 
         # Fallback/Name search via Yahoo Search - use flexible matching
@@ -341,8 +349,9 @@ class SocialProfilerConnector(BaseConnector):
                                             }
                                         )
                                     ]
-        except Exception:
-            pass
+        except Exception as e:
+
+            logger.warning(f"Silenced exception: {e}", exc_info=True)
         return []
 
     async def _check_linkedin(self, val: str) -> list[Finding]:
@@ -402,6 +411,7 @@ class SocialProfilerConnector(BaseConnector):
                                             }
                                         )
                                     ]
-        except Exception:
-            pass
+        except Exception as e:
+
+            logger.warning(f"Silenced exception: {e}", exc_info=True)
         return []

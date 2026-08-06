@@ -1,7 +1,10 @@
+import logging
 import dns.resolver
 import dns.exception
 from app.connectors.base import BaseConnector, Finding
 from app.models import IdentifierType
+
+logger = logging.getLogger(__name__)
 
 
 class DnsResolverConnector(BaseConnector):
@@ -61,7 +64,9 @@ class DnsResolverConnector(BaseConnector):
         try:
             dns.resolver.resolve("google.com", "A", lifetime=3)
             return True
-        except Exception:
+        except Exception as e:
+
+            logger.error(f"Unexpected error: {e}", exc_info=True)
             return False
 
     def _identify_mx_provider(self, mx_host: str) -> str | None:

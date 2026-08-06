@@ -17,6 +17,7 @@ from app.connectors.social_profiler import SocialProfilerConnector
 from app.connectors.wikipedia_lookup import WikipediaConnector
 from app.connectors.reverse_image import ReverseImageConnector
 from app.connectors.exif_extractor import ExifExtractorConnector
+from app.connectors.fuzzy_username import FuzzyUsernameConnector
 
 _registered = False
 
@@ -42,4 +43,5 @@ def register_all():
     registry.register(WikipediaConnector())
     registry.register(ReverseImageConnector())
     registry.register(ExifExtractorConnector())
+    registry.register(FuzzyUsernameConnector())
     _registered = True

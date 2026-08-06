@@ -1,3 +1,4 @@
+import logging
 """
 WikipediaConnector — Resolves a person's name to their Wikipedia page
 using the free, no-auth Wikipedia REST API.
@@ -26,6 +27,8 @@ import json
 
 from app.connectors.base import BaseConnector, Finding
 from app.models import IdentifierType
+
+logger = logging.getLogger(__name__)
 
 
 class WikipediaConnector(BaseConnector):
@@ -183,8 +186,10 @@ class WikipediaConnector(BaseConnector):
             if best_score >= 10:
                 return best_title
 
-        except Exception:
-            pass
+        except Exception as e:
+
+
+            logger.warning(f"Silenced exception: {e}", exc_info=True)
 
         return None
 
@@ -200,8 +205,9 @@ class WikipediaConnector(BaseConnector):
             resp = await client.get(url)
             if resp.status_code == 200:
                 return resp.json()
-        except Exception:
-            pass
+        except Exception as e:
+
+            logger.warning(f"Silenced exception: {e}", exc_info=True)
 
         return None
 

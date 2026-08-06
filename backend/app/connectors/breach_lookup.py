@@ -1,6 +1,9 @@
 import httpx
+import logging
 from app.connectors.base import BaseConnector, Finding
 from app.models import IdentifierType
+
+logger = logging.getLogger(__name__)
 
 
 class BreachLookupConnector(BaseConnector):
@@ -28,25 +31,17 @@ class BreachLookupConnector(BaseConnector):
                 res = await client.head("https://api.xposedornot.com/v1/breach-analytics", headers={"User-Agent": "e-Rakshak-OSINT/1.0"})
                 # The endpoint returns 405 or 400 on head/missing args, but server response shows API is alive
                 return res.status_code in {200, 400, 405}
-        except Exception:
+        except Exception as e:
+
+            logger.error(f"Unexpected error: {e}", exc_info=True)
             return False
 
     async def run(self, identifier_value: str, metadata: dict | None = None) -> list[Finding]:
         email = identifier_value.strip().lower()
-        # Determine domain for MX check
-        domain = ""
-        if "@" in email:
-            domain = email.split("@")[1]
-        mx_valid = self._has_mx_record(domain) if domain else False
+        domain = email.split("@")[1] if "@" in email else ""
+        
         # Base confidence
         base_confidence = 1.0
-        if domain:
-            if mx_valid:
-                # Slight boost for valid MX
-                base_confidence = min(1.0, base_confidence + 0.02)
-            else:
-                # Reduce confidence if no MX (but still possibly valid via A record)
-                base_confidence *= 0.9
         findings: list[Finding] = []
 
         try:
@@ -98,11 +93,12 @@ class BreachLookupConnector(BaseConnector):
                                 "description": details,
                                 "password_risk": password_risk,
                                 "exposed_records_count": records,
-                                "source": "xposedornot_analytics",
-                                "mx_valid": mx_valid
+                                "source": "xposedornot_analytics"
                             }
                         ))
-        except Exception:
-            pass
+        except httpx.RequestError as e:
+            logger.error(f"Network error in {self.name} for {email}: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error in {self.name} for {email}: {e}", exc_info=True)
 
         return findings

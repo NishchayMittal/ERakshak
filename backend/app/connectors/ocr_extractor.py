@@ -1,8 +1,11 @@
+import logging
 import os
 import httpx
 import base64
 from app.connectors.base import BaseConnector, Finding
 from app.models import IdentifierType
+
+logger = logging.getLogger(__name__)
 from groq import AsyncGroq
 
 class OcrExtractorConnector(BaseConnector):
@@ -21,7 +24,9 @@ class OcrExtractorConnector(BaseConnector):
                 # Guess mimetype
                 content_type = resp.headers.get("Content-Type", "image/jpeg")
                 b64_image = base64.b64encode(resp.content).decode("utf-8")
-        except Exception:
+        except Exception as e:
+
+            logger.error(f"Unexpected error: {e}", exc_info=True)
             return []
             
         groq_client = AsyncGroq(api_key=api_key)

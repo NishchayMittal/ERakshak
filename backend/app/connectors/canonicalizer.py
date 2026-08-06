@@ -1,9 +1,12 @@
+import logging
 import re
 from urllib.parse import urlparse
 from anyascii import anyascii
 
 from app.connectors.base import Finding
 from app.models import IdentifierType
+
+logger = logging.getLogger(__name__)
 from app.normalize import detect_type, normalize
 
 
@@ -21,8 +24,9 @@ def clean_domain(value: str) -> str:
         try:
             parsed = urlparse(val)
             val = parsed.netloc or parsed.path
-        except Exception:
-            pass
+        except Exception as e:
+
+            logger.warning(f"Silenced exception: {e}", exc_info=True)
     
     # Remove protocol prefix manually if urlparse didn't handle it
     val = re.sub(r'^https?://', '', val)
@@ -157,7 +161,9 @@ def is_public_ip(ip: str) -> bool:
         if parts[0] >= 224:
             return False
         return True
-    except Exception:
+    except Exception as e:
+
+        logger.error(f"Unexpected error: {e}", exc_info=True)
         return False
 
 

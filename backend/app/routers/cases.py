@@ -1047,9 +1047,9 @@ def get_case_geo(
 
         # 1. IP Geolocation (Exact)
         if f.connector_name == "ip_geoloc":
-            if "lat" in payload and "lon" in payload:
-                lat = float(payload["lat"])
-                lon = float(payload["lon"])
+            if "latitude" in payload and "longitude" in payload:
+                lat = float(payload["latitude"])
+                lon = float(payload["longitude"])
                 label = f"IP: {f.identifier.raw_value}"
         
         # 1b. EXIF Photo Geotag (Exact)
@@ -1070,7 +1070,7 @@ def get_case_geo(
                 
         # 2b. Domain TLD heuristics (for domains like google.com)
         elif f.connector_name in ["whois_rdap", "dns_resolver", "wayback_cdx"]:
-            domain = payload.get("domain", "")
+            domain = f.identifier.raw_value.lower()
             if domain:
                 if domain.endswith(".com") or domain.endswith(".net") or domain.endswith(".org"):
                     lat, lon = COUNTRY_COORDS["US"]
@@ -1117,8 +1117,9 @@ def get_case_geo(
                 if loc_key not in used_locations:
                     used_locations.add(loc_key)
                     break
-                lat += random.uniform(-3.0, 3.0)
-                lon += random.uniform(-3.0, 3.0)
+                # Increased jitter drastically so large text labels don't overlap
+                lat += random.uniform(-12.0, 12.0)
+                lon += random.uniform(-12.0, 12.0)
 
             nodes.append({
                 "id": str(f.id),
@@ -1130,23 +1131,7 @@ def get_case_geo(
 
     arcs = []
     
-    # If no nodes, generate mock nodes and arcs for visual demonstration
-    if len(nodes) == 0:
-        nodes = [
-            {"id": "mock1", "lat": 37.7749, "lng": -122.4194, "label": "Mock IP (SF)", "source": "ip_geoloc"},
-            {"id": "mock2", "lat": 55.7558, "lng": 37.6173, "label": "Mock Domain (RU)", "source": "whois_rdap"},
-            {"id": "mock3", "lat": 1.3521, "lng": 103.8198, "label": "Mock Server (SG)", "source": "dns_resolver"},
-            {"id": "mock4", "lat": -23.5505, "lng": -46.6333, "label": "Mock Endpoint (BR)", "source": "breach_lookup"},
-            {"id": "mock5", "lat": 64.1265, "lng": -21.8174, "label": "Mock Proxy (IS)", "source": "ip_geoloc"}
-        ]
-        arcs = [
-            {"startLat": 37.7749, "startLng": -122.4194, "endLat": 55.7558, "endLng": 37.6173, "label": "C2 Traffic"},
-            {"startLat": 55.7558, "startLng": 37.6173, "endLat": 1.3521, "endLng": 103.8198, "label": "Exfiltration"},
-            {"startLat": 1.3521, "startLng": 103.8198, "endLat": -23.5505, "endLng": -46.6333, "label": "Proxy Route"},
-            {"startLat": -23.5505, "startLng": -46.6333, "endLat": 64.1265, "endLng": -21.8174, "label": "Data Drop"},
-            {"startLat": 64.1265, "startLng": -21.8174, "endLat": 37.7749, "endLng": -122.4194, "label": "Callback"}
-        ]
-    elif len(nodes) > 1:
+    if len(nodes) > 1:
         # Generate simple daisy-chain arcs between real nodes for visualization
         for i in range(len(nodes) - 1):
             arcs.append({

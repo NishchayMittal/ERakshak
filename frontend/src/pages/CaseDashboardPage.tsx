@@ -1655,14 +1655,6 @@ export default function CaseDashboardPage() {
         </button>
 
         <button
-          onClick={() => openWindow('geo_map_window', t('dashboard.geo_title'), 'geo_map', { width: 900, height: 600 })}
-          title={t('dashboard.geo_tooltip')}
-          className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'geo_map_window') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
-        >
-          <Globe size={20} />
-        </button>
-
-        <button
           onClick={() => openWindow('profile_window', t('dashboard.profile_title'), 'profile')}
           title={t('dashboard.profile_tooltip')}
           className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'profile_window') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}

@@ -7,6 +7,7 @@ import { useGraphStore } from '../../state/graphStore';
 import { uploadImage, getIdentifiers, deleteIdentifier } from '../../api/endpoints';
 import ChatPanel from './ChatPanel';
 import LegalPanel from '../legal/LegalPanel';
+import { GeoMapWindow } from '../ui/GeoMapWindow';
 import type { GraphNode, GraphEdge } from '../../types/graph';
 import type { EvidenceIdentifier } from '../../types/evidence';
 
@@ -449,6 +450,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                       {[
                         { id: 'intake', label: t('case_window.tab_intake') },
                         { id: 'graph', label: t('case_window.tab_matrix') },
+                        { id: 'geo', label: 'GEO MAP' },
                         { id: 'dossier', label: t('case_window.tab_dossier') },
                         { id: 'legal', label: '⚖ LEGAL' },
                         { id: 'report', label: t('case_window.tab_report') },
@@ -1022,6 +1024,13 @@ export function CaseWindow({ win }: CaseWindowProps) {
                       {tab === 'legal' && (
                         <div className="flex flex-1 min-h-0 overflow-hidden">
                           <LegalPanel caseId={caseId} />
+                        </div>
+                      )}
+
+                      {/* Geo Map Tab */}
+                      {tab === 'geo' && (
+                        <div className="flex flex-1 min-h-0 overflow-hidden relative">
+                          <GeoMapWindow caseId={caseId} />
                         </div>
                       )}
 

@@ -143,7 +143,7 @@
   },
   "chat": {
     "title": "AI जांच सहायक",
-    "model_label": "मॉडल: LLAMA-3.3-70B-VERSATILE",
+    "model_label": "मॉडल: स्थानीय RAG",
     "placeholder": "लिंक्ड एंटिटीज़, ब्रीच डेटा, कनेक्शन, या जांच विवरण के बारे में पूछें...",
     "processing": "प्रोसेसिंग...",
     "send": "भेजें",
@@ -258,7 +258,7 @@
     "running": "चल रहा है...",
     "regenerate": "पुनर्जनन",
     "provider": "प्रदाता:",
-    "provider_val": "OLLAMA (स्थानीय संकलक)",
+    "provider_val": "स्थानीय RAG सूचकांक",
     "temperature": "तापमान:",
     "temp_val": "0.25 (सीमित)",
     "context": "संदर्भ वेक्टर:",

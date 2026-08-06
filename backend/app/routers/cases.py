@@ -12,11 +12,14 @@ from datetime import datetime
 
 from app.audit import log_action
 from app.auth import get_current_investigator
+from app.analytics.temporal import compute_temporal_analysis
 from app.database import get_db
 from app.models import Case, Investigator, Identifier, Finding, CaseNote, LinkFeedback, AuditLog, Alert
 from app.schemas import CaseCreate, CaseOut, CaseUpdate, LinkFeedbackCreate, LinkFeedbackOut, EvidencePackOut, AlertOut
 from app.correlation.matcher import trigger_background_retrain
-from app.narrative import generate_narrative
+from app.narrative import answer_question_about_evidence, generate_narrative
+from app.worker import dispatch_rag_reindex
+from app.compiler import compile_evidence_pack
 
 
 router = APIRouter(prefix="/cases", tags=["cases"])
@@ -39,6 +42,7 @@ def create_case(
     db.commit()
     db.refresh(case)
     log_action(db, "case.create", investigator_id=current_investigator.id, case_id=case.id, detail={"title": case.title})
+    dispatch_rag_reindex(case.id, current_investigator.id)
     return case
 
 
@@ -327,6 +331,7 @@ def update_case(
         db.commit()
         db.refresh(case)
         log_action(db, "case.update", investigator_id=current_investigator.id, case_id=case.id, detail=updated_fields)
+        dispatch_rag_reindex(case.id, current_investigator.id)
 
     return case
 
@@ -350,6 +355,11 @@ class IdentifierInputItem(BaseModel):
 
 class ChatRequest(BaseModel):
     question: str
+
+
+class RagRetrieveRequest(BaseModel):
+    question: str
+    top_k: int = 5
 
 
 class IdentifiersSubmitPayload(BaseModel):
@@ -441,6 +451,8 @@ async def submit_case_identifiers(
 
     is_ambiguous = any(item.type == "name" for item in payload.identifiers)
     fields_needed = ["city", "age", "employer"] if is_ambiguous else []
+
+    dispatch_rag_reindex(case_id, current_investigator.id)
 
     return {
         "ok": True,
@@ -668,6 +680,7 @@ def create_case_note(
     db.add(note)
     db.commit()
     db.refresh(note)
+    dispatch_rag_reindex(case_id, current_investigator.id)
 
     return {
         "id": note.id,
@@ -711,6 +724,7 @@ def submit_link_feedback(
 
     # Trigger model retraining in background thread (P2's implementation)
     trigger_background_retrain(db)
+    dispatch_rag_reindex(case_id, current_investigator.id)
 
     return feedback
 
@@ -728,8 +742,6 @@ def get_link_feedbacks(
     return db.query(LinkFeedback).filter(LinkFeedback.case_id == case_id).all()
 
 
-from app.narrative import generate_narrative
-
 @router.get("/{case_id}/narrative")
 def get_case_narrative(
     case_id: str,
@@ -743,11 +755,44 @@ def get_case_narrative(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
 
     evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
+    try:
+        evidence_pack["temporal_analysis"] = compute_temporal_analysis(case_id, db)
+    except Exception:
+        pass
     narrative_text = generate_narrative(evidence_pack)
 
     return {
         "case_id": case_id,
         "narrative": narrative_text
+    }
+
+
+@router.post("/{case_id}/rag/retrieve")
+def retrieve_case_chunks(
+    case_id: str,
+    payload: RagRetrieveRequest,
+    db: Session = Depends(get_db),
+    current_investigator: Investigator = Depends(get_current_investigator)
+):
+    case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
+    if not case:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+
+    evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
+    try:
+        evidence_pack["temporal_analysis"] = compute_temporal_analysis(case_id, db)
+    except Exception:
+        pass
+
+    from app.rag import ensure_case_indexed, retrieve_case_chunks as retrieve_indexed_chunks
+
+    ensure_case_indexed(evidence_pack)
+    chunks = retrieve_indexed_chunks(case_id, payload.question, top_k=payload.top_k)
+    return {
+        "case_id": case_id,
+        "question": payload.question,
+        "top_k": payload.top_k,
+        "chunks": chunks,
     }
 
 
@@ -758,9 +803,7 @@ def chat_with_evidence(
     db: Session = Depends(get_db),
     current_investigator: Investigator = Depends(get_current_investigator)
 ):
-    """
-    Chat with the evidence pack using the Groq API to answer investigative questions.
-    """
+    """Chat with the evidence pack using local RAG first, then remote fallback."""
     # Validate case access
     case = db.query(Case).filter(Case.id == case_id, Case.lead_investigator_id == current_investigator.id).first()
     if not case:
@@ -768,71 +811,18 @@ def chat_with_evidence(
 
     # Compile the evidence pack
     evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
-
-    # Import here to avoid circular imports
-    from app.narrative import generate_narrative, sanitize_evidence
-    from groq import Groq
-    from app.config import settings
-    import logging
-    import json
-
-    logger = logging.getLogger(__name__)
-
-    # Check if Groq API key is available
-    if not settings.groq_api_key:
-        return {
-            "answer": f"**e-Rakshak AI Analyst (Offline Tradecraft Engine)**:\n\nRegarding your query: \"{chat_request.question}\"\n\n*(Configure `GROQ_API_KEY` in `.env` for generative deep reasoning capabilities)*"
-        }
-
     try:
-        client = Groq(api_key=settings.groq_api_key)
+        evidence_pack["temporal_analysis"] = compute_temporal_analysis(case_id, db)
+    except Exception:
+        pass
 
-        system_prompt = (
-            "You are an expert intelligence analyst assisting investigators with the e-Rakshak OSINT platform.\n"
-            "You have access to an Evidence Pack containing case details, identifiers, findings, and relationship data.\n"
-            "Answer the investigator's question based SOLELY on the evidence provided in the Evidence Pack.\n"
-            "If the evidence does not contain sufficient information to answer the question, state clearly what information is missing.\n"
-            "When making claims based on the evidence, include inline citations referencing the source (e.g., '[Source: Whois Connector - Confidence 0.9]' or '[Identifier ID: xxx]').\n"
-            "Provide clear, concise, and professional answers suitable for an investigative context.\n"
-            "Do not speculate beyond what the evidence shows."
-        )
+    answer = answer_question_about_evidence(evidence_pack, chat_request.question)
+    return {
+        "answer": answer,
+        "question": chat_request.question,
+        "case_id": case_id,
+    }
 
-        sanitized_pack = sanitize_evidence(evidence_pack)
-        user_prompt = f"""Evidence Pack:
-```json
-{json.dumps(sanitized_pack, indent=2, default=str)}
-```
-
-Investigator's Question: {chat_request.question}
-
-Please provide a detailed answer based only on the evidence above."""
-
-        chat_completion = client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            model="llama-3.3-70b-versatile",
-            temperature=0.2  # Slightly lower temperature for more focused answers
-        )
-
-        answer = chat_completion.choices[0].message.content
-
-        return {
-            "answer": answer,
-            "question": chat_request.question,
-            "case_id": case_id
-        }
-
-    except Exception as e:
-        logger.error(f"Error processing chat request: {e}")
-        return {
-            "answer": f"I encountered an error while processing your question: {str(e)}. Please try again or contact support if the issue persists.",
-            "error": str(e)
-        }
-
-
-from app.compiler import compile_evidence_pack
 
 @router.get("/{case_id}/evidence", response_model=EvidencePackOut)
 def get_case_evidence_pack(
@@ -890,6 +880,10 @@ def export_case_pdf(
     current_investigator: Investigator = Depends(get_current_investigator)
 ):
     evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
+    try:
+        evidence_pack["temporal_analysis"] = compute_temporal_analysis(case_id, db)
+    except Exception:
+        pass
     narrative_text = generate_narrative(evidence_pack)
     case_data = evidence_pack["case"]
     
@@ -1127,9 +1121,9 @@ def get_case_geo(
 
         # 1. IP Geolocation (Exact)
         if f.connector_name == "ip_geoloc":
-            if "lat" in payload and "lon" in payload:
-                lat = float(payload["lat"])
-                lon = float(payload["lon"])
+            if "latitude" in payload and "longitude" in payload:
+                lat = float(payload["latitude"])
+                lon = float(payload["longitude"])
                 label = f"IP: {f.identifier.raw_value}"
         
         # 1b. EXIF Photo Geotag (Exact)
@@ -1150,7 +1144,7 @@ def get_case_geo(
                 
         # 2b. Domain TLD heuristics (for domains like google.com)
         elif f.connector_name in ["whois_rdap", "dns_resolver", "wayback_cdx"]:
-            domain = payload.get("domain", "")
+            domain = f.identifier.raw_value.lower()
             if domain:
                 if domain.endswith(".com") or domain.endswith(".net") or domain.endswith(".org"):
                     lat, lon = COUNTRY_COORDS["US"]
@@ -1197,8 +1191,9 @@ def get_case_geo(
                 if loc_key not in used_locations:
                     used_locations.add(loc_key)
                     break
-                lat += random.uniform(-3.0, 3.0)
-                lon += random.uniform(-3.0, 3.0)
+                # Increased jitter drastically so large text labels don't overlap
+                lat += random.uniform(-12.0, 12.0)
+                lon += random.uniform(-12.0, 12.0)
 
             nodes.append({
                 "id": str(f.id),
@@ -1210,23 +1205,7 @@ def get_case_geo(
 
     arcs = []
     
-    # If no nodes, generate mock nodes and arcs for visual demonstration
-    if len(nodes) == 0:
-        nodes = [
-            {"id": "mock1", "lat": 37.7749, "lng": -122.4194, "label": "Mock IP (SF)", "source": "ip_geoloc"},
-            {"id": "mock2", "lat": 55.7558, "lng": 37.6173, "label": "Mock Domain (RU)", "source": "whois_rdap"},
-            {"id": "mock3", "lat": 1.3521, "lng": 103.8198, "label": "Mock Server (SG)", "source": "dns_resolver"},
-            {"id": "mock4", "lat": -23.5505, "lng": -46.6333, "label": "Mock Endpoint (BR)", "source": "breach_lookup"},
-            {"id": "mock5", "lat": 64.1265, "lng": -21.8174, "label": "Mock Proxy (IS)", "source": "ip_geoloc"}
-        ]
-        arcs = [
-            {"startLat": 37.7749, "startLng": -122.4194, "endLat": 55.7558, "endLng": 37.6173, "label": "C2 Traffic"},
-            {"startLat": 55.7558, "startLng": 37.6173, "endLat": 1.3521, "endLng": 103.8198, "label": "Exfiltration"},
-            {"startLat": 1.3521, "startLng": 103.8198, "endLat": -23.5505, "endLng": -46.6333, "label": "Proxy Route"},
-            {"startLat": -23.5505, "startLng": -46.6333, "endLat": 64.1265, "endLng": -21.8174, "label": "Data Drop"},
-            {"startLat": 64.1265, "startLng": -21.8174, "endLat": 37.7749, "endLng": -122.4194, "label": "Callback"}
-        ]
-    elif len(nodes) > 1:
+    if len(nodes) > 1:
         # Generate simple daisy-chain arcs between real nodes for visualization
         for i in range(len(nodes) - 1):
             arcs.append({

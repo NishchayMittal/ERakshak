@@ -16,9 +16,7 @@ The system is composed of two main parts:
 - **Pluggable Connector Architecture**: Concurrent asynchronous registry loop to query various OSINT sources like WHOIS/RDAP, crt.sh, Web Archive CDX, Breach Repositories, and Face Similarity Matcher.
 - **Ingestion & Normalization**: Translates native text scripts to normalized Latin form using a standalone phonetic transliteration engine, dynamically categorizes inputs (emails, domains, phones, etc.), and sanitizes data.
 - **NetworkX Link Correlation Engine**: Maps case-wide associations, disambiguates suspects using fuzzy string comparison, and detects key hub entities (pivots). It utilizes a Fellegi-Sunter baseline matcher and an XGBoost refinement layer.
-- **Background Monitoring & Alerts**: Automated Celery task scheduling to continuously scan active cases for new intelligence, triggering real-time UI notifications in the investigator's dashboard.
-- **Evidentiary Dossier Reports**: Compiles a single source of truth "Evidence Pack" and generates comprehensive case reports in JSON, CSV, and PDF formats, accompanied by LLM narrative synthesis using the Groq Cloud API.
-- **Enterprise Security Setup**: Pre-configured HTTP strict security headers (HSTS, Anti-Clickjacking, XSS protection) to fortify against active cyber threats.
+- **Evidentiary Dossier Reports**: Compiles a single source of truth "Evidence Pack" and generates comprehensive case reports in JSON, CSV, and PDF formats, accompanied by local RAG narrative synthesis with optional remote fallback.
 
 ## Project Structure
 
@@ -33,7 +31,12 @@ The system is composed of two main parts:
 
 Orion is engineered to be deployed entirely for free using a combination of **Vercel** (Frontend), **Render** (Backend), and **Neon** (PostgreSQL).
 
-To achieve this within Render's strict 512MB RAM free-tier limit, this deployment path runs in a **stateless, synchronous mode** (`USE_CELERY=false`) and offloads heavy AI reasoning to **Groq's Cloud API** instead of local Ollama models.
+- **Python 3.10+** (For the backend)
+- **Node.js 18+** (For the frontend)
+- **Git**
+- **sentence-transformers** is installed through the backend Python dependencies for local embeddings
+- **Redis** (If running locally without Docker)
+- **Docker & Docker Compose** (Highly Recommended for easiest setup)
 
 ### Step 1: Database Setup (Neon)
 1. Create a free PostgreSQL database on [Neon.tech](https://neon.tech).
@@ -82,7 +85,20 @@ If you prefer to run the application directly on your machine without Docker, fo
    ```bash
    pip install -r requirements.txt
    ```
-4. Start the backend server (FastAPI):
+4. Create a `.env` file in the `backend/` directory with the following variables:
+   ```ini
+   DATABASE_URL="sqlite:///./erakshak.db"
+   JWT_SECRET="your-super-secret-key-here"
+   LOCAL_RAG_ENABLED=true
+   RAG_STORE_DIR="app/resources/rag_store"
+   RAG_TOP_K=5
+   RAG_CHUNK_SIZE=900
+   REDIS_URL="redis://localhost:6379/0"
+   # Optional fallback only if you want remote synthesis
+   # GROQ_API_KEY="your-groq-key"
+   ```
+5. Start **Redis** locally on port 6379.
+6. Start the Celery worker (in a new terminal, with the virtual environment activated):
    ```bash
    uvicorn app.main:app --reload --port 8000
    ```
@@ -101,7 +117,18 @@ If you prefer to run the application directly on your machine without Docker, fo
    ```bash
    npm run dev
    ```
-   *The frontend UI will be available at http://localhost:5173*
+   _The frontend UI will automatically open in your browser at http://localhost:5173_
+
+### 4. Setting up the Local RAG Layer
+
+e-Rakshak now uses a local retrieval-augmented generation path for chat and report synthesis. Case evidence is indexed locally, embeddings are generated with `sentence-transformers/all-MiniLM-L6-v2`, and chat/report responses are built from the local case index first.
+
+1. Make sure the backend dependencies are installed, including `sentence-transformers`.
+2. Keep the backend API and worker running so the local index can be refreshed when cases change.
+3. If you want a remote fallback for rare edge cases, set `GROQ_API_KEY` in `backend/.env`; otherwise the system stays local-first.
+4. The persisted case index lives under `backend/app/resources/rag_store/` by default, so keep that directory available in your deployment volume or container.
+
+Deployment note: for the already-live website, the UI can stay on the same host, but the backend worker and persistent RAG store must stay available or the system will rebuild indexes on demand and chat/report quality will degrade during restarts.
 
 ---
 

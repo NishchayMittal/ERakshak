@@ -136,12 +136,13 @@ class BaseConnector(ABC):
                     )
                     findings.append(finding)
                 return findings
+        except redis.exceptions.ConnectionError:
+            logger.debug("Redis cache offline, ignoring cache read.")
+            self.__class__._redis_client = None
+            return None
         except Exception as e:
-
-            logger.error(f"Unexpected error: {e}", exc_info=True)
-            # If there's any error in caching, we ignore and return None (no cache)
-            pass
-        return None
+            logger.warning(f"Cache read error: {e}")
+            return None
 
     async def _set_in_cache(self, identifier_value: str, findings: List[Finding]):
         """Cache the findings for this connector and identifier."""
@@ -161,11 +162,11 @@ class BaseConnector(ABC):
                     "raw_payload": f.raw_payload
                 })
             await r.set(key, json.dumps(data), ex=self.cache_ttl)
+        except redis.exceptions.ConnectionError:
+            logger.debug("Redis cache offline, ignoring cache write.")
+            self.__class__._redis_client = None
         except Exception as e:
-
-            logger.error(f"Unexpected error: {e}", exc_info=True)
-            # If there's any error in caching, we ignore
-            pass
+            logger.warning(f"Cache write error: {e}")
 
     @staticmethod
     def _has_mx_record(domain: str) -> bool:

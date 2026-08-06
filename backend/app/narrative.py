@@ -6,26 +6,6 @@ from app.rag import build_local_answer, build_local_narrative, normalize_text
 
 logger = logging.getLogger(__name__)
 
-=======
-def sanitize_evidence(data):
-    if isinstance(data, dict):
-        # Strip out raw_payload completely to save massive amounts of tokens
-        return {k: sanitize_evidence(v) for k, v in data.items() if k != "raw_payload"}
-    elif isinstance(data, list):
-        # Cap lists at 15 items to prevent hundreds of findings from overloading the prompt
-        if len(data) > 15:
-            return [sanitize_evidence(item) for item in data[:15]] + [f"... [TRUNCATED {len(data)-15} MORE ITEMS]"]
-        return [sanitize_evidence(item) for item in data]
-    elif isinstance(data, str) and len(data) > 300:
-        return data[:300] + "... [TRUNCATED]"
-    return data
-def generate_narrative(evidence_pack: dict) -> str:
-    """
-    Generates an intelligence dossier narrative using the Groq API.
-    If the API key is missing or invalid, it returns a graceful fallback mock string.
-    """
-    case_title = evidence_pack.get("case", {}).get("title", "Unknown Case")
->>>>>>> 1bdc795ee4aed650bad8e1853750d410cf8986ae
 
 def _local_fallback_narrative(evidence_pack: dict) -> str:
     case = evidence_pack.get("case", {}) or {}
@@ -47,7 +27,7 @@ def _local_fallback_response(evidence_pack: dict, question: str) -> str:
     temporal = evidence_pack.get("temporal_analysis", {}) or {}
     temporal_summary = normalize_text(temporal.get("tradecraft_summary") or "")
 
-<<<<<<< HEAD
+
     response = (
         f"**e-Rakshak AI Assistant**\n\n"
         f"> [!NOTE]\n"

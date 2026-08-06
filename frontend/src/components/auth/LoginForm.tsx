@@ -10,11 +10,11 @@ import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useSciFiSounds } from "../../hooks/useSciFiSounds";
 
-const BOOT_LINES = [
-  "SECURE ENCLAVE READY...",
-  "VERIFYING TLS CERTIFICATE...",
-  "LOADING IDENTITY MATRIX...",
-  "AWAITING INVESTIGATOR AUTH...",
+const BOOT_KEYS = [
+  "login.boot_enclave",
+  "login.boot_tls",
+  "login.boot_identity",
+  "login.boot_awaiting",
 ];
 
 export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
@@ -33,7 +33,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
   // Cycle boot lines
   useEffect(() => {
     const id = setInterval(() => {
-      setBootLine((i) => (i + 1) % BOOT_LINES.length);
+      setBootLine((i) => (i + 1) % BOOT_KEYS.length);
     }, 1800);
     return () => clearInterval(id);
   }, []);
@@ -116,9 +116,9 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
             msg = JSON.stringify(detail);
           }
         } else if (errorVal.response?.status && errorVal.response.status >= 500) {
-          msg = "SERVER ERROR. PLEASE TRY AGAIN.";
+          msg = t("login.server_error", "SERVER ERROR. PLEASE TRY AGAIN.");
         } else if (!errorVal.response) {
-          msg = "NETWORK ERROR. SERVER MIGHT BE WAKING UP.";
+          msg = t("login.network_error", "NETWORK ERROR. SERVER MIGHT BE WAKING UP.");
         }
         showToast(msg.toUpperCase(), "error");
       }
@@ -213,7 +213,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
               }}
               className="cursor-blink"
             >
-              {BOOT_LINES[bootLine]}
+              {t(BOOT_KEYS[bootLine])}
             </div>
 
             {/* Form */}
@@ -372,11 +372,11 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                 {isSignUp && (
                   <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
                     {[
-                      { label: "8+ CHARS", passed: password.length >= 8 },
-                      { label: "UPPERCASE", passed: /[A-Z]/.test(password) },
-                      { label: "LOWERCASE", passed: /[a-z]/.test(password) },
-                      { label: "NUMBER", passed: /[0-9]/.test(password) },
-                      { label: "SPECIAL (!@#$)", passed: /[!@#$%^&*()_+\-=]/.test(password) }
+                      { label: t("login.req_chars", "8+ CHARS"), passed: password.length >= 8 },
+                      { label: t("login.req_uppercase", "UPPERCASE"), passed: /[A-Z]/.test(password) },
+                      { label: t("login.req_lowercase", "LOWERCASE"), passed: /[a-z]/.test(password) },
+                      { label: t("login.req_number", "NUMBER"), passed: /[0-9]/.test(password) },
+                      { label: t("login.req_special", "SPECIAL (!@#$)"), passed: /[!@#$%^&*()_+\-=]/.test(password) }
                     ].map((req, i) => (
                       <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.05em", color: req.passed ? "#39ff14" : "rgba(255,255,255,0.3)" }}>
                         <div style={{ width: 6, height: 6, borderRadius: "50%", background: req.passed ? "#39ff14" : "rgba(255,255,255,0.1)", border: `1px solid ${req.passed ? "#39ff14" : "rgba(255,255,255,0.3)"}`, transition: "all 0.2s" }} />
@@ -456,7 +456,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                       padding: 0,
                     }}
                   >
-                    &larr; GO TO HOME
+                    {t("login.go_to_home")}
                   </button>
                 ) : <div />}
 
@@ -481,7 +481,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                     padding: 0,
                   }}
                 >
-                  {isSignUp ? "OR SWITCH TO AUTH LOGIN" : "OR REQUEST SIGN UP"}
+                  {isSignUp ? t("login.switch_to_login") : t("login.switch_to_signup")}
                 </button>
               </div>
             </form>

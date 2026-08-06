@@ -8,7 +8,7 @@ import { useTransliterate } from './Transliterate';
 export function NotificationPanel() {
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const transliterate = useTransliterate();
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -141,7 +141,7 @@ export function NotificationPanel() {
                           {transliterate(n.message)}
                         </p>
                         <span className="text-[8px] font-mono text-gray-500 mt-1 block tracking-wider">
-                          {new Date(n.created_at).toLocaleString()}
+                          {new Date(n.created_at).toLocaleString(i18n.language === 'en' ? 'en-US' : i18n.language === 'hi' ? 'hi-IN' : 'gu-IN')}
                         </span>
                       </div>
                     </div>

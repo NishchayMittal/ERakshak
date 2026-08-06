@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, MapPin, Calendar, Building, Check, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useTransliterate } from '../ui/Transliterate';
 
 interface DisambiguationModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface DisambiguationModalProps {
 
 export default function DisambiguationModal({ isOpen, onClose, onSubmit, ambiguousName }: DisambiguationModalProps) {
   const { t } = useTranslation();
+  const transliterate = useTransliterate();
   const [city, setCity] = useState('');
   const [age, setAge] = useState('');
   const [employer, setEmployer] = useState('');
@@ -57,7 +59,7 @@ export default function DisambiguationModal({ isOpen, onClose, onSubmit, ambiguo
                 <div>
                   <h3 className="font-bold text-white text-xs tracking-wider uppercase font-mono">{t('disambiguation.title')}</h3>
                   <p className="text-[10px] text-gray-400 mt-1 leading-normal font-sans">
-                    {t('disambiguation.prompt', { name: ambiguousName })}
+                    {t('disambiguation.prompt', { name: transliterate(ambiguousName) })}
                   </p>
                 </div>
               </div>

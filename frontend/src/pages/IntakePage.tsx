@@ -10,6 +10,7 @@ import { useUIStore } from '../state/uiStore';
 import { submitIdentifiers } from '../api/endpoints';
 import type { IdentifierType } from '../types/identifier';
 import { CyberButton } from '../components/ui/CyberButton';
+import { useTransliterate } from '../components/ui/Transliterate';
 
 interface SeedItem {
   id: string;
@@ -53,6 +54,7 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
   const { selectCase } = useCaseStore();
   const { showToast } = useUIStore();
   const { t } = useTranslation();
+  const transliterate = useTransliterate();
 
   const [seeds, setSeeds] = useState<SeedItem[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -311,7 +313,7 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
               {liveLogs.map((log, idx) => (
                 <div key={idx} style={{ display: 'flex', gap: 6, marginBottom: 4, alignItems: 'flex-start' }}>
                   <span className="terminal-prompt">&gt;</span>
-                  <span>{log}</span>
+                  <span>{transliterate(log)}</span>
                 </div>
               ))}
             </div>

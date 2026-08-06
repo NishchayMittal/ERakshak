@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { User, Shield, Terminal, Lock, Edit2, Check, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useUIStore } from '../state/uiStore';
+import { useTransliterate } from '../components/ui/Transliterate';
 import { updateInvestigatorProfile } from '../api/endpoints';
 
 // Audio click synth
@@ -10,6 +11,7 @@ const playClickTone = () => {};
 export default function ProfilePage() {
   const { user, setUser } = useAuth();
   const { showToast } = useUIStore();
+  const transliterate = useTransliterate();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(user?.name || '');
@@ -132,10 +134,10 @@ export default function ProfilePage() {
 
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'center' }}>
             <div style={{ fontFamily: 'var(--font-heading)', fontSize: 13, color: 'var(--text-primary)', fontWeight: 700, letterSpacing: '0.05em' }}>
-              {user.name.toUpperCase()}
+              {transliterate(user.name).toUpperCase()}
             </div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--accent-primary)', letterSpacing: '0.1em' }}>
-              {user.role.toUpperCase()}
+              {transliterate(user.role).toUpperCase()}
             </div>
           </div>
 
@@ -225,7 +227,7 @@ export default function ProfilePage() {
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-primary)', fontWeight: 600 }}>
-                    {user.name}
+                    {transliterate(user.name)}
                   </span>
                   <button
                     onClick={() => {
@@ -248,7 +250,7 @@ export default function ProfilePage() {
                 ASSIGNED POST:
               </label>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-primary)' }}>
-                {user.role}
+                {transliterate(user.role)}
               </span>
 
               <label style={{ fontFamily: 'var(--font-heading)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>

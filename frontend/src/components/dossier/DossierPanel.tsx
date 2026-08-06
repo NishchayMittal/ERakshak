@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGraphStore } from '../../state/graphStore';
+import { useTransliterate } from '../ui/Transliterate';
 
 
 // Animated risk gauge that counts up to the risk percentage
@@ -84,6 +85,7 @@ interface FieldProps {
 
 function Field({ label, value, redacted = false, payload, onViewDetails }: FieldProps) {
   const { t } = useTranslation();
+  const transliterate = useTransliterate();
   const [revealed, setRevealed] = useState(!redacted);
   
   const isLeak = label.toLowerCase() === 'leak_record';
@@ -182,7 +184,7 @@ function Field({ label, value, redacted = false, payload, onViewDetails }: Field
         }}
         title={redacted && !revealed ? t('dossier.click_reveal') : undefined}
       >
-        {value || '—'}
+        {transliterate(value || '—')}
       </div>
     </div>
   );
@@ -201,6 +203,7 @@ interface BreachRecord {
 
 function LeakRecordField({ payload }: { value: string; payload: Record<string, unknown> }) {
   const { t } = useTranslation();
+  const transliterate = useTransliterate();
   const [expanded, setExpanded] = useState(false);
   
   const p = payload as BreachRecord & { leak_samples?: Array<{ email?: string; ip_address?: string; password?: string; phone?: string }> };
@@ -230,7 +233,7 @@ function LeakRecordField({ payload }: { value: string; payload: Record<string, u
             background: 'rgba(244,63,94,0.15)', padding: '2px 6px',
             border: '1px solid rgba(244,63,94,0.3)', borderRadius: 2
           }}>
-            BREACH: {breach.toUpperCase()}
+            BREACH: {transliterate(breach).toUpperCase()}
           </span>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)' }}>
             ({year})
@@ -258,7 +261,7 @@ function LeakRecordField({ payload }: { value: string; payload: Record<string, u
             border: '1px solid rgba(255,255,255,0.06)', color: 'var(--text-primary)',
             borderRadius: 2
           }}>
-            {field}
+            {transliterate(field)}
           </span>
         ))}
       </div>
@@ -284,7 +287,7 @@ function LeakRecordField({ payload }: { value: string; payload: Record<string, u
               padding: 8, borderRadius: 2, wordBreak: 'break-word',
               display: 'flex', flexDirection: 'column', gap: 6
             }}>
-              <div>{desc}</div>
+              <div>{transliterate(desc)}</div>
 
               {/* Decrypted Raw Leak Samples */}
               {samples.length > 0 && (
@@ -299,12 +302,12 @@ function LeakRecordField({ payload }: { value: string; payload: Record<string, u
                         display: 'flex', flexDirection: 'column', gap: 2, fontFamily: 'var(--font-mono)', fontSize: 8
                       }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ color: '#ffffff' }}>{t('dossier.email_label')}{s.email}</span>
+                          <span style={{ color: '#ffffff' }}>{t('dossier.email_label')}{transliterate(s.email || '')}</span>
                           <span style={{ color: 'var(--text-muted)' }}>{t('dossier.ip_label')}{s.ip_address}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                           <span style={{ color: '#ff4d4d' }}>{t('dossier.pwd_label')}{s.password}</span>
-                          <span style={{ color: '#ffffff' }}>{t('dossier.phone_label')}{s.phone}</span>
+                          <span style={{ color: '#ffffff' }}>{t('dossier.phone_label')}{transliterate(s.phone || '')}</span>
                         </div>
                       </div>
                     ))}
@@ -331,6 +334,7 @@ function LeakRecordField({ payload }: { value: string; payload: Record<string, u
 
 export default function DossierPanel() {
   const { t } = useTranslation();
+  const transliterate = useTransliterate();
   const { evidencePack, selectedEntityId, loading } = useGraphStore();
   const [selectedBreach, setSelectedBreach] = useState<BreachRecord | null>(null);
 
@@ -469,7 +473,7 @@ export default function DossierPanel() {
           color: 'var(--text-primary)', marginTop: 4, fontWeight: 600,
           wordBreak: 'break-all',
         }}>
-          {/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(displayName) ? displayName.split(/[/\\]/).pop() : displayName}
+          {/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(displayName) ? displayName.split(/[/\\]/).pop() : transliterate(displayName)}
         </div>
         <div style={{
           fontFamily: 'var(--font-mono)', fontSize: 8,
@@ -548,7 +552,7 @@ export default function DossierPanel() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--struct-line)', paddingBottom: 8 }}>
               <div>
                 <div style={{ fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: '#ff3b30', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-                  BREACH REPORT: {selectedBreach.breach || ''}
+                  BREACH REPORT: {transliterate(selectedBreach.breach || '')}
                 </div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', marginTop: 2 }}>
                   TARGET EMAIL: {selectedBreach.email || ''}
@@ -615,7 +619,7 @@ export default function DossierPanel() {
                 lineHeight: 1.4, background: '#000000', border: '1px solid var(--struct-line)',
                 padding: 10, overflowY: 'auto', maxHeight: 80, wordBreak: 'break-word'
               }}>
-                {selectedBreach.description || t('dossier.no_description') || ''}
+                {transliterate(selectedBreach.description || t('dossier.no_description') || '')}
               </div>
             </div>
           </div>

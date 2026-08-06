@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Trash2 } from 'lucide-react';
 import type { IdentifierType } from '../../types/identifier';
 import { useTranslation } from 'react-i18next';
+import { useTransliterate } from '../ui/Transliterate';
 
 
 interface IdentifierChipProps {
@@ -14,6 +15,7 @@ interface IdentifierChipProps {
 
 export default function IdentifierChip({ id, type, rawValue, onDelete }: IdentifierChipProps) {
   const { t } = useTranslation();
+  const transliterate = useTransliterate();
   const typeColors: Record<IdentifierType, string> = {
     name: 'bg-rose-950/40 border-rose-800/40 text-rose-300',
     email: 'bg-indigo-950/40 border-indigo-800/40 text-indigo-300',
@@ -39,7 +41,7 @@ export default function IdentifierChip({ id, type, rawValue, onDelete }: Identif
       <span className="opacity-70 uppercase text-[8px] tracking-wider px-1 py-0.5 bg-slate-950/70 rounded border border-white/5 font-mono">
         {type}
       </span>
-      <span className="font-mono text-[11px]">{rawValue}</span>
+      <span className="font-mono text-[11px]">{transliterate(rawValue)}</span>
       <button 
         type="button" 
         onClick={() => onDelete(id)}

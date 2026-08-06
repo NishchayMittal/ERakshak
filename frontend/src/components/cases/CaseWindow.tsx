@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useTransliterate } from '../ui/Transliterate';
 import { Download, FileText, RefreshCw } from 'lucide-react';
 import { useDashboardContext } from '../../pages/DashboardContext';
 import { useCaseWebSocket } from '../../hooks/useCaseWebSocket';
@@ -93,6 +94,7 @@ interface CaseWindowProps {
 
 export function CaseWindow({ win }: CaseWindowProps) {
   const { t } = useTranslation();
+  const transliterate = useTransliterate();
   useCaseWebSocket(win.caseId);
   const [isUploading, setIsUploading] = useState(false);
   const {
@@ -672,7 +674,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                   (casePendingSeeds[caseId] || []).map((s, idx) => (
                                     <div key={idx} className="flex justify-between items-center bg-white/5 border border-white/5 px-2.5 py-1 rounded">
                                       <span className="text-[8px] uppercase font-bold text-gray-300">
-                                        <span className="text-[#a855f7] mr-1.5">[{s.type}]</span> {s.type === 'photo' ? s.value.split(/[/\\]/).pop() : s.value}
+                                        <span className="text-[#a855f7] mr-1.5">[{s.type}]</span> {s.type === 'photo' ? s.value.split(/[\/\\]/).pop() : transliterate(s.value)}
                                       </span>
                                       <button onClick={() => removeCaseSeed(caseId, idx)} className="text-gray-500 hover:text-red-400 text-[8px] font-bold">X</button>
                                     </div>
@@ -708,7 +710,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                 existingSeeds.map((s, idx) => (
                                   <div key={idx} className="flex justify-between items-center bg-white/5 border border-white/5 px-2.5 py-1 rounded">
                                     <span className="text-[8px] uppercase font-bold text-gray-300">
-                                      <span className="text-[#a855f7] mr-1.5">[{s.type}]</span> {s.type === 'photo' ? (s.raw_value || '').split(/[/\\]/).pop() : (s.raw_value || '')}
+                                      <span className="text-[#a855f7] mr-1.5">[{s.type}]</span> {s.type === 'photo' ? (s.raw_value || '').split(/[\/\\]/).pop() : transliterate(s.raw_value || '')}
                                     </span>
                                     <button onClick={() => removeExistingSeed(s.id)} className="text-gray-500 hover:text-red-400 text-[8px] font-bold border border-transparent hover:border-red-400 px-1 rounded transition-colors">REMOVE</button>
                                   </div>
@@ -742,7 +744,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                               </div>
                               <div className="flex-1 max-h-24 overflow-y-auto font-mono text-[7.5px] text-gray-500 flex flex-col gap-0.5 mt-2">
                                 {(caseIngestLogs[caseId] || []).map((l, i) => (
-                                  <div key={i} className="truncate"><span className="text-[#39ff14] mr-1.5">&gt;</span>{l}</div>
+                                  <div key={i} className="truncate"><span className="text-[#39ff14] mr-1.5">&gt;</span>{transliterate(l)}</div>
                                 ))}
                               </div>
                             </div>
@@ -788,7 +790,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                       </div>
                                       <div className="flex-1 max-h-20 overflow-y-hidden font-mono text-[8px] text-gray-500 flex flex-col justify-end gap-0.5 mt-2">
                                         {(caseIngestLogs[caseId] || []).slice(-4).map((l, i) => (
-                                          <div key={i} className="truncate"><span className="text-[#39ff14] mr-1.5">&gt;</span>{l}</div>
+                                          <div key={i} className="truncate"><span className="text-[#39ff14] mr-1.5">&gt;</span>{transliterate(l)}</div>
                                         ))}
                                       </div>
                                     </div>
@@ -839,7 +841,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                             textAnchor="middle"
                                             fontFamily="monospace"
                                           >
-                                            {e.relationType} ({(e.confidence * 100).toFixed(0)}%)
+                                            {transliterate(e.relationType)} ({(e.confidence * 100).toFixed(0)}%)
                                           </text>
                                         </g>
                                       );
@@ -918,11 +920,11 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                   </div>
                                   <div className="flex flex-col gap-0.5">
                                     <span className="text-gray-500 font-mono font-semibold">{t('case_window.value_detail')}</span>
-                                    <span className="text-gray-200 font-mono break-all bg-white/5 p-1 select-text">{/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(nodeInfo.label) ? nodeInfo.label.split(/[/\\]/).pop() : nodeInfo.label}</span>
+                                     <span className="text-gray-200 font-mono break-all bg-white/5 p-1 select-text">{/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(nodeInfo.label) ? nodeInfo.label.split(/[\/\\]/).pop() : transliterate(nodeInfo.label)}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
                                     <span className="text-gray-500 font-mono font-semibold">{t('case_window.identifier_type')}</span>
-                                    <span className="text-gray-200 font-mono uppercase bg-white/5 p-1">{nodeInfo.type}</span>
+                                     <span className="text-gray-200 font-mono uppercase bg-white/5 p-1">{transliterate(nodeInfo.type)}</span>
                                   </div>
                                   {nodeInfo.profile_url && (
                                     <div className="flex flex-col gap-0.5">
@@ -991,22 +993,22 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                     <span className="text-[8px] font-bold text-white truncate font-mono uppercase">
                                       {getNodeAbbreviation(caseId, n.id)}: {(() => {
                                         if (/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(n.label)) {
-                                          return n.label.split(/[/\\]/).pop();
+                                          return n.label.split(/[\/\\]/).pop();
                                         }
                                         if (n.label.startsWith('http://') || n.label.startsWith('https://')) {
                                           try {
                                             const urlObj = new URL(n.label);
                                             return urlObj.hostname + (urlObj.pathname !== '/' ? urlObj.pathname : '');
                                           } catch {
-                                            return n.label;
+                                            return transliterate(n.label);
                                           }
                                         }
-                                        return n.label;
+                                        return transliterate(n.label);
                                       })()}
                                     </span>
                                   </div>
                                   <div className="flex justify-between items-center text-[7.5px] font-mono">
-                                    <span className="text-gray-500 uppercase">{n.type}</span>
+                                    <span className="text-gray-500 uppercase">{transliterate(n.type)}</span>
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -1027,7 +1029,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                             <div className="flex items-center justify-between border-b border-white/5 pb-2">
                               <div className="flex flex-col">
                                 <h3 className="text-[10px] font-bold text-white tracking-widest uppercase font-mono">{t('case_window.dossier_title')}</h3>
-                                <span className="text-[8px] text-gray-500 font-mono mt-0.5">{t('case_window.identifier_code')}{activeEntity.split(/[/\\]/).pop()}</span>
+                                <span className="text-[8px] text-gray-500 font-mono mt-0.5">{t('case_window.identifier_code')}{activeEntity.split(/[\/\\]/).pop()}</span>
                               </div>
                               <span className="text-[9px] font-bold border border-[#39ff14]/40 bg-[#39ff14]/5 text-[#39ff14] px-2 py-0.5 rounded font-mono uppercase">{t('case_window.verified_secure')}</span>
                             </div>
@@ -1056,8 +1058,8 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                           return (
                                             <div key={idx} className="p-2.5 bg-black border border-white/5 rounded flex justify-between items-center gap-4">
                                               <div className="flex flex-col gap-0.5">
-                                                <span className="text-gray-500 text-[7px] uppercase tracking-wider">{f.connector || 'connector'}</span>
-                                                <span className="text-gray-200 capitalize">{f.value}</span>
+                                                <span className="text-gray-500 text-[7px] uppercase tracking-wider">{transliterate(f.connector || 'connector')}</span>
+                                                <span className="text-gray-200 capitalize">{transliterate(f.value)}</span>
                                               </div>
                                             </div>
                                           );
@@ -1101,7 +1103,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                           </div>
 
                           <div className="flex-grow overflow-y-auto pr-1 select-text bg-black/25 p-3 border border-white/5">
-                            {caseReportNarrative[caseId] ? renderCustomMarkdown(caseReportNarrative[caseId]) : t('case_window.synthesizing')}
+                            {caseReportNarrative[caseId] ? renderCustomMarkdown(transliterate(caseReportNarrative[caseId])) : transliterate(t('case_window.synthesizing'))}
                           </div>
                         </div>
                       )}

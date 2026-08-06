@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useLocation, useParams } from 'react-router';
 import { useCaseStore } from '../../state/caseStore';
 import AlertBell from '../alerts/AlertBell';
+import { useTransliterate } from '../ui/Transliterate';
 
 interface TopBarProps {
   onMenuToggle?: () => void;
@@ -15,6 +16,7 @@ export default function TopBar({ onMenuToggle, isMobile }: TopBarProps) {
   const { activeCase } = useCaseStore();
   const location = useLocation();
   const params = useParams<{ caseId: string }>();
+  const transliterate = useTransliterate();
 
   useEffect(() => {
     const tick = () => {
@@ -67,7 +69,7 @@ export default function TopBar({ onMenuToggle, isMobile }: TopBarProps) {
       )}
       
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
-        {!isMobile && caseLabel && (<div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.2em', color: 'var(--text-muted)', textTransform: 'uppercase', border: '1px solid var(--struct-line)', padding: '3px 8px' }}>{caseLabel}</div>)}
+        {!isMobile && caseLabel && (<div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.2em', color: 'var(--text-muted)', textTransform: 'uppercase', border: '1px solid var(--struct-line)', padding: '3px 8px' }}>{transliterate(caseLabel)}</div>)}
         <AlertBell />
         {!isMobile && (
           <>

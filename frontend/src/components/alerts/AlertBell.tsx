@@ -2,12 +2,14 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Bell, Check, Eye, AlertTriangle } from 'lucide-react';
 import { getAlerts, getUnreadAlertCount, markAlertRead, markAllAlertsRead } from '../../api/endpoints';
 import type { AlertItem } from '../../api/endpoints';
+import { useTransliterate } from '../ui/Transliterate';
 
 export default function AlertBell() {
   const [open, setOpen] = useState(false);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [unread, setUnread] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
+  const transliterate = useTransliterate();
 
   // Fetch unread count on mount + poll every 30s
   useEffect(() => {
@@ -229,7 +231,7 @@ export default function AlertBell() {
                       lineHeight: 1.4,
                       marginBottom: 4,
                     }}>
-                      {alert.title}
+                      {transliterate(alert.title)}
                     </div>
                     <div style={{
                       display: 'flex',
@@ -240,7 +242,7 @@ export default function AlertBell() {
                       color: 'var(--text-muted)',
                       letterSpacing: '0.1em',
                     }}>
-                      <span>{alert.alert_type.toUpperCase().replace('_', ' ')}</span>
+                      <span>{transliterate(alert.alert_type).toUpperCase().replace('_', ' ')}</span>
                       <span style={{ color: 'var(--struct-line)' }}>│</span>
                       <span>{formatTime(alert.created_at)}</span>
                       {!alert.is_read && (

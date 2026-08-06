@@ -1,8 +1,10 @@
 import React from 'react';
 import { useGraphStore } from '../../state/graphStore';
+import { useTransliterate } from '../ui/Transliterate';
 
 export default function TimelineView() {
   const { evidencePack, selectedEntityId, loading } = useGraphStore();
+  const transliterate = useTransliterate();
 
   if (loading) {
     return (
@@ -155,7 +157,7 @@ export default function TimelineView() {
                 </span>
                 
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                  {event.source}
+                  {transliterate(event.source)}
                 </span>
               </div>
 
@@ -166,7 +168,7 @@ export default function TimelineView() {
                 lineHeight: '1.4',
                 wordBreak: 'break-all',
               }}>
-                {event.label}
+                {transliterate(event.label)}
               </p>
             </div>
           ))}

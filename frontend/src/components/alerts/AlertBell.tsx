@@ -117,7 +117,7 @@ export default function AlertBell() {
           position: 'absolute',
           top: 'calc(100% + 8px)',
           right: 0,
-          width: 380,
+          width: 'min(380px, calc(100vw - 2rem))',
           maxHeight: 440,
           background: 'var(--bg-0)',
           border: '1px solid var(--struct-line)',

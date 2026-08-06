@@ -81,6 +81,16 @@ html, body, #root {
   overflow: hidden;
 }
 
+/* Mobile: allow vertical scroll on body-level containers */
+@media (max-width: 767px) {
+  html, body {
+    overflow: auto;
+  }
+  #root {
+    overflow: auto;
+  }
+}
+
 * {
   font-family: var(--font-mono) !important;
 }
@@ -550,7 +560,7 @@ html, body, #root {
 
 @media (max-width: 900px) {
   .hud-grid-main {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
     overflow-y: auto;
   }
 }
@@ -641,3 +651,41 @@ html, body, #root {
   display: flex;
   flex-direction: column;
 }
+
+/* ---- Mobile Responsive Utilities ---- */
+@media (max-width: 767px) {
+  /* Prevent horizontal overflow */
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  /* Sidebar overlay for mobile */
+  .mobile-sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 998;
+    backdrop-filter: blur(2px);
+  }
+  
+  .mobile-sidebar-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 999;
+    transform: translateX(0);
+    transition: transform 0.2s ease;
+  }
+  
+  /* Scrollable tabs */
+  .tabs-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs-scroll::-webkit-scrollbar {
+    display: none;
+  }
+}

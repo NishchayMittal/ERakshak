@@ -1243,38 +1243,50 @@ export default function CaseDashboardPage() {
       <div className="absolute inset-0 pointer-events-none bg-radial-vignette mix-blend-overlay opacity-30 z-50" />
 
       {/* Top Menu Bar */}
-      <div className="absolute top-0 left-0 right-0 h-8 bg-black/60 backdrop-blur-md border-b border-[#39ff14]/15 flex items-center justify-between px-4 z-[999] text-[10px]">
-        <div className="flex items-center gap-4">
-          <span className="font-bold tracking-wider text-[#39ff14] flex items-center gap-1.5 animate-pulse">
-            <Shield size={12} /> {t('dashboard.console_title')}
+      <div className="absolute top-0 left-0 right-0 h-8 bg-black/60 backdrop-blur-md border-b border-[#39ff14]/15 flex items-center justify-between px-2 sm:px-4 z-[999] text-[10px] overflow-hidden">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink-0">
+          <span className="font-bold tracking-wider text-[#39ff14] flex items-center gap-1.5 animate-pulse whitespace-nowrap">
+            <Shield size={12} />
+            <span className="hidden sm:inline">{t('dashboard.console_title')}</span>
+            <span className="sm:hidden">ORION</span>
           </span>
-          <div className="h-3 w-[1px] bg-white/10" />
-          <button
-            onClick={() => setShowWallpaperMenu(!showWallpaperMenu)}
-            className="text-[9px] text-gray-400 hover:text-white uppercase tracking-wider transition-colors"
-          >
-            {t('dashboard.wallpaper')}
-          </button>
-          {isMobile && (
+          {!isMobile && (
             <>
               <div className="h-3 w-[1px] bg-white/10" />
               <button
-                onClick={() => setShowSidebarOnMobile(!showSidebarOnMobile)}
-                className={`text-[9px] uppercase tracking-wider transition-colors flex items-center gap-1.5 ${showSidebarOnMobile ? 'text-[#39ff14] font-bold' : 'text-gray-400 hover:text-white'}`}
+                onClick={() => setShowWallpaperMenu(!showWallpaperMenu)}
+                className="text-[9px] text-gray-400 hover:text-white uppercase tracking-wider transition-colors whitespace-nowrap"
               >
-                <Terminal size={10} /> {showSidebarOnMobile ? t('dashboard.hide_hud', 'HIDE HUD') : t('dashboard.show_hud', 'SHOW HUD')}
+                {t('dashboard.wallpaper')}
               </button>
             </>
           )}
+          {isMobile && (
+            <button
+              onClick={() => setShowSidebarOnMobile(!showSidebarOnMobile)}
+              className={`text-[9px] uppercase tracking-wider transition-colors flex items-center gap-1 flex-shrink-0 ${showSidebarOnMobile ? 'text-[#39ff14] font-bold' : 'text-gray-400 hover:text-white'}`}
+            >
+              <Terminal size={10} /> {showSidebarOnMobile ? 'HUD ✕' : 'HUD'}
+            </button>
+          )}
         </div>
-        <div className="flex items-center gap-4 text-[9px] text-gray-400 font-medium pointer-events-auto">
+        <div className="flex items-center gap-2 sm:gap-4 text-[9px] text-gray-400 font-medium pointer-events-auto flex-shrink-0">
           <LanguageSwitcher />
-          <div className="h-3 w-[1px] bg-white/10" />
-          <span>{t('dashboard.badge_label')} <span className="text-[#39ff14] font-bold">{user?.badgeNumber}</span></span>
-          <div className="h-3 w-[1px] bg-white/10" />
-          <span className="flex items-center gap-1 text-[#39ff14]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14] animate-ping" /> {t('dashboard.core_ready')}
-          </span>
+          {!isMobile && (
+            <>
+              <div className="h-3 w-[1px] bg-white/10" />
+              <span className="whitespace-nowrap">{t('dashboard.badge_label')} <span className="text-[#39ff14] font-bold">{user?.badgeNumber}</span></span>
+              <div className="h-3 w-[1px] bg-white/10" />
+              <span className="flex items-center gap-1 text-[#39ff14] whitespace-nowrap">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14] animate-ping" /> {t('dashboard.core_ready')}
+              </span>
+            </>
+          )}
+          {isMobile && (
+            <span className="flex items-center gap-1 text-[#39ff14]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14] animate-ping" />
+            </span>
+          )}
         </div>
       </div>
 
@@ -1330,10 +1342,10 @@ export default function CaseDashboardPage() {
 
       {/* Scrollable Desktop Area for Folders */}
       <div
-        className={`absolute top-12 bottom-20 left-6 ${isMobile ? 'right-6' : 'right-[460px]'} overflow-y-auto pointer-events-auto z-10 pr-2 custom-desktop-scrollbar`}
+        className={`absolute top-12 bottom-20 left-6 ${isMobile ? 'right-6' : 'right-[440px]'} overflow-y-auto pointer-events-auto z-10 pr-2 custom-desktop-scrollbar`}
         style={{ scrollbarWidth: 'thin' }}
       >
-        <div className="grid grid-cols-8 gap-3 pb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 pb-6">
           {/* Initialize Case Icon */}
           <div
             onClick={handleCreateCase}
@@ -1405,7 +1417,7 @@ export default function CaseDashboardPage() {
       <div
         className={
           isMobile
-            ? `fixed top-12 right-0 bottom-20 w-[420px] max-w-[85vw] bg-[#050b14]/95 border-l border-[#39ff14]/20 p-4 flex flex-col gap-4 z-[991] transition-transform duration-300 pointer-events-auto select-none overflow-y-auto ${showSidebarOnMobile ? 'translate-x-0 shadow-[0_0_50px_rgba(57,255,20,0.15)]' : 'translate-x-full'}`
+            ? `fixed top-12 right-0 bottom-20 w-full max-w-[420px] bg-[#050b14]/95 border-l border-[#39ff14]/20 p-4 flex flex-col gap-4 z-[991] transition-transform duration-300 pointer-events-auto select-none overflow-y-auto ${showSidebarOnMobile ? 'translate-x-0 shadow-[0_0_50px_rgba(57,255,20,0.15)]' : 'translate-x-full'}`
             : "absolute top-12 right-6 bottom-20 w-[420px] flex flex-col gap-4 pointer-events-none z-10 select-none"
         }
       >
@@ -1459,10 +1471,10 @@ export default function CaseDashboardPage() {
             onClick={() => focusWindow(win.id)}
             className={`absolute flex flex-col border shadow-2xl transition-all duration-100 bg-[#04080e]/95 backdrop-blur-xl ${isFocused ? 'border-[#39ff14] shadow-[#39ff14]/5' : 'border-white/10 shadow-black/80'}`}
             style={{
-              left: win.isMaximized ? 0 : win.x,
-              top: win.isMaximized ? '2rem' : win.y,
-              width: win.isMaximized ? '100vw' : win.width,
-              height: win.isMaximized ? 'calc(100vh - 2rem)' : win.height,
+              left: (win.isMaximized || isMobile) ? 0 : win.x,
+              top: (win.isMaximized || isMobile) ? '2rem' : win.y,
+              width: (win.isMaximized || isMobile) ? '100%' : win.width,
+              height: (win.isMaximized || isMobile) ? 'calc(100% - 2rem)' : win.height,
               zIndex: win.zIndex
             }}
           >
@@ -1592,8 +1604,29 @@ export default function CaseDashboardPage() {
         );
       })}
 
+      {/* On mobile: open window task buttons float ABOVE the dock in their own row */}
+      {isMobile && windows.length > 0 && (
+        <div className="absolute bottom-20 left-0 right-0 flex items-center justify-center px-3 z-[998]">
+          <div className="flex gap-2 overflow-x-auto max-w-full pb-1" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+            {windows.map(w => {
+              const isOpen = !w.isMinimized;
+              return (
+                <button
+                  key={`task-mobile-${w.id}`}
+                  onClick={() => toggleMinimize(w.id)}
+                  className={`flex-shrink-0 px-3 h-8 rounded-xl transition-all flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-wider ${isOpen ? 'bg-[#39ff14]/10 border border-[#39ff14]/30 text-[#39ff14]' : 'bg-white/5 border border-white/5 text-gray-500'}`}
+                >
+                  <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isOpen ? 'bg-[#39ff14] animate-pulse' : 'bg-gray-600'}`} />
+                  <span className="max-w-[80px] truncate"><Transliterate>{w.title.replace('Case Workspace: ', '').replace('Case Analysis: ', '')}</Transliterate></span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Floating System Dock (Taskbar) */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 h-14 bg-[#080d16]/75 border border-white/10 backdrop-blur-xl rounded-2xl flex items-center px-4 gap-3 z-[999] shadow-2xl">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 h-14 bg-[#080d16]/75 border border-white/10 backdrop-blur-xl rounded-2xl flex items-center px-2 sm:px-4 gap-2 sm:gap-3 z-[999] shadow-2xl max-w-[calc(100vw-2rem)] overflow-x-auto">
         <button
           onClick={handleCreateCase}
           title={t('dashboard.create_case')}
@@ -1639,10 +1672,10 @@ export default function CaseDashboardPage() {
 
         <NotificationPanel />
 
-        <div className="h-6 w-[1px] bg-white/10" />
+        {/* On desktop: window task buttons stay inline in the dock */}
+        {!isMobile && windows.length > 0 && <div className="h-6 w-[1px] bg-white/10" />}
 
-        {/* Minimized / Active Window Task list */}
-        {windows.map(w => {
+        {!isMobile && windows.map(w => {
           const isOpen = !w.isMinimized;
           return (
             <button
@@ -1660,7 +1693,7 @@ export default function CaseDashboardPage() {
           );
         })}
 
-        {windows.length > 0 && <div className="h-6 w-[1px] bg-white/10" />}
+        {!isMobile && windows.length > 0 && <div className="h-6 w-[1px] bg-white/10" />}
 
         {/* Disconnect */}
         <button

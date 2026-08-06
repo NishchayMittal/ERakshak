@@ -186,8 +186,8 @@ export function CaseWindow({ win }: CaseWindowProps) {
 
   return (
                   <div className="flex flex-col flex-1 min-height-0 overflow-hidden">
-                    {/* Retro workspace tab headers */}
-                    <div className="flex gap-2 border-b border-white/10 pb-2 mb-3 flex-shrink-0 text-[9px] font-bold">
+                    {/* Retro workspace tab headers - scrollable on mobile */}
+                    <div className="flex gap-2 border-b border-white/10 pb-2 mb-3 flex-shrink-0 text-[9px] font-bold overflow-x-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
                       {[
                         { id: 'intake', label: t('case_window.tab_intake') },
                         { id: 'graph', label: t('case_window.tab_matrix') },
@@ -202,7 +202,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                             setWindows((prev: WindowItem[]) => prev.map((w) => w.id === win.id ? { ...w, activeTab: t.id } : w));
                             if (t.id === 'report') fetchNarrativeReport(caseId);
                           }}
-                          className={`px-3 py-1.5 border transition ${tab === t.id ? 'bg-[#39ff14]/15 border-[#39ff14] text-[#39ff14]' : 'bg-transparent border-white/10 text-gray-400 hover:text-white hover:border-white/20'}`}
+                          className={`px-3 py-1.5 border transition flex-shrink-0 whitespace-nowrap ${tab === t.id ? 'bg-[#39ff14]/15 border-[#39ff14] text-[#39ff14]' : 'bg-transparent border-white/10 text-gray-400 hover:text-white hover:border-white/20'}`}
                         >
                           {t.label}
                         </button>
@@ -215,7 +215,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                       {/* Intake Tab */}
                       {tab === 'intake' && (
                         <div className="flex flex-col gap-4 flex-grow overflow-y-auto pr-1">
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {/* Input Form */}
                             <div className="bg-black/35 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
                               <h4 className="text-[10px] font-bold text-[#39ff14] border-b border-white/5 pb-1">{t('case_window.inject_seeds')}</h4>

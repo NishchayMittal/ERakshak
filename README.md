@@ -14,7 +14,7 @@ The system is composed of two main parts:
 - **Pluggable Connector Architecture**: Concurrent asynchronous registry loop to query various OSINT sources like WHOIS/RDAP, crt.sh, Web Archive CDX, Breach Repositories, and Face Similarity Matcher.
 - **Ingestion & Normalization**: Translates native text scripts to normalized Latin form, dynamically categorizes inputs (emails, domains, phones, etc.), and sanitizes data.
 - **NetworkX Link Correlation Engine**: Maps case-wide associations, disambiguates suspects using fuzzy string comparison, and detects key hub entities (pivots). It utilizes a Fellegi-Sunter baseline matcher and an XGBoost refinement layer.
-- **Evidentiary Dossier Reports**: Compiles a single source of truth "Evidence Pack" and generates comprehensive case reports in JSON, CSV, and PDF formats, accompanied by LLM narrative synthesis using Ollama.
+- **Evidentiary Dossier Reports**: Compiles a single source of truth "Evidence Pack" and generates comprehensive case reports in JSON, CSV, and PDF formats, accompanied by local RAG narrative synthesis with optional remote fallback.
 
 ## Project Structure
 
@@ -32,7 +32,7 @@ The system is composed of two main parts:
 - **Python 3.10+** (For the backend)
 - **Node.js 18+** (For the frontend)
 - **Git**
-- **Ollama** (Optional, for generating AI PDF dossiers completely for free)
+- **sentence-transformers** is installed through the backend Python dependencies for local embeddings
 - **Redis** (If running locally without Docker)
 - **Docker & Docker Compose** (Highly Recommended for easiest setup)
 
@@ -76,8 +76,13 @@ The easiest way to run the entire stack (API, Frontend, Redis, and Celery Worker
    ```ini
    DATABASE_URL="sqlite:///./erakshak.db"
    JWT_SECRET="your-super-secret-key-here"
-   OLLAMA_BASE_URL="http://localhost:11434"
+   LOCAL_RAG_ENABLED=true
+   RAG_STORE_DIR="app/resources/rag_store"
+   RAG_TOP_K=5
+   RAG_CHUNK_SIZE=900
    REDIS_URL="redis://localhost:6379/0"
+   # Optional fallback only if you want remote synthesis
+   # GROQ_API_KEY="your-groq-key"
    ```
 5. Start **Redis** locally on port 6379.
 6. Start the Celery worker (in a new terminal, with the virtual environment activated):
@@ -108,15 +113,15 @@ The easiest way to run the entire stack (API, Frontend, Redis, and Celery Worker
    ```
    _The frontend UI will automatically open in your browser at http://localhost:5173_
 
-### 4. Setting up the Local AI (Ollama)
+### 4. Setting up the Local RAG Layer
 
-e-Rakshak uses a local, 100% free AI model to generate intelligent summaries for your PDF dossiers without requiring paid API keys.
+e-Rakshak now uses a local retrieval-augmented generation path for chat and report synthesis. Case evidence is indexed locally, embeddings are generated with `sentence-transformers/all-MiniLM-L6-v2`, and chat/report responses are built from the local case index first.
 
-1. Download and install **Ollama** from [ollama.com](https://ollama.com).
-2. Open a terminal and run the following command to download the `llama3` model (this takes a few minutes but you only have to do it once):
-   ```bash
-   ollama run llama3
-   ```
-3. Once the model is downloaded and running, the e-Rakshak backend will automatically connect to it to generate dossier narratives! If Ollama is not running, the system will gracefully degrade and output a mock placeholder narrative.
+1. Make sure the backend dependencies are installed, including `sentence-transformers`.
+2. Keep the backend API and worker running so the local index can be refreshed when cases change.
+3. If you want a remote fallback for rare edge cases, set `GROQ_API_KEY` in `backend/.env`; otherwise the system stays local-first.
+4. The persisted case index lives under `backend/app/resources/rag_store/` by default, so keep that directory available in your deployment volume or container.
+
+Deployment note: for the already-live website, the UI can stay on the same host, but the backend worker and persistent RAG store must stay available or the system will rebuild indexes on demand and chat/report quality will degrade during restarts.
 
 ---

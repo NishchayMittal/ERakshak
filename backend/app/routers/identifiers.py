@@ -10,6 +10,7 @@ from app.database import get_db
 from app.models import Case, Finding, Identifier, Investigator
 from app.normalize import detect_type, normalize
 from app.schemas import FindingOut, IdentifierCreate, IdentifierOut
+from app.worker import dispatch_rag_reindex
 
 
 router = APIRouter(prefix="/identifiers", tags=["identifiers"])
@@ -51,6 +52,7 @@ def create_identifier(
         case_id=case.id,
         detail={"identifier_id": identifier.id, "type": identifier.type.value, "normalized_value": identifier.normalized_value},
     )
+    dispatch_rag_reindex(case.id, current_investigator.id)
     return identifier
 
 

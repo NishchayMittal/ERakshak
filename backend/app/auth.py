@@ -41,30 +41,15 @@ def decode_access_token(token: str) -> str:
 
 
 def get_current_investigator(token: str | None = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> Investigator:
-    investigator = None
-    if token:
-        try:
-            badge_id = decode_access_token(token)
-            investigator = db.query(Investigator).filter(Investigator.badge_id == badge_id).first()
-        except Exception:
-            pass
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
+    badge_id = decode_access_token(token)
+    investigator = db.query(Investigator).filter(Investigator.badge_id == badge_id).first()
     if not investigator:
-        # Fallback to the first investigator or create a default one
-        investigator = db.query(Investigator).first()
-        if not investigator:
-            investigator = Investigator(
-                badge_id="INV-001",
-                full_name="Leon Lobo",
-                hashed_password=hash_password("Password123!"),
-                is_active=True,
-                is_approved=True
-            )
-            db.add(investigator)
-            db.commit()
-            db.refresh(investigator)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-    if investigator and investigator.badge_id == "INV-001" and not investigator.is_approved:
+    if investigator.badge_id == "INV-001" and not investigator.is_approved:
         investigator.is_approved = True
         db.commit()
 

@@ -317,13 +317,28 @@ def compile_evidence_pack(case_id: str, db: Session, investigator_id: str) -> di
     if not case:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
 
-    identifiers = db.query(Identifier).filter(Identifier.case_id == case_id).all()
-    notes = db.query(CaseNote).filter(CaseNote.case_id == case_id).all()
+    identifiers = (
+        db.query(Identifier)
+        .filter(Identifier.case_id == case_id)
+        .order_by(Identifier.timestamp.asc(), Identifier.id.asc())
+        .all()
+    )
+    notes = (
+        db.query(CaseNote)
+        .filter(CaseNote.case_id == case_id)
+        .order_by(CaseNote.created_at.asc(), CaseNote.id.asc())
+        .all()
+    )
     
     # 1. Build Identifiers with nested findings
     identifiers_data = []
     for i in identifiers:
-        findings_query = db.query(Finding).filter(Finding.identifier_id == i.id).all()
+        findings_query = (
+            db.query(Finding)
+            .filter(Finding.identifier_id == i.id)
+            .order_by(Finding.discovered_at.asc(), Finding.id.asc())
+            .all()
+        )
         findings_data = [{
             "id": f.id,
             "connector": f.connector_name,

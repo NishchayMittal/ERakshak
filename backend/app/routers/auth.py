@@ -38,11 +38,11 @@ def register(payload: InvestigatorCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    investigator = db.query(Investigator).filter(Investigator.badge_id == form_data.username).first()
+    investigator = db.query(Investigator).filter(Investigator.badge_id == form_data.username.upper()).first()
     
     if not investigator:
         # Check if the database is completely empty; if so, create the default user
-        if db.query(Investigator).count() == 0 and form_data.username == "INV-001":
+        if db.query(Investigator).count() == 0 and form_data.username.upper() == "INV-001":
             investigator = Investigator(
                 badge_id="INV-001",
                 full_name="Leon Lobo",
@@ -138,9 +138,10 @@ def reject_investigator(
     target = db.query(Investigator).filter(Investigator.id == investigator_id).first()
     if not target:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Investigator not found")
+    badge_id = target.badge_id
     db.delete(target)
     db.commit()
-    log_action(db, "investigator.reject", investigator_id=investigator_id, detail={"badge_id": target.badge_id})
+    log_action(db, "investigator.reject", investigator_id=current_investigator.id, detail={"badge_id": badge_id})
     return {"status": "rejected"}
 
 

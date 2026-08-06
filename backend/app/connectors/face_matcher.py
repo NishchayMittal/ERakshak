@@ -46,9 +46,9 @@ class FaceMatcherConnector(BaseConnector):
             from PIL import Image
 
             if identifier_value.startswith("http://") or identifier_value.startswith("https://"):
-                import httpx, asyncio, tempfile
+                import httpx, asyncio, tempfile, uuid
                 temp_path = os.path.join(
-                    os.path.dirname(__file__), "..", "resources", "_tmp_face.png"
+                    os.path.dirname(__file__), "..", "resources", f"_tmp_face_{uuid.uuid4().hex}.png"
                 )
                 async with httpx.AsyncClient(timeout=self.timeout_seconds, follow_redirects=True) as c:
                     resp = await c.get(identifier_value)

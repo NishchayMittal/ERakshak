@@ -174,7 +174,7 @@ export default function ChatPanel({
           fontSize: 8,
           color: 'var(--text-muted)'
         }}>
-          {t('chat.model_label', 'MODEL: LLAMA-3.3-70B-VERSATILE')}
+          {t('chat.model_label', 'MODEL: LOCAL RAG')}
         </div>
       </div>
 

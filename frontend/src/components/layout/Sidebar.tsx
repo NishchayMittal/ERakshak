@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useUIStore } from '../../state/uiStore';
 import { useCaseStore } from '../../state/caseStore';
 import { useAuth } from '../../hooks/useAuth';
 import { useGraphStore } from '../../state/graphStore';
+import { getPendingApprovals } from '../../api/endpoints';
 
 // Hard-edged SVG icons – no libraries needed
 const Icons = {
@@ -75,6 +76,7 @@ export default function Sidebar() {
   const location = useLocation();
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
 
   const activeCaseId = params.caseId || activeCase?.caseId;
 
@@ -88,6 +90,36 @@ export default function Sidebar() {
       navigate(`/cases/${caseId}/intake`);
     }
   };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const refreshPendingApprovals = async () => {
+      if (user?.badgeNumber !== 'INV-001') {
+        setPendingApprovalsCount(0);
+        return;
+      }
+
+      try {
+        const approvals = await getPendingApprovals();
+        if (!cancelled) {
+          setPendingApprovalsCount(approvals.length);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setPendingApprovalsCount(0);
+        }
+      }
+    };
+
+    refreshPendingApprovals();
+    const interval = window.setInterval(refreshPendingApprovals, 15000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [user?.badgeNumber]);
 
   return (
     <aside
@@ -200,13 +232,21 @@ export default function Sidebar() {
               </span>
               {!sidebarCollapsed && <span>{item.label}</span>}
 
-              {/* Red notification dot – always show for demo */}
-              <span style={{
-                position: 'absolute', top: 6, right: sidebarCollapsed ? 10 : 8,
-                width: 6, height: 6, borderRadius: '50%',
-                background: 'var(--accent-threat)',
-                boxShadow: '0 0 4px var(--accent-threat)',
-              }} />
+              {pendingApprovalsCount > 0 && (
+                <span
+                  title={`${pendingApprovalsCount} pending approval${pendingApprovalsCount === 1 ? '' : 's'}`}
+                  style={{
+                    position: 'absolute',
+                    top: 6,
+                    right: sidebarCollapsed ? 10 : 8,
+                    minWidth: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: 'var(--accent-threat)',
+                    boxShadow: '0 0 4px var(--accent-threat)',
+                  }}
+                />
+              )}
             </NavLink>
           );
         })}

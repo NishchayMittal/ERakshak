@@ -115,12 +115,14 @@ export function ProfileWindow() {
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
                     <button
+                      type="button"
                       onClick={() => handleApprove(req.id, req.full_name)}
                       className="px-2 py-1 bg-[#39ff14]/15 border border-[#39ff14] hover:bg-[#39ff14]/25 text-[#39ff14] text-[8px] font-bold uppercase transition-all"
                     >
                       {t('profile.approve')}
                     </button>
                     <button
+                      type="button"
                       onClick={() => handleReject(req.id, req.full_name)}
                       className="px-2 py-1 bg-red-500/10 border border-red-500 hover:bg-red-500/20 text-red-400 text-[8px] font-bold uppercase transition-all"
                     >

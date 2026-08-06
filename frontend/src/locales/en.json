@@ -145,7 +145,7 @@
   },
   "chat": {
     "title": "AI INVESTIGATION ASSISTANT",
-    "model_label": "MODEL: LLAMA-3.3-70B-VERSATILE",
+    "model_label": "MODEL: LOCAL RAG",
     "placeholder": "Ask about linked entities, breach data, connections, or investigation details...",
     "processing": "PROCESSING...",
     "send": "SEND",
@@ -260,7 +260,7 @@
     "running": "RUNNING...",
     "regenerate": "REGENERATE",
     "provider": "PROVIDER:",
-    "provider_val": "OLLAMA (LOCAL COMPILER)",
+    "provider_val": "LOCAL RAG INDEX",
     "temperature": "TEMPERATURE:",
     "temp_val": "0.25 (BOUNDED)",
     "context": "CONTEXT VECTORS:",

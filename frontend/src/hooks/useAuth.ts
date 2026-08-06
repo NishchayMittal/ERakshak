@@ -6,6 +6,8 @@ import { apiClient } from '../api/client';
 const savedToken = localStorage.getItem('er_token');
 if (savedToken) {
   apiClient.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`;
+} else {
+  delete apiClient.defaults.headers.common['Authorization'];
 }
 
 export interface Investigator {
@@ -24,18 +26,13 @@ interface AuthState {
 const useAuthStore = create<AuthState>((set) => ({
   user: (() => {
     try {
+      if (!savedToken) return null;
       const saved = localStorage.getItem('er_user');
       if (saved) return JSON.parse(saved);
     } catch (e) {
       console.warn('Failed to parse saved auth credentials:', e);
     }
-    // Default logged-in investigator for prototype convenience
-    return {
-      id: 'INV-001',
-      name: 'Leon Lobo',
-      role: 'Lead Investigator',
-      badgeNumber: 'INV-001',
-    };
+    return null;
   })(),
   setUser: (user) => {
     try {
@@ -79,7 +76,7 @@ export function useAuth() {
 
   return {
     user,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && !!savedToken,
     login,
     logout,
     setUser,

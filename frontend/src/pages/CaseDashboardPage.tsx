@@ -1244,38 +1244,50 @@ export default function CaseDashboardPage() {
       <div className="absolute inset-0 pointer-events-none bg-radial-vignette mix-blend-overlay opacity-30 z-50" />
 
       {/* Top Menu Bar */}
-      <div className="absolute top-0 left-0 right-0 h-8 bg-black/60 backdrop-blur-md border-b border-[#39ff14]/15 flex items-center justify-between px-4 z-[999] text-[10px]">
-        <div className="flex items-center gap-4">
-          <span className="font-bold tracking-wider text-[#39ff14] flex items-center gap-1.5 animate-pulse">
-            <Shield size={12} /> {t('dashboard.console_title')}
+      <div className="absolute top-0 left-0 right-0 h-8 bg-black/60 backdrop-blur-md border-b border-[#39ff14]/15 flex items-center justify-between px-2 sm:px-4 z-[999] text-[10px] overflow-hidden">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink-0">
+          <span className="font-bold tracking-wider text-[#39ff14] flex items-center gap-1.5 animate-pulse whitespace-nowrap">
+            <Shield size={12} />
+            <span className="hidden sm:inline">{t('dashboard.console_title')}</span>
+            <span className="sm:hidden">ORION</span>
           </span>
-          <div className="h-3 w-[1px] bg-white/10" />
-          <button
-            onClick={() => setShowWallpaperMenu(!showWallpaperMenu)}
-            className="text-[9px] text-gray-400 hover:text-white uppercase tracking-wider transition-colors"
-          >
-            {t('dashboard.wallpaper')}
-          </button>
-          {isMobile && (
+          {!isMobile && (
             <>
               <div className="h-3 w-[1px] bg-white/10" />
               <button
-                onClick={() => setShowSidebarOnMobile(!showSidebarOnMobile)}
-                className={`text-[9px] uppercase tracking-wider transition-colors flex items-center gap-1.5 ${showSidebarOnMobile ? 'text-[#39ff14] font-bold' : 'text-gray-400 hover:text-white'}`}
+                onClick={() => setShowWallpaperMenu(!showWallpaperMenu)}
+                className="text-[9px] text-gray-400 hover:text-white uppercase tracking-wider transition-colors whitespace-nowrap"
               >
-                <Terminal size={10} /> {showSidebarOnMobile ? t('dashboard.hide_hud', 'HIDE HUD') : t('dashboard.show_hud', 'SHOW HUD')}
+                {t('dashboard.wallpaper')}
               </button>
             </>
           )}
+          {isMobile && (
+            <button
+              onClick={() => setShowSidebarOnMobile(!showSidebarOnMobile)}
+              className={`text-[9px] uppercase tracking-wider transition-colors flex items-center gap-1 flex-shrink-0 ${showSidebarOnMobile ? 'text-[#39ff14] font-bold' : 'text-gray-400 hover:text-white'}`}
+            >
+              <Terminal size={10} /> {showSidebarOnMobile ? 'HUD ✕' : 'HUD'}
+            </button>
+          )}
         </div>
-        <div className="flex items-center gap-4 text-[9px] text-gray-400 font-medium pointer-events-auto">
+        <div className="flex items-center gap-2 sm:gap-4 text-[9px] text-gray-400 font-medium pointer-events-auto flex-shrink-0">
           <LanguageSwitcher />
-          <div className="h-3 w-[1px] bg-white/10" />
-          <span>{t('dashboard.badge_label')} <span className="text-[#39ff14] font-bold">{user?.badgeNumber}</span></span>
-          <div className="h-3 w-[1px] bg-white/10" />
-          <span className="flex items-center gap-1 text-[#39ff14]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14] animate-ping" /> {t('dashboard.core_ready')}
-          </span>
+          {!isMobile && (
+            <>
+              <div className="h-3 w-[1px] bg-white/10" />
+              <span className="whitespace-nowrap">{t('dashboard.badge_label')} <span className="text-[#39ff14] font-bold">{user?.badgeNumber}</span></span>
+              <div className="h-3 w-[1px] bg-white/10" />
+              <span className="flex items-center gap-1 text-[#39ff14] whitespace-nowrap">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14] animate-ping" /> {t('dashboard.core_ready')}
+              </span>
+            </>
+          )}
+          {isMobile && (
+            <span className="flex items-center gap-1 text-[#39ff14]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14] animate-ping" />
+            </span>
+          )}
         </div>
       </div>
 

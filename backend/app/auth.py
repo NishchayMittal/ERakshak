@@ -70,4 +70,10 @@ def get_current_investigator(token: str | None = Depends(oauth2_scheme), db: Ses
         investigator.is_approved = True
         db.commit()
 
+    if not investigator.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Account has been deactivated.")
+        
+    if not investigator.is_approved:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account pending approval by Lead Investigator.")
+
     return investigator

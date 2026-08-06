@@ -62,6 +62,12 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         else:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Badge ID is not registered.")
 
+    if not investigator.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account has been deactivated. Contact administration."
+        )
+
     if not verify_password(form_data.password, investigator.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid security passphrase.")
 

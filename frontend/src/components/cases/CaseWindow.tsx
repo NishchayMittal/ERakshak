@@ -56,7 +56,8 @@ export function CaseWindow({ win }: CaseWindowProps) {
     handleGoToNode,
     loadGraphForCase,
     getNodeAbbreviation,
-    setWindows
+    setWindows,
+    reportLoadingPerCase
   } = useDashboardContext();
 
   const caseId = win.caseId;
@@ -999,8 +1000,13 @@ export function CaseWindow({ win }: CaseWindowProps) {
                               <FileText size={13} className="text-[#39ff14]" /> {t('case_window.ai_summary')}
                             </span>
                             <div className="flex items-center gap-2">
-                              <button onClick={() => fetchNarrativeReport(caseId, true)} className="border border-white/20 hover:bg-white/10 text-gray-300 text-[8px] font-bold px-2 py-1 flex items-center gap-1 uppercase">
-                                <RefreshCw size={9} /> {t('case_window.re_synthesize')}
+                              <button
+                                onClick={() => fetchNarrativeReport(caseId, true)}
+                                disabled={reportLoadingPerCase[caseId]}
+                                className="border border-white/20 hover:bg-white/10 text-gray-300 text-[8px] font-bold px-2 py-1 flex items-center gap-1 uppercase disabled:opacity-50 disabled:pointer-events-none"
+                              >
+                                <RefreshCw size={9} className={reportLoadingPerCase[caseId] ? 'animate-spin' : ''} />
+                                {reportLoadingPerCase[caseId] ? t('login.processing') : t('case_window.re_synthesize')}
                               </button>
                               <button onClick={() => triggerExport(caseId, 'json')} className="border border-[#39ff14] hover:bg-[#39ff14]/10 text-[#39ff14] text-[8px] font-bold px-2 py-1 flex items-center gap-1 uppercase">
                                 <Download size={9} /> JSON

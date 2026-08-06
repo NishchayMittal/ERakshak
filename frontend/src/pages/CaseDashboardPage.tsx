@@ -5,7 +5,7 @@ import { useUIStore } from '../state/uiStore';
 import { useAuth } from '../hooks/useAuth';
 import { useGraphStore } from '../state/graphStore';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { Plus, X, Maximize2, Minimize2, Terminal, Shield, Folder, Network, Search, Filter, History, Share2, Compass, Edit, FileText, Download, User, Menu, Globe, LogOut, Minus } from 'lucide-react';
+import { Plus, X, Maximize2, Minimize2, Terminal, Shield, Folder, Network, Search, Filter, History, Share2, Compass, Edit, FileText, Download, User, Menu, Globe, LogOut, RefreshCw, Minus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Transliterate, useTransliterate } from '../components/ui/Transliterate';
 
@@ -120,6 +120,10 @@ export default function CaseDashboardPage() {
 
   const [retrainLogs, setRetrainLogs] = useState<string[]>([]);
   const [retrainProgress, setRetrainProgress] = useState<number | null>(null);
+
+  const [caseCreating, setCaseCreating] = useState(false);
+  const [approvingIds, setApprovingIds] = useState<Record<string, 'approve' | 'reject' | null>>({});
+  const [reportLoadingPerCase, setReportLoadingPerCase] = useState<Record<string, boolean>>({});
 
   const [activeEntityPerCase, setActiveEntityPerCase] = useState<Record<string, string>>({});
   const [nodePositionsPerCase, setNodePositionsPerCase] = useState<Record<string, Record<string, { x: number; y: number }>>>({});
@@ -896,6 +900,7 @@ export default function CaseDashboardPage() {
   };
 
   const handleCreateCase = async () => {
+    setCaseCreating(true);
     try {
       let caseNumber = cases.length + 1;
       let title = `Investigation #${caseNumber} — AD HOC`;
@@ -914,6 +919,8 @@ export default function CaseDashboardPage() {
     } catch (err) {
       console.error(err);
       showToast('Failed to initialize case', 'error');
+    } finally {
+      setCaseCreating(false);
     }
   };
 
@@ -1067,6 +1074,7 @@ export default function CaseDashboardPage() {
     if (!forceRegenerate && caseReportNarrative[caseId] && caseReportNarrative[caseId].trim().length > 0) {
       return;
     }
+    setReportLoadingPerCase(prev => ({ ...prev, [caseId]: true }));
     try {
       showToast('Generating AI narrative synthesis...', 'info');
       const res = await getNarrative(caseId);
@@ -1076,6 +1084,8 @@ export default function CaseDashboardPage() {
       }));
     } catch {
       showToast('Failed to generate report narrative', 'error');
+    } finally {
+      setReportLoadingPerCase(prev => ({ ...prev, [caseId]: false }));
     }
   };
 
@@ -1107,22 +1117,28 @@ export default function CaseDashboardPage() {
   }, [user]);
 
   const handleApprove = async (id: string, name: string) => {
+    setApprovingIds(prev => ({ ...prev, [id]: 'approve' }));
     try {
       await approveInvestigator(id);
       showToast(`APPROVED REGISTRATION FOR ${name.toUpperCase()}`, 'success');
       fetchPendingApprovals();
     } catch {
       showToast('FAILED TO APPROVE INVESTIGATOR', 'error');
+    } finally {
+      setApprovingIds(prev => ({ ...prev, [id]: null }));
     }
   };
 
   const handleReject = async (id: string, name: string) => {
+    setApprovingIds(prev => ({ ...prev, [id]: 'reject' }));
     try {
       await rejectInvestigator(id);
       showToast(`DENIED REGISTRATION FOR ${name.toUpperCase()}`, 'success');
       fetchPendingApprovals();
     } catch {
       showToast('FAILED TO DENY INVESTIGATOR', 'error');
+    } finally {
+      setApprovingIds(prev => ({ ...prev, [id]: null }));
     }
   };
 
@@ -1215,6 +1231,7 @@ export default function CaseDashboardPage() {
     profileUpdating,
     showProfilePassInput, setShowProfilePassInput,
     pendingApprovals, loadingPending,
+    caseCreating, approvingIds, reportLoadingPerCase,
     cases, user,
     handleNodeDrag, handleZoom, handleSvgMouseDown,
     addCaseSeed, removeCaseSeed, runIngestPipeline,
@@ -1370,11 +1387,15 @@ export default function CaseDashboardPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 pb-6">
           {/* Initialize Case Icon */}
           <div
-            onClick={handleCreateCase}
-            className="flex flex-col items-center justify-center p-2 rounded border border-dashed border-[#39ff14]/30 bg-[#39ff14]/5 hover:bg-[#39ff14]/15 hover:border-[#39ff14] group transition-all duration-150 cursor-pointer pointer-events-auto text-center h-[110px] w-full max-w-[120px] mx-auto flex-shrink-0"
+            onClick={caseCreating ? undefined : handleCreateCase}
+            className={`flex flex-col items-center justify-center p-2 rounded border border-dashed border-[#39ff14]/30 bg-[#39ff14]/5 hover:bg-[#39ff14]/15 hover:border-[#39ff14] group transition-all duration-150 cursor-pointer pointer-events-auto text-center h-[110px] w-full max-w-[120px] mx-auto flex-shrink-0 ${caseCreating ? 'opacity-50 pointer-events-none' : ''}`}
           >
             <div className="w-10 h-10 flex items-center justify-center text-[#39ff14]">
-              <Plus size={32} className="group-hover:scale-110 transition-transform" />
+              {caseCreating ? (
+                <RefreshCw size={28} className="animate-spin" />
+              ) : (
+                <Plus size={32} className="group-hover:scale-110 transition-transform" />
+              )}
             </div>
             <span className="mt-1 text-[11px] font-bold text-gray-300 tracking-wider group-hover:text-white uppercase line-clamp-2 leading-tight">
               {t('dashboard.initialize')}
@@ -1651,10 +1672,11 @@ export default function CaseDashboardPage() {
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 h-14 bg-[#080d16]/75 border border-white/10 backdrop-blur-xl rounded-2xl flex items-center px-2 sm:px-4 gap-2 sm:gap-3 z-[999] shadow-2xl max-w-[calc(100vw-2rem)]">
         <button
           onClick={handleCreateCase}
+          disabled={caseCreating}
           title={t('dashboard.create_case')}
-          className="w-10 h-10 rounded-xl hover:bg-white/5 active:bg-white/10 transition-colors flex items-center justify-center text-gray-300 hover:text-[#39ff14]"
+          className="w-10 h-10 rounded-xl hover:bg-white/5 active:bg-white/10 transition-colors flex items-center justify-center text-gray-300 hover:text-[#39ff14] disabled:opacity-50 disabled:pointer-events-none"
         >
-          <Plus size={20} />
+          {caseCreating ? <RefreshCw size={20} className="animate-spin" /> : <Plus size={20} />}
         </button>
 
         <div className="h-6 w-[1px] bg-white/10" />

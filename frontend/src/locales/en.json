@@ -42,7 +42,8 @@
     "req_number": "NUMBER",
     "req_special": "SPECIAL (!@#$)",
     "server_error": "SERVER ERROR. PLEASE TRY AGAIN.",
-    "network_error": "NETWORK ERROR. SERVER MIGHT BE WAKING UP."
+    "network_error": "NETWORK ERROR. SERVER MIGHT BE WAKING UP.",
+    "processing": "PROCESSING..."
   },
   "dashboard": {
     "console_title": "ORION HOLOGRAPHIC CONSOLE",

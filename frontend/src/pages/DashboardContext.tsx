@@ -54,6 +54,9 @@ export interface DashboardContextType {
   
   pendingApprovals: PendingApproval[];
   loadingPending: boolean;
+  caseCreating: boolean;
+  approvingIds: Record<string, 'approve' | 'reject' | null>;
+  reportLoadingPerCase: Record<string, boolean>;
   
   // User/Cases
   cases: CaseSummary[];

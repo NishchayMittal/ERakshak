@@ -13,7 +13,6 @@ import { DashboardContext } from './DashboardContext';
 import { CaseWindow } from '../components/cases/CaseWindow';
 import { ProfileWindow } from '../components/cases/ProfileWindow';
 import { ExplorerWindow } from '../components/cases/ExplorerWindow';
-import TemporalWindow from '../components/cases/TemporalWindow';
 import { CrossCorrelationWindow } from '../components/cases/CrossCorrelationWindow';
 import { GeoMapWindow } from '../components/ui/GeoMapWindow';
 import { NotificationPanel } from '../components/ui/NotificationPanel';
@@ -35,7 +34,7 @@ import {
 interface WindowState {
   id: string;
   title: string;
-  type: 'case_workspace' | 'profile' | 'cases_explorer' | 'temporal_analysis' | 'cross_correlate' | 'geo_map';
+  type: 'case_workspace' | 'profile' | 'cases_explorer' | 'cross_correlate' | 'geo_map';
   x: number;
   y: number;
   width: number;
@@ -1534,9 +1533,6 @@ export default function CaseDashboardPage() {
               {win.type === 'case_workspace' && <CaseWindow win={win as { id: string; type: string; caseId: string; activeTab?: 'intake' | 'graph' | 'dossier' | 'report' }} />}
               {win.type === 'profile' && <ProfileWindow />}
               {win.type === 'cases_explorer' && <ExplorerWindow win={win} />}
-              {win.type === 'temporal_analysis' && (
-                <TemporalWindow caseId={win.caseId || lastAccessedCaseId || cases[0]?.caseId || ''} />
-              )}
               {win.type === 'cross_correlate' && <CrossCorrelationWindow win={win} />}
 
               {win.type === 'geo_map' && (

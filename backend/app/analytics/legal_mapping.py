@@ -252,98 +252,41 @@ def map_findings_to_legal_sections(findings: list) -> list[MappedLegalFlag]:
         rvalue = (f.result_value or "").lower()
 
         # ── Breach / Leak data ───────────────────────────────────────────────
-        if connector in ("breach_lookup", "hibp", "xposedornot"):
-            add("IT_43", f, 0.85, "Breach data indicates compromised credentials or leaked PII from a computer system.")
-            add("IT_66", f, 0.85, "Compromised accounts suggest computer-related offences as defined under Section 66.")
-            add("IT_66C", f, 0.92, "Presence of leaked credentials strongly indicates identity theft under Section 66C.")
-            if "password" in rvalue or "hash" in rvalue or "plain" in rtype:
-                add("IT_66D", f, 0.80, "Plaintext or hashed passwords found in breach data may facilitate cheating by personation.")
+        if connector in ("breach_lookup", "hibp", "xposedornot", "breach_demo"):
+            add("IT_43", f, 0.85, "Subject's data was found in a breach, indicating they are likely a victim of data theft or unauthorised computer access.")
+            add("IT_66C", f, 0.70, "Leaked passwords/credentials place the subject at high risk of Identity Theft.")
 
         # ── Crypto Wallet ────────────────────────────────────────────────────
         elif connector == "wallet_lookup":
-            add("IT_66C", f, 0.75, "Cryptocurrency wallet linked to the subject may indicate digital identity misuse.")
-            add("BNS_318", f, 0.78, "Crypto wallet activity may constitute digital cheating if associated with fraud.")
             if "total_received" in rtype or "balance" in rtype or "transaction" in rvalue:
-                add("PMLA_3", f, 0.82, "Cryptocurrency wallet with significant transaction volume triggers PMLA scrutiny.")
-                add("PMLA_4", f, 0.82, "Punishment provisions of PMLA may apply given discovered wallet transaction data.")
-
-        # ── Username Enumeration / Social Profiling ──────────────────────────
-        elif connector in ("username_enum", "social_profiler"):
-            add("IT_66E", f, 0.65, "Discovery of social profiles without the subject's knowledge raises privacy violation concerns.")
-            if "reddit" in rvalue or "instagram" in rvalue or "facebook" in rvalue:
-                add("BNS_351", f, 0.55, "Active social media presence discovered — relevant if harassment or intimidation is alleged.")
-
-        # ── WHOIS / RDAP ─────────────────────────────────────────────────────
-        elif connector == "whois_rdap":
-            if rtype in ("registrant_email", "registrant_name", "registrant_org"):
-                add("IT_66D", f, 0.70, "WHOIS registrant identity data may be used to establish cheating by personation if domain is used for fraud.")
-                add("BNS_318_4", f, 0.68, "Fraudulent domain registration linked to a subject constitutes aggravated cheating under BNS.")
+                # Only flag money laundering softly, as crypto isn't inherently illegal
+                add("PMLA_3", f, 0.40, "Cryptocurrency wallet with significant transaction volume may warrant scrutiny under PMLA if linked to proceeds of crime.")
 
         # ── Certificate Transparency / Subdomains ────────────────────────────
         elif connector == "crtsh":
-            add("IT_43", f, 0.60, "Discovered subdomains or certificates may indicate unauthorised infrastructure use.")
+            # Only trigger fraud/cheating if the subdomain looks deceptive
             if "phish" in rvalue or "login" in rvalue or "secure" in rvalue or "bank" in rvalue or "verify" in rvalue:
-                add("IT_66D", f, 0.88, "Subdomain name pattern strongly suggests phishing infrastructure — cheating by personation.")
-                add("BNS_318_4", f, 0.85, "Phishing subdomains indicate large-scale cheating operations.")
+                add("IT_66D", f, 0.88, "Subdomain name pattern strongly suggests phishing infrastructure, indicating potential cheating by personation.")
+                add("BNS_318_4", f, 0.85, "Phishing subdomains indicate structured online fraud and cheating.")
 
         # ── Shodan — Open Ports / CVEs ───────────────────────────────────────
         elif connector == "shodan_idb":
-            add("IT_43", f, 0.80, "Open ports and exposed services indicate potential for unauthorised access.")
-            add("IT_66", f, 0.78, "Exposed vulnerable services constitute computer-related offence risk.")
             if "cve" in rtype or "vuln" in rtype:
-                add("IT_66B", f, 0.75, "Known CVEs on the target infrastructure may indicate dishonest exploitation of stolen/compromised resources.")
-                add("IT_66F", f, 0.55, "Critical vulnerabilities on networked infrastructure may trigger cyber terrorism provisions if exploited at scale.")
-
-        # ── DNS Records ──────────────────────────────────────────────────────
-        elif connector == "dns_resolver":
-            if rtype in ("a_record", "aaaa_record", "mx_record"):
-                add("IT_43", f, 0.55, "Resolved DNS records help establish the digital infrastructure footprint for further investigation.")
-            if "spf" in rvalue or "dmarc" in rvalue:
-                add("IT_66D", f, 0.60, "Missing or misconfigured SPF/DMARC records may facilitate email spoofing — cheating by personation.")
-
-        # ── IP Geolocation ───────────────────────────────────────────────────
-        elif connector == "ip_geoloc":
-            add("IT_43", f, 0.60, "IP geolocation data establishes the physical location of computer infrastructure used in alleged offences.")
-            if rtype == "country" and rvalue not in ("india", "in"):
-                add("IT_66F", f, 0.50, "Foreign-origin IP infrastructure may be relevant to cross-border cyber offence provisions.")
-
-        # ── Photo / EXIF / Face Match ────────────────────────────────────────
-        elif connector in ("exif_extractor", "reverse_image", "ocr_extractor"):
-            add("IT_66E", f, 0.78, "Image metadata and face matching without subject consent raises serious privacy violation concerns.")
-            if connector == "exif_extractor" and ("gps" in rtype or "latitude" in rtype or "longitude" in rtype):
-                add("BNS_77", f, 0.65, "GPS coordinates extracted from photos without consent may constitute voyeurism if images are private in nature.")
-
-        # ── GitHub Commit Emails ─────────────────────────────────────────────
-        elif connector == "github_commits":
-            add("IT_66E", f, 0.65, "Extraction of real email addresses from public commit history without consent raises privacy concerns.")
-            add("IT_72", f, 0.60, "Disclosure of personal contact information extracted from development activity.")
-
-        # ── PGP Key Lookup ───────────────────────────────────────────────────
-        elif connector == "pgp_lookup":
-            add("IT_69", f, 0.70, "Discovery of PGP encryption keys associated with the subject is relevant to Section 69 interception/decryption authority. Law enforcement can seek decryption assistance.")
-
-        # ── Gravatar ─────────────────────────────────────────────────────────
-        elif connector == "gravatar_email":
-            add("IT_66E", f, 0.60, "Profile data retrieved via Gravatar hash lookup may constitute privacy violation if done without consent.")
-
-        # ── Name / Wikipedia ─────────────────────────────────────────────────
-        elif connector in ("name_search", "wikipedia_lookup"):
-            add("IT_66E", f, 0.45, "Aggregation of publicly available personal data without consent may raise privacy concerns under IT Act.")
+                add("IT_43", f, 0.60, "Known CVEs on the target infrastructure present a severe risk of unauthorised access or damage.")
 
         # ── Bucket Enumeration ───────────────────────────────────────────────
         elif connector == "bucket_enum":
             if "public" in rvalue or "accessible" in rvalue:
-                add("IT_43", f, 0.82, "Publicly accessible cloud storage buckets suggest unauthorised exposure of data — damage to computer resource.")
-                add("IT_66B", f, 0.75, "Access to improperly secured cloud buckets may constitute dishonestly receiving stolen/leaked computer resources.")
+                add("IT_43", f, 0.75, "Publicly accessible cloud storage buckets may contain sensitive data, indicating potential unauthorised exposure or data leaks.")
 
         # ── Wayback Machine ──────────────────────────────────────────────────
         elif connector == "wayback":
             if rtype == "snapshot" and ("login" in rvalue or "password" in rvalue or "admin" in rvalue):
-                add("IT_43", f, 0.65, "Historical snapshots showing exposed admin or login interfaces indicate past unauthorised access risk.")
+                add("IT_43", f, 0.50, "Historical snapshots showing exposed admin or login interfaces highlight past infrastructure vulnerabilities.")
 
-        # ── Phone Lookup ─────────────────────────────────────────────────────
-        elif connector == "phone_lookup":
-            add("IT_66E", f, 0.55, "Phone number metadata extraction (carrier, region, type) aggregates PII and raises privacy concerns.")
+        # Note: Benign OSINT data like Social Media (social_profiler), GitHub (github_commits), 
+        # Wikipedia, EXIF data, or WHOIS records do NOT inherently constitute a crime, 
+        # so they no longer trigger arbitrary legal offences.
 
     return [flag for flag, _ in accumulator.values()]
 

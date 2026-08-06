@@ -5,7 +5,6 @@ import { useDashboardContext } from '../../pages/DashboardContext';
 import { useCaseWebSocket } from '../../hooks/useCaseWebSocket';
 import { useGraphStore } from '../../state/graphStore';
 import { uploadImage, getIdentifiers, deleteIdentifier } from '../../api/endpoints';
-import TemporalWindow from './TemporalWindow';
 import ChatPanel from './ChatPanel';
 import LegalPanel from '../legal/LegalPanel';
 import type { GraphNode, GraphEdge } from '../../types/graph';
@@ -193,7 +192,6 @@ export function CaseWindow({ win }: CaseWindowProps) {
                         { id: 'intake', label: t('case_window.tab_intake') },
                         { id: 'graph', label: t('case_window.tab_matrix') },
                         { id: 'dossier', label: t('case_window.tab_dossier') },
-                        { id: 'temporal', label: t('case_window.tab_temporal') },
                         { id: 'legal', label: '⚖ LEGAL' },
                         { id: 'report', label: t('case_window.tab_report') },
                         { id: 'chat', label: t('case_window.tab_chat') }
@@ -759,11 +757,6 @@ export function CaseWindow({ win }: CaseWindowProps) {
                             {caseReportNarrative[caseId] || t('case_window.synthesizing')}
                           </div>
                         </div>
-                      )}
-
-                      {/* Temporal Behavioral Matrix Tab */}
-                      {tab === 'temporal' && (
-                        <TemporalWindow caseId={caseId} />
                       )}
 
                       {/* Indian Legal Section Mapping Tab */}

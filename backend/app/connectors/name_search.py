@@ -162,8 +162,8 @@ class NameSearchConnector(BaseConnector):
             queried_words = [w.lower() for w in name.split() if len(w) > 2]
             profile_name_lower = gh_name.lower()
             if gh_name and queried_words:
-                if not any(w in profile_name_lower for w in queried_words):
-                    continue   # profile display name doesn't match — skip
+                if not all(w in profile_name_lower for w in queried_words):
+                    continue   # profile display name doesn't match all words — skip
 
             profile_url = f"https://github.com/{login}"
 
@@ -314,8 +314,8 @@ class NameSearchConnector(BaseConnector):
                             
                             if queried_words:
                                 # For Wikipedia, Instagram, LinkedIn, etc., the URL usually contains the name.
-                                # If the path doesn't contain ANY part of the queried name, drop it to avoid false positives.
-                                if not any(w in path_clean for w in queried_words):
+                                # Require all meaningful words of the name to be present in the path to avoid false positives.
+                                if not all(w in path_clean for w in queried_words):
                                     continue
                                     
                             # Has a username/profile path → more likely a real profile

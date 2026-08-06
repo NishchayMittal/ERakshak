@@ -67,6 +67,7 @@ def compact_evidence_pack(evidence_pack: dict, max_nodes: int = 15) -> dict:
 logger = logging.getLogger(__name__)
 
 
+
 def _local_fallback_narrative(evidence_pack: dict, error_msg: str = "") -> str:
     case = evidence_pack.get("case", {}) or {}
     case_title = normalize_text(case.get("title") or "Unknown Case")

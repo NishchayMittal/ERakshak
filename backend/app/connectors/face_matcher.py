@@ -58,6 +58,10 @@ class FaceMatcherConnector(BaseConnector):
                         target_img = Image.open(temp_path)
             elif os.path.exists(identifier_value):
                 target_img = Image.open(identifier_value)
+            else:
+                upload_path = os.path.join(os.path.dirname(__file__), "..", "resources", "uploads", identifier_value)
+                if os.path.exists(upload_path):
+                    target_img = Image.open(upload_path)
 
         except Exception:
             pass

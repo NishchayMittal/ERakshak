@@ -16,6 +16,8 @@ import { ExplorerWindow } from '../components/cases/ExplorerWindow';
 import { CrossCorrelationWindow } from '../components/cases/CrossCorrelationWindow';
 import { GeoMapWindow } from '../components/ui/GeoMapWindow';
 import { NotificationPanel } from '../components/ui/NotificationPanel';
+import { useTutorialStore } from '../state/tutorialStore';
+import { TutorialOverlay } from '../components/tutorial/TutorialOverlay';
 
 import {
   triggerModelRetrain,
@@ -94,6 +96,41 @@ export default function CaseDashboardPage() {
   const { showToast } = useUIStore();
   const { user, logout } = useAuth();
   const { loadEntityGraph, graphData } = useGraphStore();
+  const { startTutorial } = useTutorialStore();
+
+  const handleStartDemo = () => {
+    startTutorial([
+      {
+        targetSelector: '[data-tutorial="init-case"]',
+        title: 'INITIALIZE NEW DOSSIER',
+        message: 'Welcome to the ORION terminal. Your first step is to initialize a new case dossier. Click here to begin tracking a new threat.',
+        infoText: 'Initializing a case sets up a secure workspace for evidence collection and automated cross-correlation.',
+        placement: 'bottom'
+      },
+      {
+        targetSelector: '[data-tutorial="hud-terminal"]',
+        title: 'SYSTEM HUD',
+        message: 'This is the Heads Up Display. It streams real-time audit logs, active connections, and system statuses.',
+        infoText: 'The HUD keeps you informed about background tasks, such as crawler jobs, model retraining, and OSINT sweeps.',
+        placement: 'left'
+      },
+      {
+        targetSelector: '[data-tutorial="profile-menu"]',
+        title: 'AGENT PROFILE',
+        message: 'This indicates your active session. Security is paramount; ensure your credentials are up to date.',
+        infoText: 'Security is paramount. The profile section allows you to manage your cryptographic keys and session tokens.',
+        placement: 'bottom'
+      },
+      {
+        targetSelector: '[data-tutorial="command-input"]',
+        title: 'MOCK COMMAND EXECUTION',
+        message: 'Let us test your access. Type the authorization code "ORION-ALPHA" below to proceed.',
+        infoText: 'In a real scenario, this would execute a manual override or trigger a specific OSINT script.',
+        placement: 'left',
+        requireInput: 'ORION-ALPHA'
+      }
+    ]);
+  };
 
   // --- STATE DECLARATIONS ---
   const [windows, setWindows] = useState<WindowState[]>([]);
@@ -1408,6 +1445,13 @@ export default function CaseDashboardPage() {
             <>
               <div className="h-3 w-[1px] bg-white/10" />
               <button
+                onClick={handleStartDemo}
+                className="text-[9px] text-[#39FF14] hover:text-white uppercase tracking-wider transition-colors whitespace-nowrap animate-pulse"
+              >
+                START DEMO
+              </button>
+              <div className="h-3 w-[1px] bg-white/10" />
+              <button
                 onClick={() => setShowWallpaperMenu(!showWallpaperMenu)}
                 className="text-[9px] text-gray-400 hover:text-white uppercase tracking-wider transition-colors whitespace-nowrap"
               >
@@ -1429,7 +1473,7 @@ export default function CaseDashboardPage() {
           {!isMobile && (
             <>
               <div className="h-3 w-[1px] bg-white/10" />
-              <span className="whitespace-nowrap">{t('dashboard.badge_label')} <span className="text-[#39ff14] font-bold">{user?.badgeNumber}</span></span>
+              <span data-tutorial="profile-menu" className="whitespace-nowrap">{t('dashboard.badge_label')} <span className="text-[#39ff14] font-bold">{user?.badgeNumber}</span></span>
               <div className="h-3 w-[1px] bg-white/10" />
               <span className="flex items-center gap-1 text-[#39ff14] whitespace-nowrap">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14] animate-ping" /> {t('dashboard.core_ready')}
@@ -1527,8 +1571,14 @@ export default function CaseDashboardPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 pb-6 desktop-grid-container">
           {/* Initialize Case Icon */}
           <div
+<<<<<<< HEAD
             onClick={caseCreating ? undefined : handleCreateCase}
             className={`flex flex-col items-center justify-center p-2 rounded border border-dashed border-[#39ff14]/30 bg-[#39ff14]/5 hover:bg-[#39ff14]/15 hover:border-[#39ff14] group transition-all duration-150 cursor-pointer pointer-events-auto text-center h-[110px] w-full max-w-[120px] mx-auto flex-shrink-0 ${caseCreating ? 'opacity-50 pointer-events-none' : ''}`}
+=======
+            data-tutorial="init-case"
+            onClick={handleCreateCase}
+            className="flex flex-col items-center justify-center p-2 rounded border border-dashed border-[#39ff14]/30 bg-[#39ff14]/5 hover:bg-[#39ff14]/15 hover:border-[#39ff14] group transition-all duration-150 cursor-pointer pointer-events-auto text-center h-[110px] w-full max-w-[120px] mx-auto flex-shrink-0"
+>>>>>>> ac4f1b8 (feat: Add interactive Leo bot tutorial demo)
           >
             <div className="w-10 h-10 flex items-center justify-center text-[#39ff14]">
               {caseCreating ? (
@@ -1651,11 +1701,20 @@ export default function CaseDashboardPage() {
         </div>
 
         {/* Live log Terminal */}
-        <div className="w-full flex-1 bg-black/40 border border-white/5 backdrop-blur-md rounded-xl p-3 flex flex-col gap-2 pointer-events-auto overflow-hidden">
+        <div data-tutorial="hud-terminal" className="w-full flex-1 bg-black/40 border border-white/5 backdrop-blur-md rounded-xl p-3 flex flex-col gap-2 pointer-events-auto overflow-hidden">
           <div className="flex items-center justify-between border-b border-white/5 pb-1">
             <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
               <Terminal size={12} className="text-[#a855f7]" /> {t('dashboard.audit_stream')}
             </span>
+          </div>
+          <div className="flex flex-col gap-1 pb-2 border-b border-white/5">
+            <span className="text-[8px] text-gray-500 font-mono">EXECUTE COMMAND:</span>
+            <input 
+              data-tutorial="command-input"
+              type="text" 
+              placeholder='e.g. ORION-ALPHA'
+              className="w-full bg-black/50 border border-white/10 text-[#39FF14] text-[10px] px-2 py-1 rounded focus:outline-none focus:border-[#39FF14] transition-colors"
+            />
           </div>
           <div className="flex-1 overflow-auto font-mono text-[8px] text-gray-400 flex flex-col gap-1 select-text scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
             {hudLogs.map((log, idx) => (
@@ -2081,6 +2140,7 @@ export default function CaseDashboardPage() {
           </div>
         </div>
       )}
+      <TutorialOverlay />
     </div>
     </DashboardContext.Provider>
   );

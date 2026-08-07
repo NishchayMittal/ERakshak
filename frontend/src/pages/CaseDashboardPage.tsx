@@ -1571,14 +1571,9 @@ export default function CaseDashboardPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 pb-6 desktop-grid-container">
           {/* Initialize Case Icon */}
           <div
-<<<<<<< HEAD
+            data-tutorial="init-case"
             onClick={caseCreating ? undefined : handleCreateCase}
             className={`flex flex-col items-center justify-center p-2 rounded border border-dashed border-[#39ff14]/30 bg-[#39ff14]/5 hover:bg-[#39ff14]/15 hover:border-[#39ff14] group transition-all duration-150 cursor-pointer pointer-events-auto text-center h-[110px] w-full max-w-[120px] mx-auto flex-shrink-0 ${caseCreating ? 'opacity-50 pointer-events-none' : ''}`}
-=======
-            data-tutorial="init-case"
-            onClick={handleCreateCase}
-            className="flex flex-col items-center justify-center p-2 rounded border border-dashed border-[#39ff14]/30 bg-[#39ff14]/5 hover:bg-[#39ff14]/15 hover:border-[#39ff14] group transition-all duration-150 cursor-pointer pointer-events-auto text-center h-[110px] w-full max-w-[120px] mx-auto flex-shrink-0"
->>>>>>> ac4f1b8 (feat: Add interactive Leo bot tutorial demo)
           >
             <div className="w-10 h-10 flex items-center justify-center text-[#39ff14]">
               {caseCreating ? (

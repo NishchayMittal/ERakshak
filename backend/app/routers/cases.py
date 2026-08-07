@@ -841,14 +841,10 @@ def export_case_pdf(
     current_investigator: Investigator = Depends(get_current_investigator)
 ):
     evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
-<<<<<<< HEAD
-
-=======
     try:
         evidence_pack["temporal_analysis"] = None
     except Exception:
         pass
->>>>>>> a1bd035 (Fix syntax errors in cases.py and narrative.py and fix face_matcher upload path)
     narrative_text = generate_narrative(evidence_pack)
     case_data = evidence_pack["case"]
     

@@ -190,23 +190,43 @@ class SocialProfilerConnector(BaseConnector):
                 r = await client.get(f"https://search.yahoo.com/search?q={urllib.parse.quote(query)}")
                 if r.status_code == 200:
                     matches = re.findall(r'RU=(https?%3a%2f%2f[a-z\.]*reddit\.com%2fuser%2f[a-zA-Z0-9\-%_]+)', r.text, re.IGNORECASE)
-                    if matches:
-                        url = urllib.parse.unquote(matches[0])
-                        # Extract username from url
+                    for m in matches:
+                        url = urllib.parse.unquote(m)
                         uname_match = re.search(r'/user/([a-zA-Z0-9\-%_]+)', url)
-                        username = uname_match.group(1) if uname_match else clean_val
-                        return [
-                            Finding(
-                                connector_name=self.name,
-                                result_type="reddit_profile",
-                                result_value=f"Reddit profile matching \"{clean_val}\" (u/{username})",
-                                confidence=0.85,
-                                raw_payload={
-                                    "username": username,
-                                    "profile_url": url
-                                }
-                            )
-                        ]
+                        if uname_match:
+                            username = uname_match.group(1)
+                            is_valid = False
+                            # 1. Strict match against generated variants without spaces
+                            if any(v.lower() == username.lower() for v in variants if " " not in v):
+                                is_valid = True
+                            else:
+                                # 2. Check title tag for original name
+                                try:
+                                    async with httpx.AsyncClient(timeout=5.0, headers=headers, follow_redirects=True) as client2:
+                                        r2 = await client2.get(url)
+                                        if r2.status_code == 200:
+                                            title_match = re.search(r'<title>([^<]+)</title>', r2.text, re.IGNORECASE)
+                                            if title_match:
+                                                title = title_match.group(1).lower()
+                                                queried_words = [w.lower() for w in clean_val.split() if len(w) > 2]
+                                                if queried_words and all(w in title for w in queried_words):
+                                                    is_valid = True
+                                except Exception as e:
+                                    logger.debug(f"Reddit profile fetch failed: {e}")
+                                                
+                            if is_valid:
+                                return [
+                                    Finding(
+                                        connector_name=self.name,
+                                        result_type="reddit_profile",
+                                        result_value=f"Reddit profile matching \"{clean_val}\" (u/{username})",
+                                        confidence=0.85,
+                                        raw_payload={
+                                            "username": username,
+                                            "profile_url": url
+                                        }
+                                    )
+                                ]
         except Exception as e:
 
             logger.warning(f"Silenced exception: {e}", exc_info=True)
@@ -232,6 +252,9 @@ class SocialProfilerConnector(BaseConnector):
                     async with httpx.AsyncClient(timeout=5.0, headers=headers, follow_redirects=True) as client:
                         r = await client.get(f"https://www.instagram.com/{variant}/")
                         if r.status_code == 200:
+                            if "accounts/login" in str(r.url).lower():
+                                continue
+                                
                             html = r.text
                             # Check if the profile exists by looking for typical patterns
                             # Instagram returns a 200 even for non-existent profiles, so we
@@ -324,31 +347,44 @@ class SocialProfilerConnector(BaseConnector):
                     # Filter out common non-user urls
                     urls = [urllib.parse.unquote(m) for m in matches]
                     valid_urls = [u for u in urls if not any(x in u.lower() for x in ('/p/', '/explore/', '/developer', '/about', '/reel', '/tv'))]
-                    if valid_urls:
-                        url = valid_urls[0]
-                        # Fetch the profile page to verify it's a real profile
-                        async with httpx.AsyncClient(timeout=5.0, headers=headers, follow_redirects=True) as client2:
-                            r2 = await client2.get(url)
-                            if r2.status_code == 200:
-                                html2 = r2.text
-                                # Simple check: does the page contain the username or look like a profile?
-                                # We'll check against our variants since we searched for them
-                                html_lower = html2.lower()
-                                variant_found = any(v.lower() in html_lower for v in variants if " " not in v)
-                                if variant_found or 'profilepage' in html2:
-                                    uname = url.split("instagram.com/")[-1].replace("/", "").split("?")[0].split("/")[0]
-                                    return [
-                                        Finding(
-                                            connector_name=self.name,
-                                            result_type="instagram_profile",
-                                            result_value=f"Instagram profile matching \"{clean_val}\" (@{uname})",
-                                            confidence=0.85,
-                                            raw_payload={
-                                                "username": uname,
-                                                "profile_url": url
-                                            }
-                                        )
-                                    ]
+                    for url in valid_urls:
+                        uname = url.split("instagram.com/")[-1].replace("/", "").split("?")[0].split("/")[0]
+                        if not uname:
+                            continue
+                        
+                        # Fetch the profile page to verify it's a real profile and not a deleted/invalid one
+                        try:
+                            async with httpx.AsyncClient(timeout=5.0, headers=headers, follow_redirects=True) as client2:
+                                r2 = await client2.get(url)
+                                if r2.status_code == 200 and "accounts/login" not in str(r2.url).lower():
+                                    is_valid = False
+                                    # 1. Strict match against generated variants
+                                    if any(v.lower() == uname.lower() for v in variants if " " not in v):
+                                        is_valid = True
+                                    else:
+                                        # 2. Check title tag for original name
+                                        title_match = re.search(r'<title>([^<]+)</title>', r2.text, re.IGNORECASE)
+                                        if title_match:
+                                            title = title_match.group(1).lower()
+                                            queried_words = [w.lower() for w in clean_val.split() if len(w) > 2]
+                                            if queried_words and all(w in title for w in queried_words):
+                                                is_valid = True
+                                                
+                                    if is_valid:
+                                        return [
+                                            Finding(
+                                                connector_name=self.name,
+                                                result_type="instagram_profile",
+                                                result_value=f"Instagram profile matching \"{clean_val}\" (@{uname})",
+                                                confidence=0.85,
+                                                raw_payload={
+                                                    "username": uname,
+                                                    "profile_url": url
+                                                }
+                                            )
+                                        ]
+                        except Exception as e:
+                            logger.debug(f"Instagram profile fetch failed: {e}")
         except Exception as e:
 
             logger.warning(f"Silenced exception: {e}", exc_info=True)
@@ -383,34 +419,44 @@ class SocialProfilerConnector(BaseConnector):
                 r = await client.get(f"https://search.yahoo.com/search?q={urllib.parse.quote(query)}")
                 if r.status_code == 200:
                     matches = re.findall(r'RU=(https?%3a%2f%2f[a-z\.]*linkedin\.com%2fin%2f[a-zA-Z0-9\-%_]+)', r.text, re.IGNORECASE)
-                    if matches:
-                        url = urllib.parse.unquote(matches[0])
-                        # Fetch the profile page to verify
-                        async with httpx.AsyncClient(timeout=5.0, headers=headers, follow_redirects=True) as client2:
-                            r2 = await client2.get(url)
-                            if r2.status_code == 200:
-                                html2 = r2.text
-                                # Check that the page contains the username or the name in title or meta
-                                # LinkedIn profile pages often have the name in the title tag
-                                # We'll check against our variants since we searched for them
-                                html_lower = html2.lower()
-                                variant_found = any(v.lower() in html_lower for v in variants if " " not in v)
-                                # Also check for exact pattern matches like >username<
-                                variant_found_exact = any(f'>{v}<' in html2 for v in variants if " " not in v)
-                                if variant_found or variant_found_exact:
-                                    profile_id = url.split("linkedin.com/in/")[-1].replace("/", "").split("?")[0].split("/")[0]
-                                    return [
-                                        Finding(
-                                            connector_name=self.name,
-                                            result_type="linkedin_profile",
-                                            result_value=f"LinkedIn profile matching \"{clean_val}\"",
-                                            confidence=0.85,
-                                            raw_payload={
-                                                "username": profile_id,
-                                                "profile_url": url
-                                            }
-                                        )
-                                    ]
+                    for m in matches:
+                        url = urllib.parse.unquote(m)
+                        profile_id = url.split("linkedin.com/in/")[-1].replace("/", "").split("?")[0].split("/")[0]
+                        if not profile_id:
+                            continue
+                            
+                        is_valid = False
+                        # 1. Strict variant match
+                        if any(v.lower() == profile_id.lower() for v in variants if " " not in v):
+                            is_valid = True
+                        else:
+                            # 2. Check title tag for original name
+                            try:
+                                async with httpx.AsyncClient(timeout=5.0, headers=headers, follow_redirects=True) as client2:
+                                    r2 = await client2.get(url)
+                                    if r2.status_code == 200:
+                                        title_match = re.search(r'<title>([^<]+)</title>', r2.text, re.IGNORECASE)
+                                        if title_match:
+                                            title = title_match.group(1).lower()
+                                            queried_words = [w.lower() for w in clean_val.split() if len(w) > 2]
+                                            if queried_words and all(w in title for w in queried_words):
+                                                is_valid = True
+                            except Exception as e:
+                                logger.debug(f"LinkedIn profile fetch failed: {e}")
+                        
+                        if is_valid:
+                            return [
+                                Finding(
+                                    connector_name=self.name,
+                                    result_type="linkedin_profile",
+                                    result_value=f"LinkedIn profile matching \"{clean_val}\"",
+                                    confidence=0.85,
+                                    raw_payload={
+                                        "username": profile_id,
+                                        "profile_url": url
+                                    }
+                                )
+                            ]
         except Exception as e:
 
             logger.warning(f"Silenced exception: {e}", exc_info=True)

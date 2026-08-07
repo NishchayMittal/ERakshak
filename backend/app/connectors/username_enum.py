@@ -103,6 +103,8 @@ class UsernameEnumConnector(BaseConnector):
 
                 # For Instagram, check for the username in the response and look for signs of a profile
                 if site["name"] == "Instagram":
+                    if "accounts/login" in str(response.url).lower():
+                        return None
                     # Check that the username appears in the response (case-insensitive)
                     if username.lower() not in response.text.lower():
                         return None

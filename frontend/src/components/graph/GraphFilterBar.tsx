@@ -13,6 +13,9 @@ const sources = [
   { id: 'phone_lookup',        label: 'PHONE SCAN' },
   { id: 'wallet_lookup',       label: 'CRYPTO' },
   { id: 'face_matcher',        label: 'FACE MATCH' },
+  { id: 'name_search',         label: 'NAME SEARCH' },
+  { id: 'social_profiler',     label: 'SOCIAL PROFILER' },
+  { id: 'fuzzy_username',      label: 'FUZZY USERNAME' },
 ];
 
 export default function GraphFilterBar() {

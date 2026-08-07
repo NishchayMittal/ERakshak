@@ -34,18 +34,15 @@ export function useWebSocket(
     ws.current = new WebSocket(wsUrl);
 
     ws.current.onopen = () => {
-      console.log(`WebSocket connected for case ${caseId}`);
     };
 
     ws.current.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('WebSocket update received:', data);
         if (data.action === 'pipeline_completed') {
           // Only reload the graph if a case workspace window is actually open and not minimized.
           // Uses a ref to avoid stale closures — reads the latest value every time.
           if (!graphReloadActiveRef.current) {
-            console.log('Skipping graph reload: no case workspace window is open');
             return;
           }
 
@@ -62,7 +59,6 @@ export function useWebSocket(
     };
 
     ws.current.onclose = () => {
-      console.log(`WebSocket disconnected for case ${caseId}`);
     };
 
     return () => {

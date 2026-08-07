@@ -229,25 +229,37 @@ async def run_connectors_and_pivot(
             for f in connector_db_findings:
                 db.refresh(f)
 
-            log_action(
-                db,
-                "connector.run",
-                investigator_id=investigator_id,
-                case_id=identifier.case_id,
-                detail={
-                    "identifier_id": identifier.id,
-                    "connector": connector.name,
-                    "result_count": len(connector_db_findings),
-                },
-            )
-            
-            # Publish to WebSockets
+        log_action(
+            db,
+            "connector.run",
+            investigator_id=investigator_id,
+            case_id=identifier.case_id,
+            detail={
+                "identifier_id": identifier.id,
+                "connector": connector.name,
+                "result_count": len(connector_db_findings),
+            },
+        )
+        
+        # Publish to WebSockets so the UI Audit Stream updates instantly
+        await publish_update(
+            identifier.case_id,
+            "connector.run",
+            {
+                "identifier_id": identifier.id, 
+                "connector": connector.name,
+                "result_count": len(connector_db_findings)
+            }
+        )
+        
+        if len(connector_db_findings) > 0:
             await publish_update(
                 identifier.case_id,
                 "findings_discovered",
                 {"identifier_id": identifier.id, "count": len(connector_db_findings)}
             )
-            
+        
+        if connector_db_findings:
             # If this is a background monitor check (depth == 1 usually means background pivot or monitor), 
             # or just any background event where new evidence is found, create a Notification.
             from app.models import Notification

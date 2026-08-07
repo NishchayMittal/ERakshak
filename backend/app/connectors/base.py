@@ -9,6 +9,7 @@ from typing import List, Optional
 
 import httpx
 import redis.asyncio as redis
+from redis.exceptions import ConnectionError as RedisConnectionError
 
 from app.models import IdentifierType
 
@@ -136,7 +137,7 @@ class BaseConnector(ABC):
                     )
                     findings.append(finding)
                 return findings
-        except redis.exceptions.ConnectionError:
+        except RedisConnectionError:
             logger.debug("Redis cache offline, ignoring cache read.")
             self.__class__._redis_client = None
             return None
@@ -162,7 +163,7 @@ class BaseConnector(ABC):
                     "raw_payload": f.raw_payload
                 })
             await r.set(key, json.dumps(data), ex=self.cache_ttl)
-        except redis.exceptions.ConnectionError:
+        except RedisConnectionError:
             logger.debug("Redis cache offline, ignoring cache write.")
             self.__class__._redis_client = None
         except Exception as e:

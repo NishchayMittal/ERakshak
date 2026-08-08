@@ -18,6 +18,8 @@ interface DemoStep {
   voiceText: string;
   icon: React.ReactNode;
   accentColor: string;
+  actionRequired?: 'click' | 'input' | 'none';
+  actionTargetSelector?: string;
 }
 
 const DEMO_STEPS: DemoStep[] = [
@@ -27,10 +29,8 @@ const DEMO_STEPS: DemoStep[] = [
     placement: 'center',
     title: 'WELCOME TO e-RAKSHAK',
     subtitle: 'ORION TERMINAL v3.1',
-    message:
-      'You have been granted Level-5 clearance to the ORION intelligence terminal. This guided tour will walk you through the core features of the platform in under 2 minutes.',
-    voiceText:
-      'Welcome to e-RAKSHAK, the ORION intelligence terminal. I\'m LEO, your guide. Let me walk you through the core features.',
+    message: 'You have been granted Level-5 clearance to the ORION intelligence terminal. This guided tour will walk you through the core features of the platform in under 2 minutes.',
+    voiceText: 'Welcome to e-RAKSHAK, the ORION intelligence terminal. I am LEO, your guide. Let me walk you through the core features.',
     icon: <Shield size={22} />,
     accentColor: '#39FF14',
   },
@@ -39,24 +39,22 @@ const DEMO_STEPS: DemoStep[] = [
     targetSelector: '[data-tutorial="init-case"]',
     placement: 'bottom',
     title: 'INITIALIZE A CASE DOSSIER',
-    subtitle: 'STEP 1 OF 6',
-    message:
-      'Click the green "+" icon to create a new case. Every investigation begins here — the system will assign a unique dossier ID and set up an encrypted workspace for your evidence.',
-    voiceText:
-      'This is the case initializer. Click the plus icon to create a new investigation dossier. Each case gets its own encrypted workspace.',
+    subtitle: 'STEP 1 OF 12',
+    message: 'Click the green "+" icon to create a new case. Every investigation begins here - the system will assign a unique dossier ID and set up an encrypted workspace for your evidence.',
+    voiceText: 'This is the case initializer. Click the plus icon to create a new investigation dossier. Each case gets its own encrypted workspace.',
     icon: <Zap size={22} />,
     accentColor: '#39FF14',
+    actionRequired: 'click',
+    actionTargetSelector: '[data-tutorial="init-case"]'
   },
   {
     id: 'hud-terminal',
     targetSelector: '[data-tutorial="hud-terminal"]',
     placement: 'left',
     title: 'SYSTEM HUD TERMINAL',
-    subtitle: 'STEP 2 OF 6',
-    message:
-      'The HUD streams real-time audit logs, active OSINT crawl jobs, model retraining events, and connection statuses. Think of it as the nervous system of the platform.',
-    voiceText:
-      'The HUD terminal streams real-time audit logs and system events. You can monitor all active investigation jobs from here.',
+    subtitle: 'STEP 2 OF 12',
+    message: 'The HUD streams real-time audit logs, active OSINT crawl jobs, model retraining events, and connection statuses. Think of it as the nervous system of the platform.',
+    voiceText: 'The HUD terminal streams real-time audit logs and system events. You can monitor all active investigation jobs from here.',
     icon: <Network size={22} />,
     accentColor: '#A855F7',
   },
@@ -65,52 +63,114 @@ const DEMO_STEPS: DemoStep[] = [
     targetSelector: '[data-tutorial="profile-menu"]',
     placement: 'bottom',
     title: 'BADGE IDENTITY',
-    subtitle: 'STEP 3 OF 6',
-    message:
-      'Your badge ID is your cryptographic identity on the platform. All actions are signed and logged against this credential. Keep your credentials secure.',
-    voiceText:
-      'Your badge identity is displayed here. All investigative actions on the platform are cryptographically signed against this credential.',
+    subtitle: 'STEP 3 OF 12',
+    message: 'Your badge ID is your cryptographic identity on the platform. All actions are signed and logged against this credential. Keep your credentials secure.',
+    voiceText: 'Your badge identity is displayed here. All investigative actions on the platform are cryptographically signed against this credential.',
     icon: <Shield size={22} />,
     accentColor: '#FFB800',
   },
   {
+    id: 'seed-input',
+    targetSelector: '[data-tutorial="seed-input"]',
+    placement: 'bottom',
+    title: 'SEED THE INTELLIGENCE',
+    subtitle: 'STEP 4 OF 12',
+    message: 'Let\'s start an investigation. Enter a known identifier (like an email or phone number) into the Intake panel. Type something, then proceed.',
+    voiceText: 'Let\'s start an investigation. Please enter a known identifier like a name or email into the intake panel.',
+    icon: <Search size={22} />,
+    accentColor: '#39FF14',
+    actionRequired: 'input',
+    actionTargetSelector: '[data-tutorial="seed-input"]',
+  },
+  {
+    id: 'run-pipeline',
+    targetSelector: '[data-tutorial="run-pipeline"]',
+    placement: 'top',
+    title: 'EXECUTE OSINT PIPELINE',
+    subtitle: 'STEP 5 OF 12',
+    message: 'Click the INGEST button to unleash the automated OSINT connectors on your seed data.',
+    voiceText: 'Click the ingest button to launch the automated OSINT pipeline on your target.',
+    icon: <Zap size={22} />,
+    accentColor: '#FF0044',
+    actionRequired: 'click',
+    actionTargetSelector: '[data-tutorial="run-pipeline"]'
+  },
+  {
     id: 'graph-network',
-    targetSelector: null,
-    placement: 'center',
+    targetSelector: '[data-tutorial="tab-graph"]',
+    placement: 'bottom',
     title: 'LINK GRAPH ENGINE',
-    subtitle: 'STEP 4 OF 6',
-    message:
-      'Open any case to access the Network Link Graph — an interactive visualization of entities, relationships, and pivots. Nodes represent people, phones, accounts, and domains. Edges show relationships.',
-    voiceText:
-      'Inside each case, the Network Link Graph visualizes all entities and relationships discovered during your investigation.',
+    subtitle: 'STEP 6 OF 12',
+    message: 'Open the Graph tab to access the Network Link Graph - an interactive visualization of entities, relationships, and pivots. Nodes represent people, phones, accounts, and domains. Edges show relationships.',
+    voiceText: 'The Network Link Graph visualizes all entities and relationships discovered during your investigation.',
     icon: <Network size={22} />,
     accentColor: '#00FFC2',
   },
   {
     id: 'dossier',
-    targetSelector: null,
-    placement: 'center',
+    targetSelector: '[data-tutorial="tab-dossier"]',
+    placement: 'bottom',
     title: 'AUTOMATED DOSSIER',
-    subtitle: 'STEP 5 OF 6',
-    message:
-      'The dossier tab auto-compiles all OSINT evidence into a structured report — social profiles, breach records, communication metadata, and risk scores. Export to PDF, JSON, or CSV in one click.',
-    voiceText:
-      'The dossier automatically compiles all discovered intelligence into a structured report. You can export it as a PDF, JSON, or CSV file.',
+    subtitle: 'STEP 7 OF 12',
+    message: 'The dossier tab auto-compiles all OSINT evidence into a structured report - social profiles, breach records, communication metadata, and risk scores. Export to PDF, JSON, or CSV in one click.',
+    voiceText: 'The dossier automatically compiles all discovered intelligence into a structured report. You can export it as a PDF, JSON, or CSV file.',
     icon: <FileText size={22} />,
     accentColor: '#A855F7',
   },
   {
+    id: 'legal',
+    targetSelector: '[data-tutorial="tab-legal"]',
+    placement: 'bottom',
+    title: 'LEGAL TRACEABILITY',
+    subtitle: 'STEP 8 OF 12',
+    message: 'The Legal tab tracks the cryptographic chain of custody for all evidence discovered, ready for court submission.',
+    voiceText: 'The Legal tab ensures all evidence is cryptographically signed and maintains a strict chain of custody for court submission.',
+    icon: <Shield size={22} />,
+    accentColor: '#FFB800',
+  },
+  {
+    id: 'ai-report',
+    targetSelector: '[data-tutorial="tab-report"]',
+    placement: 'bottom',
+    title: 'AI REPORT GENERATION',
+    subtitle: 'STEP 9 OF 12',
+    message: 'Generate natural language executive summaries of your entire case graph in seconds using the onboard LLM.',
+    voiceText: 'The AI Report tab uses the onboard large language model to write an executive summary of your investigation in seconds.',
+    icon: <FileText size={22} />,
+    accentColor: '#39FF14',
+  },
+  {
+    id: 'ai-chat',
+    targetSelector: '[data-tutorial="tab-chat"]',
+    placement: 'left',
+    title: 'AI COPILOT',
+    subtitle: 'STEP 10 OF 12',
+    message: 'Your AI Copilot is always available. Ask it to analyze graphs, suggest pivot strategies, or explain complex relationships.',
+    voiceText: 'Your AI Copilot is available on the right. Ask it to analyze findings, suggest next steps, or explain complex relationships.',
+    icon: <Bot size={22} />,
+    accentColor: '#A855F7',
+  },
+  {
     id: 'cross-correlate',
-    targetSelector: null,
-    placement: 'center',
+    targetSelector: '[data-tutorial="cross-correlate"]',
+    placement: 'right',
     title: 'CROSS-CORRELATION ENGINE',
-    subtitle: 'STEP 6 OF 6',
-    message:
-      'Use the Cross-Correlate window to find shared identifiers across multiple cases — the same phone number, device fingerprint, or email appearing in separate investigations signals a coordinated network.',
-    voiceText:
-      'The cross-correlation engine lets you find shared identifiers across multiple cases — revealing coordinated networks and linked suspects.',
+    subtitle: 'STEP 11 OF 12',
+    message: 'Use the Cross-Correlate window to find shared identifiers across multiple cases - the same phone number, device fingerprint, or email appearing in separate investigations signals a coordinated network.',
+    voiceText: 'The cross-correlation engine lets you find shared identifiers across multiple cases - revealing coordinated networks and linked suspects.',
     icon: <Search size={22} />,
     accentColor: '#FF0044',
+  },
+  {
+    id: 'notifications',
+    targetSelector: '[data-tutorial="notifications-bell"]',
+    placement: 'right',
+    title: 'REAL-TIME ALERTS',
+    subtitle: 'STEP 12 OF 12',
+    message: 'The Notifications bell alerts you to important system events, critical intelligence discoveries, and completed background jobs.',
+    voiceText: 'The Notifications bell alerts you to critical intelligence discoveries, system alerts, and background job completions.',
+    icon: <Zap size={22} />,
+    accentColor: '#00FFC2',
   },
   {
     id: 'finish',
@@ -118,11 +178,9 @@ const DEMO_STEPS: DemoStep[] = [
     placement: 'center',
     title: 'CLEARANCE GRANTED',
     subtitle: 'ORION TERMINAL READY',
-    message:
-      'You are now cleared for active operations. Initialize your first case, seed an identifier, and watch the intelligence graph build itself. Good hunting, Agent.',
-    voiceText:
-      'You are now cleared for operations. Initialize your first case, seed an identifier, and let the intelligence engine do the work. Good hunting, Agent.',
-    icon: <Zap size={22} />,
+    message: 'You are now cleared for active operations. Good hunting, Agent.',
+    voiceText: 'You are now cleared for operations. Good hunting, Agent.',
+    icon: <Shield size={22} />,
     accentColor: '#39FF14',
   },
 ];
@@ -325,9 +383,11 @@ export function DemoTour() {
     isDemoActive,
     currentStepIndex,
     voiceEnabled,
+    voiceType,
     isSpeaking,
     stopDemo,
     setVoiceEnabled,
+    setVoiceType,
     setIsSpeaking,
     setDemoStep,
   } = useTutorialStore();
@@ -351,24 +411,29 @@ export function DemoTour() {
       utter.pitch = 1.05;
       utter.volume = 0.9;
 
-      // Prefer a natural-sounding voice
+      // Prefer a natural-sounding voice based on toggle
       const voices = window.speechSynthesis.getVoices();
-      const preferred = voices.find(
-        (v) =>
-          v.name.includes('Google UK English Female') ||
-          v.name.includes('Samantha') ||
-          v.name.includes('Karen') ||
-          v.name.includes('Female')
-      ) || voices.find((v) => v.lang.startsWith('en')) || voices[0];
+      let preferred;
+      if (voiceType === 'Female') {
+        preferred = voices.find((v) => v.name.includes('Google UK English Female') || v.name.includes('Samantha') || v.name.includes('Karen') || v.name.includes('Female'));
+      } else {
+        preferred = voices.find((v) => v.name.includes('Google UK English Male') || v.name.includes('Alex') || v.name.includes('Daniel') || v.name.includes('Male'));
+      }
+      
+      if (!preferred) preferred = voices.find((v) => v.lang.startsWith('en')) || voices[0];
       if (preferred) utter.voice = preferred;
 
       utter.onstart = () => setIsSpeaking(true);
       utter.onend = () => setIsSpeaking(false);
       utter.onerror = () => setIsSpeaking(false);
       synthRef.current = utter;
-      window.speechSynthesis.speak(utter);
+      
+      // Fix timing issue: wait slightly for cancel to process before speaking
+      setTimeout(() => {
+        window.speechSynthesis.speak(utter);
+      }, 50);
     },
-    [voiceEnabled, setIsSpeaking]
+    [voiceEnabled, voiceType, setIsSpeaking]
   );
 
   // Speak on step change
@@ -452,12 +517,47 @@ export function DemoTour() {
     if (!isDemoActive) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { stopDemo(); }
-      if (e.key === 'ArrowRight' && !isLast) { setDemoStep(currentStepIndex + 1); }
+      if (e.key === 'ArrowRight' && !isLast && currentStep?.actionRequired !== 'click' && currentStep?.actionRequired !== 'input') { setDemoStep(currentStepIndex + 1); }
       if (e.key === 'ArrowLeft' && !isFirst) { setDemoStep(currentStepIndex - 1); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isDemoActive, currentStepIndex, isFirst, isLast, stopDemo, setDemoStep]);
+  }, [isDemoActive, currentStepIndex, isFirst, isLast, stopDemo, setDemoStep, currentStep]);
+
+  // ── Action auto-advance listener ──────────────────────────────────────────
+  useEffect(() => {
+    if (!isDemoActive || !currentStep || !currentStep.actionRequired || !currentStep.actionTargetSelector) return;
+
+    const action = currentStep.actionRequired;
+    const targetSel = currentStep.actionTargetSelector;
+
+    const onEvent = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (target && target.closest(targetSel)) {
+        if (action === 'input' && e.type === 'keydown') {
+           const kbEvent = e as KeyboardEvent;
+           if (kbEvent.key === 'Enter') {
+             const inputEl = target.closest(targetSel) as HTMLInputElement;
+             if (inputEl.value.trim().length > 0) {
+               setDemoStep(currentStepIndex + 1);
+             }
+           }
+        } else if (action === 'click' && e.type === 'click') {
+           setTimeout(() => setDemoStep(currentStepIndex + 1), 100);
+        }
+      }
+    };
+
+    const controller = new AbortController();
+
+    if (action === 'click') {
+      document.addEventListener('click', onEvent, { capture: true, signal: controller.signal });
+    } else if (action === 'input') {
+      document.addEventListener('keydown', onEvent, { capture: true, signal: controller.signal });
+    }
+    
+    return () => controller.abort();
+  }, [isDemoActive, currentStepIndex, currentStep, setDemoStep]);
 
   if (!isDemoActive || !currentStep) return null;
 
@@ -549,6 +649,18 @@ export function DemoTour() {
                   {voiceEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
                 </button>
 
+                {/* Voice Type Toggle */}
+                {voiceEnabled && (
+                  <button
+                    onClick={() => setVoiceType(voiceType === 'Female' ? 'Male' : 'Female')}
+                    className="p-2 rounded-lg border transition-all text-[10px] font-bold"
+                    style={{ background: `${accent}10`, border: `1px solid ${accent}40`, color: accent }}
+                    title={`Switch to ${voiceType === 'Female' ? 'Male' : 'Female'} voice`}
+                  >
+                    {voiceType === 'Female' ? 'F' : 'M'}
+                  </button>
+                )}
+
                 {/* Close */}
                 <button
                   onClick={stopDemo}
@@ -601,7 +713,11 @@ export function DemoTour() {
                 )}
 
                 {/* Next / Finish */}
-                {isLast ? (
+                {currentStep.actionRequired ? (
+                   <div className="px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border border-[#39ff14]/30 text-[#39ff14] animate-pulse">
+                     {currentStep.actionRequired === 'click' ? 'Awaiting Click' : 'Awaiting Input'}
+                   </div>
+                ) : isLast ? (
                   <button
                     onClick={stopDemo}
                     className="flex items-center gap-1.5 px-5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"

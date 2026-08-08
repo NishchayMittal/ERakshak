@@ -19,6 +19,7 @@ interface TutorialState {
   // Demo tour state
   isDemoActive: boolean;
   voiceEnabled: boolean;
+  voiceType: 'Female' | 'Male';
   isSpeaking: boolean;
 
   startTutorial: (steps: TutorialStep[]) => void;
@@ -32,6 +33,7 @@ interface TutorialState {
   startDemo: () => void;
   stopDemo: () => void;
   setVoiceEnabled: (enabled: boolean) => void;
+  setVoiceType: (voiceType: 'Female' | 'Male') => void;
   setIsSpeaking: (speaking: boolean) => void;
   setDemoStep: (index: number) => void;
 }
@@ -45,6 +47,7 @@ export const useTutorialStore = create<TutorialState>((set, get) => ({
 
   isDemoActive: false,
   voiceEnabled: true,
+  voiceType: 'Female',
   isSpeaking: false,
 
   startTutorial: (steps) => {
@@ -115,6 +118,10 @@ export const useTutorialStore = create<TutorialState>((set, get) => ({
       window.speechSynthesis.cancel();
     }
     set({ voiceEnabled: enabled, isSpeaking: enabled ? get().isSpeaking : false });
+  },
+
+  setVoiceType: (voiceType: 'Female' | 'Male') => {
+    set({ voiceType });
   },
 
   setIsSpeaking: (speaking: boolean) => {

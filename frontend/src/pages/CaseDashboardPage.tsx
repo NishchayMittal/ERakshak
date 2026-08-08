@@ -424,11 +424,11 @@ export default function CaseDashboardPage() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const active = document.activeElement;
-      if (active && (
-        active.tagName === 'INPUT' || 
-        active.tagName === 'TEXTAREA' || 
-        active.getAttribute('contenteditable') === 'true'
+      const target = e.target as HTMLElement;
+      if (target && (
+        target.tagName === 'INPUT' || 
+        target.tagName === 'TEXTAREA' || 
+        target.getAttribute('contenteditable') === 'true'
       )) {
         return;
       }
@@ -1895,6 +1895,7 @@ export default function CaseDashboardPage() {
         <button
           onClick={() => openWindow('cross_correlate_window', t('dashboard.correlator_title'), 'cross_correlate')}
           title={t('dashboard.correlator_tooltip')}
+          data-tutorial="cross-correlate"
           className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'cross_correlate_window') ? 'text-[#a855f7] bg-[#a855f7]/10 border border-[#a855f7]/30' : 'text-gray-300 hover:text-[#a855f7] hover:bg-white/5'}`}
         >
           <Network size={20} />

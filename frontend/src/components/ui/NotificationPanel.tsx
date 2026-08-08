@@ -78,6 +78,7 @@ export function NotificationPanel() {
   return (
     <div ref={containerRef} className="relative font-mono">
       <button 
+        data-tutorial="notifications-bell"
         onClick={() => setIsOpen(!isOpen)}
         title={t('notifications.title', 'Notifications')}
         className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center relative ${

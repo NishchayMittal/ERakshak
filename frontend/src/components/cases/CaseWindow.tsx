@@ -530,6 +530,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                       ].map(t => (
                         <button
                           key={t.id}
+                          data-tutorial={`tab-${t.id}`}
                           onClick={() => {
                             setWindows((prev: WindowItem[]) => prev.map((w) => w.id === win.id ? { ...w, activeTab: t.id } : w));
                             if (t.id === 'report') fetchNarrativeReport(caseId);
@@ -637,6 +638,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                   ) : (
                                     <input
                                       type="text"
+                                      data-tutorial="seed-input"
                                       placeholder={t('case_window.value_placeholder')}
                                       value={caseSeedsInput[caseId]?.value || ''}
                                       onChange={(e) => {
@@ -682,6 +684,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                 )}
                               </div>
                               <button
+                                data-tutorial="run-pipeline"
                                 onClick={async () => {
                                   await runIngestPipeline(caseId);
                                   // Refresh seeds shortly after ingestion

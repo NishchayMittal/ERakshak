@@ -1,4 +1,10 @@
 import os
+from dotenv import load_dotenv
+
+# Load .env variables into os.environ before anything else
+backend_dir = os.path.dirname(os.path.dirname(__file__))
+load_dotenv(os.path.join(backend_dir, ".env"))
+
 from datetime import datetime, timezone
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

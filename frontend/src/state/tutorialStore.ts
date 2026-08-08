@@ -15,12 +15,25 @@ interface TutorialState {
   steps: TutorialStep[];
   isInfoOpen: boolean;
   userInput: string; // The current input typed by the user for steps that require input
-  
+
+  // Demo tour state
+  isDemoActive: boolean;
+  voiceEnabled: boolean;
+  isSpeaking: boolean;
+
   startTutorial: (steps: TutorialStep[]) => void;
   nextStep: () => void;
+  prevStep: () => void;
   skipTutorial: () => void;
   toggleInfo: () => void;
   setUserInput: (input: string) => void;
+
+  // Demo tour actions
+  startDemo: () => void;
+  stopDemo: () => void;
+  setVoiceEnabled: (enabled: boolean) => void;
+  setIsSpeaking: (speaking: boolean) => void;
+  setDemoStep: (index: number) => void;
 }
 
 export const useTutorialStore = create<TutorialState>((set, get) => ({
@@ -29,6 +42,10 @@ export const useTutorialStore = create<TutorialState>((set, get) => ({
   steps: [],
   isInfoOpen: false,
   userInput: '',
+
+  isDemoActive: false,
+  voiceEnabled: true,
+  isSpeaking: false,
 
   startTutorial: (steps) => {
     set({
@@ -53,6 +70,13 @@ export const useTutorialStore = create<TutorialState>((set, get) => ({
     }
   },
 
+  prevStep: () => {
+    const { currentStepIndex } = get();
+    if (currentStepIndex > 0) {
+      set({ currentStepIndex: currentStepIndex - 1, isInfoOpen: false, userInput: '' });
+    }
+  },
+
   skipTutorial: () => {
     set({
       isActive: false,
@@ -69,5 +93,35 @@ export const useTutorialStore = create<TutorialState>((set, get) => ({
 
   setUserInput: (input: string) => {
     set({ userInput: input });
+  },
+
+  // Demo tour
+  startDemo: () => {
+    set({ isDemoActive: true, currentStepIndex: 0 });
+  },
+
+  stopDemo: () => {
+    // Cancel any ongoing speech
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    set({ isDemoActive: false, isSpeaking: false, currentStepIndex: 0 });
+    // Mark as seen
+    try { localStorage.setItem('er_demo_seen', '1'); } catch { /* noop */ }
+  },
+
+  setVoiceEnabled: (enabled: boolean) => {
+    if (!enabled && typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    set({ voiceEnabled: enabled, isSpeaking: enabled ? get().isSpeaking : false });
+  },
+
+  setIsSpeaking: (speaking: boolean) => {
+    set({ isSpeaking: speaking });
+  },
+
+  setDemoStep: (index: number) => {
+    set({ currentStepIndex: index });
   },
 }));

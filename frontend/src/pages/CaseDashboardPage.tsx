@@ -18,6 +18,7 @@ import { GeoMapWindow } from '../components/ui/GeoMapWindow';
 import { NotificationPanel } from '../components/ui/NotificationPanel';
 import { useTutorialStore } from '../state/tutorialStore';
 import { TutorialOverlay } from '../components/tutorial/TutorialOverlay';
+import { DemoTour } from '../components/tutorial/DemoTour';
 
 import {
   triggerModelRetrain,
@@ -96,40 +97,10 @@ export default function CaseDashboardPage() {
   const { showToast } = useUIStore();
   const { user, logout } = useAuth();
   const { loadEntityGraph, graphData } = useGraphStore();
-  const { startTutorial } = useTutorialStore();
+  const { startTutorial, startDemo } = useTutorialStore();
 
   const handleStartDemo = () => {
-    startTutorial([
-      {
-        targetSelector: '[data-tutorial="init-case"]',
-        title: 'INITIALIZE NEW DOSSIER',
-        message: 'Welcome to the ORION terminal. Your first step is to initialize a new case dossier. Click here to begin tracking a new threat.',
-        infoText: 'Initializing a case sets up a secure workspace for evidence collection and automated cross-correlation.',
-        placement: 'bottom'
-      },
-      {
-        targetSelector: '[data-tutorial="hud-terminal"]',
-        title: 'SYSTEM HUD',
-        message: 'This is the Heads Up Display. It streams real-time audit logs, active connections, and system statuses.',
-        infoText: 'The HUD keeps you informed about background tasks, such as crawler jobs, model retraining, and OSINT sweeps.',
-        placement: 'left'
-      },
-      {
-        targetSelector: '[data-tutorial="profile-menu"]',
-        title: 'AGENT PROFILE',
-        message: 'This indicates your active session. Security is paramount; ensure your credentials are up to date.',
-        infoText: 'Security is paramount. The profile section allows you to manage your cryptographic keys and session tokens.',
-        placement: 'bottom'
-      },
-      {
-        targetSelector: '[data-tutorial="command-input"]',
-        title: 'MOCK COMMAND EXECUTION',
-        message: 'Let us test your access. Type the authorization code "ORION-ALPHA" below to proceed.',
-        infoText: 'In a real scenario, this would execute a manual override or trigger a specific OSINT script.',
-        placement: 'left',
-        requireInput: 'ORION-ALPHA'
-      }
-    ]);
+    startDemo();
   };
 
   // --- STATE DECLARATIONS ---
@@ -424,6 +395,16 @@ export default function CaseDashboardPage() {
   useEffect(() => {
     loadCases();
   }, [loadCases]);
+
+  // Auto-trigger demo tour on first visit
+  useEffect(() => {
+    const seen = localStorage.getItem('er_demo_seen');
+    if (!seen) {
+      // Small delay to let the dashboard fully render
+      const t = setTimeout(() => startDemo(), 900);
+      return () => clearTimeout(t);
+    }
+  }, [startDemo]);
 
   useEffect(() => {
     if (cases.length > 0) {
@@ -2136,6 +2117,7 @@ export default function CaseDashboardPage() {
         </div>
       )}
       <TutorialOverlay />
+      <DemoTour />
     </div>
     </DashboardContext.Provider>
   );

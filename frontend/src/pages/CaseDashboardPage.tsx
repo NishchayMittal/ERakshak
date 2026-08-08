@@ -1683,15 +1683,7 @@ export default function CaseDashboardPage() {
               <Terminal size={12} className="text-[#a855f7]" /> {t('dashboard.audit_stream')}
             </span>
           </div>
-          <div className="flex flex-col gap-1 pb-2 border-b border-white/5">
-            <span className="text-[8px] text-gray-500 font-mono">EXECUTE COMMAND:</span>
-            <input 
-              data-tutorial="command-input"
-              type="text" 
-              placeholder='e.g. ORION-ALPHA'
-              className="w-full bg-black/50 border border-white/10 text-[#39FF14] text-[10px] px-2 py-1 rounded focus:outline-none focus:border-[#39FF14] transition-colors"
-            />
-          </div>
+
           <div className="flex-1 overflow-auto font-mono text-[8px] text-gray-400 flex flex-col gap-1 select-text scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
             {hudLogs.map((log, idx) => (
               <div key={idx} className="whitespace-nowrap flex items-start gap-1">

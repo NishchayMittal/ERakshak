@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, ChevronRight, ChevronLeft, Volume2, VolumeX,
   Bot, Zap, Shield, Network, FileText, Search,
-  SkipForward, Play
+  SkipForward, Play, Compass, Folder, CheckCircle, Terminal
 } from 'lucide-react';
 import { useTutorialStore } from '../../state/tutorialStore';
 
@@ -29,122 +29,130 @@ const DEMO_STEPS: DemoStep[] = [
     placement: 'center',
     title: 'WELCOME TO e-RAKSHAK',
     subtitle: 'ORION TERMINAL v3.1',
-    message: 'You have been granted Level-5 clearance to the ORION intelligence terminal. This guided tour will walk you through the core features of the platform in under 2 minutes.',
-    voiceText: 'Welcome to e-RAKSHAK, the ORION intelligence terminal. I am LEO, your guide. Let me walk you through the core features.',
-    icon: <Shield size={22} />,
-    accentColor: '#39FF14',
-  },
-  {
-    id: 'init-case',
-    targetSelector: '[data-tutorial="init-case"]',
-    placement: 'bottom',
-    title: 'INITIALIZE A CASE DOSSIER',
-    subtitle: 'STEP 1 OF 12',
-    message: 'Click the green "+" icon to create a new case. Every investigation begins here - the system will assign a unique dossier ID and set up an encrypted workspace for your evidence.',
-    voiceText: 'This is the case initializer. Click the plus icon to create a new investigation dossier. Each case gets its own encrypted workspace.',
-    icon: <Zap size={22} />,
-    accentColor: '#39FF14',
-    actionRequired: 'click',
-    actionTargetSelector: '[data-tutorial="init-case"]'
+    message: 'I am LEO, your onboard AI intelligence coordinator. This quick tour will show you how to initialize a case, run the OSINT pipeline, and explore the cyber-correlation engine.',
+    voiceText: 'Welcome to E Rakshak. I am Leo, your AI intelligence coordinator. Let\'s walk through the platform\'s core capabilities.',
+    icon: <Play size={22} />,
+    accentColor: '#39ff14',
   },
   {
     id: 'hud-terminal',
     targetSelector: '[data-tutorial="hud-terminal"]',
     placement: 'left',
     title: 'SYSTEM HUD TERMINAL',
-    subtitle: 'STEP 2 OF 12',
+    subtitle: 'STEP 2 OF 14',
     message: 'The HUD streams real-time audit logs, active OSINT crawl jobs, model retraining events, and connection statuses. Think of it as the nervous system of the platform.',
-    voiceText: 'The HUD terminal streams real-time audit logs and system events. You can monitor all active investigation jobs from here.',
-    icon: <Network size={22} />,
-    accentColor: '#A855F7',
+    voiceText: 'This is the HUD Terminal. It streams live system audits, pipeline crawl jobs, and background model updates in real time.',
+    icon: <Terminal size={22} />,
+    accentColor: '#00f0ff',
   },
   {
     id: 'profile-menu',
     targetSelector: '[data-tutorial="profile-menu"]',
     placement: 'bottom',
     title: 'BADGE IDENTITY',
-    subtitle: 'STEP 3 OF 12',
+    subtitle: 'STEP 3 OF 14',
     message: 'Your badge ID is your cryptographic identity on the platform. All actions are signed and logged against this credential. Keep your credentials secure.',
-    voiceText: 'Your badge identity is displayed here. All investigative actions on the platform are cryptographically signed against this credential.',
+    voiceText: 'Your badge is your cryptographic identity. All your actions on the platform are securely signed and logged against it.',
     icon: <Shield size={22} />,
-    accentColor: '#FFB800',
+    accentColor: '#39ff14',
+  },
+  {
+    id: 'init-case',
+    targetSelector: '[data-tutorial="init-case"]',
+    placement: 'bottom',
+    title: 'INITIALIZE A CASE DOSSIER',
+    subtitle: 'STEP 4 OF 14',
+    actionRequired: 'click',
+    message: 'To begin an investigation, click the "+" button in the Case Management panel. This provisions a secure enclave for the new dossier.',
+    voiceText: 'Let\'s begin. Click the plus button in the case management panel to initialize a new secure dossier.',
+    icon: <Folder size={22} />,
+    accentColor: '#39ff14',
   },
   {
     id: 'seed-input',
     targetSelector: '[data-tutorial="seed-input"]',
     placement: 'bottom',
     title: 'SEED THE INTELLIGENCE',
-    subtitle: 'STEP 4 OF 12',
-    message: 'Let\'s start an investigation. Enter a known identifier (like an email or phone number) into the Intake panel. Type something, then proceed.',
-    voiceText: 'Let\'s start an investigation. Please enter a known identifier like a name or email into the intake panel.',
-    icon: <Search size={22} />,
-    accentColor: '#39FF14',
+    subtitle: 'STEP 5 OF 14',
     actionRequired: 'input',
-    actionTargetSelector: '[data-tutorial="seed-input"]',
+    message: 'Let\'s start an investigation. Enter a known identifier (like an email or phone number) into the Intake panel. Type something, then hit Enter.',
+    voiceText: 'Now, enter a known identifier like a phone number or email into the intake panel, and press Enter to seed the intelligence.',
+    icon: <Terminal size={22} />,
+    accentColor: '#39ff14',
   },
   {
     id: 'run-pipeline',
     targetSelector: '[data-tutorial="run-pipeline"]',
     placement: 'top',
     title: 'EXECUTE OSINT PIPELINE',
-    subtitle: 'STEP 5 OF 12',
-    message: 'Click the INGEST button to unleash the automated OSINT connectors on your seed data.',
-    voiceText: 'Click the ingest button to launch the automated OSINT pipeline on your target.',
-    icon: <Zap size={22} />,
-    accentColor: '#FF0044',
+    subtitle: 'STEP 6 OF 14',
     actionRequired: 'click',
-    actionTargetSelector: '[data-tutorial="run-pipeline"]'
+    message: 'Click the RUN CORRELATION SCAN button to unleash the automated OSINT connectors on your seed data.',
+    voiceText: 'Click the run correlation scan button. This dispatches our OSINT connectors to scour the dark web, public records, and social platforms.',
+    icon: <Terminal size={22} />,
+    accentColor: '#a855f7',
   },
   {
     id: 'graph-network',
     targetSelector: '[data-tutorial="tab-graph"]',
     placement: 'bottom',
     title: 'LINK GRAPH ENGINE',
-    subtitle: 'STEP 6 OF 12',
-    message: 'Open the Graph tab to access the Network Link Graph - an interactive visualization of entities, relationships, and pivots. Nodes represent people, phones, accounts, and domains. Edges show relationships.',
-    voiceText: 'The Network Link Graph visualizes all entities and relationships discovered during your investigation.',
+    subtitle: 'STEP 7 OF 14',
+    message: 'Open the Graph tab to access the Network Link Graph - an interactive visualization of entities, relationships, and pivots. Nodes represent people, phones, accounts, and domains.',
+    voiceText: 'The Graph engine visually maps all discovered entities. It\'s fully interactive, letting you expand nodes and discover hidden connections.',
     icon: <Network size={22} />,
-    accentColor: '#00FFC2',
+    accentColor: '#39ff14',
+  },
+  {
+    id: 'geo-map',
+    targetSelector: '[data-tutorial="tab-geo"]',
+    placement: 'bottom',
+    title: 'GEO INTEL MAP',
+    subtitle: 'STEP 8 OF 14',
+    message: 'The GEO MAP tab projects IPs, registered addresses, and location metadata onto a geospatial visualization, exposing physical movement and origin.',
+    voiceText: 'The Geo Intel map plots all discovered physical coordinates, helping you trace origins and physical movements of targets.',
+    icon: <Compass size={22} />, 
+    accentColor: '#00f0ff',
   },
   {
     id: 'dossier',
     targetSelector: '[data-tutorial="tab-dossier"]',
     placement: 'bottom',
     title: 'AUTOMATED DOSSIER',
-    subtitle: 'STEP 7 OF 12',
+    subtitle: 'STEP 9 OF 14',
     message: 'The dossier tab auto-compiles all OSINT evidence into a structured report - social profiles, breach records, communication metadata, and risk scores. Export to PDF, JSON, or CSV in one click.',
-    voiceText: 'The dossier automatically compiles all discovered intelligence into a structured report. You can export it as a PDF, JSON, or CSV file.',
-    icon: <FileText size={22} />,
-    accentColor: '#A855F7',
+    voiceText: 'The dossier automatically compiles all evidence into a comprehensive report. You can easily export it to PDF for offline briefing.',
+    icon: <Search size={22} />,
+    accentColor: '#39ff14',
   },
   {
     id: 'legal',
     targetSelector: '[data-tutorial="tab-legal"]',
     placement: 'bottom',
     title: 'LEGAL TRACEABILITY',
-    subtitle: 'STEP 8 OF 12',
+    subtitle: 'STEP 10 OF 14',
     message: 'The Legal tab tracks the cryptographic chain of custody for all evidence discovered, ready for court submission.',
-    voiceText: 'The Legal tab ensures all evidence is cryptographically signed and maintains a strict chain of custody for court submission.',
+    voiceText: 'The Legal tab maintains a strict cryptographic chain of custody for all digital evidence, ensuring it is court-admissible.',
     icon: <Shield size={22} />,
-    accentColor: '#FFB800',
+    accentColor: '#39ff14',
   },
   {
     id: 'ai-report',
     targetSelector: '[data-tutorial="tab-report"]',
     placement: 'bottom',
     title: 'AI REPORT GENERATION',
-    subtitle: 'STEP 9 OF 12',
+    subtitle: 'STEP 11 OF 14',
     message: 'Generate natural language executive summaries of your entire case graph in seconds using the onboard LLM.',
-    voiceText: 'The AI Report tab uses the onboard large language model to write an executive summary of your investigation in seconds.',
+    voiceText: 'Need an executive summary? The AI report feature uses our onboard language model to synthesize the entire case graph into a readable brief.',
     icon: <FileText size={22} />,
-    accentColor: '#39FF14',
+    accentColor: '#a855f7',
   },
   {
     id: 'ai-chat',
     targetSelector: '[data-tutorial="tab-chat"]',
     placement: 'left',
     title: 'AI COPILOT',
-    subtitle: 'STEP 10 OF 12',
+    subtitle: 'STEP 12 OF 14',
     message: 'Your AI Copilot is always available. Ask it to analyze graphs, suggest pivot strategies, or explain complex relationships.',
     voiceText: 'Your AI Copilot is available on the right. Ask it to analyze findings, suggest next steps, or explain complex relationships.',
     icon: <Bot size={22} />,
@@ -155,22 +163,22 @@ const DEMO_STEPS: DemoStep[] = [
     targetSelector: '[data-tutorial="cross-correlate"]',
     placement: 'right',
     title: 'CROSS-CORRELATION ENGINE',
-    subtitle: 'STEP 11 OF 12',
+    subtitle: 'STEP 13 OF 14',
     message: 'Use the Cross-Correlate window to find shared identifiers across multiple cases - the same phone number, device fingerprint, or email appearing in separate investigations signals a coordinated network.',
     voiceText: 'The cross-correlation engine lets you find shared identifiers across multiple cases - revealing coordinated networks and linked suspects.',
-    icon: <Search size={22} />,
-    accentColor: '#FF0044',
+    icon: <Network size={22} />,
+    accentColor: '#00f0ff',
   },
   {
     id: 'notifications',
     targetSelector: '[data-tutorial="notifications-bell"]',
     placement: 'right',
     title: 'REAL-TIME ALERTS',
-    subtitle: 'STEP 12 OF 12',
+    subtitle: 'STEP 14 OF 14',
     message: 'The Notifications bell alerts you to important system events, critical intelligence discoveries, and completed background jobs.',
-    voiceText: 'The Notifications bell alerts you to critical intelligence discoveries, system alerts, and background job completions.',
-    icon: <Zap size={22} />,
-    accentColor: '#00FFC2',
+    voiceText: 'Finally, the notifications bell keeps you updated on system alerts and background job completions.',
+    icon: <Shield size={22} />,
+    accentColor: '#39ff14',
   },
   {
     id: 'finish',
@@ -179,9 +187,9 @@ const DEMO_STEPS: DemoStep[] = [
     title: 'CLEARANCE GRANTED',
     subtitle: 'ORION TERMINAL READY',
     message: 'You are now cleared for active operations. Good hunting, Agent.',
-    voiceText: 'You are now cleared for operations. Good hunting, Agent.',
-    icon: <Shield size={22} />,
-    accentColor: '#39FF14',
+    voiceText: 'Tour complete. You are now cleared for active operations. Good hunting, Agent.',
+    icon: <CheckCircle size={22} />,
+    accentColor: '#39ff14',
   },
 ];
 
@@ -327,7 +335,7 @@ function ProgressDots({
   accentColor: string;
 }) {
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-1">
       {Array.from({ length: total }).map((_, i) => (
         <motion.div
           key={i}
@@ -473,8 +481,8 @@ export function DemoTour() {
         el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
 
         // Calculate card position
-        const cardW = 380;
-        const cardH = 280;
+        const cardW = 420;
+        const cardH = 340; // Increased to prevent bottom clipping on long text
         const gap = 20;
         let top = 0;
         let left = 0;
@@ -526,10 +534,10 @@ export function DemoTour() {
 
   // ── Action auto-advance listener ──────────────────────────────────────────
   useEffect(() => {
-    if (!isDemoActive || !currentStep || !currentStep.actionRequired || !currentStep.actionTargetSelector) return;
+    const targetSel = currentStep?.actionTargetSelector || currentStep?.targetSelector;
+    if (!isDemoActive || !currentStep || !currentStep.actionRequired || !targetSel) return;
 
     const action = currentStep.actionRequired;
-    const targetSel = currentStep.actionTargetSelector;
 
     const onEvent = (e: Event) => {
       const target = e.target as HTMLElement;
@@ -600,13 +608,13 @@ export function DemoTour() {
           style={{
             position: 'fixed',
             zIndex: 99999,
-            width: isCentered ? 'min(500px, 90vw)' : 380,
+            width: isCentered ? 'min(500px, 90vw)' : 420,
             pointerEvents: 'auto',
           }}
         >
           {/* Glass card */}
           <div
-            className="relative rounded-2xl overflow-hidden"
+            className="relative rounded-2xl"
             style={{
               background: 'rgba(6,10,18,0.97)',
               border: `1px solid ${accent}40`,
@@ -714,7 +722,7 @@ export function DemoTour() {
 
                 {/* Next / Finish */}
                 {currentStep.actionRequired ? (
-                   <div className="px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border border-[#39ff14]/30 text-[#39ff14] animate-pulse">
+                   <div className="px-2 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border border-[#39ff14]/30 text-[#39ff14] animate-pulse whitespace-nowrap flex-shrink-0">
                      {currentStep.actionRequired === 'click' ? 'Awaiting Click' : 'Awaiting Input'}
                    </div>
                 ) : isLast ? (

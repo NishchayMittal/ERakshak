@@ -47,6 +47,8 @@
   },
   "dashboard": {
     "console_title": "ઓરિયન હોલોગ્રાફિક કન્સોલ",
+    "start_demo": "ડેમો શરૂ કરો",
+    "start_demo_short": "ડેમો",
     "wallpaper": "વૉલપેપર",
     "badge_label": "તપાસકર્તા બેજ:",
     "core_ready": "કોર તૈયાર",

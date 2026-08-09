@@ -98,7 +98,7 @@ export default function TimelineSlider() {
           background: 'var(--accent-primary)', color: '#000', border: 'none', 
           width: 32, height: 32, borderRadius: '50%', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: 'var(--font-heading)', fontSize: 14, fontWeight: 'bold'
+          fontFamily: 'var(--font-heading)', fontSize: "calc(14px * var(--font-scale))", fontWeight: 'bold'
         }}
       >
         {isPlaying ? '||' : '▶'}
@@ -113,7 +113,7 @@ export default function TimelineSlider() {
           onChange={handleSliderChange}
           style={{ width: '100%', accentColor: 'var(--accent-primary)' }}
         />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: "calc(10px * var(--font-scale))", color: 'var(--text-muted)' }}>
           <span>{formatTime(minTime)}</span>
           <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>{formatTime(timelineMaxTime)}</span>
           <span>{formatTime(maxTime)}</span>

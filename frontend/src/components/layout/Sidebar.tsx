@@ -146,7 +146,7 @@ export default function Sidebar() {
       >
         {!sidebarCollapsed && (
           <span style={{
-            fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
+            fontFamily: 'var(--font-display)', fontSize: "calc(11px * var(--font-scale))", fontWeight: 700,
             color: 'var(--accent-action)', letterSpacing: '0.2em',
             textTransform: 'uppercase', textShadow: '0 0 10px rgba(57,255,20,0.5)',
           }}>
@@ -155,7 +155,7 @@ export default function Sidebar() {
         )}
         {sidebarCollapsed && (
           <span style={{
-            fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700,
+            fontFamily: 'var(--font-display)', fontSize: "calc(9px * var(--font-scale))", fontWeight: 700,
             color: 'var(--accent-action)', letterSpacing: '0.1em',
           }}>
             {t('sidebar.brand_short')}
@@ -217,7 +217,7 @@ export default function Sidebar() {
                 justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
                 textDecoration: 'none',
                 fontFamily: 'var(--font-heading)',
-                fontSize: 10,
+                fontSize: "calc(10px * var(--font-scale))",
                 fontWeight: 600,
                 letterSpacing: '0.15em',
                 textTransform: 'uppercase',
@@ -267,7 +267,7 @@ export default function Sidebar() {
           width: '100%', padding: '10px 12px',
           borderTop: '1px solid var(--struct-line)',
         }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.15em', marginBottom: 6, fontFamily: 'var(--font-heading)' }}>
+          <div style={{ fontSize: "calc(9px * var(--font-scale))", color: 'var(--text-muted)', letterSpacing: '0.15em', marginBottom: 6, fontFamily: 'var(--font-heading)' }}>
             {t('sidebar.active_case')}
           </div>
           <select
@@ -278,7 +278,7 @@ export default function Sidebar() {
               width: '100%', background: 'var(--bg-1)',
               border: '1px solid var(--struct-line)',
               color: 'var(--text-primary)', padding: '5px 8px',
-              fontSize: 10, fontFamily: 'var(--font-mono)',
+              fontSize: "calc(10px * var(--font-scale))", fontFamily: 'var(--font-mono)',
               outline: 'none', cursor: 'pointer',
             }}
           >
@@ -302,10 +302,10 @@ export default function Sidebar() {
         {!sidebarCollapsed && user && (
           <>
             <div>
-              <div style={{ fontSize: 10, fontFamily: 'var(--font-heading)', color: 'var(--text-primary)', fontWeight: 600 }}>
+              <div style={{ fontSize: "calc(10px * var(--font-scale))", fontFamily: 'var(--font-heading)', color: 'var(--text-primary)', fontWeight: 600 }}>
                 {user.name}
               </div>
-              <div style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginTop: 2 }}>
+              <div style={{ fontSize: "calc(9px * var(--font-scale))", fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginTop: 2 }}>
                 {user.badgeNumber}
               </div>
             </div>
@@ -346,10 +346,10 @@ export default function Sidebar() {
             padding: 24, width: 300, display: 'flex', flexDirection: 'column', gap: 16,
             boxShadow: '0 0 24px rgba(168,85,247,0.2)',
           }}>
-            <div style={{ fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: 'var(--accent-primary)', letterSpacing: '0.15em' }}>
+            <div style={{ fontFamily: 'var(--font-heading)', fontSize: "calc(11px * var(--font-scale))", fontWeight: 700, color: 'var(--accent-primary)', letterSpacing: '0.15em' }}>
               {t('modals_sidebar.confirm_title')}
             </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(10px * var(--font-scale))", color: 'var(--text-muted)' }}>
               {t('modals_sidebar.confirm_body')}
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, borderTop: '1px solid var(--struct-line)', paddingTop: 12 }}>
@@ -358,7 +358,7 @@ export default function Sidebar() {
                 style={{
                   background: 'none', border: '1px solid var(--struct-line)',
                   color: 'var(--text-muted)', fontFamily: 'var(--font-heading)',
-                  fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
+                  fontSize: "calc(9px * var(--font-scale))", fontWeight: 700, letterSpacing: '0.1em',
                   padding: '6px 12px', cursor: 'pointer',
                 }}
               >
@@ -373,7 +373,7 @@ export default function Sidebar() {
                 style={{
                   background: 'var(--accent-primary)', border: 'none',
                   color: '#000000', fontFamily: 'var(--font-heading)',
-                  fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
+                  fontSize: "calc(9px * var(--font-scale))", fontWeight: 700, letterSpacing: '0.1em',
                   padding: '6px 12px', cursor: 'pointer',
                 }}
               >

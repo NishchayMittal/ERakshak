@@ -64,7 +64,7 @@ export default function GraphLegend() {
       {/* Node types */}
       <div>
         <div style={{
-          fontFamily: 'var(--font-heading)', fontSize: 8, letterSpacing: '0.18em',
+          fontFamily: 'var(--font-heading)', fontSize: "calc(8px * var(--font-scale))", letterSpacing: '0.18em',
           color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6,
         }}>
           {t('graph.node_types')}
@@ -74,7 +74,7 @@ export default function GraphLegend() {
             <div key={t.label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <ShapeIcon shape={t.shape} color={t.color} />
               <span style={{
-                fontFamily: 'var(--font-mono)', fontSize: 8,
+                fontFamily: 'var(--font-mono)', fontSize: "calc(8px * var(--font-scale))",
                 color: 'var(--text-muted)', letterSpacing: '0.08em',
               }}>{t.label}</span>
             </div>
@@ -88,7 +88,7 @@ export default function GraphLegend() {
       {/* Edge types */}
       <div>
         <div style={{
-          fontFamily: 'var(--font-heading)', fontSize: 8, letterSpacing: '0.18em',
+          fontFamily: 'var(--font-heading)', fontSize: "calc(8px * var(--font-scale))", letterSpacing: '0.18em',
           color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 6,
         }}>
           {t('graph.edge_risk')}
@@ -98,7 +98,7 @@ export default function GraphLegend() {
             <div key={e.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ width: 24, height: 1, background: e.color, boxShadow: `0 0 4px ${e.color}` }} />
               <span style={{
-                fontFamily: 'var(--font-mono)', fontSize: 8,
+                fontFamily: 'var(--font-mono)', fontSize: "calc(8px * var(--font-scale))",
                 color: 'var(--text-muted)', letterSpacing: '0.06em',
               }}>{e.label}</span>
             </div>

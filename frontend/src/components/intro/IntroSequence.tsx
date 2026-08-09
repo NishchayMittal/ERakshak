@@ -121,7 +121,7 @@ export default function IntroSequence({ onComplete }: IntroSequenceProps) {
           PHASE 0 – Cursor blink + boot text
           ════════════════════════════════════════ */}
       {(phase === 'cursor' || phase === 'logs') && (
-        <div style={{ position: 'absolute', top: '30%', left: '10%', fontFamily: 'var(--font-mono)', color: 'var(--accent-primary)', fontSize: 13, letterSpacing: '0.08em' }}>
+        <div style={{ position: 'absolute', top: '30%', left: '10%', fontFamily: 'var(--font-mono)', color: 'var(--accent-primary)', fontSize: "calc(13px * var(--font-scale))", letterSpacing: '0.08em' }}>
           {phase === 'cursor' && (
             <span className="cursor-blink">INITIATING SECURE ACCESS...</span>
           )}
@@ -136,7 +136,7 @@ export default function IntroSequence({ onComplete }: IntroSequenceProps) {
           position: 'absolute', inset: 0,
           display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
           padding: '24px 32px', overflow: 'hidden',
-          fontFamily: 'var(--font-mono)', fontSize: 11,
+          fontFamily: 'var(--font-mono)', fontSize: "calc(11px * var(--font-scale))",
           color: 'var(--accent-primary)', letterSpacing: '0.04em',
         }}>
           {LOG_LINES.slice(Math.max(0, logIndex - 14), logIndex).map((line, i) => (
@@ -259,7 +259,7 @@ export default function IntroSequence({ onComplete }: IntroSequenceProps) {
           )}
           <h1 style={{
             fontFamily: 'var(--font-heading)',
-            fontSize: 64, fontWeight: 700,
+            fontSize: "calc(64px * var(--font-scale))", fontWeight: 700,
             color: 'var(--accent-primary)',
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
@@ -277,7 +277,7 @@ export default function IntroSequence({ onComplete }: IntroSequenceProps) {
               animation: 'intro-stamp-in 0.35s ease-out forwards',
             }}>
               <span style={{
-                fontFamily: 'var(--font-mono)', fontSize: 11,
+                fontFamily: 'var(--font-mono)', fontSize: "calc(11px * var(--font-scale))",
                 letterSpacing: '0.25em', textTransform: 'uppercase',
                 color: 'var(--accent-primary)', opacity: 0.85,
               }}>
@@ -285,7 +285,7 @@ export default function IntroSequence({ onComplete }: IntroSequenceProps) {
               </span>
               <span style={{
                 display: 'flex', alignItems: 'center', gap: 5,
-                fontFamily: 'var(--font-mono)', fontSize: 10,
+                fontFamily: 'var(--font-mono)', fontSize: "calc(10px * var(--font-scale))",
                 color: 'var(--accent-threat)', letterSpacing: '0.1em',
               }}>
                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--accent-threat)', display: 'inline-block', animation: 'intro-live-pulse 0.8s step-start infinite' }} />

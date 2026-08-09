@@ -205,7 +205,7 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
         <div style={{ position: 'relative', zIndex: 1 }}>
           <Link to="/cases" style={{
             display: 'flex', alignItems: 'center', gap: 6,
-            fontFamily: 'var(--font-mono)', fontSize: 9,
+            fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))",
             color: 'var(--text-muted)', textDecoration: 'none', letterSpacing: '0.05em',
             textTransform: 'uppercase', marginBottom: 4,
           }}>
@@ -214,14 +214,14 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
           </Link>
           <h1 style={{
             margin: 0,
-            fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700,
+            fontFamily: 'var(--font-display)', fontSize: "calc(14px * var(--font-scale))", fontWeight: 700,
             color: 'var(--text-primary)', letterSpacing: '0.12em', textTransform: 'uppercase',
           }}>
             SEED INGESTION INLETS
           </h1>
           <p style={{
             margin: '4px 0 0 0',
-            fontFamily: 'var(--font-mono)', fontSize: 9,
+            fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))",
             color: 'var(--text-muted)', letterSpacing: '0.08em',
           }}>
             DISPATCH INVESTIGATION KEYS INTO Crawlers AND OSINT PLUGINS
@@ -235,7 +235,7 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
           {/* Left Column: Progress checklist */}
           <div className="hud-panel" style={{ padding: 16, display: 'flex', flexDirection: 'column', minHeight: 360 }}>
             <div style={{
-              fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
+              fontFamily: 'var(--font-heading)', fontSize: "calc(11px * var(--font-scale))", fontWeight: 700,
               color: 'var(--accent-label)', letterSpacing: '0.15em', textTransform: 'uppercase',
               borderBottom: '1px solid var(--struct-line)', paddingBottom: 8,
               display: 'flex', alignItems: 'center', gap: 8,
@@ -257,22 +257,22 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
                   }}>
                     <div style={{ marginTop: 2 }}>
                       {isDone ? (
-                        <span style={{ color: 'var(--accent-action)', fontWeight: 'bold', fontSize: 10 }}>✓</span>
+                        <span style={{ color: 'var(--accent-action)', fontWeight: 'bold', fontSize: "calc(10px * var(--font-scale))" }}>✓</span>
                       ) : isActive ? (
                         <div style={{ width: 12, height: 12, border: '2px solid var(--accent-action)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
                       ) : (
                         <div style={{
                           width: 12, height: 12, border: '1px solid var(--struct-line)',
                           background: '#030609', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 7, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)',
+                          fontSize: "calc(7px * var(--font-scale))", fontFamily: 'var(--font-mono)', color: 'var(--text-muted)',
                         }}>
                           {idx + 1}
                         </div>
                       )}
                     </div>
                     <div>
-                      <div style={{ fontFamily: 'var(--font-heading)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{p.label}</div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', marginTop: 2 }}>{p.detail}</div>
+                      <div style={{ fontFamily: 'var(--font-heading)', fontSize: "calc(10px * var(--font-scale))", fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{p.label}</div>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(8px * var(--font-scale))", color: 'var(--text-muted)', marginTop: 2 }}>{p.detail}</div>
                     </div>
                   </div>
                 );
@@ -281,7 +281,7 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
 
             {/* Progress bar */}
             <div style={{ borderTop: '1px solid var(--struct-line)', paddingTop: 16, marginTop: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', marginBottom: 6 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))", color: 'var(--text-muted)', marginBottom: 6 }}>
                 <span>{t('intake.pipeline_dispatched')}</span>
                 <span style={{ color: 'var(--accent-action)', fontWeight: 'bold' }}>{pipelineProgress}%</span>
               </div>
@@ -294,7 +294,7 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
           {/* Right Column: Scrolling logs */}
           <div className="hud-panel" style={{ padding: 16, display: 'flex', flexDirection: 'column', minHeight: 360 }}>
             <div style={{
-              fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
+              fontFamily: 'var(--font-heading)', fontSize: "calc(11px * var(--font-scale))", fontWeight: 700,
               color: 'var(--accent-label)', letterSpacing: '0.15em', textTransform: 'uppercase',
               borderBottom: '1px solid var(--struct-line)', paddingBottom: 8,
               display: 'flex', alignItems: 'center', gap: 8,
@@ -306,7 +306,7 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
 
             <div style={{
               flex: 1, overflowY: 'auto',
-              fontFamily: 'var(--font-mono)', fontSize: 9,
+              fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))",
               lineHeight: '1.4',
               color: 'var(--text-primary)',
             }}>
@@ -320,7 +320,7 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
 
             <div style={{
               borderTop: '1px solid var(--struct-line)', paddingTop: 12,
-              fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)',
+              fontFamily: 'var(--font-mono)', fontSize: "calc(8px * var(--font-scale))", color: 'var(--text-muted)',
               display: 'flex', justifyContent: 'space-between',
             }}>
               <span>SYNC_GATE: PORT 8000</span>
@@ -337,7 +337,7 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
           {/* Ingestion Board */}
           <div className="hud-panel" style={{ padding: 16 }}>
             <div style={{
-              fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700,
+              fontFamily: 'var(--font-heading)', fontSize: "calc(11px * var(--font-scale))", fontWeight: 700,
               color: 'var(--accent-label)', letterSpacing: '0.15em', textTransform: 'uppercase',
               borderBottom: '1px solid var(--struct-line)', paddingBottom: 8,
               display: 'flex', alignItems: 'center', gap: 8,
@@ -349,7 +349,7 @@ export default function IntakePage({ caseId: propCaseId, onPipelineComplete }: I
             
             {seeds.length === 0 ? (
               <div style={{
-                fontFamily: 'var(--font-mono)', fontSize: 9,
+                fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))",
                 color: 'var(--text-muted)', padding: '48px 0', textAlign: 'center',
                 letterSpacing: '0.1em', background: '#0D1117', border: '1px dashed var(--struct-line)',
               }}>

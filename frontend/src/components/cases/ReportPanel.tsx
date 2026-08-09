@@ -52,13 +52,13 @@ const renderCustomMarkdown = (text: string) => {
       const content = parseInline(trimmed.replace(/^#+\s*/, ''), i);
       
       if (level === 1) {
-        elements.push(<h1 key={i} style={{ fontFamily: 'var(--font-heading)', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', borderBottom: '1px solid var(--struct-line)', paddingBottom: 8, marginTop: 18, marginBottom: 12, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{content}</h1>);
+        elements.push(<h1 key={i} style={{ fontFamily: 'var(--font-heading)', fontSize: "calc(14px * var(--font-scale))", fontWeight: 700, color: 'var(--text-primary)', borderBottom: '1px solid var(--struct-line)', paddingBottom: 8, marginTop: 18, marginBottom: 12, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{content}</h1>);
       } else if (level === 2) {
-        elements.push(<h2 key={i} style={{ fontFamily: 'var(--font-heading)', fontSize: 12, fontWeight: 700, color: 'var(--accent-primary)', borderBottom: '1px solid rgba(0, 255, 194, 0.2)', paddingBottom: 6, marginTop: 18, marginBottom: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{content}</h2>);
+        elements.push(<h2 key={i} style={{ fontFamily: 'var(--font-heading)', fontSize: "calc(12px * var(--font-scale))", fontWeight: 700, color: 'var(--accent-primary)', borderBottom: '1px solid rgba(0, 255, 194, 0.2)', paddingBottom: 6, marginTop: 18, marginBottom: 10, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{content}</h2>);
       } else if (level === 3) {
-        elements.push(<h3 key={i} style={{ fontFamily: 'var(--font-heading)', fontSize: 10, fontWeight: 700, color: 'var(--accent-primary)', borderBottom: '1px solid var(--struct-line)', paddingBottom: 6, marginTop: 16, marginBottom: 10, letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}><Sparkles className="w-3 h-3" style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />{content}</h3>);
+        elements.push(<h3 key={i} style={{ fontFamily: 'var(--font-heading)', fontSize: "calc(10px * var(--font-scale))", fontWeight: 700, color: 'var(--accent-primary)', borderBottom: '1px solid var(--struct-line)', paddingBottom: 6, marginTop: 16, marginBottom: 10, letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}><Sparkles className="w-3 h-3" style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />{content}</h3>);
       } else {
-        elements.push(<h4 key={i} style={{ fontFamily: 'var(--font-heading)', fontSize: 9, fontWeight: 700, color: 'var(--text-primary)', marginTop: 14, marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{content}</h4>);
+        elements.push(<h4 key={i} style={{ fontFamily: 'var(--font-heading)', fontSize: "calc(9px * var(--font-scale))", fontWeight: 700, color: 'var(--text-primary)', marginTop: 14, marginBottom: 8, letterSpacing: '0.08em', textTransform: 'uppercase' }}>{content}</h4>);
       }
     } 
     // Handle blockquotes
@@ -72,7 +72,7 @@ const renderCustomMarkdown = (text: string) => {
       inList = true;
       const content = parseInline(trimmed.substring(2), i);
       listItems.push(
-        <li key={i} style={{ position: 'relative', paddingLeft: 12, fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', padding: '4px 0 4px 12px', lineHeight: 1.5 }}>
+        <li key={i} style={{ position: 'relative', paddingLeft: 12, fontSize: "calc(9px * var(--font-scale))", fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', padding: '4px 0 4px 12px', lineHeight: 1.5 }}>
           <span style={{ position: 'absolute', left: 0, top: 10, width: 5, height: 5, borderRadius: '50%', background: 'var(--accent-primary)' }} />
           {content}
         </li>
@@ -87,7 +87,7 @@ const renderCustomMarkdown = (text: string) => {
     else {
       flushList();
       const content = parseInline(trimmed, i);
-      elements.push(<p key={i} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-primary)', lineHeight: 1.5, marginBottom: 12 }}>{content}</p>);
+      elements.push(<p key={i} style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))", color: 'var(--text-primary)', lineHeight: 1.5, marginBottom: 12 }}>{content}</p>);
     }
   });
   
@@ -150,14 +150,14 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
         flexShrink: 0,
       }}>
         <div style={{
-          fontFamily: 'var(--font-heading)', fontSize: 10,
+          fontFamily: 'var(--font-heading)', fontSize: "calc(10px * var(--font-scale))",
           color: 'var(--accent-primary)', letterSpacing: '0.2em',
           textTransform: 'uppercase', fontWeight: 700,
           display: 'flex', alignItems: 'center', gap: 8,
         }}>
-          <span style={{ fontSize: 14, color: 'var(--accent-primary)', lineHeight: 1 }}>⌐</span>
+          <span style={{ fontSize: "calc(14px * var(--font-scale))", color: 'var(--accent-primary)', lineHeight: 1 }}>⌐</span>
           {t('report.title')}
-          <span style={{ fontSize: 14, color: 'var(--accent-primary)', lineHeight: 1, transform: 'scaleX(-1)', display: 'inline-block' }}>⌐</span>
+          <span style={{ fontSize: "calc(14px * var(--font-scale))", color: 'var(--accent-primary)', lineHeight: 1, transform: 'scaleX(-1)', display: 'inline-block' }}>⌐</span>
         </div>
         <button
           onClick={loadReport}
@@ -166,7 +166,7 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
             background: 'none',
             border: '1px solid var(--accent-primary)',
             color: 'var(--accent-primary)',
-            fontFamily: 'var(--font-heading)', fontSize: 8,
+            fontFamily: 'var(--font-heading)', fontSize: "calc(8px * var(--font-scale))",
             fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
             padding: '4px 8px', cursor: 'pointer',
             opacity: loading ? 0.5 : 1,
@@ -184,7 +184,7 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
         padding: '8px 14px',
         background: 'rgba(0,0,0,0.15)',
         borderBottom: '1px solid var(--struct-line)',
-        fontFamily: 'var(--font-mono)', fontSize: 8,
+        fontFamily: 'var(--font-mono)', fontSize: "calc(8px * var(--font-scale))",
         flexShrink: 0,
       }}>
         <div>
@@ -210,7 +210,7 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
         {loading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10 }}>
             <div style={{ width: 24, height: 24, border: '2px solid var(--accent-primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--accent-primary)', animation: 'blink 1.5s step-start infinite' }}>{t('report.compiling')}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))", color: 'var(--accent-primary)', animation: 'blink 1.5s step-start infinite' }}>{t('report.compiling')}</span>
           </div>
         ) : report ? (
           <div style={{ userSelect: 'text' }}>
@@ -219,7 +219,7 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 8 }}>
             <ShieldAlert className="w-5 h-5" style={{ color: 'var(--text-muted)' }} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)' }}>{t('report.no_report')}</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))", color: 'var(--text-muted)' }}>{t('report.no_report')}</span>
           </div>
         )}
       </div>
@@ -229,7 +229,7 @@ export default function ReportPanel({ caseId }: ReportPanelProps) {
         padding: '8px 14px 0 14px',
         borderTop: '1px solid var(--struct-line)',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)',
+        fontFamily: 'var(--font-mono)', fontSize: "calc(8px * var(--font-scale))", color: 'var(--text-muted)',
         flexShrink: 0,
       }}>
         <span>{t('report.hash')}</span>

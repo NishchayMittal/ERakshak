@@ -260,7 +260,7 @@ export default function LoginPage() {
               style={{
                 margin: 0,
                 fontFamily: "var(--font-heading)",
-                fontSize: 22,
+                fontSize: "calc(22px * var(--font-scale))",
                 fontWeight: 700,
                 color: "#39ff14",
                 letterSpacing: "0.2em",
@@ -273,7 +273,7 @@ export default function LoginPage() {
             <div
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 9,
+                fontSize: "calc(9px * var(--font-scale))",
                 color: "var(--text-muted)",
                 letterSpacing: "0.12em",
                 marginTop: 6,
@@ -288,7 +288,7 @@ export default function LoginPage() {
           <div
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 9,
+              fontSize: "calc(9px * var(--font-scale))",
               letterSpacing: "0.1em",
               color: "#39ff14",
               marginBottom: 20,
@@ -311,7 +311,7 @@ export default function LoginPage() {
                 style={{
                   display: "block",
                   fontFamily: "var(--font-heading)",
-                  fontSize: 9,
+                  fontSize: "calc(9px * var(--font-scale))",
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
                   color: "var(--text-muted)",
@@ -331,7 +331,7 @@ export default function LoginPage() {
                   border: "1px solid rgba(255,255,255,0.1)",
                   color: "#39ff14",
                   fontFamily: "var(--font-mono)",
-                  fontSize: 12,
+                  fontSize: "calc(12px * var(--font-scale))",
                   padding: "10px 12px",
                   outline: "none",
                   caretColor: "#39ff14",
@@ -353,7 +353,7 @@ export default function LoginPage() {
                   style={{
                     display: "block",
                     fontFamily: "var(--font-heading)",
-                    fontSize: 9,
+                    fontSize: "calc(9px * var(--font-scale))",
                     letterSpacing: "0.18em",
                     textTransform: "uppercase",
                     color: "var(--text-muted)",
@@ -373,7 +373,7 @@ export default function LoginPage() {
                     border: "1px solid rgba(255,255,255,0.1)",
                     color: "white",
                     fontFamily: "var(--font-mono)",
-                    fontSize: 12,
+                    fontSize: "calc(12px * var(--font-scale))",
                     padding: "10px 12px",
                     outline: "none",
                     caretColor: "#39ff14",
@@ -395,7 +395,7 @@ export default function LoginPage() {
                 style={{
                   display: "block",
                   fontFamily: "var(--font-heading)",
-                  fontSize: 9,
+                  fontSize: "calc(9px * var(--font-scale))",
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
                   color: "var(--text-muted)",
@@ -416,7 +416,7 @@ export default function LoginPage() {
                     border: "1px solid rgba(255,255,255,0.1)",
                     color: "white",
                     fontFamily: "var(--font-mono)",
-                    fontSize: 12,
+                    fontSize: "calc(12px * var(--font-scale))",
                     padding: "10px 40px 10px 12px",
                     outline: "none",
                     caretColor: "#39ff14",
@@ -460,7 +460,7 @@ export default function LoginPage() {
                 alignItems: "center",
                 justifyContent: "space-between",
                 fontFamily: "var(--font-mono)",
-                fontSize: 8,
+                fontSize: "calc(8px * var(--font-scale))",
                 color: "var(--text-muted)",
                 letterSpacing: "0.08em",
               }}
@@ -504,7 +504,7 @@ export default function LoginPage() {
                 border: "none",
                 color: "#39ff14",
                 fontFamily: "var(--font-mono)",
-                fontSize: 8,
+                fontSize: "calc(8px * var(--font-scale))",
                 letterSpacing: "0.08em",
                 textDecoration: "underline",
                 cursor: "pointer",
@@ -523,7 +523,7 @@ export default function LoginPage() {
             borderTop: "1px solid rgba(255,255,255,0.05)",
             padding: "12px 32px",
             fontFamily: "var(--font-mono)",
-            fontSize: 8,
+            fontSize: "calc(8px * var(--font-scale))",
             color: "var(--text-muted)",
             letterSpacing: "0.06em",
             textAlign: "center",
@@ -564,7 +564,7 @@ export default function LoginPage() {
             }`,
             cursor: "pointer",
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: "calc(10px * var(--font-scale))",
             color: "var(--text-primary)",
             letterSpacing: "0.08em",
             backdropFilter: "blur(12px)",
@@ -594,7 +594,7 @@ export default function LoginPage() {
             }}
           />
           {toast.message}
-          <span style={{ marginLeft: 12, opacity: 0.5, fontSize: 8 }}>✕</span>
+          <span style={{ marginLeft: 12, opacity: 0.5, fontSize: "calc(8px * var(--font-scale))" }}>✕</span>
         </div>
       )}
       </motion.div>

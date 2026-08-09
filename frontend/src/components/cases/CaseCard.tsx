@@ -188,10 +188,10 @@ export default function CaseCard({ caseItem, onSelect }: CaseCardProps) {
             boxShadow: '0 0 24px rgba(255,59,48,0.15)',
             backdropFilter: 'blur(12px)',
           }}>
-            <div style={{ fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: '#ff3b30', letterSpacing: '0.15em' }}>
+            <div style={{ fontFamily: 'var(--font-heading)', fontSize: "calc(11px * var(--font-scale))", fontWeight: 700, color: '#ff3b30', letterSpacing: '0.15em' }}>
               CONFIRM DOSSIER DELETION
             </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#9ca3af', lineHeight: '1.4' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(10px * var(--font-scale))", color: '#9ca3af', lineHeight: '1.4' }}>
               ARE YOU SURE YOU WANT TO PERMANENTLY DELETE CASE <span style={{ color: '#ffffff', fontWeight: 'bold' }}>"<Transliterate>{caseItem.title}</Transliterate>"</span>?
               <br/><br/>
               THIS WILL IRREVERSIBLY ERASE ALL INGESTED IDENTIFIERS, CORRELATED SUSPECT PROFILES, AND NOTES.
@@ -202,7 +202,7 @@ export default function CaseCard({ caseItem, onSelect }: CaseCardProps) {
                 style={{
                   background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
                   color: '#9ca3af', fontFamily: 'var(--font-mono)',
-                  fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
+                  fontSize: "calc(9px * var(--font-scale))", fontWeight: 700, letterSpacing: '0.1em',
                   padding: '6px 12px', cursor: 'pointer', textTransform: 'uppercase',
                 }}
               >
@@ -216,7 +216,7 @@ export default function CaseCard({ caseItem, onSelect }: CaseCardProps) {
                 style={{
                   background: 'rgba(255,59,48,0.1)', border: '1px solid #ff3b30',
                   color: '#fca5a5', fontFamily: 'var(--font-mono)',
-                  fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
+                  fontSize: "calc(9px * var(--font-scale))", fontWeight: 700, letterSpacing: '0.1em',
                   padding: '6px 12px', cursor: 'pointer', textTransform: 'uppercase',
                 }}
               >

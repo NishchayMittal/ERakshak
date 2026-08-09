@@ -81,14 +81,14 @@ export default function ProfilePage() {
         <div style={{ position: 'relative', zIndex: 1 }}>
           <h1 style={{
             margin: 0,
-            fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700,
+            fontFamily: 'var(--font-display)', fontSize: "calc(14px * var(--font-scale))", fontWeight: 700,
             color: 'var(--text-primary)', letterSpacing: '0.12em', textTransform: 'uppercase',
           }}>
             {t('profile_page.header_title')}
           </h1>
           <p style={{
             margin: '4px 0 0 0',
-            fontFamily: 'var(--font-mono)', fontSize: 9,
+            fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))",
             color: 'var(--text-muted)', letterSpacing: '0.08em',
           }}>
             {t('profile_page.header_subtitle')}
@@ -135,19 +135,19 @@ export default function ProfilePage() {
           </div>
 
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-heading)', fontSize: 13, color: 'var(--text-primary)', fontWeight: 700, letterSpacing: '0.05em' }}>
+            <div style={{ fontFamily: 'var(--font-heading)', fontSize: "calc(13px * var(--font-scale))", color: 'var(--text-primary)', fontWeight: 700, letterSpacing: '0.05em' }}>
               {transliterate(user.name).toUpperCase()}
             </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--accent-primary)', letterSpacing: '0.1em' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))", color: 'var(--accent-primary)', letterSpacing: '0.1em' }}>
               {transliterate(user.role).toUpperCase()}
             </div>
           </div>
 
           <div style={{ width: '100%', borderTop: '1px solid var(--struct-line)', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontFamily: 'var(--font-heading)', fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>{t('profile_page.system_state')}</span>
+              <span style={{ fontFamily: 'var(--font-heading)', fontSize: "calc(8px * var(--font-scale))", color: 'var(--text-muted)', letterSpacing: '0.1em' }}>{t('profile_page.system_state')}</span>
               <span style={{
-                fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--accent-action)',
+                fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))", color: 'var(--accent-action)',
                 fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4
               }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-action)', boxShadow: '0 0 6px var(--accent-action)' }} />
@@ -155,8 +155,8 @@ export default function ProfilePage() {
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontFamily: 'var(--font-heading)', fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>{t('profile_page.badge_id')}</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-primary)' }}>{user.badgeNumber}</span>
+              <span style={{ fontFamily: 'var(--font-heading)', fontSize: "calc(8px * var(--font-scale))", color: 'var(--text-muted)', letterSpacing: '0.1em' }}>{t('profile_page.badge_id')}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))", color: 'var(--text-primary)' }}>{user.badgeNumber}</span>
             </div>
           </div>
         </div>
@@ -172,13 +172,13 @@ export default function ProfilePage() {
           <div className="hud-panel" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 18 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--struct-line)', paddingBottom: 10 }}>
               <Shield size={16} style={{ color: 'var(--accent-label)' }} />
-              <h2 style={{ margin: 0, fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: 'var(--accent-label)', letterSpacing: '0.1em' }}>
+              <h2 style={{ margin: 0, fontFamily: 'var(--font-heading)', fontSize: "calc(11px * var(--font-scale))", fontWeight: 700, color: 'var(--accent-label)', letterSpacing: '0.1em' }}>
                 {t('profile_page.security_section')}
               </h2>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'min(150px, 40%) 1fr', gap: '14px 20px', alignItems: 'center' }}>
-              <label style={{ fontFamily: 'var(--font-heading)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
+              <label style={{ fontFamily: 'var(--font-heading)', fontSize: "calc(9px * var(--font-scale))", color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
                 {t('profile_page.investigator_name')}
               </label>
               {isEditing ? (
@@ -193,7 +193,7 @@ export default function ProfilePage() {
                       border: '1px solid var(--accent-primary)',
                       color: 'var(--text-primary)',
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 11,
+                      fontSize: "calc(11px * var(--font-scale))",
                       padding: '4px 8px',
                       outline: 'none',
                       flex: 1,
@@ -228,7 +228,7 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-primary)', fontWeight: 600 }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(11px * var(--font-scale))", color: 'var(--text-primary)', fontWeight: 600 }}>
                     {transliterate(user.name)}
                   </span>
                   <button
@@ -238,7 +238,7 @@ export default function ProfilePage() {
                     }}
                     style={{
                       background: 'none', border: '1px solid var(--struct-line)', color: 'var(--text-muted)',
-                      padding: '4px 8px', fontSize: 8, fontFamily: 'var(--font-heading)',
+                      padding: '4px 8px', fontSize: "calc(8px * var(--font-scale))", fontFamily: 'var(--font-heading)',
                       letterSpacing: '0.1em', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4
                     }}
                   >
@@ -248,24 +248,24 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              <label style={{ fontFamily: 'var(--font-heading)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
+              <label style={{ fontFamily: 'var(--font-heading)', fontSize: "calc(9px * var(--font-scale))", color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
                 {t('profile_page.assigned_post')}
               </label>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-primary)' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(11px * var(--font-scale))", color: 'var(--text-primary)' }}>
                 {transliterate(user.role)}
               </span>
 
-              <label style={{ fontFamily: 'var(--font-heading)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
+              <label style={{ fontFamily: 'var(--font-heading)', fontSize: "calc(9px * var(--font-scale))", color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
                 {t('profile_page.security_clearance')}
               </label>
               <span style={{
-                fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--accent-secondary)',
+                fontFamily: 'var(--font-mono)', fontSize: "calc(10px * var(--font-scale))", color: 'var(--accent-secondary)',
                 fontWeight: 700, letterSpacing: '0.05em'
               }}>
                 {t('profile_page.clearance_val')}
               </span>
 
-              <label style={{ fontFamily: 'var(--font-heading)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
+              <label style={{ fontFamily: 'var(--font-heading)', fontSize: "calc(9px * var(--font-scale))", color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
                 {t('profile_page.passphrase')}
               </label>
               {isEditingPassword ? (
@@ -281,7 +281,7 @@ export default function ProfilePage() {
                       border: '1px solid var(--accent-primary)',
                       color: 'var(--text-primary)',
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 11,
+                      fontSize: "calc(11px * var(--font-scale))",
                       padding: '4px 8px',
                       outline: 'none',
                       flex: 1,
@@ -316,7 +316,7 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)' }}>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(11px * var(--font-scale))", color: 'var(--text-muted)' }}>
                     ••••••••••••••
                   </span>
                   <button
@@ -326,7 +326,7 @@ export default function ProfilePage() {
                     }}
                     style={{
                       background: 'none', border: '1px solid var(--struct-line)', color: 'var(--text-muted)',
-                      padding: '4px 8px', fontSize: 8, fontFamily: 'var(--font-heading)',
+                      padding: '4px 8px', fontSize: "calc(8px * var(--font-scale))", fontFamily: 'var(--font-heading)',
                       letterSpacing: '0.1em', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4
                     }}
                   >
@@ -342,12 +342,12 @@ export default function ProfilePage() {
           <div className="hud-panel" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16, flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--struct-line)', paddingBottom: 10 }}>
               <Terminal size={16} style={{ color: 'var(--accent-action)' }} />
-              <h2 style={{ margin: 0, fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: 'var(--accent-label)', letterSpacing: '0.1em' }}>
+              <h2 style={{ margin: 0, fontFamily: 'var(--font-heading)', fontSize: "calc(11px * var(--font-scale))", fontWeight: 700, color: 'var(--accent-label)', letterSpacing: '0.1em' }}>
                 {t('profile_page.operational_context')}
               </h2>
             </div>
 
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(10px * var(--font-scale))", color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto' }}>
               <div>&gt; HOST SYSTEM: WINDOWS SECURE SHELL</div>
               <div>&gt; ENCRYPTION ALGORITHM: HS256 JWT SCHEME</div>
               <div>&gt; ACTIVE LOCAL VOLUME: erakshak.db [CONNECTED]</div>

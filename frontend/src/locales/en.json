@@ -47,6 +47,8 @@
   },
   "dashboard": {
     "console_title": "ORION HOLOGRAPHIC CONSOLE",
+    "start_demo": "START DEMO",
+    "start_demo_short": "DEMO",
     "wallpaper": "Wallpaper",
     "badge_label": "INVESTIGATOR BADGE:",
     "core_ready": "CORE READY",

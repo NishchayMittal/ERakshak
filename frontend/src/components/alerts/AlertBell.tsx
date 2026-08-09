@@ -96,7 +96,7 @@ export default function AlertBell() {
             right: -4,
             background: 'var(--accent-threat)',
             color: '#000',
-            fontSize: 8,
+            fontSize: "calc(8px * var(--font-scale))",
             fontWeight: 900,
             fontFamily: 'var(--font-mono)',
             minWidth: 14,
@@ -140,7 +140,7 @@ export default function AlertBell() {
           }}>
             <span style={{
               fontFamily: 'var(--font-heading)',
-              fontSize: 10,
+              fontSize: "calc(10px * var(--font-scale))",
               fontWeight: 700,
               letterSpacing: '0.2em',
               color: 'var(--accent-primary)',
@@ -156,7 +156,7 @@ export default function AlertBell() {
                   border: '1px solid var(--struct-line)',
                   color: 'var(--text-muted)',
                   cursor: 'pointer',
-                  fontSize: 9,
+                  fontSize: "calc(9px * var(--font-scale))",
                   fontFamily: 'var(--font-mono)',
                   letterSpacing: '0.1em',
                   padding: '3px 8px',
@@ -181,7 +181,7 @@ export default function AlertBell() {
                 textAlign: 'center',
                 color: 'var(--text-muted)',
                 fontFamily: 'var(--font-mono)',
-                fontSize: 11,
+                fontSize: "calc(11px * var(--font-scale))",
                 letterSpacing: '0.1em',
               }}>
                 NO ALERTS — WATCHLIST MONITORING ACTIVE
@@ -226,7 +226,7 @@ export default function AlertBell() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 11,
+                      fontSize: "calc(11px * var(--font-scale))",
                       color: alert.is_read ? 'var(--text-muted)' : 'var(--text-primary)',
                       lineHeight: 1.4,
                       marginBottom: 4,
@@ -237,7 +237,7 @@ export default function AlertBell() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: 8,
-                      fontSize: 9,
+                      fontSize: "calc(9px * var(--font-scale))",
                       fontFamily: 'var(--font-mono)',
                       color: 'var(--text-muted)',
                       letterSpacing: '0.1em',

@@ -33,7 +33,7 @@ export default function GraphFilterBar() {
       {/* Confidence threshold slider */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 200 }}>
         <span style={{
-          fontFamily: 'var(--font-heading)', fontSize: 9,
+          fontFamily: 'var(--font-heading)', fontSize: "calc(9px * var(--font-scale))",
           color: 'var(--text-muted)', letterSpacing: '0.15em', textTransform: 'uppercase',
           whiteSpace: 'nowrap',
         }}>
@@ -46,7 +46,7 @@ export default function GraphFilterBar() {
           style={{ flex: 1, accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
         />
         <span style={{
-          fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600,
+          fontFamily: 'var(--font-mono)', fontSize: "calc(10px * var(--font-scale))", fontWeight: 600,
           color: 'var(--accent-primary)',
           background: 'var(--bg-1)', border: '1px solid var(--struct-line)',
           padding: '2px 6px', minWidth: 36, textAlign: 'center',
@@ -61,7 +61,7 @@ export default function GraphFilterBar() {
       {/* Source filter toggles */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
         <span style={{
-          fontFamily: 'var(--font-heading)', fontSize: 9,
+          fontFamily: 'var(--font-heading)', fontSize: "calc(9px * var(--font-scale))",
           color: 'var(--text-muted)', letterSpacing: '0.15em', textTransform: 'uppercase',
           marginRight: 4, whiteSpace: 'nowrap',
         }}>
@@ -78,7 +78,7 @@ export default function GraphFilterBar() {
                 background: active ? 'var(--accent-primary-dim)' : 'transparent',
                 border: `1px solid ${active ? 'var(--accent-primary)' : 'var(--struct-line)'}`,
                 color: active ? 'var(--accent-primary)' : 'var(--text-muted)',
-                fontFamily: 'var(--font-heading)', fontSize: 9,
+                fontFamily: 'var(--font-heading)', fontSize: "calc(9px * var(--font-scale))",
                 letterSpacing: '0.12em', textTransform: 'uppercase',
                 cursor: 'pointer',
                 transition: 'all 0.1s linear',

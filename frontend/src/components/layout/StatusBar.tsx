@@ -61,7 +61,7 @@ export default function StatusBar() {
       {/* Left static label */}
       <div style={{
         padding: '0 12px',
-        fontFamily: 'var(--font-mono)', fontSize: 9,
+        fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))",
         color: 'var(--accent-primary)', letterSpacing: '0.15em',
         borderRight: '1px solid var(--struct-line)',
         whiteSpace: 'nowrap', flexShrink: 0,
@@ -78,7 +78,7 @@ export default function StatusBar() {
 
       {/* Scrolling feed */}
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-        <div className="status-ticker" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>
+        <div className="status-ticker" style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))", color: 'var(--text-muted)', letterSpacing: '0.06em' }}>
           {events.map((ev, i) => (
             <span key={i} style={{ marginRight: 48 }}>
               <span style={{ color: 'var(--accent-primary)', marginRight: 6 }}>▶</span>
@@ -91,7 +91,7 @@ export default function StatusBar() {
       {/* Right: timestamp */}
       <div style={{
         padding: '0 12px',
-        fontFamily: 'var(--font-mono)', fontSize: 9,
+        fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))",
         color: 'var(--text-muted)', letterSpacing: '0.08em',
         borderLeft: '1px solid var(--struct-line)',
         whiteSpace: 'nowrap', flexShrink: 0,

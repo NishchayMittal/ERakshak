@@ -47,6 +47,8 @@
   },
   "dashboard": {
     "console_title": "ओरियन होलोग्राफिक कंसोल",
+    "start_demo": "डेमो शुरू करें",
+    "start_demo_short": "डेमो",
     "wallpaper": "वॉलपेपर",
     "badge_label": "जांचकर्ता बैज:",
     "core_ready": "कोर तैयार",

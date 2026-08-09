@@ -184,7 +184,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                 style={{
                   margin: 0,
                   fontFamily: "var(--font-heading)",
-                  fontSize: 22,
+                  fontSize: "calc(22px * var(--font-scale))",
                   fontWeight: 700,
                   color: "#39ff14",
                   letterSpacing: "0.2em",
@@ -197,7 +197,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
               <div
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: 9,
+                  fontSize: "calc(9px * var(--font-scale))",
                   color: "var(--text-muted)",
                   letterSpacing: "0.12em",
                   marginTop: 6,
@@ -212,7 +212,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
             <div
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: 9,
+                fontSize: "calc(9px * var(--font-scale))",
                 letterSpacing: "0.1em",
                 color: "#39ff14",
                 marginBottom: 20,
@@ -235,7 +235,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                   style={{
                     display: "block",
                     fontFamily: "var(--font-heading)",
-                    fontSize: 9,
+                    fontSize: "calc(9px * var(--font-scale))",
                     letterSpacing: "0.18em",
                     textTransform: "uppercase",
                     color: "var(--text-muted)",
@@ -255,7 +255,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                     border: "1px solid rgba(255,255,255,0.1)",
                     color: "#39ff14",
                     fontFamily: "var(--font-mono)",
-                    fontSize: 12,
+                    fontSize: "calc(12px * var(--font-scale))",
                     padding: "10px 12px",
                     outline: "none",
                     caretColor: "#39ff14",
@@ -277,7 +277,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                     style={{
                       display: "block",
                       fontFamily: "var(--font-heading)",
-                      fontSize: 9,
+                      fontSize: "calc(9px * var(--font-scale))",
                       letterSpacing: "0.18em",
                       textTransform: "uppercase",
                       color: "var(--text-muted)",
@@ -297,7 +297,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                       border: "1px solid rgba(255,255,255,0.1)",
                       color: "white",
                       fontFamily: "var(--font-mono)",
-                      fontSize: 12,
+                      fontSize: "calc(12px * var(--font-scale))",
                       padding: "10px 12px",
                       outline: "none",
                       caretColor: "#39ff14",
@@ -319,7 +319,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                   style={{
                     display: "block",
                     fontFamily: "var(--font-heading)",
-                    fontSize: 9,
+                    fontSize: "calc(9px * var(--font-scale))",
                     letterSpacing: "0.18em",
                     textTransform: "uppercase",
                     color: "var(--text-muted)",
@@ -340,7 +340,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                       border: "1px solid rgba(255,255,255,0.1)",
                       color: "white",
                       fontFamily: "var(--font-mono)",
-                      fontSize: 12,
+                      fontSize: "calc(12px * var(--font-scale))",
                       padding: "10px 40px 10px 12px",
                       outline: "none",
                       caretColor: "#39ff14",
@@ -386,7 +386,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                       { label: t("login.req_number", "NUMBER"), passed: /[0-9]/.test(password) },
                       { label: t("login.req_special", "SPECIAL (!@#$)"), passed: /[!@#$%^&*()_+\-=]/.test(password) }
                     ].map((req, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 9, fontFamily: "var(--font-mono)", letterSpacing: "0.05em", color: req.passed ? "#39ff14" : "rgba(255,255,255,0.3)" }}>
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "calc(9px * var(--font-scale))", fontFamily: "var(--font-mono)", letterSpacing: "0.05em", color: req.passed ? "#39ff14" : "rgba(255,255,255,0.3)" }}>
                         <div style={{ width: 6, height: 6, borderRadius: "50%", background: req.passed ? "#39ff14" : "rgba(255,255,255,0.1)", border: `1px solid ${req.passed ? "#39ff14" : "rgba(255,255,255,0.3)"}`, transition: "all 0.2s" }} />
                         {req.label}
                       </div>
@@ -401,7 +401,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                   alignItems: "center",
                   justifyContent: "space-between",
                   fontFamily: "var(--font-mono)",
-                  fontSize: 8,
+                  fontSize: "calc(8px * var(--font-scale))",
                   color: "var(--text-muted)",
                   letterSpacing: "0.08em",
                 }}
@@ -467,7 +467,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                       border: "none",
                       color: "#39ff14",
                       fontFamily: "var(--font-mono)",
-                      fontSize: 8,
+                      fontSize: "calc(8px * var(--font-scale))",
                       letterSpacing: "0.08em",
                       textDecoration: "underline",
                       cursor: "pointer",
@@ -492,7 +492,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
                     border: "none",
                     color: "#39ff14",
                     fontFamily: "var(--font-mono)",
-                    fontSize: 8,
+                    fontSize: "calc(8px * var(--font-scale))",
                     letterSpacing: "0.08em",
                     textDecoration: "underline",
                     cursor: "pointer",
@@ -512,7 +512,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
               borderTop: "1px solid rgba(255,255,255,0.05)",
               padding: "12px 32px",
               fontFamily: "var(--font-mono)",
-              fontSize: 8,
+              fontSize: "calc(8px * var(--font-scale))",
               color: "var(--text-muted)",
               letterSpacing: "0.06em",
               textAlign: "center",
@@ -552,7 +552,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
               }`,
             cursor: "pointer",
             fontFamily: "var(--font-mono)",
-            fontSize: 10,
+            fontSize: "calc(10px * var(--font-scale))",
             color: "var(--text-primary)",
             letterSpacing: "0.08em",
             backdropFilter: "blur(12px)",
@@ -581,7 +581,7 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
             }}
           />
           {toast.message}
-          <span style={{ marginLeft: 12, opacity: 0.5, fontSize: 8 }}>✕</span>
+          <span style={{ marginLeft: 12, opacity: 0.5, fontSize: "calc(8px * var(--font-scale))" }}>✕</span>
         </div>
       )}
     </>

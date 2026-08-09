@@ -27,7 +27,7 @@ function SeverityBadge({ severity }: { severity: LegalFlag['severity'] }) {
   return (
     <span style={{
       fontFamily: 'var(--font-mono)',
-      fontSize: 8,
+      fontSize: "calc(8px * var(--font-scale))",
       fontWeight: 900,
       letterSpacing: '0.15em',
       color: cfg.color,
@@ -47,7 +47,7 @@ function ActBadge({ act }: { act: LegalFlag['act'] }) {
   return (
     <span style={{
       fontFamily: 'var(--font-mono)',
-      fontSize: 8,
+      fontSize: "calc(8px * var(--font-scale))",
       fontWeight: 700,
       letterSpacing: '0.1em',
       color: cfg.color,
@@ -132,7 +132,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
         {/* Index number */}
         <span style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: 9,
+          fontSize: "calc(9px * var(--font-scale))",
           color: 'var(--text-muted)',
           minWidth: 18,
           flexShrink: 0,
@@ -143,7 +143,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
         {/* Section tag */}
         <span style={{
           fontFamily: 'var(--font-heading)',
-          fontSize: 10,
+          fontSize: "calc(10px * var(--font-scale))",
           fontWeight: 800,
           color: cfg.color,
           letterSpacing: '0.08em',
@@ -156,7 +156,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
         {/* Title */}
         <span style={{
           fontFamily: 'var(--font-mono)',
-          fontSize: 11,
+          fontSize: "calc(11px * var(--font-scale))",
           color: 'var(--text-primary)',
           flex: 1,
           fontWeight: 600,
@@ -170,7 +170,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
           <SeverityBadge severity={flag.severity} />
           <span style={{
             fontFamily: 'var(--font-mono)',
-            fontSize: 9,
+            fontSize: "calc(9px * var(--font-scale))",
             color: 'var(--text-muted)',
             minWidth: 40,
             textAlign: 'right',
@@ -196,7 +196,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
           <div style={{ paddingTop: 12 }}>
             <div style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: 9,
+              fontSize: "calc(9px * var(--font-scale))",
               color: 'var(--text-muted)',
               letterSpacing: '0.12em',
               textTransform: 'uppercase',
@@ -206,7 +206,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
             </div>
             <p style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: 11,
+              fontSize: "calc(11px * var(--font-scale))",
               color: 'var(--text-primary)',
               lineHeight: 1.6,
               margin: 0,
@@ -223,7 +223,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
             <div style={{ flex: 1 }}>
               <div style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: 9,
+                fontSize: "calc(9px * var(--font-scale))",
                 color: 'var(--text-muted)',
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
@@ -233,7 +233,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
               </div>
               <p style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: 10,
+                fontSize: "calc(10px * var(--font-scale))",
                 color: cfg.color,
                 margin: 0,
                 lineHeight: 1.5,
@@ -244,7 +244,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
             <div>
               <div style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: 9,
+                fontSize: "calc(9px * var(--font-scale))",
                 color: 'var(--text-muted)',
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
@@ -254,7 +254,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
               </div>
               <span style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: 10,
+                fontSize: "calc(10px * var(--font-scale))",
                 fontWeight: 700,
                 color: flag.bailable ? '#00ffc2' : '#ff2d55',
               }}>
@@ -276,7 +276,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
               <Info size={11} color="var(--accent-primary)" style={{ flexShrink: 0, marginTop: 1 }} />
               <span style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: 10,
+                fontSize: "calc(10px * var(--font-scale))",
                 color: 'var(--text-muted)',
                 lineHeight: 1.5,
               }}>
@@ -290,7 +290,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
             <div>
               <div style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: 9,
+                fontSize: "calc(9px * var(--font-scale))",
                 color: 'var(--text-muted)',
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
@@ -310,7 +310,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
                   }}>
                     <span style={{
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 8,
+                      fontSize: "calc(8px * var(--font-scale))",
                       color: '#a78bfa',
                       letterSpacing: '0.1em',
                       textTransform: 'uppercase',
@@ -321,7 +321,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
                     </span>
                     <span style={{
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 9,
+                      fontSize: "calc(9px * var(--font-scale))",
                       color: 'var(--text-primary)',
                       flex: 1,
                       overflow: 'hidden',
@@ -332,7 +332,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
                     </span>
                     <span style={{
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 8,
+                      fontSize: "calc(8px * var(--font-scale))",
                       color: 'var(--text-muted)',
                       flexShrink: 0,
                     }}>
@@ -435,7 +435,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
           <div>
             <div style={{
               fontFamily: 'var(--font-heading)',
-              fontSize: 11,
+              fontSize: "calc(11px * var(--font-scale))",
               fontWeight: 700,
               color: 'var(--accent-primary)',
               letterSpacing: '0.2em',
@@ -445,7 +445,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
             </div>
             <div style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: 9,
+              fontSize: "calc(9px * var(--font-scale))",
               color: 'var(--text-muted)',
               marginTop: 2,
               letterSpacing: '0.05em',
@@ -465,7 +465,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
               cursor: result && result.total_flags > 0 ? 'pointer' : 'not-allowed',
               padding: '5px 10px',
               fontFamily: 'var(--font-mono)',
-              fontSize: 9,
+              fontSize: "calc(9px * var(--font-scale))",
               letterSpacing: '0.1em',
               display: 'flex',
               alignItems: 'center',
@@ -485,7 +485,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
               cursor: loading ? 'not-allowed' : 'pointer',
               padding: '5px 10px',
               fontFamily: 'var(--font-mono)',
-              fontSize: 9,
+              fontSize: "calc(9px * var(--font-scale))",
               letterSpacing: '0.1em',
               display: 'flex',
               alignItems: 'center',
@@ -512,10 +512,10 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
           fontFamily: 'var(--font-mono)',
         }}>
           <ShieldAlert size={32} color="var(--accent-primary)" style={{ opacity: 0.6, animation: 'intro-live-pulse 1.2s ease infinite' }} />
-          <div style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase' }}>
+          <div style={{ fontSize: "calc(11px * var(--font-scale))", letterSpacing: '0.2em', textTransform: 'uppercase' }}>
             {t('legal.analyzing', 'ANALYSING FINDINGS AGAINST LEGAL DATABASE...')}
           </div>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
+          <div style={{ fontSize: "calc(9px * var(--font-scale))", color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
             IT Act 2000 · BNS 2023 · PMLA 2002
           </div>
         </div>
@@ -533,7 +533,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
           alignItems: 'center',
         }}>
           <AlertTriangle size={14} color="#ff2d55" />
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ff2d55' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(11px * var(--font-scale))", color: '#ff2d55' }}>
             {error}
           </span>
         </div>
@@ -553,14 +553,14 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
             justifyContent: 'space-between',
             gap: 16,
           }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', flex: 1 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(10px * var(--font-scale))", color: 'var(--text-muted)', flex: 1 }}>
               {getSummaryText()}
             </div>
             <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
               {result.critical_count > 0 && (
                 <div style={{
                   fontFamily: 'var(--font-mono)',
-                  fontSize: 9,
+                  fontSize: "calc(9px * var(--font-scale))",
                   color: '#ff2d55',
                   border: '1px solid rgba(255,45,85,0.4)',
                   padding: '3px 10px',
@@ -573,7 +573,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
               {result.high_count > 0 && (
                 <div style={{
                   fontFamily: 'var(--font-mono)',
-                  fontSize: 9,
+                  fontSize: "calc(9px * var(--font-scale))",
                   color: '#ff9500',
                   border: '1px solid rgba(255,149,0,0.35)',
                   padding: '3px 10px',
@@ -585,7 +585,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
               )}
               <div style={{
                 fontFamily: 'var(--font-mono)',
-                fontSize: 9,
+                fontSize: "calc(9px * var(--font-scale))",
                 color: 'var(--text-muted)',
                 border: '1px solid var(--struct-line)',
                 padding: '3px 10px',
@@ -625,7 +625,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
                     borderBottom: filter === f ? '2px solid var(--accent-primary)' : '2px solid transparent',
                     color: filter === f ? 'var(--accent-primary)' : 'var(--text-muted)',
                     fontFamily: 'var(--font-mono)',
-                    fontSize: 9,
+                    fontSize: "calc(9px * var(--font-scale))",
                     fontWeight: filter === f ? 700 : 400,
                     letterSpacing: '0.1em',
                     padding: '8px 10px',
@@ -658,7 +658,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
                 color: 'var(--text-muted)',
               }}>
                 <Scale size={28} style={{ opacity: 0.3 }} />
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.15em' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(11px * var(--font-scale))", letterSpacing: '0.15em' }}>
                   {t('legal.no_flags', 'NO FLAGS FOR SELECTED FILTER')}
                 </span>
               </div>
@@ -678,7 +678,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
           }}>
             <p style={{
               fontFamily: 'var(--font-mono)',
-              fontSize: 8,
+              fontSize: "calc(8px * var(--font-scale))",
               color: 'var(--text-muted)',
               margin: 0,
               letterSpacing: '0.06em',

@@ -186,7 +186,7 @@ export default function ChatPanel({
           <span
             style={{
               fontFamily: "var(--font-heading)",
-              fontSize: 10,
+              fontSize: "calc(10px * var(--font-scale))",
               fontWeight: 700,
               color: "var(--accent-primary)",
               letterSpacing: "0.15em",
@@ -199,7 +199,7 @@ export default function ChatPanel({
         <div
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: 8,
+            fontSize: "calc(8px * var(--font-scale))",
             color: "var(--text-muted)",
           }}
         >
@@ -258,7 +258,7 @@ export default function ChatPanel({
                   borderRadius: 6,
                   padding: "8px 12px",
                   fontFamily: "var(--font-mono)",
-                  fontSize: 9,
+                  fontSize: "calc(9px * var(--font-scale))",
                   color: "var(--text-primary)",
                   lineHeight: 1.4,
                   position: "relative",
@@ -267,7 +267,7 @@ export default function ChatPanel({
                 {parseMessageContent(msg?.content || "", transliterate)}
                 <div
                   style={{
-                    fontSize: 7,
+                    fontSize: "calc(7px * var(--font-scale))",
                     color: "var(--text-muted)",
                     marginTop: 4,
                     textAlign: msg?.isUser ? "right" : "left",
@@ -389,7 +389,7 @@ export default function ChatPanel({
             border: `1px solid ${activeIsLoading ? "rgba(0,255,194,0.3)" : "var(--struct-line)"}`,
             borderRadius: 6,
             fontFamily: "var(--font-mono)",
-            fontSize: 9,
+            fontSize: "calc(9px * var(--font-scale))",
             color: "var(--text-primary)",
             resize: "vertical",
             outline: "none",
@@ -406,7 +406,7 @@ export default function ChatPanel({
               ? "rgba(0,255,194,0.5)"
               : "var(--accent-primary)",
             fontFamily: "var(--font-heading)",
-            fontSize: 8,
+            fontSize: "calc(8px * var(--font-scale))",
             fontWeight: 700,
             letterSpacing: "0.1em",
             textTransform: "uppercase",

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Globe from 'react-globe.gl';
 import { getGeoIntelligence, type GeoIntelligenceResult } from '../../api/endpoints';
 import { useUIStore } from '../../state/uiStore';
+import { useTransliterate } from './Transliterate';
 
 interface GeoMapWindowProps {
   caseId: string;
@@ -16,6 +17,7 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
   const globeEl = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { showToast } = useUIStore();
+  const transliterate = useTransliterate();
 
   // Measure container and set globe size to fill it
   const updateSize = useCallback(() => {
@@ -80,11 +82,11 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
       {/* HUD Overlay */}
       <div className="absolute top-4 left-4 z-10 pointer-events-none">
         <div className="text-[12px] font-bold font-mono text-[#39ff14] tracking-widest mb-1 shadow-black drop-shadow-md">
-          GEO-INTELLIGENCE MATRIX
+          {transliterate('GEO-INTELLIGENCE MATRIX')}
         </div>
         <div className="flex gap-4 text-[9px] font-mono text-gray-400">
-          <div>NODES DETECTED: <span className="text-white">{data?.nodes.length || 0}</span></div>
-          <div>ACTIVE ARCS: <span className="text-[#a855f7]">{data?.arcs.length || 0}</span></div>
+          <div>{transliterate('NODES DETECTED:')} <span className="text-white">{data?.nodes.length || 0}</span></div>
+          <div>{transliterate('ACTIVE ARCS:')} <span className="text-[#a855f7]">{data?.arcs.length || 0}</span></div>
         </div>
       </div>
 
@@ -92,13 +94,13 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
       {selectedNode && (
         <div className="absolute bottom-4 right-4 z-20 bg-black/80 border border-[#39ff14]/30 p-3 rounded text-white font-mono text-[10px] w-64 backdrop-blur shadow-[0_0_10px_rgba(57,255,20,0.2)]">
           <div className="flex justify-between items-center mb-2 border-b border-white/20 pb-1">
-            <span className="text-[#39ff14] font-bold">NODE INTEL</span>
-            <button onClick={() => setSelectedNode(null)} className="text-gray-400 hover:text-red-400 font-bold px-1">✖</button>
+            <span className="text-[#39ff14] font-bold">{transliterate('NODE INTEL')}</span>
+            <button onClick={() => setSelectedNode(null)} className="text-gray-400 hover:text-red-400 font-bold px-1">X</button>
           </div>
           <div className="flex flex-col gap-1.5">
-            <div><span className="text-gray-500">LABEL:</span> <span className="break-all">{selectedNode.label}</span></div>
-            <div><span className="text-gray-500">SOURCE:</span> {selectedNode.source || 'UNKNOWN'}</div>
-            <div><span className="text-gray-500">COORDS:</span> {selectedNode.lat?.toFixed(4)}, {selectedNode.lng?.toFixed(4)}</div>
+            <div><span className="text-gray-500">{transliterate('LABEL:')}</span> <span className="break-all">{transliterate(selectedNode.label)}</span></div>
+            <div><span className="text-gray-500">{transliterate('SOURCE:')}</span> {transliterate(selectedNode.source || 'UNKNOWN')}</div>
+            <div><span className="text-gray-500">{transliterate('COORDS:')}</span> {selectedNode.lat?.toFixed(4)}, {selectedNode.lng?.toFixed(4)}</div>
           </div>
         </div>
       )}
@@ -138,7 +140,7 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
           labelsData={data?.nodes || []}
           labelLat="lat"
           labelLng="lng"
-          labelText={(d: { label?: string }) => (d.label || '').replace(/^Domain:\s*/, '').replace(/\s*\([A-Z]{2}\)$/, '')}
+          labelText={(d: { label?: string }) => transliterate((d.label || '').replace(/^Domain:\s*/, '').replace(/\s*\([A-Z]{2}\)$/, ''))}
           labelSize={1.2}
           labelDotRadius={0.3}
           labelColor={() => 'rgba(255, 255, 255, 1)'}

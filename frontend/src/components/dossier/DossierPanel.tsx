@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useGraphStore } from '../../state/graphStore';
 import { useTransliterate } from '../ui/Transliterate';
+import { BASE_URL } from '../../api/client';
 
 
 // Animated risk gauge that counts up to the risk percentage
@@ -473,7 +474,16 @@ export default function DossierPanel() {
           color: 'var(--text-primary)', marginTop: 4, fontWeight: 600,
           wordBreak: 'break-all',
         }}>
-          {/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(displayName) ? displayName.split(/[/\\]/).pop() : transliterate(displayName)}
+          {/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(displayName) ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <img 
+                src={displayName.startsWith('http') ? displayName : `${BASE_URL}/static/uploads/${displayName}`} 
+                alt="Upload" 
+                style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4, border: '1px solid var(--accent-primary)' }} 
+              />
+              <span>{displayName.split(/[/\\]/).pop()}</span>
+            </div>
+          ) : transliterate(displayName)}
         </div>
         <div style={{
           fontFamily: 'var(--font-mono)', fontSize: 8,

@@ -12,6 +12,8 @@
 
 /* ---- CSS Variables ---- */
 :root {
+  --font-scale: 1;
+
   --bg-0: #000000;
   --bg-1: #0D1117;
   --bg-2: #131A22;
@@ -67,9 +69,9 @@
   user-select: none;
 }
 
-/* ---- Global Reset ---- */
+/* ---- Global Reset & Fonts ---- */
 html {
-  font-size: 112%;
+  font-size: calc(112% * var(--font-scale));
 }
 html, body, #root {
   margin: 0;

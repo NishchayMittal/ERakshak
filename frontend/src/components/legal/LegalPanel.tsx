@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Scale, ShieldAlert, AlertTriangle, Info, ChevronDown, ChevronUp, RefreshCw, Download } from 'lucide-react';
 import { getLegalMapping } from '../../api/endpoints';
 import type { LegalFlag, LegalMappingResult } from '../../api/endpoints';
+import { useTransliterate } from '../ui/Transliterate';
 
 interface LegalPanelProps {
   caseId: string;
@@ -60,6 +61,7 @@ function ActBadge({ act }: { act: LegalFlag['act'] }) {
 
 function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
   const [expanded, setExpanded] = useState(false);
+  const transliterate = useTransliterate();
   const cfg = SEVERITY_CONFIG[flag.severity];
 
   return (
@@ -103,7 +105,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
           minWidth: 100,
           flexShrink: 0,
         }}>
-          {flag.section}
+          {transliterate(flag.section)}
         </span>
 
         {/* Title */}
@@ -114,7 +116,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
           flex: 1,
           fontWeight: 600,
         }}>
-          {flag.title}
+          {transliterate(flag.title)}
         </span>
 
         {/* Badges */}
@@ -164,7 +166,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
               lineHeight: 1.6,
               margin: 0,
             }}>
-              {flag.description}
+              {transliterate(flag.description)}
             </p>
           </div>
 
@@ -191,7 +193,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
                 margin: 0,
                 lineHeight: 1.5,
               }}>
-                {flag.punishment}
+                {transliterate(flag.punishment)}
               </p>
             </div>
             <div>
@@ -233,7 +235,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
                 color: 'var(--text-muted)',
                 lineHeight: 1.5,
               }}>
-                {flag.notes}
+                {transliterate(flag.notes)}
               </span>
             </div>
           )}
@@ -281,7 +283,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                     }}>
-                      {ev.value}
+                      {transliterate(ev.value)}
                     </span>
                     <span style={{
                       fontFamily: 'var(--font-mono)',
@@ -307,6 +309,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('ALL');
+  const transliterate = useTransliterate();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -486,7 +489,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
             gap: 16,
           }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', flex: 1 }}>
-              {result.summary}
+              {transliterate(result.summary)}
             </div>
             <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
               {result.critical_count > 0 && (
@@ -584,7 +587,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
               </div>
             ) : (
               filteredFlags.map((flag, i) => (
-                <LegalCard key={`${flag.act}-${flag.section}`} flag={flag} index={i} />
+                <LegalCard key={`${flag.act}-${flag.section}-${i}`} flag={flag} index={i} />
               ))
             )}
           </div>

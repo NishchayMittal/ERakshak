@@ -94,7 +94,7 @@ export function NotificationPanel() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 bottom-full mb-2 w-[min(320px,calc(100vw-2rem))] bg-[#080d16]/95 border border-[#39ff14]/20 backdrop-blur-xl rounded-xl shadow-2xl overflow-hidden z-50">
+        <div className="fixed bottom-20 left-4 right-4 sm:absolute sm:right-0 sm:bottom-full sm:left-auto sm:mb-2 sm:w-[320px] bg-[#080d16]/95 border border-[#39ff14]/20 backdrop-blur-xl rounded-xl shadow-2xl overflow-hidden z-50">
             <div className="px-4 py-3 border-b border-[#39ff14]/15 flex items-center justify-between font-mono">
               <h3 className="text-xs font-bold text-[#39ff14] uppercase tracking-widest">{t('notifications.title', 'Notifications')}</h3>
               {unreadCount > 0 && (

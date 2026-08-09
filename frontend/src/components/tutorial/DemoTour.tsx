@@ -6,6 +6,7 @@ import {
   SkipForward, Play, Compass, Folder, CheckCircle, Terminal
 } from 'lucide-react';
 import { useTutorialStore } from '../../state/tutorialStore';
+import { useTransliterate } from '../ui/Transliterate';
 
 // ── TOUR STEPS ──────────────────────────────────────────────────────────────
 interface DemoStep {
@@ -400,6 +401,7 @@ export function DemoTour() {
     setDemoStep,
   } = useTutorialStore();
 
+  const transliterate = useTransliterate();
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [cardPos, setCardPos] = useState({ top: 0, left: 0 });
   const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -481,7 +483,7 @@ export function DemoTour() {
         el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
 
         // Calculate card position
-        const cardW = 420;
+        const cardW = Math.min(420, window.innerWidth * 0.9);
         const cardH = 340; // Increased to prevent bottom clipping on long text
         const gap = 20;
         let top = 0;
@@ -581,14 +583,14 @@ export function DemoTour() {
 
       {/* ── Skip button (always top-right, above overlay) ─────────────────── */}
       <motion.button
-        initial={{ opacity: 0, y: -8 }}
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
         onClick={stopDemo}
-        style={{ zIndex: 99999 }}
-        className="fixed top-5 right-5 flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold uppercase tracking-widest border border-white/20 text-white/60 hover:text-white hover:border-white/40 bg-black/60 backdrop-blur-sm transition-all"
+        className="fixed top-6 left-1/2 -translate-x-1/2 z-[100000] flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold tracking-widest uppercase text-white hover:text-[#39ff14] border border-white/10 hover:border-[#39ff14]/50 hover:bg-[#39ff14]/10 transition-all backdrop-blur-md shadow-[0_0_20px_rgba(0,0,0,0.5)]"
       >
         <SkipForward size={12} />
-        Skip Tour
+        {transliterate('Skip Tour')}
         <span className="text-white/30 ml-1">ESC</span>
       </motion.button>
 
@@ -608,7 +610,7 @@ export function DemoTour() {
           style={{
             position: 'fixed',
             zIndex: 99999,
-            width: isCentered ? 'min(500px, 90vw)' : 420,
+            width: isCentered ? 'min(500px, 90vw)' : 'min(420px, 90vw)',
             pointerEvents: 'auto',
           }}
         >
@@ -632,13 +634,13 @@ export function DemoTour() {
                 <LeoAvatar isSpeaking={isSpeaking} accentColor={accent} />
                 <div>
                   <div className="text-[9px] font-bold tracking-[0.2em] uppercase mb-0.5" style={{ color: `${accent}99` }}>
-                    LEO GUIDE  ·  {currentStep.subtitle}
+                    {transliterate(`LEO GUIDE  ::  ${currentStep.subtitle}`)}
                   </div>
                   <div
                     className="text-sm font-bold tracking-wider"
                     style={{ color: accent, fontFamily: 'var(--font-heading)' }}
                   >
-                    {currentStep.title}
+                    {transliterate(currentStep.title)}
                   </div>
                 </div>
               </div>
@@ -692,7 +694,7 @@ export function DemoTour() {
 
                 {/* Typewriter text */}
                 <p className="text-sm leading-relaxed" style={{ color: 'rgba(230,237,243,0.88)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
-                  <TypewriterText key={currentStep.id} text={currentStep.message} />
+                  <TypewriterText key={currentStep.id} text={transliterate(currentStep.message)} />
                 </p>
               </div>
             </div>
@@ -716,14 +718,14 @@ export function DemoTour() {
                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border border-white/10 text-white/50 hover:text-white hover:border-white/25 transition-all"
                   >
                     <ChevronLeft size={13} />
-                    Prev
+                    {transliterate('Prev')}
                   </button>
                 )}
 
                 {/* Next / Finish */}
                 {currentStep.actionRequired ? (
                    <div className="px-2 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border border-[#39ff14]/30 text-[#39ff14] animate-pulse whitespace-nowrap flex-shrink-0">
-                     {currentStep.actionRequired === 'click' ? 'Awaiting Click' : 'Awaiting Input'}
+                     {transliterate(currentStep.actionRequired === 'click' ? 'Awaiting Click' : 'Awaiting Input')}
                    </div>
                 ) : isLast ? (
                   <button
@@ -736,7 +738,7 @@ export function DemoTour() {
                     }}
                   >
                     <Play size={12} fill="currentColor" />
-                    Launch Mission
+                    {transliterate('Launch Mission')}
                   </button>
                 ) : (
                   <button
@@ -748,7 +750,7 @@ export function DemoTour() {
                       boxShadow: `0 0 12px ${accent}50`,
                     }}
                   >
-                    Next
+                    {transliterate('Next')}
                     <ChevronRight size={13} />
                   </button>
                 )}
@@ -760,7 +762,7 @@ export function DemoTour() {
               className="text-center pb-3 text-[9px] tracking-widest uppercase"
               style={{ color: 'rgba(255,255,255,0.2)' }}
             >
-              ← → Arrow keys to navigate  ·  ESC to skip
+              {transliterate('Arrow keys to navigate  ::  ESC to skip')}
             </div>
           </div>
         </motion.div>

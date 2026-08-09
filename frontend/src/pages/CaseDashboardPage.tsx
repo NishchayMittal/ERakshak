@@ -5,9 +5,10 @@ import { useUIStore } from '../state/uiStore';
 import { useAuth } from '../hooks/useAuth';
 import { useGraphStore } from '../state/graphStore';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { Plus, X, Maximize2, Minimize2, Terminal, Shield, Folder, Network, Search, Filter, History, Share2, Compass, Edit, FileText, Download, User, Menu, Globe, LogOut, RefreshCw, Minus } from 'lucide-react';
+import { Plus, X, Maximize2, Minimize2, Terminal, Shield, Folder, Network, Search, Filter, History, Share2, Compass, Edit, FileText, Download, User, Menu, Globe, LogOut, RefreshCw, Minus, Play } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Transliterate, useTransliterate } from '../components/ui/Transliterate';
+import { FeatureInfoTooltip } from '../components/ui/FeatureInfoTooltip';
 
 import { DashboardContext } from './DashboardContext';
 import { CaseWindow } from '../components/cases/CaseWindow';
@@ -97,7 +98,14 @@ export default function CaseDashboardPage() {
   const { showToast } = useUIStore();
   const { user, logout } = useAuth();
   const { loadEntityGraph, graphData } = useGraphStore();
-  const { startTutorial, startDemo } = useTutorialStore();
+  const { isDemoActive, setDemoStep, startTutorial, startDemo } = useTutorialStore();
+
+  const adjustFontSize = (delta: number) => {
+    const root = document.documentElement;
+    const currentSize = parseFloat(getComputedStyle(root).getPropertyValue('--font-scale') || '1');
+    const newSize = Math.max(0.7, Math.min(1.5, currentSize + delta));
+    root.style.setProperty('--font-scale', newSize.toString());
+  };
 
   const handleStartDemo = () => {
     startDemo();
@@ -1422,15 +1430,17 @@ export default function CaseDashboardPage() {
             <span className="hidden sm:inline">{t('dashboard.console_title')}</span>
             <span className="sm:hidden">ORION</span>
           </span>
+          <div className="h-3 w-[1px] bg-white/10 hidden sm:block" />
+          <button
+            onClick={handleStartDemo}
+            className="text-[9px] text-[#39FF14] hover:text-white uppercase tracking-wider transition-colors whitespace-nowrap animate-pulse flex items-center gap-1 ml-2 sm:ml-0"
+          >
+            <Play size={10} className="sm:hidden" />
+            <span className="hidden sm:inline">START DEMO</span>
+            <span className="sm:hidden">DEMO</span>
+          </button>
           {!isMobile && (
             <>
-              <div className="h-3 w-[1px] bg-white/10" />
-              <button
-                onClick={handleStartDemo}
-                className="text-[9px] text-[#39FF14] hover:text-white uppercase tracking-wider transition-colors whitespace-nowrap animate-pulse"
-              >
-                START DEMO
-              </button>
               <div className="h-3 w-[1px] bg-white/10" />
               <button
                 onClick={() => setShowWallpaperMenu(!showWallpaperMenu)}
@@ -1449,7 +1459,12 @@ export default function CaseDashboardPage() {
             </button>
           )}
         </div>
-        <div className="flex items-center gap-2 sm:gap-4 text-[9px] text-gray-400 font-medium pointer-events-auto flex-shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-4 text-[9px] text-gray-400 font-medium pointer-events-auto flex-shrink-0">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'var(--bg-1)', border: '1px solid var(--struct-line)', padding: '2px 4px', borderRadius: 4, marginRight: 2 }}>
+            <button onClick={() => adjustFontSize(-0.1)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 10, cursor: 'pointer', padding: '2px 4px', fontFamily: 'var(--font-heading)', fontWeight: 'bold' }}>A-</button>
+            <button onClick={() => adjustFontSize(0)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer', padding: '2px 4px', fontFamily: 'var(--font-heading)', fontWeight: 'bold' }}>A</button>
+            <button onClick={() => adjustFontSize(0.1)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', padding: '2px 4px', fontFamily: 'var(--font-heading)', fontWeight: 'bold' }}>A+</button>
+          </div>
           <LanguageSwitcher />
           {!isMobile && (
             <>
@@ -1563,9 +1578,12 @@ export default function CaseDashboardPage() {
                 <Plus size={32} className="group-hover:scale-110 transition-transform" />
               )}
             </div>
-            <span className="mt-1 text-[11px] font-bold text-gray-300 tracking-wider group-hover:text-white uppercase line-clamp-2 leading-tight">
-              {t('dashboard.initialize')}
-            </span>
+            <div className="mt-1 flex items-center justify-center">
+              <span className="text-[11px] font-bold text-gray-300 tracking-wider group-hover:text-white uppercase line-clamp-2 leading-tight">
+                {t('dashboard.initialize')}
+              </span>
+              <FeatureInfoTooltip content="Creates a secure, isolated enclave to begin tracking a new investigation or entity." />
+            </div>
           </div>
 
           {/* Dynamic Case Folders */}

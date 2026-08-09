@@ -4,6 +4,7 @@ import { useCaseStore } from '../../state/caseStore';
 import AlertBell from '../alerts/AlertBell';
 import { useTransliterate } from '../ui/Transliterate';
 import { useTranslation } from 'react-i18next';
+import { useUIStore } from '../../state/uiStore';
 
 interface TopBarProps {
   onMenuToggle?: () => void;
@@ -18,7 +19,15 @@ export default function TopBar({ onMenuToggle, isMobile }: TopBarProps) {
   const location = useLocation();
   const params = useParams<{ caseId: string }>();
   const transliterate = useTransliterate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { showToast } = useUIStore();
+
+  const adjustFontSize = (delta: number) => {
+    const root = document.documentElement;
+    const currentSize = parseFloat(getComputedStyle(root).getPropertyValue('--font-scale') || '1');
+    const newSize = Math.max(0.7, Math.min(1.5, currentSize + delta));
+    root.style.setProperty('--font-scale', newSize.toString());
+  };
 
   useEffect(() => {
     const tick = () => {
@@ -71,6 +80,38 @@ export default function TopBar({ onMenuToggle, isMobile }: TopBarProps) {
       )}
       
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
+        {!isMobile && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'var(--bg-1)', border: '1px solid var(--struct-line)', padding: '2px 4px', borderRadius: 4 }}>
+              <button onClick={() => adjustFontSize(-0.1)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 10, cursor: 'pointer', padding: '2px 6px', fontFamily: 'var(--font-heading)', fontWeight: 'bold' }}>A-</button>
+              <button onClick={() => adjustFontSize(0)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer', padding: '2px 6px', fontFamily: 'var(--font-heading)', fontWeight: 'bold' }}>A</button>
+              <button onClick={() => adjustFontSize(0.1)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', padding: '2px 6px', fontFamily: 'var(--font-heading)', fontWeight: 'bold' }}>A+</button>
+            </div>
+            
+            <select 
+              value={i18n.language || 'en'} 
+              onChange={(e) => {
+                i18n.changeLanguage(e.target.value);
+                showToast(`Language set to ${e.target.value.toUpperCase()}`, 'info');
+              }}
+              style={{
+                background: 'var(--bg-1)',
+                border: '1px solid var(--struct-line)',
+                color: 'var(--accent-primary)',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 10,
+                padding: '4px 8px',
+                outline: 'none',
+                cursor: 'pointer',
+                borderRadius: 4
+              }}
+            >
+              <option value="en">ENG</option>
+              <option value="hi">HIN</option>
+              <option value="gu">GUJ</option>
+            </select>
+          </div>
+        )}
         {!isMobile && caseLabel && (<div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.2em', color: 'var(--text-muted)', textTransform: 'uppercase', border: '1px solid var(--struct-line)', padding: '3px 8px' }}>{transliterate(caseLabel)}</div>)}
         <AlertBell />
         {!isMobile && (

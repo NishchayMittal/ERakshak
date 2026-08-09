@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTransliterate } from '../ui/Transliterate';
+import { FeatureInfoTooltip } from '../ui/FeatureInfoTooltip';
 import { Download, FileText, RefreshCw } from 'lucide-react';
 import { useDashboardContext } from '../../pages/DashboardContext';
 import { useCaseWebSocket } from '../../hooks/useCaseWebSocket';
 import { useGraphStore } from '../../state/graphStore';
 import { uploadImage, getIdentifiers, deleteIdentifier } from '../../api/endpoints';
+import { BASE_URL } from '../../api/client';
 import ChatPanel from './ChatPanel';
 import LegalPanel from '../legal/LegalPanel';
 import { GeoMapWindow } from '../ui/GeoMapWindow';
@@ -520,13 +522,13 @@ export function CaseWindow({ win }: CaseWindowProps) {
                     {/* Retro workspace tab headers - scrollable on mobile */}
                     <div className="flex gap-2 border-b border-white/10 pb-2 mb-3 flex-shrink-0 text-[9px] font-bold overflow-x-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
                       {[
-                        { id: 'intake', label: t('case_window.tab_intake') },
-                        { id: 'graph', label: t('case_window.tab_matrix') },
-                        { id: 'geo', label: 'GEO MAP' },
-                        { id: 'dossier', label: t('case_window.tab_dossier') },
-                        { id: 'legal', label: '⚖ LEGAL' },
-                        { id: 'report', label: t('case_window.tab_report') },
-                        { id: 'chat', label: t('case_window.tab_chat') }
+                        { id: 'intake', label: t('case_window.tab_intake'), tooltip: 'The starting point of the OSINT crawl. Enter an email, phone, or username here to begin gathering intelligence.' },
+                        { id: 'graph', label: t('case_window.tab_matrix'), tooltip: 'A visual node-link matrix that maps relationships between discovered emails, domains, accounts, and IPs.' },
+                        { id: 'geo', label: 'GEO MAP', tooltip: 'Maps IP addresses and location-based findings onto a 3D globe to visualize physical movement and hosting infrastructure.' },
+                        { id: 'dossier', label: t('case_window.tab_dossier'), tooltip: 'Displays a consolidated profile and all raw ingested data for the selected entity.' },
+                        { id: 'legal', label: '⚖ LEGAL', tooltip: 'Cross-references discovered activities against the Bharatiya Nyaya Sanhita (BNS) and Information Technology (IT) Act to flag potential violations.' },
+                        { id: 'report', label: t('case_window.tab_report'), tooltip: 'Generates a cohesive, structured intelligence dossier summarizing all findings and identifying key risk factors.' },
+                        { id: 'chat', label: t('case_window.tab_chat'), tooltip: 'Interact with the AI Copilot to ask questions, summarize findings, and suggest pivot strategies based on the current case data.' }
                       ].map(t => (
                         <button
                           key={t.id}
@@ -535,9 +537,10 @@ export function CaseWindow({ win }: CaseWindowProps) {
                             setWindows((prev: WindowItem[]) => prev.map((w) => w.id === win.id ? { ...w, activeTab: t.id } : w));
                             if (t.id === 'report') fetchNarrativeReport(caseId);
                           }}
-                          className={`px-3 py-1.5 border transition flex-shrink-0 whitespace-nowrap ${tab === t.id ? 'bg-[#39ff14]/15 border-[#39ff14] text-[#39ff14]' : 'bg-transparent border-white/10 text-gray-400 hover:text-white hover:border-white/20'}`}
+                          className={`px-3 py-1.5 border transition flex-shrink-0 whitespace-nowrap flex items-center ${tab === t.id ? 'bg-[#39ff14]/15 border-[#39ff14] text-[#39ff14]' : 'bg-transparent border-white/10 text-gray-400 hover:text-white hover:border-white/20'}`}
                         >
                           {t.label}
+                          <FeatureInfoTooltip content={t.tooltip} />
                         </button>
                       ))}
                     </div>
@@ -675,8 +678,14 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                 ) : (
                                   (casePendingSeeds[caseId] || []).map((s, idx) => (
                                     <div key={idx} className="flex justify-between items-center bg-white/5 border border-white/5 px-2.5 py-1 rounded">
-                                      <span className="text-[8px] uppercase font-bold text-gray-300">
-                                        <span className="text-[#a855f7] mr-1.5">[{s.type}]</span> {s.type === 'photo' ? s.value.split(/[\/\\]/).pop() : transliterate(s.value)}
+                                      <span className="truncate flex items-center">
+                                        <span className="text-[#a855f7] mr-1.5">[{s.type}]</span> 
+                                        {s.type === 'photo' ? (
+                                          <div className="flex items-center gap-2">
+                                            <img src={s.value.startsWith('http') ? s.value : `${BASE_URL}/static/uploads/${s.value}`} alt="Upload" className="w-6 h-6 object-cover rounded border border-[#39ff14]/30" />
+                                            <span>{s.value.split(/[\/\\]/).pop()}</span>
+                                          </div>
+                                        ) : transliterate(s.value)}
                                       </span>
                                       <button onClick={() => removeCaseSeed(caseId, idx)} className="text-gray-500 hover:text-red-400 text-[8px] font-bold">X</button>
                                     </div>
@@ -691,9 +700,10 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                   setTimeout(fetchExistingSeeds, 2000);
                                 }}
                                 disabled={(casePendingSeeds[caseId] || []).length === 0 || (caseIngestProgress[caseId] !== undefined && caseIngestProgress[caseId] !== null)}
-                                className="w-full bg-[#a855f7] hover:bg-[#a855f7]/85 disabled:bg-white/5 disabled:text-gray-600 text-black text-[9px] font-bold py-2 tracking-widest text-center uppercase"
+                                className="w-full bg-[#a855f7] hover:bg-[#a855f7]/85 disabled:bg-white/5 disabled:text-gray-600 text-black text-[9px] font-bold py-2 tracking-widest text-center uppercase flex items-center justify-center"
                               >
-                                RUN CORRELATION SCAN
+                                <span>RUN CORRELATION SCAN</span>
+                                <FeatureInfoTooltip content="Fires all specialized web crawlers and API connectors to recursively gather data based on your seeds." />
                               </button>
                             </div>
                           </div>
@@ -712,8 +722,14 @@ export function CaseWindow({ win }: CaseWindowProps) {
                               ) : (
                                 existingSeeds.map((s, idx) => (
                                   <div key={idx} className="flex justify-between items-center bg-white/5 border border-white/5 px-2.5 py-1 rounded">
-                                    <span className="text-[8px] uppercase font-bold text-gray-300">
-                                      <span className="text-[#a855f7] mr-1.5">[{s.type}]</span> {s.type === 'photo' ? (s.raw_value || '').split(/[\/\\]/).pop() : transliterate(s.raw_value || '')}
+                                    <span className="truncate text-gray-400 flex items-center">
+                                      <span className="text-[#a855f7] mr-1.5">[{s.type}]</span> 
+                                      {s.type === 'photo' ? (
+                                        <div className="flex items-center gap-2">
+                                          <img src={(s.raw_value || '').startsWith('http') ? s.raw_value : `${BASE_URL}/static/uploads/${s.raw_value}`} alt="Upload" className="w-6 h-6 object-cover rounded border border-[#39ff14]/30" />
+                                          <span>{(s.raw_value || '').split(/[\/\\]/).pop()}</span>
+                                        </div>
+                                      ) : transliterate(s.raw_value || '')}
                                     </span>
                                     <button onClick={() => removeExistingSeed(s.id)} className="text-gray-500 hover:text-red-400 text-[8px] font-bold border border-transparent hover:border-red-400 px-1 rounded transition-colors">REMOVE</button>
                                   </div>

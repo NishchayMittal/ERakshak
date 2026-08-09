@@ -11,15 +11,13 @@ import { Transliterate, useTransliterate } from '../components/ui/Transliterate'
 import { FeatureInfoTooltip } from '../components/ui/FeatureInfoTooltip';
 
 import { DashboardContext } from './DashboardContext';
-import { CaseWindow } from '../components/cases/CaseWindow';
-import { ProfileWindow } from '../components/cases/ProfileWindow';
-import { ExplorerWindow } from '../components/cases/ExplorerWindow';
-import { CrossCorrelationWindow } from '../components/cases/CrossCorrelationWindow';
-import { GeoMapWindow } from '../components/ui/GeoMapWindow';
-import { NotificationPanel } from '../components/ui/NotificationPanel';
 import { useTutorialStore } from '../state/tutorialStore';
 import { TutorialOverlay } from '../components/tutorial/TutorialOverlay';
 import { DemoTour } from '../components/tutorial/DemoTour';
+import HUDPanel from '../components/layout/HUDPanel';
+import DesktopWindow from '../components/ui/DesktopWindow';
+import SystemDock from '../components/layout/SystemDock';
+import DashboardModals from '../components/modals/DashboardModals';
 
 import {
   triggerModelRetrain,
@@ -50,29 +48,7 @@ interface WindowState {
   activeTab?: 'intake' | 'graph' | 'dossier' | 'report';
 }
 
-const WALLPAPERS = [
-  {
-    name: 'Cyber Mesh',
-    value: 'linear-gradient(135deg, #090e17 0%, #03060c 60%, #010204 100%)',
-    gridColor: 'rgba(57, 255, 20, 0.03)',
-    accentGlow: 'rgba(57, 255, 20, 0.12)',
-    accentColor: '#39FF14'
-  },
-  {
-    name: 'Techno Void',
-    value: 'radial-gradient(circle at center, #18052b 0%, #080112 50%, #000000 100%)',
-    gridColor: 'rgba(168, 85, 247, 0.03)',
-    accentGlow: 'rgba(168, 85, 247, 0.15)',
-    accentColor: '#A855F7'
-  },
-  {
-    name: 'Deep Hazard',
-    value: 'radial-gradient(circle at 30% 30%, #29080e 0%, #0b0103 70%, #000000 100%)',
-    gridColor: 'rgba(239, 68, 68, 0.03)',
-    accentGlow: 'rgba(239, 68, 68, 0.12)',
-    accentColor: '#EF4444'
-  }
-];
+import TopBar, { WALLPAPERS } from '../components/layout/TopBar';
 
 const MOCK_HUD_LOGS = [
   'OSINT: Awaiting seed injection vector...',
@@ -121,7 +97,6 @@ export default function CaseDashboardPage() {
   const [maxZIndex, setMaxZIndex] = useState(10);
   const [wallpaperIdx, setWallpaperIdx] = useState(0);
   const [customWallpaper, setCustomWallpaper] = useState<string | null>(null);
-  const [showWallpaperMenu, setShowWallpaperMenu] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showSidebarOnMobile, setShowSidebarOnMobile] = useState(false);
 
@@ -593,32 +568,6 @@ export default function CaseDashboardPage() {
   }, []);
 
   const currentWallpaper = WALLPAPERS[wallpaperIdx];
-
-  const handleWallpaperUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setCustomWallpaper(`url(${event.target.result})`);
-          showToast('Custom wallpaper loaded', 'success');
-          setShowWallpaperMenu(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleWallpaperUrlKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      const url = (e.target as HTMLInputElement).value.trim();
-      if (url) {
-        setCustomWallpaper(`url(${url})`);
-        showToast('Custom URL wallpaper loaded', 'success');
-        setShowWallpaperMenu(false);
-      }
-    }
-  };
 
   // Window operations
   const focusWindow = (id: string) => {
@@ -1432,120 +1381,17 @@ export default function CaseDashboardPage() {
         <div className="absolute inset-0 pointer-events-none bg-radial-vignette mix-blend-overlay opacity-30 z-50" />
 
         {/* Top Menu Bar */}
-        <div className="absolute top-0 left-0 right-0 h-8 bg-black/60 backdrop-blur-md border-b border-[#39ff14]/15 flex items-center justify-between px-2 sm:px-4 z-[999] text-[10px]">
-          {/* Absolutely Centered Font Buttons */}
-          {!isMobile && (
-            <div style={{ position: 'absolute', left: '63%', top: '50%', transform: 'translate(-50%, -50%)', display: 'flex', alignItems: 'center', gap: 2, background: 'var(--bg-1)', border: '1px solid var(--struct-line)', padding: '2px 4px', borderRadius: 4, pointerEvents: 'auto', zIndex: 10 }}>
-              <button onClick={() => adjustFontSize(-0.1)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 10, cursor: 'pointer', width: 24, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-heading)', fontWeight: 'bold' }}>A-</button>
-              <button onClick={() => adjustFontSize(0)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer', width: 24, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-heading)', fontWeight: 'bold' }}>A</button>
-              <button onClick={() => adjustFontSize(0.1)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', width: 24, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-heading)', fontWeight: 'bold' }}>A+</button>
-            </div>
-          )}
-
-          <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink-0">
-            <span className="font-bold tracking-wider text-[#39ff14] flex items-center gap-1.5 animate-pulse whitespace-nowrap">
-              <Shield size={12} />
-              <span className="hidden sm:inline">{t('dashboard.console_title')}</span>
-              <span className="sm:hidden">ORION</span>
-            </span>
-            <div className="h-3 w-[1px] bg-white/10 hidden sm:block" />
-            <button
-              onClick={handleStartDemo}
-              className="text-[9px] text-[#39FF14] hover:text-white uppercase tracking-wider transition-colors whitespace-nowrap animate-pulse flex items-center gap-1 ml-2 sm:ml-0"
-            >
-              <Play size={10} className="sm:hidden" />
-              <span className="hidden sm:inline">{t('dashboard.start_demo', 'START DEMO')}</span>
-              <span className="sm:hidden">{t('dashboard.start_demo_short', 'DEMO')}</span>
-            </button>
-            {!isMobile && (
-              <>
-                <div className="h-3 w-[1px] bg-white/10" />
-                <button
-                  onClick={() => setShowWallpaperMenu(!showWallpaperMenu)}
-                  className="text-[9px] text-gray-400 hover:text-white uppercase tracking-wider transition-colors whitespace-nowrap"
-                >
-                  {t('dashboard.wallpaper')}
-                </button>
-              </>
-            )}
-            {isMobile && (
-              <button
-                onClick={() => setShowSidebarOnMobile(!showSidebarOnMobile)}
-                className={`text-[9px] uppercase tracking-wider transition-colors flex items-center gap-1 flex-shrink-0 ${showSidebarOnMobile ? 'text-[#39ff14] font-bold' : 'text-gray-400 hover:text-white'}`}
-              >
-                <Terminal size={10} /> {showSidebarOnMobile ? 'HUD ✕' : 'HUD'}
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 sm:gap-4 text-[9px] text-gray-400 font-medium pointer-events-auto flex-shrink-0">
-            <LanguageSwitcher />
-            {!isMobile && (
-              <>
-                <div className="h-3 w-[1px] bg-white/10" />
-                <span data-tutorial="profile-menu" className="whitespace-nowrap">{t('dashboard.badge_label')} <span className="text-[#39ff14] font-bold">{user?.badgeNumber}</span></span>
-                <div className="h-3 w-[1px] bg-white/10" />
-                <span className="flex items-center gap-1 text-[#39ff14] whitespace-nowrap">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14] animate-ping" /> {t('dashboard.core_ready')}
-                </span>
-              </>
-            )}
-            {isMobile && (
-              <span className="flex items-center gap-1 text-[#39ff14]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14] animate-ping" />
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Wallpaper backdrop click catcher */}
-        {showWallpaperMenu && (
-          <div
-            className="fixed inset-0 z-[999]"
-            onClick={() => setShowWallpaperMenu(false)}
-          />
-        )}
-
-        {/* Wallpaper dropdown */}
-        {showWallpaperMenu && (
-          <div className="absolute top-9 left-40 bg-[#080d16]/95 border border-[#39ff14]/20 backdrop-blur-xl p-2 rounded shadow-2xl z-[1000] flex flex-col gap-1 w-44">
-            {WALLPAPERS.map((wp, idx) => (
-              <button
-                key={wp.name}
-                onClick={() => {
-                  setCustomWallpaper(null);
-                  setWallpaperIdx(idx);
-                  setShowWallpaperMenu(false);
-                }}
-                className={`w-full text-left text-[10px] px-2 py-1.5 hover:bg-[#39ff14]/10 transition flex items-center justify-between ${wallpaperIdx === idx && !customWallpaper ? 'text-[#39ff14]' : 'text-gray-300'}`}
-              >
-                <span>{wp.name}</span>
-                {wallpaperIdx === idx && !customWallpaper && <div className="w-1.5 h-1.5 rounded-full bg-[#39ff14]" />}
-              </button>
-            ))}
-            {/* File Upload Input */}
-            <div className="border-t border-white/10 mt-1 pt-1">
-              <label className="w-full text-left text-[9px] px-2 py-1.5 text-gray-400 hover:text-white cursor-pointer transition flex items-center gap-1.5 uppercase font-bold">
-                <span>{t('dashboard.custom_file')}</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleWallpaperUpload}
-                  className="hidden"
-                />
-              </label>
-            </div>
-            {/* Custom URL Input */}
-            <div className="border-t border-[#39ff14]/10 mt-1 pt-1 flex flex-col gap-1 px-2">
-              <span className="text-[7.5px] text-gray-500 font-mono">{t('dashboard.paste_url')}</span>
-              <input
-                type="text"
-                placeholder={t('dashboard.url_placeholder')}
-                onKeyDown={handleWallpaperUrlKeyDown}
-                className="w-full bg-black border border-white/10 text-gray-300 text-[8px] px-1 py-0.5 focus:border-[#39ff14] outline-none"
-              />
-            </div>
-          </div>
-        )}
+        <TopBar
+          isDashboard={true}
+          isMobile={isMobile}
+          showSidebarOnMobile={showSidebarOnMobile}
+          setShowSidebarOnMobile={setShowSidebarOnMobile}
+          wallpaperIdx={wallpaperIdx}
+          setWallpaperIdx={setWallpaperIdx}
+          customWallpaper={customWallpaper}
+          setCustomWallpaper={setCustomWallpaper}
+          user={user}
+        />
 
         {/* Shift-Click Multi-Select Action Bar HUD */}
         {selectedCaseIds.length > 0 && (
@@ -1681,197 +1527,34 @@ export default function CaseDashboardPage() {
         )}
 
         {/* RIGHT SIDE WIDGETS HUD (Custom panels / Mobile Drawer) */}
-        <div
-          className={
-            isMobile
-              ? `fixed top-12 right-0 bottom-20 w-full max-w-[420px] bg-[#050b14]/95 border-l border-[#39ff14]/20 p-4 flex flex-col gap-4 z-[991] transition-transform duration-300 pointer-events-auto select-none overflow-y-auto ${showSidebarOnMobile ? 'translate-x-0 shadow-[0_0_50px_rgba(57,255,20,0.15)]' : 'translate-x-full'}`
-              : "absolute top-12 right-6 bottom-20 w-[420px] flex flex-col gap-4 pointer-events-none z-10 select-none"
-          }
-        >
-
-          {/* Animated Cyber Link graph */}
-          <div className="w-full bg-black/40 border border-white/5 backdrop-blur-md rounded-xl p-3 flex flex-col gap-2 pointer-events-auto">
-            <div className="flex items-center justify-between border-b border-white/5 pb-1">
-              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                <Network size={12} className="text-[#39ff14]" /> {t('dashboard.cyber_link')}
-              </span>
-              <span className="text-[7.5px] text-[#39ff14] font-semibold uppercase tracking-wider">
-                {(() => {
-                  const lastAccessedCase = cases.find(c => c.caseId === lastAccessedCaseId);
-                  return lastAccessedCase ? transliterate(lastAccessedCase.title.replace('Investigation', 'FILE').toUpperCase()) : t('dashboard.no_active_mesh');
-                })()}
-              </span>
-            </div>
-            <div className="w-full h-64 flex items-center justify-center relative overflow-hidden bg-black/20 rounded">
-              {renderMatrixGraph()}
-            </div>
-          </div>
-
-          {/* Live log Terminal */}
-          <div data-tutorial="hud-terminal" className="w-full flex-1 bg-black/40 border border-white/5 backdrop-blur-md rounded-xl p-3 flex flex-col gap-2 pointer-events-auto overflow-hidden">
-            <div className="flex items-center justify-between border-b border-white/5 pb-1">
-              <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                <Terminal size={12} className="text-[#a855f7]" /> {t('dashboard.audit_stream')}
-              </span>
-            </div>
-
-            <div className="flex-1 overflow-auto font-mono text-[8px] text-gray-400 flex flex-col gap-1 select-text scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-              {hudLogs.map((log, idx) => (
-                <div key={idx} className="whitespace-nowrap flex items-start gap-1">
-                  <span className="text-[#39ff14]">&gt;</span>
-                  <span className={log.includes('AUDIT') ? 'text-[#39ff14]' : 'text-gray-300'}>{transliterate(log)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-        </div>
+        <HUDPanel
+          isMobile={isMobile}
+          showSidebarOnMobile={showSidebarOnMobile}
+          setShowSidebarOnMobile={setShowSidebarOnMobile}
+          lastAccessedCaseId={lastAccessedCaseId}
+          cases={cases}
+          transliterate={transliterate}
+          hudLogs={hudLogs}
+          renderMatrixGraph={renderMatrixGraph}
+        />
 
         {/* DRAGGABLE WINDOWS RENDERER */}
-        {windows.map(win => {
-          if (win.isMinimized) return null;
-
-          const isFocused = activeWindowId === win.id;
-
-          return (
-            <div
-              key={win.id}
-              onClick={() => focusWindow(win.id)}
-              className={`absolute flex flex-col border shadow-2xl transition-all duration-100 bg-[#04080e]/95 backdrop-blur-xl ${isFocused ? 'border-[#39ff14] shadow-[#39ff14]/5' : 'border-white/10 shadow-black/80'}`}
-              style={{
-                left: (win.isMaximized || isMobile) ? 0 : win.x,
-                top: (win.isMaximized || isMobile) ? '2rem' : win.y,
-                width: (win.isMaximized || isMobile) ? '100%' : win.width,
-                height: (win.isMaximized || isMobile) ? (isMobile ? 'calc(100% - 2rem - 120px)' : 'calc(100% - 2rem)') : win.height,
-                zIndex: win.zIndex
-              }}
-            >
-              {/* Window Header / Title Bar */}
-              <div
-                onMouseDown={(e) => handleDragStart(e, win.id)}
-                onDoubleClick={() => toggleMaximize(win.id)}
-                className={`h-7 px-3 flex items-center justify-between cursor-move select-none border-b window-drag-surface ${isFocused ? 'bg-[#39ff14]/5 border-[#39ff14]/20 text-[#39ff14]' : 'bg-[#04080e]/40 border-white/5 text-gray-400'}`}
-              >
-                <div className="flex items-center gap-2 pointer-events-auto">
-                  <Folder size={12} className="flex-shrink-0" />
-                  <span className="text-[9px] font-bold tracking-wider uppercase truncate max-w-[400px]">
-                    {(() => {
-                      if (win.type === 'case_workspace') {
-                        const targetCase = win.caseId ? cases.find(c => c.caseId === win.caseId) : null;
-                        const titleVal = targetCase ? targetCase.title : win.title.replace('Case Workspace: ', '').replace('Case Analysis: ', '');
-                        return t('dashboard.case_workspace', { title: transliterate(titleVal) });
-                      }
-                      return transliterate(win.title);
-                    })()}
-                  </span>
-                  {win.type === 'case_workspace' && win.caseId && (
-                    <button
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const targetCase = cases.find(c => c.caseId === win.caseId);
-                        const title = targetCase ? targetCase.title : win.title.replace('Case Workspace: ', '');
-                        handleTriggerRename(win.caseId!, title);
-                      }}
-                      className="p-1 text-gray-400 hover:text-[#39ff14] hover:bg-white/5 transition rounded flex items-center justify-center"
-                      title={t('dashboard.rename_dossier')}
-                    >
-                      <Edit size={10} />
-                    </button>
-                  )}
-                </div>
-
-                {/* Window controls */}
-                <div className="flex items-center gap-1.5 pointer-events-auto">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); toggleMinimize(win.id); }}
-                    className="p-1 text-gray-400 hover:text-white hover:bg-white/5 transition"
-                    title={t('dashboard.minimize_window', 'MINIMIZE')}
-                  >
-                    <Minus size={10} />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); toggleMaximize(win.id); }}
-                    className="p-1 text-gray-400 hover:text-white hover:bg-white/5 transition"
-                    title={win.isMaximized ? t('dashboard.restore_window') : t('dashboard.maximize_window')}
-                  >
-                    {win.isMaximized ? <Minimize2 size={10} /> : <Maximize2 size={10} />}
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); closeWindow(win.id); }}
-                    className="p-1 text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition"
-                    title={t('dashboard.close_window')}
-                  >
-                    <X size={10} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Window Content */}
-              <div className="flex-1 overflow-hidden relative flex flex-col p-4">
-
-
-                {win.type === 'case_workspace' && <CaseWindow win={win as { id: string; type: string; caseId: string; activeTab?: 'intake' | 'graph' | 'dossier' | 'report' }} />}
-                {win.type === 'profile' && <ProfileWindow />}
-                {win.type === 'cases_explorer' && <ExplorerWindow win={win} />}
-                {win.type === 'cross_correlate' && <CrossCorrelationWindow win={win} />}
-
-                {win.type === 'geo_map' && (
-                  <div className="flex-1 relative w-full h-full min-h-0">
-                    <GeoMapWindow caseId={win.caseId || 'global'} />
-                  </div>
-                )}
-              </div>
-
-              {/* Directional Resize Handles (4 edges + 4 corners) */}
-              {!win.isMaximized && (
-                <>
-                  {/* Top edge */}
-                  <div
-                    onMouseDown={(e) => handleResizeStart(e, win.id, 'n')}
-                    className="absolute top-0 left-3 right-3 h-1.5 cursor-ns-resize hover:bg-[#39ff14]/30 z-30"
-                  />
-                  {/* Bottom edge */}
-                  <div
-                    onMouseDown={(e) => handleResizeStart(e, win.id, 's')}
-                    className="absolute bottom-0 left-3 right-3 h-1.5 cursor-ns-resize hover:bg-[#39ff14]/30 z-30"
-                  />
-                  {/* Left edge */}
-                  <div
-                    onMouseDown={(e) => handleResizeStart(e, win.id, 'w')}
-                    className="absolute top-3 bottom-3 left-0 w-1.5 cursor-ew-resize hover:bg-[#39ff14]/30 z-30"
-                  />
-                  {/* Right edge */}
-                  <div
-                    onMouseDown={(e) => handleResizeStart(e, win.id, 'e')}
-                    className="absolute top-3 bottom-3 right-0 w-1.5 cursor-ew-resize hover:bg-[#39ff14]/30 z-30"
-                  />
-
-                  {/* Top-Left corner */}
-                  <div
-                    onMouseDown={(e) => handleResizeStart(e, win.id, 'nw')}
-                    className="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize hover:bg-[#39ff14]/50 z-30"
-                  />
-                  {/* Top-Right corner */}
-                  <div
-                    onMouseDown={(e) => handleResizeStart(e, win.id, 'ne')}
-                    className="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize hover:bg-[#39ff14]/50 z-30"
-                  />
-                  {/* Bottom-Left corner */}
-                  <div
-                    onMouseDown={(e) => handleResizeStart(e, win.id, 'sw')}
-                    className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize hover:bg-[#39ff14]/50 z-30"
-                  />
-                  {/* Bottom-Right corner */}
-                  <div
-                    onMouseDown={(e) => handleResizeStart(e, win.id, 'se')}
-                    className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize hover:bg-[#39ff14]/50 z-30"
-                  />
-                </>
-              )}
-            </div>
-          );
-        })}
+        {windows.map(win => (
+          <DesktopWindow
+            key={win.id}
+            win={win}
+            activeWindowId={activeWindowId}
+            isMobile={isMobile}
+            focusWindow={focusWindow}
+            handleDragStart={handleDragStart}
+            toggleMaximize={toggleMaximize}
+            toggleMinimize={toggleMinimize}
+            closeWindow={closeWindow}
+            handleResizeStart={handleResizeStart}
+            handleTriggerRename={handleTriggerRename}
+            cases={cases}
+          />
+        ))}
 
         {/* On mobile: open window task buttons float ABOVE the dock in their own row */}
         {isMobile && windows.length > 0 && (
@@ -1895,79 +1578,16 @@ export default function CaseDashboardPage() {
         )}
 
         {/* Floating System Dock (Taskbar) */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 h-14 bg-[#080d16]/75 border border-white/10 backdrop-blur-xl rounded-2xl flex items-center px-2 sm:px-4 gap-2 sm:gap-3 z-[999] shadow-2xl max-w-[calc(100vw-2rem)]">
-          <button
-            onClick={handleCreateCase}
-            disabled={caseCreating}
-            title={t('dashboard.create_case')}
-            className="w-10 h-10 rounded-xl hover:bg-white/5 active:bg-white/10 transition-colors flex items-center justify-center text-gray-300 hover:text-[#39ff14] disabled:opacity-50 disabled:pointer-events-none"
-          >
-            {caseCreating ? <RefreshCw size={20} className="animate-spin" /> : <Plus size={20} />}
-          </button>
-
-          <div className="h-6 w-[1px] bg-white/10" />
-
-          {/* Launchers */}
-          <button
-            onClick={() => openWindow('cases_explorer', t('dashboard.explorer_title'), 'cases_explorer')}
-            title={t('dashboard.explorer_tooltip')}
-            className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'cases_explorer') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
-          >
-            <Compass size={20} />
-          </button>
-
-          <button
-            onClick={() => openWindow('cross_correlate_window', t('dashboard.correlator_title'), 'cross_correlate')}
-            title={t('dashboard.correlator_tooltip')}
-            data-tutorial="cross-correlate"
-            className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'cross_correlate_window') ? 'text-[#a855f7] bg-[#a855f7]/10 border border-[#a855f7]/30' : 'text-gray-300 hover:text-[#a855f7] hover:bg-white/5'}`}
-          >
-            <Network size={20} />
-          </button>
-
-          <button
-            onClick={() => openWindow('profile_window', t('dashboard.profile_title'), 'profile')}
-            title={t('dashboard.profile_tooltip')}
-            className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'profile_window') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
-          >
-            <User size={20} />
-          </button>
-
-          <NotificationPanel />
-
-          {/* On desktop: window task buttons stay inline in the dock */}
-          {!isMobile && windows.length > 0 && <div className="h-6 w-[1px] bg-white/10" />}
-
-          {!isMobile && windows.map(w => {
-            const isOpen = !w.isMinimized;
-            return (
-              <button
-                key={`task-${w.id}`}
-                onClick={() => toggleMinimize(w.id)}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  setDockContextMenu({ x: e.clientX, y: e.clientY - 50, windowId: w.id, title: w.title });
-                }}
-                title={w.title}
-                className={`px-3 h-10 rounded-xl transition-all flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider ${isOpen ? 'bg-[#39ff14]/10 border border-[#39ff14]/30 text-[#39ff14]' : 'bg-white/5 border border-white/5 text-gray-500 hover:text-white'}`}
-              >
-                <div className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-[#39ff14] animate-pulse' : 'bg-gray-600'}`} />
-                <span className="max-w-[70px] truncate"><Transliterate>{w.title.replace('Case Workspace: ', '').replace('Case Analysis: ', '')}</Transliterate></span>
-              </button>
-            );
-          })}
-
-          {!isMobile && windows.length > 0 && <div className="h-6 w-[1px] bg-white/10" />}
-
-          {/* Disconnect */}
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            title={t('dashboard.logout_tooltip')}
-            className="w-10 h-10 rounded-xl hover:bg-red-500/10 active:bg-red-500/20 transition-colors flex items-center justify-center text-gray-500 hover:text-red-400"
-          >
-            <LogOut size={20} />
-          </button>
-        </div>
+        <SystemDock
+          isMobile={isMobile}
+          windows={windows}
+          caseCreating={caseCreating}
+          handleCreateCase={handleCreateCase}
+          openWindow={openWindow}
+          toggleMinimize={toggleMinimize}
+          setDockContextMenu={setDockContextMenu}
+          setShowLogoutConfirm={setShowLogoutConfirm}
+        />
 
         {/* Custom Context Menu, Rename Modal, and Delete Confirmation Modal */}
         {contextMenu && (
@@ -2040,107 +1660,17 @@ export default function CaseDashboardPage() {
           </div>
         )}
 
-        {renameCaseState && (
-          <div className="fixed inset-0 bg-black/80 z-[99999] flex items-center justify-center backdrop-blur-sm">
-            <div className="bg-[#04080e]/95 border border-[#39ff14] p-6 w-[360px] flex flex-col gap-4 shadow-2xl shadow-[#39ff14]/5 backdrop-blur-xl">
-              <div className="font-mono text-[10px] font-bold text-[#39ff14] tracking-widest uppercase pb-2 border-b border-white/5">
-                {t('modals.rename_title')}
-              </div>
-              <div className="flex flex-col gap-2">
-                <span className="font-mono text-[8px] text-gray-500 uppercase tracking-wider">{t('modals.new_title_label')}</span>
-                <input
-                  type="text"
-                  value={renameCaseState.newTitle}
-                  onChange={(e) => setRenameCaseState({ ...renameCaseState, newTitle: e.target.value })}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSaveRename();
-                    if (e.key === 'Escape') setRenameCaseState(null);
-                  }}
-                  className="bg-black/40 border border-white/10 text-gray-100 text-xs px-3 py-2 rounded focus:border-[#39ff14] outline-none font-mono w-full transition-all"
-                  autoFocus
-                />
-              </div>
-              <div className="flex justify-end gap-2.5 pt-3 border-t border-white/5 mt-2">
-                <button
-                  onClick={() => setRenameCaseState(null)}
-                  className="px-3.5 py-1.5 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase bg-transparent"
-                >
-                  {t('modals.cancel')}
-                </button>
-                <button
-                  onClick={handleSaveRename}
-                  className="px-3.5 py-1.5 bg-[#39ff14]/15 border border-[#39ff14] hover:bg-[#39ff14]/25 text-[#39ff14] rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase"
-                >
-                  {t('modals.save_changes')}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {deleteConfirmCase && (
-          <div className="fixed inset-0 bg-black/80 z-[99999] flex items-center justify-center backdrop-blur-sm">
-            <div className="bg-[#04080e]/95 border border-red-500 p-6 w-[360px] flex flex-col gap-4 shadow-2xl shadow-red-500/5 backdrop-blur-xl">
-              <div className="font-mono text-[10px] font-bold text-red-500 tracking-widest uppercase pb-2 border-b border-white/5">
-                {deleteConfirmCase.id === 'multiple' ? t('modals.confirm_delete_multiple_title', 'ARCHIVE MULTIPLE DOSSIERS') : t('modals.confirm_delete_title')}
-              </div>
-              <div className="font-mono text-[10px] text-gray-400 leading-relaxed">
-                {deleteConfirmCase.id === 'multiple' ? t('modals.confirm_delete_multiple_body', 'Are you sure you want to permanently archive the selected dossiers?') : (
-                  <>
-                    {t('modals.confirm_delete_body')} <span className="text-white font-bold">"{deleteConfirmCase.title}"</span>?
-                  </>
-                )}
-                <br /><br />
-                {t('modals.confirm_delete_warning')}
-              </div>
-              <div className="flex justify-end gap-2.5 pt-3 border-t border-white/5 mt-2">
-                <button
-                  onClick={() => setDeleteConfirmCase(null)}
-                  className="px-3.5 py-1.5 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase bg-transparent"
-                >
-                  {t('modals.cancel')}
-                </button>
-                <button
-                  onClick={handleConfirmDelete}
-                  className="px-3.5 py-1.5 bg-red-500/10 border border-red-500 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase"
-                >
-                  {deleteConfirmCase.id === 'multiple' ? t('modals.archive_selected') : t('modals.delete_dossier')}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showLogoutConfirm && (
-          <div className="fixed inset-0 bg-black/80 z-[99999] flex items-center justify-center backdrop-blur-sm">
-            <div className="bg-[#04080e]/95 border border-red-500 p-6 w-[360px] flex flex-col gap-4 shadow-2xl shadow-red-500/5 backdrop-blur-xl">
-              <div className="font-mono text-[10px] font-bold text-red-500 tracking-widest uppercase pb-2 border-b border-white/5">
-                {t('modals.confirm_disconnect_title')}
-              </div>
-              <div className="font-mono text-[10px] text-gray-400 leading-relaxed">
-                {t('modals.confirm_disconnect_body')}
-              </div>
-              <div className="flex justify-end gap-2.5 pt-3 border-t border-white/5 mt-2">
-                <button
-                  onClick={() => setShowLogoutConfirm(false)}
-                  className="px-3.5 py-1.5 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase bg-transparent"
-                >
-                  {t('modals.cancel')}
-                </button>
-                <button
-                  onClick={() => {
-                    setShowLogoutConfirm(false);
-                    logout();
-                    window.location.href = '/';
-                  }}
-                  className="px-3.5 py-1.5 bg-red-500/10 border border-red-500 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase"
-                >
-                  {t('modals.disconnect')}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <DashboardModals
+          renameCaseState={renameCaseState}
+          setRenameCaseState={setRenameCaseState}
+          handleSaveRename={handleSaveRename}
+          deleteConfirmCase={deleteConfirmCase}
+          setDeleteConfirmCase={setDeleteConfirmCase}
+          handleConfirmDelete={handleConfirmDelete}
+          showLogoutConfirm={showLogoutConfirm}
+          setShowLogoutConfirm={setShowLogoutConfirm}
+          logout={logout}
+        />
         <TutorialOverlay />
         <DemoTour />
       </div>

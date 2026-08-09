@@ -7,14 +7,10 @@ import { signupRequest } from "../api/endpoints";
 import { CyberCard } from "../components/ui/CyberCard";
 import { CyberButton } from "../components/ui/CyberButton";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 
-const BOOT_LINES = [
-  "SECURE ENCLAVE READY...",
-  "VERIFYING TLS CERTIFICATE...",
-  "LOADING IDENTITY MATRIX...",
-  "AWAITING INVESTIGATOR AUTH...",
-];
+// BOOT_LINES are resolved inside the component after t() is available
 
 export default function LoginPage() {
   const [username, setUsername] = useState("INV-001");
@@ -26,6 +22,14 @@ export default function LoginPage() {
   const { login } = useAuth();
   const { showToast, toast, clearToast } = useUIStore();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  const BOOT_LINES = [
+    t('login.boot_enclave'),
+    t('login.boot_tls'),
+    t('login.boot_identity'),
+    t('login.boot_awaiting'),
+  ];
 
   // Cycle boot lines
   useEffect(() => {
@@ -38,23 +42,23 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim()) {
-      showToast("INVESTIGATOR BADGE ID REQUIRED", "error");
+      showToast(t('login.badge_required'), "error");
       return;
     }
     if (!password.trim()) {
-      showToast("SECURITY PASSPHRASE REQUIRED", "error");
+      showToast(t('login.passphrase_required'), "error");
       return;
     }
 
     if (isSignUp) {
       if (!fullName.trim()) {
-        showToast("FULL NAME REQUIRED FOR REGISTRATION", "error");
+        showToast(t('login.name_required'), "error");
         return;
       }
       try {
         await signupRequest(username.trim(), fullName.trim(), password);
         showToast(
-          "REGISTRATION REQUEST SUBMITTED // PENDING APPROVAL",
+          t('login.signup_submitted'),
           "success",
         );
         setIsSignUp(false);
@@ -67,7 +71,7 @@ export default function LoginPage() {
             };
           };
         };
-        let msg = "REGISTRATION REQUEST FAILED";
+        let msg = t('login.signup_failed');
         if (error.response?.data?.detail) {
           const detail = error.response.data.detail;
           if (typeof detail === "string") {
@@ -85,12 +89,12 @@ export default function LoginPage() {
         const success = await login(username.trim(), password);
         if (success) {
           showToast(
-            `ACCESS GRANTED // AGENT ${username.toUpperCase()}`,
+            t('login.access_granted', { username: username.toUpperCase() }),
             "success",
           );
           navigate("/cases");
         } else {
-          showToast("INVALID BADGE ID OR SECURITY PASSPHRASE", "error");
+          showToast(t('login.invalid_credentials'), "error");
         }
       } catch (err) {
         const error = err as {
@@ -101,7 +105,7 @@ export default function LoginPage() {
             };
           };
         };
-        let msg = "INVALID CREDENTIALS";
+        let msg = t('login.invalid_fallback');
         
         if (error.response?.data?.detail) {
           const detail = error.response.data.detail;
@@ -113,9 +117,9 @@ export default function LoginPage() {
             msg = JSON.stringify(detail);
           }
         } else if (error.response?.status && error.response.status >= 500) {
-          msg = "SERVER ERROR. PLEASE TRY AGAIN.";
+          msg = t('login.server_error');
         } else if (!error.response) {
-          msg = "NETWORK ERROR. SERVER MIGHT BE WAKING UP.";
+          msg = t('login.network_error');
         }
         showToast(msg.toUpperCase(), "error");
       }
@@ -264,7 +268,7 @@ export default function LoginPage() {
                 textShadow: "0 0 16px rgba(57,255,20,0.4)",
               }}
             >
-              ORION
+              {t('login.brand')}
             </h1>
             <div
               style={{
@@ -276,7 +280,7 @@ export default function LoginPage() {
                 textTransform: "uppercase",
               }}
             >
-              OSINT // DIGITAL FORENSICS // LINK ANALYSIS
+              {t('login.subtitle')}
             </div>
           </div>
 
@@ -314,7 +318,7 @@ export default function LoginPage() {
                   marginBottom: 6,
                 }}
               >
-                INVESTIGATOR BADGE ID
+                {t('login.badge_id')}
               </label>
               <input
                 type="text"
@@ -356,7 +360,7 @@ export default function LoginPage() {
                     marginBottom: 6,
                   }}
                 >
-                  FULL NAME
+                  {t('login.full_name')}
                 </label>
                 <input
                   type="text"
@@ -398,7 +402,7 @@ export default function LoginPage() {
                   marginBottom: 6,
                 }}
               >
-                SECURITY PASSPHRASE
+                {t('login.passphrase')}
               </label>
               <div style={{ position: "relative" }}>
                 <input
@@ -472,10 +476,10 @@ export default function LoginPage() {
                     boxShadow: "0 0 4px #39ff14",
                   }}
                 />
-                SECURE AUDIT LOGGING ACTIVE
+                {t('login.secure_logging')}
               </span>
               <span style={{ color: "var(--struct-line)" }}>
-                LEVEL-5 CLEARANCE
+                {t('login.clearance')}
               </span>
             </div>
 
@@ -485,7 +489,7 @@ export default function LoginPage() {
               style={{ width: "100%" }}
               containerStyle={{ width: "100%", display: "flex", justifyContent: "center" }}
             >
-              {isSignUp ? "SUBMIT SIGNUP REQUEST" : "AUTHORIZE SESSION"}
+              {isSignUp ? t('login.submit_signup') : t('login.authorize')}
             </CyberButton>
 
             {/* Toggle switch */}
@@ -508,7 +512,7 @@ export default function LoginPage() {
                 marginTop: 4,
               }}
             >
-              {isSignUp ? "OR SWITCH TO AUTH LOGIN" : "OR REQUEST SIGN UP"}
+              {isSignUp ? t('login.switch_to_login') : t('login.switch_to_signup')}
             </button>
           </form>
         </div>
@@ -526,8 +530,7 @@ export default function LoginPage() {
             lineHeight: 1.6,
           }}
         >
-          STRICTLY AUTHORIZED PERSONNEL ONLY. ALL ACCESS AND INGESTION EVENTS
-          ARE DIGITALLY LOGGED.
+          {t('login.footer_notice')}
         </div>
       </CyberCard>
 

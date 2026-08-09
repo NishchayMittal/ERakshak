@@ -439,5 +439,36 @@
     "empty": "No notifications yet.",
     "read_all": "Read All",
     "clear_all": "Clear All"
+  },
+  "investigation": {
+    "header_title": "DOSSIER VISUAL ANALYSIS",
+    "header_subtitle": "Interactive correlation graph — select any node to trace timelines and attributes"
+  },
+  "profile_page": {
+    "header_title": "INVESTIGATOR PROFILE",
+    "header_subtitle": "OPERATIONAL HUD // CREDENTIAL VERIFICATION",
+    "no_session": "NO ACTIVE SESSION FOUND. PLEASE RETRANSMIT AUTHENTICATION.",
+    "security_section": "SECURITY & CREDENTIALS INFO",
+    "investigator_name": "INVESTIGATOR NAME:",
+    "assigned_post": "ASSIGNED POST:",
+    "security_clearance": "SECURITY CLEARANCE:",
+    "clearance_val": "CLASS-3 SECRET INTELLIGENCE",
+    "passphrase": "PASSPHRASE:",
+    "edit_name": "EDIT NAME",
+    "change_password": "CHANGE PASSWORD",
+    "system_state": "SYSTEM STATE:",
+    "active_secure": "ACTIVE / SECURE",
+    "badge_id": "BADGE ID:",
+    "operational_context": "OPERATIONAL CONTEXT",
+    "identity_updated": "INVESTIGATOR IDENTITY UPDATED",
+    "identity_failed": "Failed to update profile name",
+    "passphrase_updated": "INVESTIGATOR PASSPHRASE UPDATED",
+    "passphrase_failed": "Failed to update passphrase"
+  },
+  "modals_sidebar": {
+    "confirm_title": "CONFIRM DISCONNECT",
+    "confirm_body": "ARE YOU SURE YOU WANT TO TERMINATE THE ACTIVE INVESTIGATOR SESSION?",
+    "cancel": "CANCEL",
+    "disconnect": "DISCONNECT"
   }
 }

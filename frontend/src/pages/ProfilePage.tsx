@@ -3,6 +3,7 @@ import { User, Shield, Terminal, Lock, Edit2, Check, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useUIStore } from '../state/uiStore';
 import { useTransliterate } from '../components/ui/Transliterate';
+import { useTranslation } from 'react-i18next';
 import { updateInvestigatorProfile } from '../api/endpoints';
 
 // Audio click synth
@@ -12,6 +13,7 @@ export default function ProfilePage() {
   const { user, setUser } = useAuth();
   const { showToast } = useUIStore();
   const transliterate = useTransliterate();
+  const { t } = useTranslation();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(user?.name || '');
@@ -24,7 +26,7 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <div style={{ color: 'var(--text-muted)', padding: 24, fontFamily: 'var(--font-mono)' }}>
-        NO ACTIVE SESSION FOUND. PLEASE RETRANSMIT AUTHENTICATION.
+        {t('profile_page.no_session')}
       </div>
     );
   }
@@ -40,10 +42,10 @@ export default function ProfilePage() {
         name: updated.full_name || editedName.trim(),
       });
       setIsEditing(false);
-      showToast('INVESTIGATOR IDENTITY UPDATED', 'success');
+      showToast(t('profile_page.identity_updated'), 'success');
     } catch (err) {
       console.error(err);
-      showToast('Failed to update profile name', 'error');
+      showToast(t('profile_page.identity_failed'), 'error');
     } finally {
       setUpdating(false);
     }
@@ -57,10 +59,10 @@ export default function ProfilePage() {
       await updateInvestigatorProfile(undefined, newPassword.trim());
       setIsEditingPassword(false);
       setNewPassword('');
-      showToast('INVESTIGATOR PASSPHRASE UPDATED', 'success');
+      showToast(t('profile_page.passphrase_updated'), 'success');
     } catch (err) {
       console.error(err);
-      showToast('Failed to update passphrase', 'error');
+      showToast(t('profile_page.passphrase_failed'), 'error');
     } finally {
       setUpdatingPassword(false);
     }
@@ -82,14 +84,14 @@ export default function ProfilePage() {
             fontFamily: 'var(--font-display)', fontSize: 14, fontWeight: 700,
             color: 'var(--text-primary)', letterSpacing: '0.12em', textTransform: 'uppercase',
           }}>
-            INVESTIGATOR PROFILE
+            {t('profile_page.header_title')}
           </h1>
           <p style={{
             margin: '4px 0 0 0',
             fontFamily: 'var(--font-mono)', fontSize: 9,
             color: 'var(--text-muted)', letterSpacing: '0.08em',
           }}>
-            OPERATIONAL HUD // CREDENTIAL VERIFICATION
+            {t('profile_page.header_subtitle')}
           </p>
         </div>
       </div>
@@ -143,17 +145,17 @@ export default function ProfilePage() {
 
           <div style={{ width: '100%', borderTop: '1px solid var(--struct-line)', paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontFamily: 'var(--font-heading)', fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>SYSTEM STATE:</span>
+              <span style={{ fontFamily: 'var(--font-heading)', fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>{t('profile_page.system_state')}</span>
               <span style={{
                 fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--accent-action)',
                 fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4
               }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-action)', boxShadow: '0 0 6px var(--accent-action)' }} />
-                ACTIVE / SECURE
+                {t('profile_page.active_secure')}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontFamily: 'var(--font-heading)', fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>BADGE ID:</span>
+              <span style={{ fontFamily: 'var(--font-heading)', fontSize: 8, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>{t('profile_page.badge_id')}</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-primary)' }}>{user.badgeNumber}</span>
             </div>
           </div>
@@ -171,13 +173,13 @@ export default function ProfilePage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--struct-line)', paddingBottom: 10 }}>
               <Shield size={16} style={{ color: 'var(--accent-label)' }} />
               <h2 style={{ margin: 0, fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: 'var(--accent-label)', letterSpacing: '0.1em' }}>
-                SECURITY & CREDENTIALS INFO
+                {t('profile_page.security_section')}
               </h2>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'min(150px, 40%) 1fr', gap: '14px 20px', alignItems: 'center' }}>
               <label style={{ fontFamily: 'var(--font-heading)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
-                INVESTIGATOR NAME:
+                {t('profile_page.investigator_name')}
               </label>
               {isEditing ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -241,30 +243,30 @@ export default function ProfilePage() {
                     }}
                   >
                     <Edit2 size={10} />
-                    EDIT NAME
+                    {t('profile_page.edit_name')}
                   </button>
                 </div>
               )}
 
               <label style={{ fontFamily: 'var(--font-heading)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
-                ASSIGNED POST:
+                {t('profile_page.assigned_post')}
               </label>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-primary)' }}>
                 {transliterate(user.role)}
               </span>
 
               <label style={{ fontFamily: 'var(--font-heading)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
-                SECURITY CLEARANCE:
+                {t('profile_page.security_clearance')}
               </label>
               <span style={{
                 fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--accent-secondary)',
                 fontWeight: 700, letterSpacing: '0.05em'
               }}>
-                CLASS-3 SECRET INTELLIGENCE
+                {t('profile_page.clearance_val')}
               </span>
 
               <label style={{ fontFamily: 'var(--font-heading)', fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
-                PASSPHRASE:
+                {t('profile_page.passphrase')}
               </label>
               {isEditingPassword ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -329,7 +331,7 @@ export default function ProfilePage() {
                     }}
                   >
                     <Lock size={10} />
-                    CHANGE PASSWORD
+                    {t('profile_page.change_password')}
                   </button>
                 </div>
               )}
@@ -341,7 +343,7 @@ export default function ProfilePage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--struct-line)', paddingBottom: 10 }}>
               <Terminal size={16} style={{ color: 'var(--accent-action)' }} />
               <h2 style={{ margin: 0, fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: 'var(--accent-label)', letterSpacing: '0.1em' }}>
-                OPERATIONAL CONTEXT
+                {t('profile_page.operational_context')}
               </h2>
             </div>
 

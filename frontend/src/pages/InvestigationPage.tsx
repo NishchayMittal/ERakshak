@@ -16,6 +16,7 @@ import { useUIStore } from "../state/uiStore";
 import { useCaseStore } from "../state/caseStore";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { chatWithEvidence } from "../api/endpoints";
+import { useTranslation } from "react-i18next";
 
 interface ChatMessage {
   id: string;
@@ -75,6 +76,7 @@ export default function InvestigationPage({
   const { loadEntityGraph, clearGraph, setSelectedEntityId } = useGraphStore();
   const { activeTab, setActiveTab } = useUIStore();
   const { selectCase } = useCaseStore();
+  const { t } = useTranslation();
 
   // Map uiStore tab keys to display tabs — moved above all effects/JSX that read it,
   // since `const` bindings are in the temporal dead zone until this line runs.
@@ -230,7 +232,7 @@ export default function InvestigationPage({
               textTransform: "uppercase",
             }}
           >
-            DOSSIER VISUAL ANALYSIS
+            {t('investigation.header_title')}
           </div>
           <div
             style={{
@@ -241,8 +243,7 @@ export default function InvestigationPage({
               letterSpacing: "0.05em",
             }}
           >
-            Interactive correlation graph — select any node to trace timelines
-            and attributes
+            {t('investigation.header_subtitle')}
           </div>
         </div>
         {caseId && <ExportMenu caseId={caseId} />}

@@ -3,6 +3,7 @@ import { useLocation, useParams } from 'react-router';
 import { useCaseStore } from '../../state/caseStore';
 import AlertBell from '../alerts/AlertBell';
 import { useTransliterate } from '../ui/Transliterate';
+import { useTranslation } from 'react-i18next';
 
 interface TopBarProps {
   onMenuToggle?: () => void;
@@ -17,6 +18,7 @@ export default function TopBar({ onMenuToggle, isMobile }: TopBarProps) {
   const location = useLocation();
   const params = useParams<{ caseId: string }>();
   const transliterate = useTransliterate();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const tick = () => {
@@ -31,9 +33,9 @@ export default function TopBar({ onMenuToggle, isMobile }: TopBarProps) {
     return () => clearInterval(id);
   }, []);
 
-  let pageContext = 'CASE DASHBOARD';
-  if (location.pathname.includes('/intake')) pageContext = 'IDENTIFIER INGESTION';
-  else if (location.pathname.includes('/entities')) pageContext = 'LINK ANALYSIS WORKSPACE';
+  let pageContext = t('topbar.dashboard');
+  if (location.pathname.includes('/intake')) pageContext = t('topbar.ingestion');
+  else if (location.pathname.includes('/entities')) pageContext = t('topbar.workspace');
 
   const caseId = params.caseId || activeCase?.caseId;
   const caseLabel = caseId ? `CASE // ${caseId.toUpperCase().slice(0, 8)}` : null;
@@ -63,7 +65,7 @@ export default function TopBar({ onMenuToggle, isMobile }: TopBarProps) {
       {!isMobile && (
         <div style={{ flex: 1, maxWidth: 480, position: 'relative' }}>
           <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--accent-primary)', fontFamily: 'var(--font-mono)', fontSize: 12, pointerEvents: 'none' }}>▶</span>
-          <input ref={inputRef} type="text" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={handleSearch} placeholder="SEARCH // ENTITY / DOMAIN / PHONE..." style={{ width: '100%', background: 'var(--bg-1)', border: '1px solid var(--struct-line)', outline: 'none', color: 'var(--accent-primary)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.05em', padding: '7px 12px 7px 26px', caretColor: 'var(--accent-primary)', transition: 'border-color 0.1s' }} onFocus={(e) => { e.target.style.borderColor = 'var(--accent-primary)'; }} onBlur={(e) => { e.target.style.borderColor = 'var(--struct-line)'; }} />
+          <input ref={inputRef} type="text" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={handleSearch} placeholder={t('topbar.search_placeholder')} style={{ width: '100%', background: 'var(--bg-1)', border: '1px solid var(--struct-line)', outline: 'none', color: 'var(--accent-primary)', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.05em', padding: '7px 12px 7px 26px', caretColor: 'var(--accent-primary)', transition: 'border-color 0.1s' }} onFocus={(e) => { e.target.style.borderColor = 'var(--accent-primary)'; }} onBlur={(e) => { e.target.style.borderColor = 'var(--struct-line)'; }} />
           {!search && (<span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--accent-primary)', fontSize: 10, animation: 'blink 1s step-start infinite' }}>▌</span>)}
         </div>
       )}

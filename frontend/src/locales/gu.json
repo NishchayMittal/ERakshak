@@ -434,10 +434,41 @@
     "parsing_seeds": "બીજ પાર્સ કરી રહ્યું છે..."
   },
   "notifications": {
-    "title": "સૂચનાઓ",
+    "title": "સૂમમેસાગેસ",
     "unread": "ન વાંચેલ",
-    "empty": "હજુ સુધી કોઈ સૂચના નથી.",
+    "empty": "હજુ સુધી કોઈ સૂમમેસાગેસ નથી.",
     "read_all": "બધા વાંચો",
     "clear_all": "બધું સાફ કરો"
+  },
+  "investigation": {
+    "header_title": "ડોઝિયર વિઝુઅલ વિશ્લેષણ",
+    "header_subtitle": "ઇન્ટરેક્ટિવ સહસંબંધ ગ્રાફ — ટાઇમલાઇન અને વિશેષતાઓ અનુસરવા કોઈ પણ નોડ પસંદ કરો"
+  },
+  "profile_page": {
+    "header_title": "તપાસકર્તા પ્રોફાઇલ",
+    "header_subtitle": "ઓપરેશનલ HUD // ક્રેડેનશિયલ ચકાસણી",
+    "no_session": "કોઈ સક્રિય સેશન મળ્યું નથી. કૃપા કરીને પ્રમાણીકરણ પુન: મોકલો.",
+    "security_section": "સુરક્ષા અને ક્રેડેનશિયલ માહિતી",
+    "investigator_name": "તપાસકર્તા નામ:",
+    "assigned_post": "સોંપાયેલું પદ:",
+    "security_clearance": "સુરક્ષા મંજૂરી:",
+    "clearance_val": "વર્ગ-3 ગુપ્ત ગુપ્ત૊ષચર",
+    "passphrase": "પાસફ્રેઝ:",
+    "edit_name": "નામ સંપાદિત કરો",
+    "change_password": "પાસવર્ડ બદલો",
+    "system_state": "સિસ્ટમ સ્થિતિ:",
+    "active_secure": "સક્રિય / સુરક્ષિત",
+    "badge_id": "બેજ આઈડી:",
+    "operational_context": "ઓપરેશનલ સંદર્ભ",
+    "identity_updated": "તપાસકર્તા ઓળખ અપડેટ કરાઈ",
+    "identity_failed": "પ્રોફાઇલ નામ અપડેટ કરવામાં નિષ્ફળ",
+    "passphrase_updated": "તપાસકર્તા પાસફ્રેઝ અપડેટ કરાઈ",
+    "passphrase_failed": "પાસફ્રેઝ અપડેટ કરવામાં નિષ્ફળ"
+  },
+  "modals_sidebar": {
+    "confirm_title": "ડિસકનેક્ટ કરવાની પુષ્ટિ કરો",
+    "confirm_body": "શું તમે સક્રિય તપાસકર્તા સેશન સમાપ્ત કરવા ઇચ્છો છો?",
+    "cancel": "રદ કરો",
+    "disconnect": "ડિસકનેક્ટ"
   }
 }

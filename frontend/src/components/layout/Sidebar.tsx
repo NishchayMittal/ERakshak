@@ -6,6 +6,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useGraphStore } from '../../state/graphStore';
 import { getPendingApprovals } from '../../api/endpoints';
 import { Transliterate, useTransliterate } from '../ui/Transliterate';
+import { useTranslation } from 'react-i18next';
 
 // Hard-edged SVG icons – no libraries needed
 const Icons = {
@@ -69,6 +70,7 @@ export default function Sidebar() {
   const params = useParams();
   const location = useLocation();
   const transliterate = useTransliterate();
+  const { t } = useTranslation();
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
@@ -148,7 +150,7 @@ export default function Sidebar() {
             color: 'var(--accent-action)', letterSpacing: '0.2em',
             textTransform: 'uppercase', textShadow: '0 0 10px rgba(57,255,20,0.5)',
           }}>
-            e-RAKSHAK
+            {t('sidebar.brand')}
           </span>
         )}
         {sidebarCollapsed && (
@@ -156,7 +158,7 @@ export default function Sidebar() {
             fontFamily: 'var(--font-display)', fontSize: 9, fontWeight: 700,
             color: 'var(--accent-action)', letterSpacing: '0.1em',
           }}>
-            eR
+            {t('sidebar.brand_short')}
           </span>
         )}
         <button
@@ -172,7 +174,7 @@ export default function Sidebar() {
           {sidebarCollapsed ? Icons.expand : Icons.collapse}
           {sidebarCollapsed && (
             <div className="absolute left-full ml-3 px-2 py-1 bg-[#080d16]/95 border border-[#39ff14]/30 text-[#39ff14] text-[9px] font-mono font-bold tracking-widest uppercase rounded shadow-[0_0_10px_rgba(57,255,20,0.2)] opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-75 z-[9999] whitespace-nowrap">
-              EXPAND
+              {t('sidebar.expand')}
             </div>
           )}
         </button>
@@ -232,10 +234,10 @@ export default function Sidebar() {
               >
                 {Icons[item.key as keyof typeof Icons] as React.ReactNode}
               </span>
-              {!sidebarCollapsed && <span>{item.label}</span>}
+              {!sidebarCollapsed && <span>{t(`sidebar.${item.key}`)}</span>}
               {sidebarCollapsed && (
                 <div className="absolute left-full ml-3 px-2 py-1 bg-[#080d16]/95 border border-[#39ff14]/30 text-[#39ff14] text-[9px] font-mono font-bold tracking-widest uppercase rounded shadow-[0_0_10px_rgba(57,255,20,0.2)] opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-75 z-[9999] whitespace-nowrap">
-                  {item.label}
+                  {t(`sidebar.${item.key}`)}
                 </div>
               )}
 
@@ -266,7 +268,7 @@ export default function Sidebar() {
           borderTop: '1px solid var(--struct-line)',
         }}>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.15em', marginBottom: 6, fontFamily: 'var(--font-heading)' }}>
-            ACTIVE CASE
+            {t('sidebar.active_case')}
           </div>
           <select
             value={activeCaseId || ''}
@@ -279,7 +281,7 @@ export default function Sidebar() {
               outline: 'none', cursor: 'pointer',
             }}
           >
-            <option value="" disabled>SELECT CASE...</option>
+            <option value="" disabled>{t('sidebar.select_case')}</option>
             {cases.map((c) => (
               <option key={c.caseId} value={c.caseId}>
                 {transliterate(c.title.length > 22 ? `${c.title.substring(0, 22)}…` : c.title)}
@@ -344,10 +346,10 @@ export default function Sidebar() {
             boxShadow: '0 0 24px rgba(168,85,247,0.2)',
           }}>
             <div style={{ fontFamily: 'var(--font-heading)', fontSize: 11, fontWeight: 700, color: 'var(--accent-primary)', letterSpacing: '0.15em' }}>
-              CONFIRM DISCONNECT
+              {t('modals_sidebar.confirm_title')}
             </div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)' }}>
-              ARE YOU SURE YOU WANT TO TERMINATE THE ACTIVE INVESTIGATOR SESSION?
+              {t('modals_sidebar.confirm_body')}
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, borderTop: '1px solid var(--struct-line)', paddingTop: 12 }}>
               <button
@@ -359,7 +361,7 @@ export default function Sidebar() {
                   padding: '6px 12px', cursor: 'pointer',
                 }}
               >
-                CANCEL
+                {t('modals_sidebar.cancel')}
               </button>
               <button
                 onClick={() => {
@@ -374,7 +376,7 @@ export default function Sidebar() {
                   padding: '6px 12px', cursor: 'pointer',
                 }}
               >
-                DISCONNECT
+                {t('modals_sidebar.disconnect')}
               </button>
             </div>
           </div>

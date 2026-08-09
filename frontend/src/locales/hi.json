@@ -439,5 +439,36 @@
     "empty": "अभी तक कोई सूचना नहीं है।",
     "read_all": "सभी पढ़ें",
     "clear_all": "सभी साफ़ करें"
+  },
+  "investigation": {
+    "header_title": "डोज़ियर विज़ुअल विश्लेषण",
+    "header_subtitle": "इंटरएक्टिव सहसंबंध ग्राफ़ — टाइमलाइन और विशेषताओं का पता लगाने के लिए कोई भी नोड चुनें"
+  },
+  "profile_page": {
+    "header_title": "जांचकर्ता प्रोफ़ाइल",
+    "header_subtitle": "परिचालन HUD // प्रमाण-पत्र सत्यापन",
+    "no_session": "कोई सक्रिय सत्र नहीं मिला। कृपया प्रमाणीकरण पुनः भेजें।",
+    "security_section": "सुरक्षा और प्रमाण-पत्र जानकारी",
+    "investigator_name": "जांचकर्ता नाम:",
+    "assigned_post": "सौंपा गया पद:",
+    "security_clearance": "सुरक्षा मंजूरी:",
+    "clearance_val": "वर्ग-3 गोपनीय खुफिया",
+    "passphrase": "पासफ्रेज़:",
+    "edit_name": "नाम संपादित करें",
+    "change_password": "पासवर्ड बदलें",
+    "system_state": "सिस्टम स्थिति:",
+    "active_secure": "सक्रिय / सुरक्षित",
+    "badge_id": "बैज आईडी:",
+    "operational_context": "परिचालन संदर्भ",
+    "identity_updated": "जांचकर्ता पहचान अद्यतन की गई",
+    "identity_failed": "प्रोफ़ाइल नाम अपडेट करने में विफल",
+    "passphrase_updated": "जांचकर्ता पासफ्रेज़ अद्यतन किया गया",
+    "passphrase_failed": "पासफ्रेज़ अपडेट करने में विफल"
+  },
+  "modals_sidebar": {
+    "confirm_title": "डिस्कनेक्ट की पुष्टि करें",
+    "confirm_body": "क्या आप सक्रिय जांचकर्ता सत्र समाप्त करना चाहते हैं?",
+    "cancel": "रद्द करें",
+    "disconnect": "डिस्कनेक्ट"
   }
 }

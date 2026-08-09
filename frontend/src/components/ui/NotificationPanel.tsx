@@ -88,7 +88,7 @@ export function NotificationPanel() {
     const title = targetCase ? targetCase.title : `Case Workspace: ${n.case_id}`;
     openWindow(
       `workspace-${n.case_id}`,
-      t('dashboard.case_workspace', { title: title.replace('Case Workspace: ', '') }),
+      `Case Workspace: ${title.replace('Case Workspace: ', '')}`,
       'case_workspace',
       { caseId: n.case_id, activeTab: 'graph' }
     );

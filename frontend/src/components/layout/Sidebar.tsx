@@ -70,7 +70,7 @@ export default function Sidebar() {
   const params = useParams();
   const location = useLocation();
   const transliterate = useTransliterate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
@@ -271,6 +271,7 @@ export default function Sidebar() {
             {t('sidebar.active_case')}
           </div>
           <select
+            key={i18n.language}
             value={activeCaseId || ''}
             onChange={(e) => handleCaseChange(e.target.value)}
             style={{

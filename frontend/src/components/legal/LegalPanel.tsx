@@ -3,6 +3,7 @@ import { Scale, ShieldAlert, AlertTriangle, Info, ChevronDown, ChevronUp, Refres
 import { getLegalMapping } from '../../api/endpoints';
 import type { LegalFlag, LegalMappingResult } from '../../api/endpoints';
 import { useTransliterate } from '../ui/Transliterate';
+import { useTranslation } from 'react-i18next';
 
 interface LegalPanelProps {
   caseId: string;
@@ -62,7 +63,51 @@ function ActBadge({ act }: { act: LegalFlag['act'] }) {
 function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
   const [expanded, setExpanded] = useState(false);
   const transliterate = useTransliterate();
+  const { t } = useTranslation();
   const cfg = SEVERITY_CONFIG[flag.severity];
+
+  const getSectionKey = (act: string, section: string) => {
+    const cleanAct = act.replace(' Act ', '_').replace(' ', '_');
+    const cleanSection = section.replace('Section ', '').replace('(', '_').replace(')', '');
+    return `${cleanAct.split('_')[0]}_${cleanSection}`;
+  };
+
+  const key = getSectionKey(flag.act, flag.section);
+
+  const getTranslated = (field: 'title' | 'desc' | 'punish', defaultValue: string) => {
+    const tKey = `legal.sections.${key}_${field}`;
+    const val = t(tKey);
+    return val && val !== tKey ? val : transliterate(defaultValue);
+  };
+
+  const translateNote = (note: string) => {
+    if (!note) return '';
+    if (note.includes("Subject's data was found in a breach")) {
+      return t('legal.notes.breach');
+    }
+    if (note.includes("Leaked passwords/credentials")) {
+      return t('legal.notes.creds');
+    }
+    if (note.includes("Cryptocurrency wallet with significant transaction")) {
+      return t('legal.notes.crypto');
+    }
+    if (note.includes("Subdomain name pattern strongly suggests")) {
+      return t('legal.notes.phish_domain');
+    }
+    if (note.includes("Phishing subdomains indicate")) {
+      return t('legal.notes.phish_fraud');
+    }
+    if (note.includes("Known CVEs on the target")) {
+      return t('legal.notes.cve');
+    }
+    if (note.includes("Publicly accessible cloud storage")) {
+      return t('legal.notes.bucket');
+    }
+    if (note.includes("Historical snapshots showing")) {
+      return t('legal.notes.wayback');
+    }
+    return transliterate(note);
+  };
 
   return (
     <div style={{
@@ -105,7 +150,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
           minWidth: 100,
           flexShrink: 0,
         }}>
-          {transliterate(flag.section)}
+          {flag.section.replace('Section', t('legal.section_prefix', 'Section'))}
         </span>
 
         {/* Title */}
@@ -116,7 +161,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
           flex: 1,
           fontWeight: 600,
         }}>
-          {transliterate(flag.title)}
+          {getTranslated('title', flag.title)}
         </span>
 
         {/* Badges */}
@@ -157,7 +202,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
               textTransform: 'uppercase',
               marginBottom: 4,
             }}>
-              LEGAL PROVISION
+              {t('legal.provision', 'LEGAL PROVISION')}
             </div>
             <p style={{
               fontFamily: 'var(--font-mono)',
@@ -166,7 +211,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
               lineHeight: 1.6,
               margin: 0,
             }}>
-              {transliterate(flag.description)}
+              {getTranslated('desc', flag.description)}
             </p>
           </div>
 
@@ -184,7 +229,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
                 textTransform: 'uppercase',
                 marginBottom: 4,
               }}>
-                PUNISHMENT
+                {t('legal.punishment', 'PUNISHMENT')}
               </div>
               <p style={{
                 fontFamily: 'var(--font-mono)',
@@ -193,7 +238,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
                 margin: 0,
                 lineHeight: 1.5,
               }}>
-                {transliterate(flag.punishment)}
+                {getTranslated('punish', flag.punishment)}
               </p>
             </div>
             <div>
@@ -205,7 +250,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
                 textTransform: 'uppercase',
                 marginBottom: 4,
               }}>
-                BAIL STATUS
+                {t('legal.bail_status', 'BAIL STATUS')}
               </div>
               <span style={{
                 fontFamily: 'var(--font-mono)',
@@ -213,7 +258,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
                 fontWeight: 700,
                 color: flag.bailable ? '#00ffc2' : '#ff2d55',
               }}>
-                {flag.bailable ? '✓ BAILABLE' : '✗ NON-BAILABLE'}
+                {flag.bailable ? t('legal.bailable', '✓ BAILABLE') : t('legal.non_bailable', '✗ NON-BAILABLE')}
               </span>
             </div>
           </div>
@@ -235,7 +280,7 @@ function LegalCard({ flag, index }: { flag: LegalFlag; index: number }) {
                 color: 'var(--text-muted)',
                 lineHeight: 1.5,
               }}>
-                {transliterate(flag.notes)}
+                {translateNote(flag.notes)}
               </span>
             </div>
           )}
@@ -310,6 +355,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('ALL');
   const transliterate = useTransliterate();
+  const { t } = useTranslation();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -318,11 +364,11 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
       const data = await getLegalMapping(caseId);
       setResult(data);
     } catch {
-      setError('Failed to run legal mapping. Ensure findings have been collected first.');
+      setError(t('legal.failed_mapping', 'Failed to run legal mapping. Ensure findings have been collected first.'));
     } finally {
       setLoading(false);
     }
-  }, [caseId]);
+  }, [caseId, t]);
 
   useEffect(() => {
     load();
@@ -344,6 +390,25 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
     a.download = `legal_mapping_${caseId.slice(0, 8)}.txt`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const getSummaryText = () => {
+    if (!result) return '';
+    if (result.critical_count > 0) {
+      return t('legal.summary_critical', { 
+        critical: result.critical_count, 
+        high: result.high_count 
+      });
+    } else if (result.high_count > 0) {
+      return t('legal.summary_high', { 
+        high: result.high_count 
+      });
+    } else if (result.total_flags > 0) {
+      return t('legal.summary_total', { 
+        count: result.total_flags 
+      });
+    }
+    return t('legal.summary_empty');
   };
 
   return (
@@ -376,7 +441,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
               letterSpacing: '0.2em',
               textTransform: 'uppercase',
             }}>
-              INDIAN LEGAL SECTION MAPPING
+              {t('legal.title', 'INDIAN LEGAL SECTION MAPPING')}
             </div>
             <div style={{
               fontFamily: 'var(--font-mono)',
@@ -385,7 +450,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
               marginTop: 2,
               letterSpacing: '0.05em',
             }}>
-              IT Act 2000 · Bharatiya Nyaya Sanhita 2023 · PMLA 2002
+              {t('legal.subtitle', 'IT Act 2000 · Bharatiya Nyaya Sanhita 2023 · PMLA 2002')}
             </div>
           </div>
         </div>
@@ -408,7 +473,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
               opacity: result && result.total_flags > 0 ? 1 : 0.4,
             }}
           >
-            <Download size={10} /> EXPORT
+            <Download size={10} /> {t('legal.export', 'EXPORT')}
           </button>
           <button
             onClick={load}
@@ -429,7 +494,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
             }}
           >
             <RefreshCw size={10} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
-            {loading ? 'SCANNING...' : 'RE-SCAN'}
+            {loading ? t('legal.scanning', 'SCANNING...') : t('legal.rescan', 'RE-SCAN')}
           </button>
         </div>
       </div>
@@ -448,7 +513,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
         }}>
           <ShieldAlert size={32} color="var(--accent-primary)" style={{ opacity: 0.6, animation: 'intro-live-pulse 1.2s ease infinite' }} />
           <div style={{ fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-            ANALYSING FINDINGS AGAINST LEGAL DATABASE...
+            {t('legal.analyzing', 'ANALYSING FINDINGS AGAINST LEGAL DATABASE...')}
           </div>
           <div style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: '0.1em' }}>
             IT Act 2000 · BNS 2023 · PMLA 2002
@@ -489,7 +554,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
             gap: 16,
           }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-muted)', flex: 1 }}>
-              {transliterate(result.summary)}
+              {getSummaryText()}
             </div>
             <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
               {result.critical_count > 0 && (
@@ -502,7 +567,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
                   fontWeight: 700,
                   background: 'rgba(255,45,85,0.1)',
                 }}>
-                  {result.critical_count} CRITICAL
+                  {result.critical_count} {t('legal.critical', 'CRITICAL')}
                 </div>
               )}
               {result.high_count > 0 && (
@@ -515,7 +580,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
                   fontWeight: 700,
                   background: 'rgba(255,149,0,0.08)',
                 }}>
-                  {result.high_count} HIGH
+                  {result.high_count} {t('legal.high', 'HIGH')}
                 </div>
               )}
               <div style={{
@@ -525,7 +590,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
                 border: '1px solid var(--struct-line)',
                 padding: '3px 10px',
               }}>
-                {result.total_flags} TOTAL
+                {result.total_flags} {t('legal.total', 'TOTAL')}
               </div>
             </div>
           </div>
@@ -539,29 +604,41 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
             flexShrink: 0,
             padding: '0 16px',
           }}>
-            {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'IT Act 2000', 'BNS 2023', 'PMLA 2002'].map(f => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  borderBottom: filter === f ? '2px solid var(--accent-primary)' : '2px solid transparent',
-                  color: filter === f ? 'var(--accent-primary)' : 'var(--text-muted)',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 9,
-                  fontWeight: filter === f ? 700 : 400,
-                  letterSpacing: '0.1em',
-                  padding: '8px 10px',
-                  cursor: 'pointer',
-                  textTransform: 'uppercase',
-                  transition: 'color 0.15s, border-color 0.15s',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {f}
-              </button>
-            ))}
+            {['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'IT Act 2000', 'BNS 2023', 'PMLA 2002'].map(f => {
+              let label = f;
+              if (f === 'ALL') label = t('legal.filter_all', 'ALL');
+              else if (f === 'CRITICAL') label = t('legal.critical', 'CRITICAL');
+              else if (f === 'HIGH') label = t('legal.high', 'HIGH');
+              else if (f === 'MEDIUM') label = t('legal.filter_medium', 'MEDIUM');
+              else if (f === 'LOW') label = t('legal.filter_low', 'LOW');
+              else if (f === 'IT Act 2000') label = t('legal.it_act', 'IT Act 2000');
+              else if (f === 'BNS 2023') label = t('legal.bns_act', 'BNS 2023');
+              else if (f === 'PMLA 2002') label = t('legal.pmla_act', 'PMLA 2002');
+              
+              return (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    borderBottom: filter === f ? '2px solid var(--accent-primary)' : '2px solid transparent',
+                    color: filter === f ? 'var(--accent-primary)' : 'var(--text-muted)',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 9,
+                    fontWeight: filter === f ? 700 : 400,
+                    letterSpacing: '0.1em',
+                    padding: '8px 10px',
+                    cursor: 'pointer',
+                    textTransform: 'uppercase',
+                    transition: 'color 0.15s, border-color 0.15s',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
 
           {/* Flags list */}
@@ -582,7 +659,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
               }}>
                 <Scale size={28} style={{ opacity: 0.3 }} />
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.15em' }}>
-                  NO FLAGS FOR SELECTED FILTER
+                  {t('legal.no_flags', 'NO FLAGS FOR SELECTED FILTER')}
                 </span>
               </div>
             ) : (
@@ -608,9 +685,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
               lineHeight: 1.5,
               opacity: 0.7,
             }}>
-              ⚠ DISCLAIMER: This legal mapping is AI-assisted and indicative only. It does not constitute legal advice.
-              All flagged provisions should be reviewed by a qualified legal professional before use in FIR filing or prosecution.
-              Confidence scores reflect OSINT evidence strength, not judicial determination of guilt.
+              {t('legal.disclaimer', '⚠ DISCLAIMER: This legal mapping is AI-assisted and indicative only. It does not constitute legal advice. All flagged provisions should be reviewed by a qualified legal professional before use in FIR filing or prosecution. Confidence scores reflect OSINT evidence strength, not judicial determination of guilt.')}
             </p>
           </div>
         </>

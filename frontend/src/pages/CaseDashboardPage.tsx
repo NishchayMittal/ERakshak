@@ -94,7 +94,7 @@ export interface PendingApproval {
 export default function CaseDashboardPage() {
   const transliterate = useTransliterate();
   const { t } = useTranslation();
-  const { cases, loadCases, initializeNewCase, deleteCase, renameCase } = useCaseStore();
+  const { cases, loadCases, initializeNewCase, deleteCase, renameCase, selectCase } = useCaseStore();
   const { showToast } = useUIStore();
   const { user, logout } = useAuth();
   const { loadEntityGraph, graphData } = useGraphStore();
@@ -490,7 +490,7 @@ export default function CaseDashboardPage() {
       if (e.key === 'Enter') {
         openWindow(
           `workspace-${targetCase.caseId}`,
-          t('dashboard.case_workspace', { title: targetCase.title }),
+          `Case Workspace: ${targetCase.title}`,
           'case_workspace',
           { caseId: targetCase.caseId }
         );
@@ -627,6 +627,7 @@ export default function CaseDashboardPage() {
           if (w.type === 'case_workspace' && w.caseId) {
             setLastAccessedCaseId(w.caseId);
             localStorage.setItem('er_last_accessed_case', w.caseId);
+            selectCase(w.caseId);
           }
           return { ...w, zIndex: nextZ, isMinimized: false };
         }
@@ -669,6 +670,7 @@ export default function CaseDashboardPage() {
     if (type === 'case_workspace' && extraProps.caseId) {
       setLastAccessedCaseId(extraProps.caseId);
       localStorage.setItem('er_last_accessed_case', extraProps.caseId);
+      selectCase(extraProps.caseId);
     }
 
     // If opening a case workspace, fetch its graph immediately
@@ -1617,7 +1619,7 @@ export default function CaseDashboardPage() {
                   } else {
                     openWindow(
                       `workspace-${c.caseId}`,
-                      t('dashboard.case_workspace', { title: c.title }),
+                      `Case Workspace: ${c.title}`,
                       'case_workspace',
                       { caseId: c.caseId }
                     );
@@ -1746,9 +1748,10 @@ export default function CaseDashboardPage() {
                 <Folder size={12} className="flex-shrink-0" />
                 <span className="text-[9px] font-bold tracking-wider uppercase truncate max-w-[400px]">
                   {(() => {
-                    if (win.type === 'case_workspace' && win.caseId) {
-                      const targetCase = cases.find(c => c.caseId === win.caseId);
-                      return targetCase ? t('dashboard.case_workspace', { title: transliterate(targetCase.title) }) : transliterate(win.title);
+                    if (win.type === 'case_workspace') {
+                      const targetCase = win.caseId ? cases.find(c => c.caseId === win.caseId) : null;
+                      const titleVal = targetCase ? targetCase.title : win.title.replace('Case Workspace: ', '').replace('Case Analysis: ', '');
+                      return t('dashboard.case_workspace', { title: transliterate(titleVal) });
                     }
                     return transliterate(win.title);
                   })()}

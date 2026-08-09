@@ -3,6 +3,7 @@ import { Send, Zap, MessageCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { chatWithEvidence } from "../../api/endpoints";
 import { useUIStore } from "../../state/uiStore";
+import { useTransliterate } from "../ui/Transliterate";
 
 export interface ChatMessage {
   id: string;
@@ -35,6 +36,7 @@ export default function ChatPanel({
   textareaRef,
 }: ChatPanelProps) {
   const { t } = useTranslation();
+  const transliterate = useTransliterate();
   const { showToast } = useUIStore();
   const isControlled = inputValue !== undefined;
 
@@ -262,7 +264,7 @@ export default function ChatPanel({
                   position: "relative",
                 }}
               >
-                {parseMessageContent(msg?.content || "")}
+                {parseMessageContent(msg?.content || "", transliterate)}
                 <div
                   style={{
                     fontSize: 7,
@@ -443,7 +445,7 @@ export default function ChatPanel({
   );
 }
 
-function parseMessageContent(text: string) {
+function parseMessageContent(text: string, transliterate: (t: string) => string = (t) => t) {
   if (!text) return null;
   const lines = text.split("\n");
   const elements: React.ReactNode[] = [];
@@ -483,7 +485,7 @@ function parseMessageContent(text: string) {
               padding: "1px 3px",
             }}
           >
-            {part.slice(2, -2)}
+            {transliterate(part.slice(2, -2))}
           </strong>
         );
       }
@@ -507,17 +509,17 @@ function parseMessageContent(text: string) {
                       textDecoration: "underline",
                     }}
                   >
-                    {linkMatch[1]}
+                    {transliterate(linkMatch[1])}
                   </a>
                 );
               }
-              return lPart;
+              return transliterate(lPart);
             })}
           </React.Fragment>
         );
       }
 
-      return part;
+      return transliterate(part);
     });
   };
 

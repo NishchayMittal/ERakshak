@@ -14,7 +14,7 @@ import { GeoMapWindow } from '../ui/GeoMapWindow';
 import type { GraphNode, GraphEdge } from '../../types/graph';
 import type { EvidenceIdentifier } from '../../types/evidence';
 
-const renderCustomMarkdown = (text: string) => {
+const renderCustomMarkdown = (text: string, transliterate: (t: string) => string = (t) => t) => {
   if (!text) return null;
   const lines = text.split('\n');
   const elements: React.ReactNode[] = [];
@@ -35,9 +35,9 @@ const renderCustomMarkdown = (text: string) => {
     const parts = line.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, idx) => {
       if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={idx} className="font-bold text-[#00ffc2] bg-[#00ffc2]/5 px-1 border border-[#00ffc2]/20">{part.slice(2, -2)}</strong>;
+        return <strong key={idx} className="font-bold text-[#00ffc2] bg-[#00ffc2]/5 px-1 border border-[#00ffc2]/20">{transliterate(part.slice(2, -2))}</strong>;
       }
-      return part;
+      return transliterate(part);
     });
   };
 
@@ -1122,7 +1122,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                           </div>
 
                           <div className="flex-grow overflow-y-auto pr-1 select-text bg-black/25 p-3 border border-white/5">
-                            {caseReportNarrative[caseId] ? renderCustomMarkdown(transliterate(caseReportNarrative[caseId])) : transliterate(t('case_window.synthesizing'))}
+                            {caseReportNarrative[caseId] ? renderCustomMarkdown(caseReportNarrative[caseId], transliterate) : transliterate(t('case_window.synthesizing'))}
                           </div>
                         </div>
                       )}

@@ -524,9 +524,9 @@ export function CaseWindow({ win }: CaseWindowProps) {
                       {[
                         { id: 'intake', label: t('case_window.tab_intake'), tooltip: 'The starting point of the OSINT crawl. Enter an email, phone, or username here to begin gathering intelligence.' },
                         { id: 'graph', label: t('case_window.tab_matrix'), tooltip: 'A visual node-link matrix that maps relationships between discovered emails, domains, accounts, and IPs.' },
-                        { id: 'geo', label: 'GEO MAP', tooltip: 'Maps IP addresses and location-based findings onto a 3D globe to visualize physical movement and hosting infrastructure.' },
                         { id: 'dossier', label: t('case_window.tab_dossier'), tooltip: 'Displays a consolidated profile and all raw ingested data for the selected entity.' },
-                        { id: 'legal', label: '⚖ LEGAL', tooltip: 'Cross-references discovered activities against the Bharatiya Nyaya Sanhita (BNS) and Information Technology (IT) Act to flag potential violations.' },
+                        { id: 'geo', label: t('case_window.tab_geo'), tooltip: 'Maps IP addresses and location-based findings onto a 3D globe to visualize physical movement and hosting infrastructure.' },
+                        { id: 'legal', label: t('case_window.tab_legal'), tooltip: 'Cross-references discovered activities against the Bharatiya Nyaya Sanhita (BNS) and Information Technology (IT) Act to flag potential violations.' },
                         { id: 'report', label: t('case_window.tab_report'), tooltip: 'Generates a cohesive, structured intelligence dossier summarizing all findings and identifying key risk factors.' },
                         { id: 'chat', label: t('case_window.tab_chat'), tooltip: 'Interact with the AI Copilot to ask questions, summarize findings, and suggest pivot strategies based on the current case data.' }
                       ].map(t => (
@@ -539,7 +539,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                           }}
                           className={`px-3 py-1.5 border transition flex-shrink-0 whitespace-nowrap flex items-center ${tab === t.id ? 'bg-[#39ff14]/15 border-[#39ff14] text-[#39ff14]' : 'bg-transparent border-white/10 text-gray-400 hover:text-white hover:border-white/20'}`}
                         >
-                          {t.label}
+                          {transliterate(t.label)}
                           <FeatureInfoTooltip content={t.tooltip} />
                         </button>
                       ))}

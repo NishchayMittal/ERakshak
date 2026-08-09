@@ -105,12 +105,13 @@
     "delete_dossier_ctx": "ડોઝિયર કાઢી નાખો"
   },
   "case_window": {
-    "tab_intake": "[01 ડેટા_પ્રવેશ]",
-    "tab_matrix": "[02 નેટ_મેટ્રિક્સ]",
+    "tab_intake": "[01 ડેટા_ઇનટેક]",
+    "tab_matrix": "[02 લિંક_મેટ્રિક્સ]",
     "tab_dossier": "[03 ડોઝિયર]",
-    "tab_temporal": "[04 સમય_મેટ્રિક્સ]",
-    "tab_report": "[05 AI_અહેવાલ]",
-    "tab_chat": "[06 AI_ચેટ]",
+    "tab_geo": "[04 જિયો_મેપ]",
+    "tab_legal": "[05 કાનૂની]",
+    "tab_report": "[06 AI_રિપોર્ટ]",
+    "tab_chat": "[07 AI_ચેટ]",
     "inject_seeds": "શોધ બીજ ઇન્જેક્ટ કરો",
     "vector_type": "ઓળખકર્તા વેક્ટર પ્રકાર",
     "email_address": "ઇમેઇલ સરનામું",

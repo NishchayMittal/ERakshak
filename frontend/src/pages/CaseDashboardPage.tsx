@@ -639,6 +639,9 @@ export default function CaseDashboardPage() {
     const exists = windows.find(w => w.id === id);
     if (exists) {
       focusWindow(id);
+      if (extraProps.activeTab) {
+        setWindows(prev => prev.map(w => w.id === id ? { ...w, activeTab: extraProps.activeTab } : w));
+      }
       return;
     }
 

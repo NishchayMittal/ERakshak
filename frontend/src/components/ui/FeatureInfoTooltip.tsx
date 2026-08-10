@@ -59,7 +59,7 @@ export function FeatureInfoTooltip({ content, className = '' }: FeatureInfoToolt
             background: 'rgba(8, 13, 22, 0.98)',
             border: '1px solid rgba(57, 255, 20, 0.3)',
             color: 'rgba(230, 237, 243, 0.9)',
-            fontSize: '10px',
+            fontSize: "calc(10px * var(--font-scale))",
             fontFamily: 'var(--font-mono)',
             textTransform: 'none',
             letterSpacing: '0.05em',

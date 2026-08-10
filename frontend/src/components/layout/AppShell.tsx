@@ -114,7 +114,7 @@ export default function AppShell() {
             boxShadow: `0 0 16px ${
               toast.type === 'error' ? 'rgba(255,59,48,0.2)' : toast.type === 'success' ? 'rgba(57,255,20,0.2)' : 'rgba(168,85,247,0.2)'
             }`,
-            cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10,
+            cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: "calc(10px * var(--font-scale))",
             color: 'var(--text-primary)', letterSpacing: '0.08em',
             backdropFilter: 'blur(12px)',
             borderRadius: '4px',
@@ -129,7 +129,7 @@ export default function AppShell() {
             flexShrink: 0
           }} />
           <span style={{ flex: 1 }}>{toast.message}</span>
-          <span style={{ marginLeft: 12, opacity: 0.5, fontSize: 8 }}>✕</span>
+          <span style={{ marginLeft: 12, opacity: 0.5, fontSize: "calc(8px * var(--font-scale))" }}>✕</span>
         </div>
       )}
     </>

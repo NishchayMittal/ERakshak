@@ -225,7 +225,7 @@ export default function InvestigationPage({
           <div
             style={{
               fontFamily: "var(--font-heading)",
-              fontSize: 11,
+              fontSize: "calc(11px * var(--font-scale))",
               fontWeight: 700,
               color: "var(--accent-primary)",
               letterSpacing: "0.2em",
@@ -237,7 +237,7 @@ export default function InvestigationPage({
           <div
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: 9,
+              fontSize: "calc(9px * var(--font-scale))",
               color: "var(--text-muted)",
               marginTop: 2,
               letterSpacing: "0.05em",
@@ -318,7 +318,7 @@ export default function InvestigationPage({
                     flex: 1,
                     padding: "9px 0",
                     fontFamily: "var(--font-heading)",
-                    fontSize: 9,
+                    fontSize: "calc(9px * var(--font-scale))",
                     fontWeight: 700,
                     letterSpacing: "0.15em",
                     textTransform: "uppercase",

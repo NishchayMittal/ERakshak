@@ -11,15 +11,13 @@ import { Transliterate, useTransliterate } from '../components/ui/Transliterate'
 import { FeatureInfoTooltip } from '../components/ui/FeatureInfoTooltip';
 
 import { DashboardContext } from './DashboardContext';
-import { CaseWindow } from '../components/cases/CaseWindow';
-import { ProfileWindow } from '../components/cases/ProfileWindow';
-import { ExplorerWindow } from '../components/cases/ExplorerWindow';
-import { CrossCorrelationWindow } from '../components/cases/CrossCorrelationWindow';
-import { GeoMapWindow } from '../components/ui/GeoMapWindow';
-import { NotificationPanel } from '../components/ui/NotificationPanel';
 import { useTutorialStore } from '../state/tutorialStore';
 import { TutorialOverlay } from '../components/tutorial/TutorialOverlay';
 import { DemoTour } from '../components/tutorial/DemoTour';
+import HUDPanel from '../components/layout/HUDPanel';
+import DesktopWindow from '../components/ui/DesktopWindow';
+import SystemDock from '../components/layout/SystemDock';
+import DashboardModals from '../components/modals/DashboardModals';
 
 import {
   triggerModelRetrain,
@@ -50,29 +48,7 @@ interface WindowState {
   activeTab?: 'intake' | 'graph' | 'dossier' | 'report';
 }
 
-const WALLPAPERS = [
-  {
-    name: 'Cyber Mesh',
-    value: 'linear-gradient(135deg, #090e17 0%, #03060c 60%, #010204 100%)',
-    gridColor: 'rgba(57, 255, 20, 0.03)',
-    accentGlow: 'rgba(57, 255, 20, 0.12)',
-    accentColor: '#39FF14'
-  },
-  {
-    name: 'Techno Void',
-    value: 'radial-gradient(circle at center, #18052b 0%, #080112 50%, #000000 100%)',
-    gridColor: 'rgba(168, 85, 247, 0.03)',
-    accentGlow: 'rgba(168, 85, 247, 0.15)',
-    accentColor: '#A855F7'
-  },
-  {
-    name: 'Deep Hazard',
-    value: 'radial-gradient(circle at 30% 30%, #29080e 0%, #0b0103 70%, #000000 100%)',
-    gridColor: 'rgba(239, 68, 68, 0.03)',
-    accentGlow: 'rgba(239, 68, 68, 0.12)',
-    accentColor: '#EF4444'
-  }
-];
+import TopBar, { WALLPAPERS } from '../components/layout/TopBar';
 
 const MOCK_HUD_LOGS = [
   'OSINT: Awaiting seed injection vector...',
@@ -94,7 +70,7 @@ export interface PendingApproval {
 export default function CaseDashboardPage() {
   const transliterate = useTransliterate();
   const { t, i18n } = useTranslation();
-  const { cases, loadCases, initializeNewCase, deleteCase, renameCase } = useCaseStore();
+  const { cases, loadCases, initializeNewCase, deleteCase, renameCase, selectCase } = useCaseStore();
   const { showToast } = useUIStore();
   const { user, logout } = useAuth();
   const { loadEntityGraph, graphData } = useGraphStore();
@@ -102,6 +78,10 @@ export default function CaseDashboardPage() {
 
   const adjustFontSize = (delta: number) => {
     const root = document.documentElement;
+    if (delta === 0) {
+      root.style.setProperty('--font-scale', '1');
+      return;
+    }
     const currentSize = parseFloat(getComputedStyle(root).getPropertyValue('--font-scale') || '1');
     const newSize = Math.max(0.7, Math.min(1.5, currentSize + delta));
     root.style.setProperty('--font-scale', newSize.toString());
@@ -117,7 +97,6 @@ export default function CaseDashboardPage() {
   const [maxZIndex, setMaxZIndex] = useState(10);
   const [wallpaperIdx, setWallpaperIdx] = useState(0);
   const [customWallpaper, setCustomWallpaper] = useState<string | null>(null);
-  const [showWallpaperMenu, setShowWallpaperMenu] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showSidebarOnMobile, setShowSidebarOnMobile] = useState(false);
 
@@ -292,20 +271,20 @@ export default function CaseDashboardPage() {
 
   const handleZoom = (e: any, caseId: string) => {
     const currentZoom = caseZoom[caseId] || 1.0;
-    
+
     // Differentiate between pinch-to-zoom (ctrlKey) and normal mouse scrolls
     let factor = 0.002;
     if (e.ctrlKey) {
       factor = 0.02; // Boost sensitivity for pinch gestures
     }
-    
+
     const delta = e.deltaY;
     // Suppress tiny trackpad drift scrolling to minimize event flooding
     if (Math.abs(delta) < 1.5 && !e.ctrlKey) return;
-    
+
     const scaleFactor = Math.exp(-delta * factor);
     const nextZoom = Math.min(3.0, Math.max(0.3, currentZoom * scaleFactor));
-    
+
     // Avoid triggering heavy DOM updates for negligible scale changes
     if (Math.abs(currentZoom - nextZoom) < 0.01) return;
 
@@ -434,8 +413,8 @@ export default function CaseDashboardPage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (target && (
-        target.tagName === 'INPUT' || 
-        target.tagName === 'TEXTAREA' || 
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
         target.getAttribute('contenteditable') === 'true'
       )) {
         return;
@@ -453,7 +432,7 @@ export default function CaseDashboardPage() {
         const currentIndex = sortedCases.findIndex(c => c.caseId === focusedCaseId);
         if (currentIndex !== -1) {
           nextIndex = currentIndex;
-          
+
           let columns = 4;
           const grid = document.querySelector('.desktop-grid-container');
           if (grid) {
@@ -490,7 +469,7 @@ export default function CaseDashboardPage() {
       if (e.key === 'Enter') {
         openWindow(
           `workspace-${targetCase.caseId}`,
-          t('dashboard.case_workspace', { title: targetCase.title }),
+          `Case Workspace: ${targetCase.title}`,
           'case_workspace',
           { caseId: targetCase.caseId }
         );
@@ -590,32 +569,6 @@ export default function CaseDashboardPage() {
 
   const currentWallpaper = WALLPAPERS[wallpaperIdx];
 
-  const handleWallpaperUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setCustomWallpaper(`url(${event.target.result})`);
-          showToast('Custom wallpaper loaded', 'success');
-          setShowWallpaperMenu(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleWallpaperUrlKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      const url = (e.target as HTMLInputElement).value.trim();
-      if (url) {
-        setCustomWallpaper(`url(${url})`);
-        showToast('Custom URL wallpaper loaded', 'success');
-        setShowWallpaperMenu(false);
-      }
-    }
-  };
-
   // Window operations
   const focusWindow = (id: string) => {
     setActiveWindowId(id);
@@ -627,6 +580,7 @@ export default function CaseDashboardPage() {
           if (w.type === 'case_workspace' && w.caseId) {
             setLastAccessedCaseId(w.caseId);
             localStorage.setItem('er_last_accessed_case', w.caseId);
+            selectCase(w.caseId);
           }
           return { ...w, zIndex: nextZ, isMinimized: false };
         }
@@ -639,6 +593,9 @@ export default function CaseDashboardPage() {
     const exists = windows.find(w => w.id === id);
     if (exists) {
       focusWindow(id);
+      if (extraProps.activeTab) {
+        setWindows(prev => prev.map(w => w.id === id ? { ...w, activeTab: extraProps.activeTab } : w));
+      }
       return;
     }
 
@@ -666,6 +623,7 @@ export default function CaseDashboardPage() {
     if (type === 'case_workspace' && extraProps.caseId) {
       setLastAccessedCaseId(extraProps.caseId);
       localStorage.setItem('er_last_accessed_case', extraProps.caseId);
+      selectCase(extraProps.caseId);
     }
 
     // If opening a case workspace, fetch its graph immediately
@@ -1171,7 +1129,7 @@ export default function CaseDashboardPage() {
         const currentProgress = prev[caseId] || 0;
         if (currentProgress < 90) {
           const nextProgress = currentProgress + 10;
-          
+
           const stageIdx = Math.floor(nextProgress / 20);
           if (stages[stageIdx]) {
             setCaseIngestLogs(logsPrev => {
@@ -1193,14 +1151,14 @@ export default function CaseDashboardPage() {
 
     try {
       await apiPromise;
-      
+
       setCasePendingSeeds(prev => ({ ...prev, [caseId]: [] }));
-      
+
       // Switch to Graph tab
       setWindows(prev =>
         prev.map(w => (w.caseId === caseId ? { ...w, activeTab: 'graph' } : w))
       );
-      
+
       // We do NOT clear the loading bar here. The WebSocket handlePipelineCompleted callback will do it!
     } catch {
       clearInterval(timer);
@@ -1384,752 +1342,338 @@ export default function CaseDashboardPage() {
   };
   return (
     <DashboardContext.Provider value={contextValue}>
-    <div
-      ref={desktopRef}
-      className="relative w-full h-full overflow-hidden select-none bg-black text-gray-300"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) {
-          setWindows(prev => prev.map(w => w.type === 'case_workspace' ? { ...w, isMinimized: true } : w));
-          setActiveWindowId(null);
-        }
-      }}
-      style={{
-        backgroundImage: customWallpaper || currentWallpaper.value,
-        backgroundColor: 'black',
-        backgroundSize: '100% 100%',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
-        transition: 'background-image 0.5s ease',
-        fontFamily: 'var(--font-mono)'
-      }}
-    >
-      {/* Background grid scanlines overlay */}
       <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: `linear-gradient(${currentWallpaper.gridColor} 1.5px, transparent 1.5px), linear-gradient(90deg, ${currentWallpaper.gridColor} 1.5px, transparent 1.5px)`,
-          backgroundSize: '40px 40px'
+        ref={desktopRef}
+        className="relative w-full h-full overflow-hidden select-none bg-black text-gray-300"
+        onMouseDown={(e) => {
+          if (e.target === e.currentTarget) {
+            setWindows(prev => prev.map(w => w.type === 'case_workspace' ? { ...w, isMinimized: true } : w));
+            setActiveWindowId(null);
+          }
         }}
-      />
-      <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[750px] h-[750px] rounded-full filter blur-[150px] pointer-events-none opacity-20"
         style={{
-          background: currentWallpaper.accentGlow,
-          transition: 'background 0.5s ease'
+          backgroundImage: customWallpaper || currentWallpaper.value,
+          backgroundColor: 'black',
+          backgroundSize: '100% 100%',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          transition: 'background-image 0.5s ease',
+          fontFamily: 'var(--font-mono)'
         }}
-      />
-
-      {/* Retro scanline screen flicker overlay */}
-      <div className="absolute inset-0 pointer-events-none bg-radial-vignette mix-blend-overlay opacity-30 z-50" />
-
-      {/* Top Menu Bar */}
-      <div className="absolute top-0 left-0 right-0 h-8 bg-black/60 backdrop-blur-md border-b border-[#39ff14]/15 flex items-center justify-between px-2 sm:px-4 z-[999] text-[10px]">
-        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-shrink-0">
-          <span className="font-bold tracking-wider text-[#39ff14] flex items-center gap-1.5 animate-pulse whitespace-nowrap">
-            <Shield size={12} />
-            <span className="hidden sm:inline">{t('dashboard.console_title')}</span>
-            <span className="sm:hidden">ORION</span>
-          </span>
-          <div className="h-3 w-[1px] bg-white/10 hidden sm:block" />
-          <button
-            onClick={handleStartDemo}
-            className="text-[9px] text-[#39FF14] hover:text-white uppercase tracking-wider transition-colors whitespace-nowrap animate-pulse flex items-center gap-1 ml-2 sm:ml-0"
-          >
-            <Play size={10} className="sm:hidden" />
-            <span className="hidden sm:inline">START DEMO</span>
-            <span className="sm:hidden">DEMO</span>
-          </button>
-          {!isMobile && (
-            <>
-              <div className="h-3 w-[1px] bg-white/10" />
-              <button
-                onClick={() => setShowWallpaperMenu(!showWallpaperMenu)}
-                className="text-[9px] text-gray-400 hover:text-white uppercase tracking-wider transition-colors whitespace-nowrap"
-              >
-                {t('dashboard.wallpaper')}
-              </button>
-            </>
-          )}
-          {isMobile && (
-            <button
-              onClick={() => setShowSidebarOnMobile(!showSidebarOnMobile)}
-              className={`text-[9px] uppercase tracking-wider transition-colors flex items-center gap-1 flex-shrink-0 ${showSidebarOnMobile ? 'text-[#39ff14] font-bold' : 'text-gray-400 hover:text-white'}`}
-            >
-              <Terminal size={10} /> {showSidebarOnMobile ? 'HUD ✕' : 'HUD'}
-            </button>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5 sm:gap-4 text-[9px] text-gray-400 font-medium pointer-events-auto flex-shrink-0">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: 'var(--bg-1)', border: '1px solid var(--struct-line)', padding: '2px 4px', borderRadius: 4, marginRight: 2 }}>
-            <button onClick={() => adjustFontSize(-0.1)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 10, cursor: 'pointer', padding: '2px 4px', fontFamily: 'var(--font-heading)', fontWeight: 'bold' }}>A-</button>
-            <button onClick={() => adjustFontSize(0)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 11, cursor: 'pointer', padding: '2px 4px', fontFamily: 'var(--font-heading)', fontWeight: 'bold' }}>A</button>
-            <button onClick={() => adjustFontSize(0.1)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', padding: '2px 4px', fontFamily: 'var(--font-heading)', fontWeight: 'bold' }}>A+</button>
-          </div>
-          <LanguageSwitcher />
-          {!isMobile && (
-            <>
-              <div className="h-3 w-[1px] bg-white/10" />
-              <span data-tutorial="profile-menu" className="whitespace-nowrap">{t('dashboard.badge_label')} <span className="text-[#39ff14] font-bold">{user?.badgeNumber}</span></span>
-              <div className="h-3 w-[1px] bg-white/10" />
-              <span className="flex items-center gap-1 text-[#39ff14] whitespace-nowrap">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14] animate-ping" /> {t('dashboard.core_ready')}
-              </span>
-            </>
-          )}
-          {isMobile && (
-            <span className="flex items-center gap-1 text-[#39ff14]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#39ff14] animate-ping" />
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Wallpaper backdrop click catcher */}
-      {showWallpaperMenu && (
+      >
+        {/* Background grid scanlines overlay */}
         <div
-          className="fixed inset-0 z-[999]"
-          onClick={() => setShowWallpaperMenu(false)}
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `linear-gradient(${currentWallpaper.gridColor} 1.5px, transparent 1.5px), linear-gradient(90deg, ${currentWallpaper.gridColor} 1.5px, transparent 1.5px)`,
+            backgroundSize: '40px 40px'
+          }}
         />
-      )}
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[750px] h-[750px] rounded-full filter blur-[150px] pointer-events-none opacity-20"
+          style={{
+            background: currentWallpaper.accentGlow,
+            transition: 'background 0.5s ease'
+          }}
+        />
 
-      {/* Wallpaper dropdown */}
-      {showWallpaperMenu && (
-        <div className="absolute top-9 left-40 bg-[#080d16]/95 border border-[#39ff14]/20 backdrop-blur-xl p-2 rounded shadow-2xl z-[1000] flex flex-col gap-1 w-44">
-          {WALLPAPERS.map((wp, idx) => (
+        {/* Retro scanline screen flicker overlay */}
+        <div className="absolute inset-0 pointer-events-none bg-radial-vignette mix-blend-overlay opacity-30 z-50" />
+
+        {/* Top Menu Bar */}
+        <TopBar
+          isDashboard={true}
+          isMobile={isMobile}
+          showSidebarOnMobile={showSidebarOnMobile}
+          setShowSidebarOnMobile={setShowSidebarOnMobile}
+          wallpaperIdx={wallpaperIdx}
+          setWallpaperIdx={setWallpaperIdx}
+          customWallpaper={customWallpaper}
+          setCustomWallpaper={setCustomWallpaper}
+          user={user}
+        />
+
+        {/* Shift-Click Multi-Select Action Bar HUD */}
+        {selectedCaseIds.length > 0 && (
+          <div
+            className="absolute top-14 left-1/2 -translate-x-1/2 bg-[#080d16]/95 border border-indigo-500/50 rounded-xl px-4 py-2 flex items-center gap-4 z-[99] shadow-2xl shadow-indigo-500/10 backdrop-blur-xl pointer-events-auto"
+          >
+            <span className="font-mono text-[9px] font-bold text-indigo-400 tracking-wider uppercase">
+              {selectedCaseIds.length} {selectedCaseIds.length === 1 ? t('dashboard.case_selected') : t('dashboard.cases_selected')}
+            </span>
+            <div className="h-3 w-[1px] bg-white/10" />
             <button
-              key={wp.name}
-              onClick={() => {
-                setCustomWallpaper(null);
-                setWallpaperIdx(idx);
-                setShowWallpaperMenu(false);
-              }}
-              className={`w-full text-left text-[10px] px-2 py-1.5 hover:bg-[#39ff14]/10 transition flex items-center justify-between ${wallpaperIdx === idx && !customWallpaper ? 'text-[#39ff14]' : 'text-gray-300'}`}
+              onClick={() => setDeleteConfirmCase({ id: 'multiple', title: `${selectedCaseIds.length} selected cases` })}
+              className="bg-red-500/15 border border-red-500 hover:bg-red-500/25 text-red-400 text-[9px] font-bold font-mono px-2 py-1 uppercase rounded transition-all flex items-center gap-1.5"
             >
-              <span>{wp.name}</span>
-              {wallpaperIdx === idx && !customWallpaper && <div className="w-1.5 h-1.5 rounded-full bg-[#39ff14]" />}
+              <X size={10} />
+              {t('dashboard.archive_selected')}
             </button>
-          ))}
-          {/* File Upload Input */}
-          <div className="border-t border-white/10 mt-1 pt-1">
-            <label className="w-full text-left text-[9px] px-2 py-1.5 text-gray-400 hover:text-white cursor-pointer transition flex items-center gap-1.5 uppercase font-bold">
-              <span>{t('dashboard.custom_file')}</span>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleWallpaperUpload}
-                className="hidden"
-              />
-            </label>
+            <button
+              onClick={() => setSelectedCaseIds([])}
+              className="text-gray-400 hover:text-white font-mono text-[9px] font-bold uppercase transition-colors"
+            >
+              {t('dashboard.clear_selection')}
+            </button>
           </div>
-          {/* Custom URL Input */}
-          <div className="border-t border-[#39ff14]/10 mt-1 pt-1 flex flex-col gap-1 px-2">
-            <span className="text-[7.5px] text-gray-500 font-mono">{t('dashboard.paste_url')}</span>
-            <input
-              type="text"
-              placeholder={t('dashboard.url_placeholder')}
-              onKeyDown={handleWallpaperUrlKeyDown}
-              className="w-full bg-black border border-white/10 text-gray-300 text-[8px] px-1 py-0.5 focus:border-[#39ff14] outline-none"
-            />
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* Shift-Click Multi-Select Action Bar HUD */}
-      {selectedCaseIds.length > 0 && (
-        <div 
-          className="absolute top-14 left-1/2 -translate-x-1/2 bg-[#080d16]/95 border border-indigo-500/50 rounded-xl px-4 py-2 flex items-center gap-4 z-[99] shadow-2xl shadow-indigo-500/10 backdrop-blur-xl pointer-events-auto"
+        {/* Scrollable Desktop Area for Folders */}
+        <div
+          className={`absolute top-12 bottom-20 left-6 ${isMobile ? 'right-6' : 'right-[440px]'} overflow-y-auto pointer-events-auto z-10 pr-2 custom-desktop-scrollbar`}
+          style={{ scrollbarWidth: 'thin' }}
         >
-          <span className="font-mono text-[9px] font-bold text-indigo-400 tracking-wider uppercase">
-            {selectedCaseIds.length} {selectedCaseIds.length === 1 ? t('dashboard.case_selected') : t('dashboard.cases_selected')}
-          </span>
-          <div className="h-3 w-[1px] bg-white/10" />
-          <button
-            onClick={() => setDeleteConfirmCase({ id: 'multiple', title: `${selectedCaseIds.length} selected cases` })}
-            className="bg-red-500/15 border border-red-500 hover:bg-red-500/25 text-red-400 text-[9px] font-bold font-mono px-2 py-1 uppercase rounded transition-all flex items-center gap-1.5"
-          >
-            <X size={10} />
-            {t('dashboard.archive_selected')}
-          </button>
-          <button
-            onClick={() => setSelectedCaseIds([])}
-            className="text-gray-400 hover:text-white font-mono text-[9px] font-bold uppercase transition-colors"
-          >
-            {t('dashboard.clear_selection')}
-          </button>
-        </div>
-      )}
-
-      {/* Scrollable Desktop Area for Folders */}
-      <div
-        className={`absolute top-12 bottom-20 left-6 ${isMobile ? 'right-6' : 'right-[440px]'} overflow-y-auto pointer-events-auto z-10 pr-2 custom-desktop-scrollbar`}
-        style={{ scrollbarWidth: 'thin' }}
-      >
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 pb-6 desktop-grid-container">
-          {/* Initialize Case Icon */}
-          <div
-            data-tutorial="init-case"
-            onClick={caseCreating ? undefined : handleCreateCase}
-            className={`flex flex-col items-center justify-center p-2 rounded border border-dashed border-[#39ff14]/30 bg-[#39ff14]/5 hover:bg-[#39ff14]/15 hover:border-[#39ff14] group transition-all duration-150 cursor-pointer pointer-events-auto text-center h-[110px] w-full max-w-[120px] mx-auto flex-shrink-0 ${caseCreating ? 'opacity-50 pointer-events-none' : ''}`}
-          >
-            <div className="w-10 h-10 flex items-center justify-center text-[#39ff14]">
-              {caseCreating ? (
-                <RefreshCw size={28} className="animate-spin" />
-              ) : (
-                <Plus size={32} className="group-hover:scale-110 transition-transform" />
-              )}
-            </div>
-            <div className="mt-1 flex items-center justify-center">
-              <span className="text-[11px] font-bold text-gray-300 tracking-wider group-hover:text-white uppercase line-clamp-2 leading-tight">
-                {t('dashboard.initialize')}
-              </span>
-              <FeatureInfoTooltip content={t('dashboard.init_tooltip', 'Creates a secure, isolated enclave to begin tracking a new investigation or entity.')} />
-            </div>
-          </div>
-
-          {/* Dynamic Case Folders */}
-          {sortedCases.map(c => {
-            const isAnalysisOpen = windows.some(w => w.id === `workspace-${c.caseId}`);
-            const isSelected = selectedCaseIds.includes(c.caseId);
-
-            return (
-              <div
-                key={c.caseId}
-                draggable={true}
-                onDragStart={(e) => handleDragStartCase(e, c.caseId)}
-                onDragEnd={() => setDraggedCaseId(null)}
-                onDragOver={(e) => { e.preventDefault(); }}
-                onDrop={(e) => handleDropCase(e, c.caseId)}
-                onClick={(e) => {
-                  setFocusedCaseId(c.caseId);
-                  if (e.shiftKey) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setSelectedCaseIds(prev => {
-                      if (prev.includes(c.caseId)) {
-                        return prev.filter(id => id !== c.caseId);
-                      } else {
-                        return [...prev, c.caseId];
-                      }
-                    });
-                  } else {
-                    openWindow(
-                      `workspace-${c.caseId}`,
-                      t('dashboard.case_workspace', { title: c.title }),
-                      'case_workspace',
-                      { caseId: c.caseId }
-                    );
-                  }
-                }}
-                onContextMenu={(e) => handleContextMenu(e, c.caseId, c.title)}
-                className={`case-folder-item flex flex-col items-center justify-center p-2 rounded border group transition-all duration-150 cursor-grab active:cursor-grabbing pointer-events-auto relative text-center select-none h-[110px] w-full max-w-[120px] mx-auto flex-shrink-0 ${focusedCaseId === c.caseId ? 'ring-1 ring-indigo-400/50' : ''} ${isSelected ? 'bg-indigo-500/20 border-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.35)]' : isAnalysisOpen ? 'bg-[#39ff14]/10 border-[#39ff14]/40' : 'bg-black/25 border-white/5 hover:bg-[#39ff14]/5 hover:border-[#39ff14]/20'}`}
-              >
-                {/* Selection Checkbox bubble */}
-                {(selectedCaseIds.length > 0 || isSelected) && (
-                  <div className="absolute top-1 left-1.5 flex items-center justify-center pointer-events-none">
-                    <div className={`w-3.5 h-3.5 border rounded flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-white/30 bg-black/50'}`}>
-                      {isSelected && (
-                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteCase(e, c.caseId, c.title);
-                  }}
-                  className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity p-0.5"
-                  title={t('dashboard.archive_tooltip')}
-                >
-                  <X size={10} />
-                </button>
-
-                <div className={`w-10 h-10 flex items-center justify-center ${isSelected ? 'text-indigo-400' : isAnalysisOpen ? 'text-[#39ff14]' : 'text-[#a855f7] group-hover:text-[#39ff14]'} transition-colors`}>
-                  <Folder size={36} className="group-hover:scale-105 transition-transform" />
-                </div>
-                <span className={`mt-1 text-[11px] font-semibold tracking-wider line-clamp-2 uppercase leading-tight transition-colors ${isSelected ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
-                  {transliterate(c.title.replace('Investigation', 'FILE'))}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Backdrop overlay for mobile sidebar */}
-      {isMobile && showSidebarOnMobile && (
-        <div
-          className="fixed inset-0 bg-black/65 backdrop-blur-sm z-[990] pointer-events-auto"
-          onClick={() => setShowSidebarOnMobile(false)}
-        />
-      )}
-
-      {/* RIGHT SIDE WIDGETS HUD (Custom panels / Mobile Drawer) */}
-      <div
-        className={
-          isMobile
-            ? `fixed top-12 right-0 bottom-20 w-full max-w-[420px] bg-[#050b14]/95 border-l border-[#39ff14]/20 p-4 flex flex-col gap-4 z-[991] transition-transform duration-300 pointer-events-auto select-none overflow-y-auto ${showSidebarOnMobile ? 'translate-x-0 shadow-[0_0_50px_rgba(57,255,20,0.15)]' : 'translate-x-full'}`
-            : "absolute top-12 right-6 bottom-20 w-[420px] flex flex-col gap-4 pointer-events-none z-10 select-none"
-        }
-      >
-
-        {/* Animated Cyber Link graph */}
-        <div className="w-full bg-black/40 border border-white/5 backdrop-blur-md rounded-xl p-3 flex flex-col gap-2 pointer-events-auto">
-          <div className="flex items-center justify-between border-b border-white/5 pb-1">
-            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-              <Network size={12} className="text-[#39ff14]" /> {t('dashboard.cyber_link')}
-            </span>
-            <span className="text-[7.5px] text-[#39ff14] font-semibold uppercase tracking-wider">
-              {(() => {
-                const lastAccessedCase = cases.find(c => c.caseId === lastAccessedCaseId);
-                return lastAccessedCase ? transliterate(lastAccessedCase.title.replace('Investigation', 'FILE').toUpperCase()) : t('dashboard.no_active_mesh');
-              })()}
-            </span>
-          </div>
-          <div className="w-full h-64 flex items-center justify-center relative overflow-hidden bg-black/20 rounded">
-            {renderMatrixGraph()}
-          </div>
-        </div>
-
-        {/* Live log Terminal */}
-        <div data-tutorial="hud-terminal" className="w-full flex-1 bg-black/40 border border-white/5 backdrop-blur-md rounded-xl p-3 flex flex-col gap-2 pointer-events-auto overflow-hidden">
-          <div className="flex items-center justify-between border-b border-white/5 pb-1">
-            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-              <Terminal size={12} className="text-[#a855f7]" /> {t('dashboard.audit_stream')}
-            </span>
-          </div>
-
-          <div className="flex-1 overflow-auto font-mono text-[8px] text-gray-400 flex flex-col gap-1 select-text scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-            {hudLogs.map((log, idx) => (
-              <div key={idx} className="whitespace-nowrap flex items-start gap-1">
-                <span className="text-[#39ff14]">&gt;</span>
-                <span className={log.includes('AUDIT') ? 'text-[#39ff14]' : 'text-gray-300'}>{transliterate(log)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </div>
-
-      {/* DRAGGABLE WINDOWS RENDERER */}
-      {windows.map(win => {
-        if (win.isMinimized) return null;
-
-        const isFocused = activeWindowId === win.id;
-
-        return (
-          <div
-            key={win.id}
-            onClick={() => focusWindow(win.id)}
-            className={`absolute flex flex-col border shadow-2xl transition-all duration-100 bg-[#04080e]/95 backdrop-blur-xl ${isFocused ? 'border-[#39ff14] shadow-[#39ff14]/5' : 'border-white/10 shadow-black/80'}`}
-            style={{
-              left: (win.isMaximized || isMobile) ? 0 : win.x,
-              top: (win.isMaximized || isMobile) ? '2rem' : win.y,
-              width: (win.isMaximized || isMobile) ? '100%' : win.width,
-              height: (win.isMaximized || isMobile) ? (isMobile ? 'calc(100% - 2rem - 120px)' : 'calc(100% - 2rem)') : win.height,
-              zIndex: win.zIndex
-            }}
-          >
-            {/* Window Header / Title Bar */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 pb-6 desktop-grid-container">
+            {/* Initialize Case Icon */}
             <div
-              onMouseDown={(e) => handleDragStart(e, win.id)}
-              onDoubleClick={() => toggleMaximize(win.id)}
-              className={`h-7 px-3 flex items-center justify-between cursor-move select-none border-b window-drag-surface ${isFocused ? 'bg-[#39ff14]/5 border-[#39ff14]/20 text-[#39ff14]' : 'bg-[#04080e]/40 border-white/5 text-gray-400'}`}
+              data-tutorial="init-case"
+              onClick={caseCreating ? undefined : handleCreateCase}
+              className={`flex flex-col items-center justify-center p-2 rounded border border-dashed border-[#39ff14]/30 bg-[#39ff14]/5 hover:bg-[#39ff14]/15 hover:border-[#39ff14] group transition-all duration-150 cursor-pointer pointer-events-auto text-center h-[110px] w-full max-w-[120px] mx-auto flex-shrink-0 ${caseCreating ? 'opacity-50 pointer-events-none' : ''}`}
             >
-              <div className="flex items-center gap-2 pointer-events-auto">
-                <Folder size={12} className="flex-shrink-0" />
-                <span className="text-[9px] font-bold tracking-wider uppercase truncate max-w-[400px]">
-                  {(() => {
-                    if (win.type === 'case_workspace' && win.caseId) {
-                      const targetCase = cases.find(c => c.caseId === win.caseId);
-                      return targetCase ? t('dashboard.case_workspace', { title: transliterate(targetCase.title) }) : transliterate(win.title);
-                    }
-                    return transliterate(win.title);
-                  })()}
+              <div className="w-10 h-10 flex items-center justify-center text-[#39ff14]">
+                {caseCreating ? (
+                  <RefreshCw size={28} className="animate-spin" />
+                ) : (
+                  <Plus size={32} className="group-hover:scale-110 transition-transform" />
+                )}
+              </div>
+              <div className="mt-1 flex items-center justify-center">
+                <span className="text-[11px] font-bold text-gray-300 tracking-wider group-hover:text-white uppercase line-clamp-2 leading-tight">
+                  {t('dashboard.initialize')}
                 </span>
-                {win.type === 'case_workspace' && win.caseId && (
+                <FeatureInfoTooltip content="Creates a secure, isolated enclave to begin tracking a new investigation or entity." />
+              </div>
+            </div>
+
+            {/* Dynamic Case Folders */}
+            {sortedCases.map(c => {
+              const isAnalysisOpen = windows.some(w => w.id === `workspace-${c.caseId}`);
+              const isSelected = selectedCaseIds.includes(c.caseId);
+
+              return (
+                <div
+                  key={c.caseId}
+                  draggable={true}
+                  onDragStart={(e) => handleDragStartCase(e, c.caseId)}
+                  onDragEnd={() => setDraggedCaseId(null)}
+                  onDragOver={(e) => { e.preventDefault(); }}
+                  onDrop={(e) => handleDropCase(e, c.caseId)}
+                  onClick={(e) => {
+                    setFocusedCaseId(c.caseId);
+                    if (e.shiftKey) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setSelectedCaseIds(prev => {
+                        if (prev.includes(c.caseId)) {
+                          return prev.filter(id => id !== c.caseId);
+                        } else {
+                          return [...prev, c.caseId];
+                        }
+                      });
+                    } else {
+                      openWindow(
+                        `workspace-${c.caseId}`,
+                        `Case Workspace: ${c.title}`,
+                        'case_workspace',
+                        { caseId: c.caseId }
+                      );
+                    }
+                  }}
+                  onContextMenu={(e) => handleContextMenu(e, c.caseId, c.title)}
+                  className={`case-folder-item flex flex-col items-center justify-center p-2 rounded border group transition-all duration-150 cursor-grab active:cursor-grabbing pointer-events-auto relative text-center select-none h-[110px] w-full max-w-[120px] mx-auto flex-shrink-0 ${focusedCaseId === c.caseId ? 'ring-1 ring-indigo-400/50' : ''} ${isSelected ? 'bg-indigo-500/20 border-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.35)]' : isAnalysisOpen ? 'bg-[#39ff14]/10 border-[#39ff14]/40' : 'bg-black/25 border-white/5 hover:bg-[#39ff14]/5 hover:border-[#39ff14]/20'}`}
+                >
+                  {/* Selection Checkbox bubble */}
+                  {(selectedCaseIds.length > 0 || isSelected) && (
+                    <div className="absolute top-1 left-1.5 flex items-center justify-center pointer-events-none">
+                      <div className={`w-3.5 h-3.5 border rounded flex items-center justify-center transition-all ${isSelected ? 'bg-indigo-500 border-indigo-500 text-white' : 'border-white/30 bg-black/50'}`}>
+                        {isSelected && (
+                          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   <button
-                    onMouseDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
-                      const targetCase = cases.find(c => c.caseId === win.caseId);
-                      const title = targetCase ? targetCase.title : win.title.replace('Case Workspace: ', '');
-                      handleTriggerRename(win.caseId!, title);
+                      handleDeleteCase(e, c.caseId, c.title);
                     }}
-                    className="p-1 text-gray-400 hover:text-[#39ff14] hover:bg-white/5 transition rounded flex items-center justify-center"
-                    title={t('dashboard.rename_dossier')}
+                    className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity p-0.5"
+                    title={t('dashboard.archive_tooltip')}
                   >
-                    <Edit size={10} />
+                    <X size={10} />
                   </button>
-                )}
-              </div>
 
-              {/* Window controls */}
-              <div className="flex items-center gap-1.5 pointer-events-auto">
-                <button
-                  onClick={(e) => { e.stopPropagation(); toggleMinimize(win.id); }}
-                  className="p-1 text-gray-400 hover:text-white hover:bg-white/5 transition"
-                  title={t('dashboard.minimize_window', 'MINIMIZE')}
-                >
-                  <Minus size={10} />
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); toggleMaximize(win.id); }}
-                  className="p-1 text-gray-400 hover:text-white hover:bg-white/5 transition"
-                  title={win.isMaximized ? t('dashboard.restore_window') : t('dashboard.maximize_window')}
-                >
-                  {win.isMaximized ? <Minimize2 size={10} /> : <Maximize2 size={10} />}
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); closeWindow(win.id); }}
-                  className="p-1 text-gray-400 hover:text-red-400 hover:bg-red-500/10 transition"
-                  title={t('dashboard.close_window')}
-                >
-                  <X size={10} />
-                </button>
-              </div>
-            </div>
-
-            {/* Window Content */}
-            <div className="flex-1 overflow-hidden relative flex flex-col p-4">
-
-
-              {win.type === 'case_workspace' && <CaseWindow win={win as { id: string; type: string; caseId: string; activeTab?: 'intake' | 'graph' | 'dossier' | 'report' }} />}
-              {win.type === 'profile' && <ProfileWindow />}
-              {win.type === 'cases_explorer' && <ExplorerWindow win={win} />}
-              {win.type === 'cross_correlate' && <CrossCorrelationWindow win={win} />}
-
-              {win.type === 'geo_map' && (
-                <div className="flex-1 relative w-full h-full min-h-0">
-                  <GeoMapWindow caseId={win.caseId || 'global'} />
+                  <div className={`w-10 h-10 flex items-center justify-center ${isSelected ? 'text-indigo-400' : isAnalysisOpen ? 'text-[#39ff14]' : 'text-[#a855f7] group-hover:text-[#39ff14]'} transition-colors`}>
+                    <Folder size={36} className="group-hover:scale-105 transition-transform" />
+                  </div>
+                  <span className={`mt-1 text-[11px] font-semibold tracking-wider line-clamp-2 uppercase leading-tight transition-colors ${isSelected ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
+                    {transliterate(c.title.replace('Investigation', 'FILE'))}
+                  </span>
                 </div>
-              )}
-            </div>
-
-            {/* Directional Resize Handles (4 edges + 4 corners) */}
-            {!win.isMaximized && (
-              <>
-                {/* Top edge */}
-                <div
-                  onMouseDown={(e) => handleResizeStart(e, win.id, 'n')}
-                  className="absolute top-0 left-3 right-3 h-1.5 cursor-ns-resize hover:bg-[#39ff14]/30 z-30"
-                />
-                {/* Bottom edge */}
-                <div
-                  onMouseDown={(e) => handleResizeStart(e, win.id, 's')}
-                  className="absolute bottom-0 left-3 right-3 h-1.5 cursor-ns-resize hover:bg-[#39ff14]/30 z-30"
-                />
-                {/* Left edge */}
-                <div
-                  onMouseDown={(e) => handleResizeStart(e, win.id, 'w')}
-                  className="absolute top-3 bottom-3 left-0 w-1.5 cursor-ew-resize hover:bg-[#39ff14]/30 z-30"
-                />
-                {/* Right edge */}
-                <div
-                  onMouseDown={(e) => handleResizeStart(e, win.id, 'e')}
-                  className="absolute top-3 bottom-3 right-0 w-1.5 cursor-ew-resize hover:bg-[#39ff14]/30 z-30"
-                />
-
-                {/* Top-Left corner */}
-                <div
-                  onMouseDown={(e) => handleResizeStart(e, win.id, 'nw')}
-                  className="absolute top-0 left-0 w-3 h-3 cursor-nwse-resize hover:bg-[#39ff14]/50 z-30"
-                />
-                {/* Top-Right corner */}
-                <div
-                  onMouseDown={(e) => handleResizeStart(e, win.id, 'ne')}
-                  className="absolute top-0 right-0 w-3 h-3 cursor-nesw-resize hover:bg-[#39ff14]/50 z-30"
-                />
-                {/* Bottom-Left corner */}
-                <div
-                  onMouseDown={(e) => handleResizeStart(e, win.id, 'sw')}
-                  className="absolute bottom-0 left-0 w-3 h-3 cursor-nesw-resize hover:bg-[#39ff14]/50 z-30"
-                />
-                {/* Bottom-Right corner */}
-                <div
-                  onMouseDown={(e) => handleResizeStart(e, win.id, 'se')}
-                  className="absolute bottom-0 right-0 w-3 h-3 cursor-nwse-resize hover:bg-[#39ff14]/50 z-30"
-                />
-              </>
-            )}
-          </div>
-        );
-      })}
-
-      {/* On mobile: open window task buttons float ABOVE the dock in their own row */}
-      {isMobile && windows.length > 0 && (
-        <div className="absolute bottom-20 left-0 right-0 flex items-center justify-center px-3 z-[998]">
-          <div className="flex gap-2 overflow-x-auto max-w-full pb-1" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
-            {windows.map(w => {
-              const isOpen = !w.isMinimized;
-              return (
-                <button
-                  key={`task-mobile-${w.id}`}
-                  onClick={() => toggleMinimize(w.id)}
-                  className={`flex-shrink-0 px-3 h-8 rounded-xl transition-all flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-wider ${isOpen ? 'bg-[#39ff14]/10 border border-[#39ff14]/30 text-[#39ff14]' : 'bg-white/5 border border-white/5 text-gray-500'}`}
-                >
-                  <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isOpen ? 'bg-[#39ff14] animate-pulse' : 'bg-gray-600'}`} />
-                  <span className="max-w-[80px] truncate"><Transliterate>{w.title.replace('Case Workspace: ', '').replace('Case Analysis: ', '')}</Transliterate></span>
-                </button>
               );
             })}
           </div>
         </div>
-      )}
 
-      {/* Floating System Dock (Taskbar) */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 h-14 bg-[#080d16]/75 border border-white/10 backdrop-blur-xl rounded-2xl flex items-center px-2 sm:px-4 gap-2 sm:gap-3 z-[999] shadow-2xl max-w-[calc(100vw-2rem)]">
-        <button
-          onClick={handleCreateCase}
-          disabled={caseCreating}
-          title={t('dashboard.create_case')}
-          className="w-10 h-10 rounded-xl hover:bg-white/5 active:bg-white/10 transition-colors flex items-center justify-center text-gray-300 hover:text-[#39ff14] disabled:opacity-50 disabled:pointer-events-none"
-        >
-          {caseCreating ? <RefreshCw size={20} className="animate-spin" /> : <Plus size={20} />}
-        </button>
-
-        <div className="h-6 w-[1px] bg-white/10" />
-
-        {/* Launchers */}
-        <button
-          onClick={() => openWindow('cases_explorer', t('dashboard.explorer_title'), 'cases_explorer')}
-          title={t('dashboard.explorer_tooltip')}
-          className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'cases_explorer') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
-        >
-          <Compass size={20} />
-        </button>
-
-        <button
-          onClick={() => openWindow('cross_correlate_window', t('dashboard.correlator_title'), 'cross_correlate')}
-          title={t('dashboard.correlator_tooltip')}
-          data-tutorial="cross-correlate"
-          className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'cross_correlate_window') ? 'text-[#a855f7] bg-[#a855f7]/10 border border-[#a855f7]/30' : 'text-gray-300 hover:text-[#a855f7] hover:bg-white/5'}`}
-        >
-          <Network size={20} />
-        </button>
-
-        <button
-          onClick={() => openWindow('profile_window', t('dashboard.profile_title'), 'profile')}
-          title={t('dashboard.profile_tooltip')}
-          className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'profile_window') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
-        >
-          <User size={20} />
-        </button>
-
-        <NotificationPanel />
-
-        {/* On desktop: window task buttons stay inline in the dock */}
-        {!isMobile && windows.length > 0 && <div className="h-6 w-[1px] bg-white/10" />}
-
-        {!isMobile && windows.map(w => {
-          const isOpen = !w.isMinimized;
-          return (
-            <button
-              key={`task-${w.id}`}
-              onClick={() => toggleMinimize(w.id)}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                setDockContextMenu({ x: e.clientX, y: e.clientY - 50, windowId: w.id, title: w.title });
-              }}
-              title={w.title}
-              className={`px-3 h-10 rounded-xl transition-all flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider ${isOpen ? 'bg-[#39ff14]/10 border border-[#39ff14]/30 text-[#39ff14]' : 'bg-white/5 border border-white/5 text-gray-500 hover:text-white'}`}
-            >
-              <div className={`w-1.5 h-1.5 rounded-full ${isOpen ? 'bg-[#39ff14] animate-pulse' : 'bg-gray-600'}`} />
-              <span className="max-w-[70px] truncate"><Transliterate>{w.title.replace('Case Workspace: ', '').replace('Case Analysis: ', '')}</Transliterate></span>
-            </button>
-          );
-        })}
-
-        {!isMobile && windows.length > 0 && <div className="h-6 w-[1px] bg-white/10" />}
-
-        {/* Disconnect */}
-        <button
-          onClick={() => setShowLogoutConfirm(true)}
-          title={t('dashboard.logout_tooltip')}
-          className="w-10 h-10 rounded-xl hover:bg-red-500/10 active:bg-red-500/20 transition-colors flex items-center justify-center text-gray-500 hover:text-red-400"
-        >
-          <LogOut size={20} />
-        </button>
-      </div>
-
-      {/* Custom Context Menu, Rename Modal, and Delete Confirmation Modal */}
-      {contextMenu && (
-        <div
-          onClick={() => setContextMenu(null)}
-          onContextMenu={(e) => { e.preventDefault(); setContextMenu(null); }}
-          className="fixed inset-0 z-[100000]"
-        >
+        {/* Backdrop overlay for mobile sidebar */}
+        {isMobile && showSidebarOnMobile && (
           <div
-            style={{
-              position: 'fixed',
-              left: contextMenu.x,
-              top: contextMenu.y,
-            }}
-            className="bg-[#04080e]/95 border border-white/10 p-1 flex flex-col min-w-[130px] shadow-2xl backdrop-blur-xl z-[100001]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => {
-                setContextMenu(null);
-                handleTriggerRename(contextMenu.caseId, contextMenu.title);
-              }}
-              className="text-left font-mono text-[9px] font-bold text-gray-300 hover:bg-[#39ff14]/10 hover:text-[#39ff14] px-3 py-2 w-full transition-colors uppercase tracking-wider"
-            >
-              {t('modals.rename_dossier_ctx')}
-            </button>
-            <button
-              onClick={() => {
-                setContextMenu(null);
-                if (selectedCaseIds.includes(contextMenu.caseId)) {
-                  setDeleteConfirmCase({ id: 'multiple', title: `${selectedCaseIds.length} selected cases` });
-                } else {
-                  setDeleteConfirmCase({ id: contextMenu.caseId, title: contextMenu.title });
-                }
-              }}
-              className="text-left font-mono text-[9px] font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 px-3 py-2 w-full transition-colors uppercase tracking-wider"
-            >
-              {selectedCaseIds.includes(contextMenu.caseId) ? t('modals.archive_selected_ctx', 'Archive Selected Cases') : t('modals.delete_dossier_ctx')}
-            </button>
-          </div>
-        </div>
-      )}
+            className="fixed inset-0 bg-black/65 backdrop-blur-sm z-[990] pointer-events-auto"
+            onClick={() => setShowSidebarOnMobile(false)}
+          />
+        )}
 
-      {/* Dock Window Context Menu */}
-      {dockContextMenu && (
-        <div
-          onClick={() => setDockContextMenu(null)}
-          onContextMenu={(e) => { e.preventDefault(); setDockContextMenu(null); }}
-          className="fixed inset-0 z-[100000]"
-        >
-          <div
-            style={{
-              position: 'fixed',
-              left: dockContextMenu.x,
-              top: dockContextMenu.y,
-            }}
-            className="bg-[#04080e]/95 border border-white/10 p-1 flex flex-col min-w-[130px] shadow-2xl backdrop-blur-xl z-[100001]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => {
-                setDockContextMenu(null);
-                closeWindow(dockContextMenu.windowId);
-              }}
-              className="text-left font-mono text-[9px] font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 px-3 py-2 w-full transition-colors uppercase tracking-wider"
-            >
-              {t('modals.close_window', 'CLOSE WINDOW')}
-            </button>
-          </div>
-        </div>
-      )}
+        {/* RIGHT SIDE WIDGETS HUD (Custom panels / Mobile Drawer) */}
+        <HUDPanel
+          isMobile={isMobile}
+          showSidebarOnMobile={showSidebarOnMobile}
+          setShowSidebarOnMobile={setShowSidebarOnMobile}
+          lastAccessedCaseId={lastAccessedCaseId}
+          cases={cases}
+          transliterate={transliterate}
+          hudLogs={hudLogs}
+          renderMatrixGraph={renderMatrixGraph}
+        />
 
-      {renameCaseState && (
-        <div className="fixed inset-0 bg-black/80 z-[99999] flex items-center justify-center backdrop-blur-sm">
-          <div className="bg-[#04080e]/95 border border-[#39ff14] p-6 w-[360px] flex flex-col gap-4 shadow-2xl shadow-[#39ff14]/5 backdrop-blur-xl">
-            <div className="font-mono text-[10px] font-bold text-[#39ff14] tracking-widest uppercase pb-2 border-b border-white/5">
-              {t('modals.rename_title')}
+        {/* DRAGGABLE WINDOWS RENDERER */}
+        {windows.map(win => (
+          <DesktopWindow
+            key={win.id}
+            win={win}
+            activeWindowId={activeWindowId}
+            isMobile={isMobile}
+            focusWindow={focusWindow}
+            handleDragStart={handleDragStart}
+            toggleMaximize={toggleMaximize}
+            toggleMinimize={toggleMinimize}
+            closeWindow={closeWindow}
+            handleResizeStart={handleResizeStart}
+            handleTriggerRename={handleTriggerRename}
+            cases={cases}
+          />
+        ))}
+
+        {/* On mobile: open window task buttons float ABOVE the dock in their own row */}
+        {isMobile && windows.length > 0 && (
+          <div className="absolute bottom-20 left-0 right-0 flex items-center justify-center px-3 z-[998]">
+            <div className="flex gap-2 overflow-x-auto max-w-full pb-1" style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}>
+              {windows.map(w => {
+                const isOpen = !w.isMinimized;
+                return (
+                  <button
+                    key={`task-mobile-${w.id}`}
+                    onClick={() => toggleMinimize(w.id)}
+                    className={`flex-shrink-0 px-3 h-8 rounded-xl transition-all flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-wider ${isOpen ? 'bg-[#39ff14]/10 border border-[#39ff14]/30 text-[#39ff14]' : 'bg-white/5 border border-white/5 text-gray-500'}`}
+                  >
+                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isOpen ? 'bg-[#39ff14] animate-pulse' : 'bg-gray-600'}`} />
+                    <span className="max-w-[80px] truncate"><Transliterate>{w.title.replace('Case Workspace: ', '').replace('Case Analysis: ', '')}</Transliterate></span>
+                  </button>
+                );
+              })}
             </div>
-            <div className="flex flex-col gap-2">
-              <span className="font-mono text-[8px] text-gray-500 uppercase tracking-wider">{t('modals.new_title_label')}</span>
-              <input
-                type="text"
-                value={renameCaseState.newTitle}
-                onChange={(e) => setRenameCaseState({ ...renameCaseState, newTitle: e.target.value })}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSaveRename();
-                  if (e.key === 'Escape') setRenameCaseState(null);
+          </div>
+        )}
+
+        {/* Floating System Dock (Taskbar) */}
+        <SystemDock
+          isMobile={isMobile}
+          windows={windows}
+          caseCreating={caseCreating}
+          handleCreateCase={handleCreateCase}
+          openWindow={openWindow}
+          toggleMinimize={toggleMinimize}
+          setDockContextMenu={setDockContextMenu}
+          setShowLogoutConfirm={setShowLogoutConfirm}
+        />
+
+        {/* Custom Context Menu, Rename Modal, and Delete Confirmation Modal */}
+        {contextMenu && (
+          <div
+            onClick={() => setContextMenu(null)}
+            onContextMenu={(e) => { e.preventDefault(); setContextMenu(null); }}
+            className="fixed inset-0 z-[100000]"
+          >
+            <div
+              style={{
+                position: 'fixed',
+                left: contextMenu.x,
+                top: contextMenu.y,
+              }}
+              className="bg-[#04080e]/95 border border-white/10 p-1 flex flex-col min-w-[130px] shadow-2xl backdrop-blur-xl z-[100001]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => {
+                  setContextMenu(null);
+                  handleTriggerRename(contextMenu.caseId, contextMenu.title);
                 }}
-                className="bg-black/40 border border-white/10 text-gray-100 text-xs px-3 py-2 rounded focus:border-[#39ff14] outline-none font-mono w-full transition-all"
-                autoFocus
-              />
-            </div>
-            <div className="flex justify-end gap-2.5 pt-3 border-t border-white/5 mt-2">
-              <button
-                onClick={() => setRenameCaseState(null)}
-                className="px-3.5 py-1.5 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase bg-transparent"
+                className="text-left font-mono text-[9px] font-bold text-gray-300 hover:bg-[#39ff14]/10 hover:text-[#39ff14] px-3 py-2 w-full transition-colors uppercase tracking-wider"
               >
-                {t('modals.cancel')}
-              </button>
-              <button
-                onClick={handleSaveRename}
-                className="px-3.5 py-1.5 bg-[#39ff14]/15 border border-[#39ff14] hover:bg-[#39ff14]/25 text-[#39ff14] rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase"
-              >
-                {t('modals.save_changes')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {deleteConfirmCase && (
-        <div className="fixed inset-0 bg-black/80 z-[99999] flex items-center justify-center backdrop-blur-sm">
-          <div className="bg-[#04080e]/95 border border-red-500 p-6 w-[360px] flex flex-col gap-4 shadow-2xl shadow-red-500/5 backdrop-blur-xl">
-            <div className="font-mono text-[10px] font-bold text-red-500 tracking-widest uppercase pb-2 border-b border-white/5">
-              {deleteConfirmCase.id === 'multiple' ? t('modals.confirm_delete_multiple_title', 'ARCHIVE MULTIPLE DOSSIERS') : t('modals.confirm_delete_title')}
-            </div>
-            <div className="font-mono text-[10px] text-gray-400 leading-relaxed">
-              {deleteConfirmCase.id === 'multiple' ? t('modals.confirm_delete_multiple_body', 'Are you sure you want to permanently archive the selected dossiers?') : (
-                <>
-                  {t('modals.confirm_delete_body')} <span className="text-white font-bold">"{deleteConfirmCase.title}"</span>?
-                </>
-              )}
-              <br /><br />
-              {t('modals.confirm_delete_warning')}
-            </div>
-            <div className="flex justify-end gap-2.5 pt-3 border-t border-white/5 mt-2">
-              <button
-                onClick={() => setDeleteConfirmCase(null)}
-                className="px-3.5 py-1.5 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase bg-transparent"
-              >
-                {t('modals.cancel')}
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                className="px-3.5 py-1.5 bg-red-500/10 border border-red-500 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase"
-              >
-                {deleteConfirmCase.id === 'multiple' ? t('modals.archive_selected') : t('modals.delete_dossier')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 bg-black/80 z-[99999] flex items-center justify-center backdrop-blur-sm">
-          <div className="bg-[#04080e]/95 border border-red-500 p-6 w-[360px] flex flex-col gap-4 shadow-2xl shadow-red-500/5 backdrop-blur-xl">
-            <div className="font-mono text-[10px] font-bold text-red-500 tracking-widest uppercase pb-2 border-b border-white/5">
-              {t('modals.confirm_disconnect_title')}
-            </div>
-            <div className="font-mono text-[10px] text-gray-400 leading-relaxed">
-              {t('modals.confirm_disconnect_body')}
-            </div>
-            <div className="flex justify-end gap-2.5 pt-3 border-t border-white/5 mt-2">
-              <button
-                onClick={() => setShowLogoutConfirm(false)}
-                className="px-3.5 py-1.5 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase bg-transparent"
-              >
-                {t('modals.cancel')}
+                {t('modals.rename_dossier_ctx')}
               </button>
               <button
                 onClick={() => {
-                  setShowLogoutConfirm(false);
-                  logout();
-                  window.location.href = '/';
+                  setContextMenu(null);
+                  if (selectedCaseIds.includes(contextMenu.caseId)) {
+                    setDeleteConfirmCase({ id: 'multiple', title: `${selectedCaseIds.length} selected cases` });
+                  } else {
+                    setDeleteConfirmCase({ id: contextMenu.caseId, title: contextMenu.title });
+                  }
                 }}
-                className="px-3.5 py-1.5 bg-red-500/10 border border-red-500 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase"
+                className="text-left font-mono text-[9px] font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 px-3 py-2 w-full transition-colors uppercase tracking-wider"
               >
-                {t('modals.disconnect')}
+                {selectedCaseIds.includes(contextMenu.caseId) ? t('modals.archive_selected_ctx', 'Archive Selected Cases') : t('modals.delete_dossier_ctx')}
               </button>
             </div>
           </div>
-        </div>
-      )}
-      <TutorialOverlay />
-      <DemoTour />
-    </div>
+        )}
+
+        {/* Dock Window Context Menu */}
+        {dockContextMenu && (
+          <div
+            onClick={() => setDockContextMenu(null)}
+            onContextMenu={(e) => { e.preventDefault(); setDockContextMenu(null); }}
+            className="fixed inset-0 z-[100000]"
+          >
+            <div
+              style={{
+                position: 'fixed',
+                left: dockContextMenu.x,
+                top: dockContextMenu.y,
+              }}
+              className="bg-[#04080e]/95 border border-white/10 p-1 flex flex-col min-w-[130px] shadow-2xl backdrop-blur-xl z-[100001]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => {
+                  setDockContextMenu(null);
+                  closeWindow(dockContextMenu.windowId);
+                }}
+                className="text-left font-mono text-[9px] font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 px-3 py-2 w-full transition-colors uppercase tracking-wider"
+              >
+                {t('modals.close_window', 'CLOSE WINDOW')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <DashboardModals
+          renameCaseState={renameCaseState}
+          setRenameCaseState={setRenameCaseState}
+          handleSaveRename={handleSaveRename}
+          deleteConfirmCase={deleteConfirmCase}
+          setDeleteConfirmCase={setDeleteConfirmCase}
+          handleConfirmDelete={handleConfirmDelete}
+          showLogoutConfirm={showLogoutConfirm}
+          setShowLogoutConfirm={setShowLogoutConfirm}
+          logout={logout}
+        />
+        <TutorialOverlay />
+        <DemoTour />
+      </div>
     </DashboardContext.Provider>
   );
 }

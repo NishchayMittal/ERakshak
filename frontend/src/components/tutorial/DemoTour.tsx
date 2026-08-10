@@ -691,7 +691,7 @@ export function DemoTour() {
                 </div>
 
                 {/* Typewriter text */}
-                <p className="text-sm leading-relaxed" style={{ color: 'rgba(230,237,243,0.88)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                <p className="text-sm leading-relaxed" style={{ color: 'rgba(230,237,243,0.88)', fontFamily: 'var(--font-mono)', fontSize: "calc(12px * var(--font-scale))" }}>
                   <TypewriterText key={currentStep.id} text={currentStep.message} />
                 </p>
               </div>

@@ -4,9 +4,6 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  server: {
-    allowedHosts: ['social-pens-relax.loca.lt', 'localhost', '127.0.0.1']
-  },
   optimizeDeps: {
     include: ['cytoscape', 'cytoscape-fcose', 'cose-base', 'cytoscape-cola'],
   },

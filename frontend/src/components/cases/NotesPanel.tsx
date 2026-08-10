@@ -50,17 +50,17 @@ export default function NotesPanel({ caseId }: NotesPanelProps) {
         flexShrink: 0,
       }}>
         <div style={{
-          fontFamily: 'var(--font-heading)', fontSize: 10,
+          fontFamily: 'var(--font-heading)', fontSize: "calc(10px * var(--font-scale))",
           color: 'var(--accent-primary)', letterSpacing: '0.2em',
           textTransform: 'uppercase', fontWeight: 700,
           display: 'flex', alignItems: 'center', gap: 8,
         }}>
-          <span style={{ fontSize: 14, color: 'var(--accent-primary)', lineHeight: 1 }}>⌐</span>
+          <span style={{ fontSize: "calc(14px * var(--font-scale))", color: 'var(--accent-primary)', lineHeight: 1 }}>⌐</span>
           {t('notes.title')}
-          <span style={{ fontSize: 14, color: 'var(--accent-primary)', lineHeight: 1, transform: 'scaleX(-1)', display: 'inline-block' }}>⌐</span>
+          <span style={{ fontSize: "calc(14px * var(--font-scale))", color: 'var(--accent-primary)', lineHeight: 1, transform: 'scaleX(-1)', display: 'inline-block' }}>⌐</span>
         </div>
         <div style={{
-          fontFamily: 'var(--font-mono)', fontSize: 8,
+          fontFamily: 'var(--font-mono)', fontSize: "calc(8px * var(--font-scale))",
           color: 'var(--text-muted)', marginTop: 4, letterSpacing: '0.08em',
         }}>
           {t('notes.subtitle')}
@@ -76,10 +76,10 @@ export default function NotesPanel({ caseId }: NotesPanelProps) {
           display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
           flexShrink: 0,
         }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{t('notes.tags')}</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(8px * var(--font-scale))", color: 'var(--text-muted)', textTransform: 'uppercase' }}>{t('notes.tags')}</span>
           {activeCase.tags.map((t) => (
             <span key={t} style={{
-              fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--accent-primary)',
+              fontFamily: 'var(--font-mono)', fontSize: "calc(8px * var(--font-scale))", color: 'var(--accent-primary)',
               background: 'rgba(0,255,194,0.05)', border: '1px solid rgba(0,255,194,0.15)',
               padding: '2px 6px',
             }}>
@@ -93,7 +93,7 @@ export default function NotesPanel({ caseId }: NotesPanelProps) {
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px' }}>
         {notes.length === 0 ? (
           <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: 9,
+            fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))",
             color: 'var(--text-muted)', padding: '24px 0', textAlign: 'center',
             letterSpacing: '0.1em',
           }}>
@@ -107,13 +107,13 @@ export default function NotesPanel({ caseId }: NotesPanelProps) {
               padding: '10px',
               marginBottom: '10px',
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontFamily: 'var(--font-mono)', fontSize: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontFamily: 'var(--font-mono)', fontSize: "calc(8px * var(--font-scale))" }}>
                 <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>{note.authorId}</span>
                 <span style={{ color: 'var(--text-muted)' }}>{new Date(note.createdAt).toLocaleTimeString()}</span>
               </div>
               <p style={{
                 margin: 0,
-                fontFamily: 'var(--font-mono)', fontSize: 9,
+                fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))",
                 color: 'var(--text-primary)',
                 lineHeight: '1.4',
                 wordBreak: 'break-all',
@@ -136,7 +136,7 @@ export default function NotesPanel({ caseId }: NotesPanelProps) {
             border: '1px solid var(--struct-line)',
             color: 'var(--text-primary)',
             padding: 8,
-            fontSize: 9,
+            fontSize: "calc(9px * var(--font-scale))",
             fontFamily: 'var(--font-mono)',
             outline: 'none',
             resize: 'none',
@@ -147,7 +147,7 @@ export default function NotesPanel({ caseId }: NotesPanelProps) {
         />
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)' }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(8px * var(--font-scale))", color: 'var(--text-muted)' }}>
             {t('notes.signing_as')} <span style={{ color: 'var(--text-primary)' }}>{user?.name || 'Leon Lobo'}</span>
           </span>
           
@@ -158,7 +158,7 @@ export default function NotesPanel({ caseId }: NotesPanelProps) {
               background: 'none',
               border: '1px solid var(--accent-primary)',
               color: 'var(--accent-primary)',
-              fontFamily: 'var(--font-heading)', fontSize: 9,
+              fontFamily: 'var(--font-heading)', fontSize: "calc(9px * var(--font-scale))",
               fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
               padding: '6px 12px', cursor: 'pointer',
               opacity: submitting ? 0.5 : 1,

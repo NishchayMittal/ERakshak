@@ -713,7 +713,7 @@ export default function PortalPage() {
           transform: 'translateX(-50%)',
           fontFamily: 'monospace',
           color: '#39ff14',
-          fontSize: '12px',
+          fontSize: "calc(12px * var(--font-scale))",
           letterSpacing: '0.3em',
           animation: 'glitchText 2s infinite',
           textShadow: '0 0 10px rgba(57,255,20,0.5)',
@@ -798,7 +798,7 @@ export default function PortalPage() {
             style={{
               margin: '16px 0 0 0',
               fontFamily: 'var(--font-mono)',
-              fontSize: '14px',
+              fontSize: "calc(14px * var(--font-scale))",
               color: 'var(--text-muted)',
               letterSpacing: '0.3em',
               textTransform: 'uppercase',
@@ -814,8 +814,8 @@ export default function PortalPage() {
           innerStyle={{ alignItems: 'center', gap: '20px', padding: 'clamp(16px, 4vw, 24px) clamp(16px, 6vw, 48px)' }}
         >
           <div style={{ textAlign: 'center' }}>
-            <h2 style={{ margin: '0 0 6px 0', fontSize: '20px', fontWeight: 600, letterSpacing: '0.15em', color: 'var(--text-primary)' }}>{t('portal.system_ready')}</h2>
-            <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.1em' }}>{t('portal.secure_connection')}</p>
+            <h2 style={{ margin: '0 0 6px 0', fontSize: "calc(20px * var(--font-scale))", fontWeight: 600, letterSpacing: '0.15em', color: 'var(--text-primary)' }}>{t('portal.system_ready')}</h2>
+            <p style={{ margin: 0, fontSize: "calc(11px * var(--font-scale))", color: 'var(--text-muted)', letterSpacing: '0.1em' }}>{t('portal.secure_connection')}</p>
           </div>
           <CyberButton
             onClick={handleEnterClick}

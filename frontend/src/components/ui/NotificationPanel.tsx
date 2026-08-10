@@ -4,6 +4,7 @@ import { getNotifications, markNotificationRead, markAllNotificationsRead, clear
 import type { NotificationData } from '../../api/endpoints';
 import { useTranslation } from 'react-i18next';
 import { useTransliterate } from './Transliterate';
+import { useDashboardContext } from '../../pages/DashboardContext';
 
 export function NotificationPanel() {
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
@@ -11,6 +12,7 @@ export function NotificationPanel() {
   const { t, i18n } = useTranslation();
   const transliterate = useTransliterate();
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const { openWindow, cases } = useDashboardContext();
 
   const fetchNotifications = async () => {
     try {
@@ -73,6 +75,26 @@ export function NotificationPanel() {
     }
   };
 
+  const handleNotificationClick = async (n: NotificationData) => {
+    if (!n.is_read) {
+      try {
+        await markNotificationRead(n.id);
+        setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, is_read: true } : item));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    const targetCase = cases.find(c => c.caseId === n.case_id);
+    const title = targetCase ? targetCase.title : `Case Workspace: ${n.case_id}`;
+    openWindow(
+      `workspace-${n.case_id}`,
+      `Case Workspace: ${title.replace('Case Workspace: ', '')}`,
+      'case_workspace',
+      { caseId: n.case_id, activeTab: 'graph' }
+    );
+    setIsOpen(false);
+  };
+
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
@@ -129,7 +151,8 @@ export function NotificationPanel() {
                   {notifications.map(n => (
                     <div 
                       key={n.id} 
-                      className={`p-3.5 flex gap-3 hover:bg-[#39ff14]/5 transition-colors ${!n.is_read ? 'bg-[#39ff14]/5' : ''}`}
+                      onClick={() => handleNotificationClick(n)}
+                      className={`p-3.5 flex gap-3 hover:bg-[#39ff14]/5 cursor-pointer transition-colors ${!n.is_read ? 'bg-[#39ff14]/5' : ''}`}
                     >
                       <button 
                         onClick={(e) => handleMarkRead(n.id, e)}

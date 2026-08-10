@@ -21,7 +21,7 @@ export default function TimelineView() {
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         height: '100%', gap: 12, padding: 24,
-        fontFamily: 'var(--font-mono)', fontSize: 10,
+        fontFamily: 'var(--font-mono)', fontSize: "calc(10px * var(--font-scale))",
         color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase',
         textAlign: 'center',
       }}>
@@ -92,7 +92,7 @@ export default function TimelineView() {
   if (events.length === 0) {
     return (
       <div style={{
-        fontFamily: 'var(--font-mono)', fontSize: 9,
+        fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))",
         color: 'var(--text-muted)', padding: '24px', textAlign: 'center',
         letterSpacing: '0.1em', textTransform: 'uppercase',
       }}>
@@ -114,17 +114,17 @@ export default function TimelineView() {
         flexShrink: 0,
       }}>
         <div style={{
-          fontFamily: 'var(--font-heading)', fontSize: 10,
+          fontFamily: 'var(--font-heading)', fontSize: "calc(10px * var(--font-scale))",
           color: 'var(--accent-primary)', letterSpacing: '0.2em',
           textTransform: 'uppercase', fontWeight: 700,
           display: 'flex', alignItems: 'center', gap: 8,
         }}>
-          <span style={{ fontSize: 14, color: 'var(--accent-primary)', lineHeight: 1 }}>⌐</span>
+          <span style={{ fontSize: "calc(14px * var(--font-scale))", color: 'var(--accent-primary)', lineHeight: 1 }}>⌐</span>
           EVENT TIMELINE
-          <span style={{ fontSize: 14, color: 'var(--accent-primary)', lineHeight: 1, transform: 'scaleX(-1)', display: 'inline-block' }}>⌐</span>
+          <span style={{ fontSize: "calc(14px * var(--font-scale))", color: 'var(--accent-primary)', lineHeight: 1, transform: 'scaleX(-1)', display: 'inline-block' }}>⌐</span>
         </div>
         <div style={{
-          fontFamily: 'var(--font-mono)', fontSize: 8,
+          fontFamily: 'var(--font-mono)', fontSize: "calc(8px * var(--font-scale))",
           color: 'var(--text-muted)', marginTop: 4, letterSpacing: '0.08em',
         }}>
           CHRONOLOGICAL AUDIT FOOTPRINTS COLLECTED IN REALTIME
@@ -147,7 +147,7 @@ export default function TimelineView() {
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
                 <span style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 600,
+                  fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))", fontWeight: 600,
                   color: 'var(--accent-primary)',
                   background: 'rgba(0,255,194,0.05)',
                   border: '1px solid rgba(0,255,194,0.15)',
@@ -156,14 +156,14 @@ export default function TimelineView() {
                   {event.date}
                 </span>
                 
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(8px * var(--font-scale))", color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                   {transliterate(event.source)}
                 </span>
               </div>
 
               <p style={{
                 margin: 0,
-                fontFamily: 'var(--font-mono)', fontSize: 9,
+                fontFamily: 'var(--font-mono)', fontSize: "calc(9px * var(--font-scale))",
                 color: 'var(--text-primary)',
                 lineHeight: '1.4',
                 wordBreak: 'break-all',

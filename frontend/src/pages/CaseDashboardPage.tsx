@@ -1509,7 +1509,7 @@ export default function CaseDashboardPage() {
                 <span className="text-[11px] font-bold text-gray-300 tracking-wider group-hover:text-white uppercase line-clamp-2 leading-tight">
                   {t('dashboard.initialize')}
                 </span>
-                <FeatureInfoTooltip content="Creates a secure, isolated enclave to begin tracking a new investigation or entity." />
+                <FeatureInfoTooltip content={t('dashboard.init_tooltip', 'Creates a secure, isolated enclave to begin tracking a new investigation or entity.')} />
               </div>
             </div>
 
@@ -1541,7 +1541,7 @@ export default function CaseDashboardPage() {
                     } else {
                       openWindow(
                         `workspace-${c.caseId}`,
-                        `Case Workspace: ${c.title}`,
+                        t('dashboard.case_workspace', { defaultValue: 'Case Workspace: {{title}}', title: c.title }),
                         'case_workspace',
                         { caseId: c.caseId }
                       );

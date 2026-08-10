@@ -9,7 +9,6 @@ interface FeatureInfoTooltipProps {
 }
 
 export function FeatureInfoTooltip({ content, className = '' }: FeatureInfoTooltipProps) {
-  const transliterate = useTransliterate();
   const [isOpen, setIsOpen] = useState(false);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const iconRef = useRef<HTMLDivElement>(null);
@@ -72,7 +71,7 @@ export function FeatureInfoTooltip({ content, className = '' }: FeatureInfoToolt
             backdropFilter: 'blur(12px)'
           }}
         >
-          {transliterate(content)}
+          {content}
         </div>,
         document.body
       )}

@@ -354,6 +354,7 @@ class IdentifierInputItem(BaseModel):
 class ChatRequest(BaseModel):
     question: str
     history: list[dict[str, str]] | None = None
+    language: str | None = "en"
 
 
 
@@ -742,6 +743,7 @@ def get_link_feedbacks(
 @router.get("/{case_id}/narrative")
 def get_case_narrative(
     case_id: str,
+    language: str = "en",
     db: Session = Depends(get_db),
     current_investigator: Investigator = Depends(get_current_investigator)
 ):
@@ -753,7 +755,7 @@ def get_case_narrative(
 
     evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
 
-    narrative_text = generate_narrative(evidence_pack)
+    narrative_text = generate_narrative(evidence_pack, language=language)
 
     return {
         "case_id": case_id,
@@ -774,10 +776,9 @@ def chat_with_evidence(
     if not case:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
 
-    # Compile the evidence pack
     evidence_pack = compile_evidence_pack(case_id, db, current_investigator.id)
 
-    answer = answer_question_about_evidence(evidence_pack, chat_request.question, chat_request.history)
+    answer = answer_question_about_evidence(evidence_pack, chat_request.question, chat_request.history, language=chat_request.language)
     return {
         "answer": answer,
         "question": chat_request.question,
@@ -845,7 +846,7 @@ def export_case_pdf(
         evidence_pack["temporal_analysis"] = None
     except Exception:
         pass
-    narrative_text = generate_narrative(evidence_pack)
+    narrative_text = generate_narrative(evidence_pack, language="en")
     case_data = evidence_pack["case"]
     
     from reportlab.lib.pagesizes import letter

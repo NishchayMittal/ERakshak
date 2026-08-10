@@ -105,7 +105,7 @@ def _local_fallback_response(evidence_pack: dict, question: str, error_msg: str 
     return response
 
 
-def generate_narrative(evidence_pack: dict) -> str:
+def generate_narrative(evidence_pack: dict, language: str = "en") -> str:
     """Generate the dossier narrative using Groq API."""
     api_key = settings.groq_api_key
     if not api_key:
@@ -118,7 +118,17 @@ def generate_narrative(evidence_pack: dict) -> str:
             "Based on the following JSON evidence pack, synthesize a professional, highly structured, and objective Suspect Dossier Report.\n"
             "CRITICAL: Keep the report extremely concise (under 500 words) to respect strict output limits. Focus only on the most critical findings.\n"
             "Use Markdown formatting (like `### ` headings, bold text, bullets, and blockquotes for important notes).\n"
-            "Do not output anything outside of the Markdown report.\n\n"
+            "Do not output anything outside of the Markdown report.\n"
+        )
+        
+        if language == "hi":
+            prompt += "CRITICAL INSTRUCTION: You MUST write the ENTIRE report in Hindi language and Devanagari script. DO NOT write in English.\n\n"
+        elif language == "gu":
+            prompt += "CRITICAL INSTRUCTION: You MUST write the ENTIRE report in Gujarati language and Gujarati script. DO NOT write in English.\n\n"
+        else:
+            prompt += "Write the report in English.\n\n"
+            
+        prompt += (
             "Evidence Pack:\n"
             f"{json.dumps(compact_evidence_pack(evidence_pack), indent=2, default=str)}\n"
         )
@@ -141,7 +151,7 @@ def generate_narrative(evidence_pack: dict) -> str:
         return _local_fallback_narrative(evidence_pack, str(exc))
 
 
-def answer_question_about_evidence(evidence_pack: dict, question: str, history: list[dict[str, str]] | None = None) -> str:
+def answer_question_about_evidence(evidence_pack: dict, question: str, history: list[dict[str, str]] | None = None, language: str = "en") -> str:
     """Generate a conversational AI response using Groq."""
     try:
         api_key = settings.groq_api_key
@@ -156,7 +166,17 @@ def answer_question_about_evidence(evidence_pack: dict, question: str, history: 
             "You can answer general conversational questions, explain concepts, and analyze the case data provided.\n"
             "If the user asks a normal question or greets you, answer it conversationally.\n"
             "If they ask about the case or OSINT data, use the evidence pack provided below to answer accurately.\n"
-            "Keep your responses concise and format them cleanly using Markdown (bold, lists, etc).\n\n"
+            "Keep your responses concise and format them cleanly using Markdown (bold, lists, etc).\n"
+        )
+        
+        if language == "hi":
+            sys_prompt += "CRITICAL INSTRUCTION: You MUST reply entirely in Hindi language and Devanagari script. DO NOT use English.\n\n"
+        elif language == "gu":
+            sys_prompt += "CRITICAL INSTRUCTION: You MUST reply entirely in Gujarati language and Gujarati script. DO NOT use English.\n\n"
+        else:
+            sys_prompt += "Reply in English.\n\n"
+            
+        sys_prompt += (
             f"Evidence Pack:\n{json.dumps(compact_evidence_pack(evidence_pack), default=str)}\n"
         )
         

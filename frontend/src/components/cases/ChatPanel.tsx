@@ -35,7 +35,7 @@ export default function ChatPanel({
   onKeyPress,
   textareaRef,
 }: ChatPanelProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const transliterate = useTransliterate();
   const { showToast } = useUIStore();
   const isControlled = inputValue !== undefined;
@@ -106,6 +106,7 @@ export default function ChatPanel({
         caseId,
         activeInputValue,
         history,
+        i18n.language
       );
       const botMessage: ChatMessage = {
         id: Date.now().toString() + "b",

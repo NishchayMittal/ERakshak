@@ -139,7 +139,18 @@ export function NotificationPanel() {
                       </button>
                       <div className="flex-1 min-w-0">
                         <p className={`text-[10px] font-mono leading-relaxed break-words ${!n.is_read ? 'text-gray-200' : 'text-gray-400'}`}>
-                          {transliterate(n.message)}
+                          {(() => {
+                            const match = n.message.match(/^Discovered (\d+) new findings from (.*?) for (.*?)\.$/);
+                            if (match) {
+                              return t('notifications.discovered_findings', {
+                                defaultValue: n.message,
+                                count: match[1],
+                                source: match[2],
+                                target: match[3]
+                              });
+                            }
+                            return t(n.message, { defaultValue: n.message });
+                          })()}
                         </p>
                         <span className="text-[8px] font-mono text-gray-500 mt-1 block tracking-wider">
                           {new Date(n.created_at).toLocaleString(i18n.language === 'en' ? 'en-US' : i18n.language === 'hi' ? 'hi-IN' : 'gu-IN')}

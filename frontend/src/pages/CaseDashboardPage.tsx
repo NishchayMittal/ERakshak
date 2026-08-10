@@ -93,7 +93,7 @@ export interface PendingApproval {
 
 export default function CaseDashboardPage() {
   const transliterate = useTransliterate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { cases, loadCases, initializeNewCase, deleteCase, renameCase } = useCaseStore();
   const { showToast } = useUIStore();
   const { user, logout } = useAuth();
@@ -1218,7 +1218,7 @@ export default function CaseDashboardPage() {
     setReportLoadingPerCase(prev => ({ ...prev, [caseId]: true }));
     try {
       showToast('Generating AI narrative synthesis...', 'info');
-      const res = await getNarrative(caseId);
+      const res = await getNarrative(caseId, i18n.language);
       setCaseReportNarrative(prev => ({
         ...prev,
         [caseId]: res.narrative
@@ -1582,7 +1582,7 @@ export default function CaseDashboardPage() {
               <span className="text-[11px] font-bold text-gray-300 tracking-wider group-hover:text-white uppercase line-clamp-2 leading-tight">
                 {t('dashboard.initialize')}
               </span>
-              <FeatureInfoTooltip content="Creates a secure, isolated enclave to begin tracking a new investigation or entity." />
+              <FeatureInfoTooltip content={t('dashboard.init_tooltip', 'Creates a secure, isolated enclave to begin tracking a new investigation or entity.')} />
             </div>
           </div>
 

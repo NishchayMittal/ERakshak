@@ -55,6 +55,7 @@
     "url_placeholder": "https://...",
     "awaiting_matrix": "AWAITING CASE MATRIX...",
     "initialize": "INITIALIZE",
+    "init_tooltip": "Creates a secure, isolated enclave to begin tracking a new investigation or entity.",
     "archive_tooltip": "Archive case file",
     "cyber_link": "Cyber Link Matrix",
     "no_active_mesh": "NO ACTIVE MESH",
@@ -112,6 +113,15 @@
     "tab_legal": "[05 BNS_LEGAL]",
     "tab_report": "[06 AI_REPORT]",
     "tab_chat": "[07 AI_CHAT]",
+    "tooltips": {
+      "intake": "The starting point of the OSINT crawl. Enter an email, phone, or username here to begin gathering intelligence.",
+      "graph": "A visual node-link matrix that maps relationships between discovered emails, domains, accounts, and IPs.",
+      "dossier": "Displays a consolidated profile and all raw ingested data for the selected entity.",
+      "geo": "Maps IP addresses and location-based findings onto a 3D globe to visualize physical movement and hosting infrastructure.",
+      "legal": "Cross-references discovered activities against the Bharatiya Nyaya Sanhita (BNS) and Information Technology (IT) Act to flag potential violations.",
+      "report": "Generates a cohesive, structured intelligence dossier summarizing all findings and identifying key risk factors.",
+      "chat": "Interact with the AI Copilot to ask questions, summarize findings, and suggest pivot strategies based on the current case data."
+    },
     "inject_seeds": "INJECT SEARCH SEEDS",
     "vector_type": "IDENTIFIER VECTOR TYPE",
     "email_address": "EMAIL ADDRESS",
@@ -439,7 +449,8 @@
     "unread": "unread",
     "empty": "No notifications yet.",
     "read_all": "Read All",
-    "clear_all": "Clear All"
+    "clear_all": "Clear All",
+    "discovered_findings": "Discovered {{count}} new findings from {{source}} for {{target}}."
   },
   "investigation": {
     "header_title": "DOSSIER VISUAL ANALYSIS",

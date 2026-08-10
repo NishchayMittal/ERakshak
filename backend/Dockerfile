@@ -22,7 +22,7 @@ EXPOSE 8000
 
 COPY start.sh ./start.sh
 USER root
-RUN sed -i 's/\r$//' ./start.sh && chmod +x ./start.sh
+RUN sed -i 's/\r$//' ./start.sh && chmod +x ./start.sh && chown -R appuser:appuser /app
 USER appuser
 
 # Execute the unified startup script

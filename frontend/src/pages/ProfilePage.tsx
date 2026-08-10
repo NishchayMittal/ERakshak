@@ -5,6 +5,7 @@ import { useUIStore } from '../state/uiStore';
 import { useTransliterate } from '../components/ui/Transliterate';
 import { useTranslation } from 'react-i18next';
 import { updateInvestigatorProfile } from '../api/endpoints';
+import { useIsMobile } from '../hooks/useMediaQuery';
 
 // Audio click synth
 const playClickTone = () => {};
@@ -14,6 +15,7 @@ export default function ProfilePage() {
   const { showToast } = useUIStore();
   const transliterate = useTransliterate();
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(user?.name || '');
@@ -96,10 +98,9 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Main Grid Content */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'min(320px, 100%) 1fr',
+        gridTemplateColumns: isMobile ? '1fr' : 'min(320px, 100%) 1fr',
         gap: 16,
         flex: 1,
         minHeight: 0,

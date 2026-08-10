@@ -146,6 +146,81 @@ export default function CaseDashboardPage() {
   const [explorerSearchQuery, setExplorerSearchQuery] = useState('');
   const desktopRef = useRef<HTMLDivElement>(null);
 
+  const matrixGroupRef = useRef<SVGGElement | null>(null);
+  const currentMatrixZoomRef = useRef<Record<string, number>>({});
+  const currentMatrixPanRef = useRef<Record<string, { x: number; y: number }>>({});
+
+  useEffect(() => {
+    currentMatrixZoomRef.current = caseZoom;
+  }, [caseZoom]);
+
+  useEffect(() => {
+    currentMatrixPanRef.current = casePan;
+  }, [casePan]);
+
+  const updateMatrixTransform = useCallback((caseId: string) => {
+    const gEl = matrixGroupRef.current;
+    if (!gEl) return;
+    const z = currentMatrixZoomRef.current[caseId] || 1.0;
+    const p = currentMatrixPanRef.current[caseId] || { x: 0, y: 0 };
+    gEl.setAttribute('transform', `translate(190, 60) translate(${p.x}, ${p.y}) scale(${z}) translate(-350, -200)`);
+  }, []);
+
+  const matrixDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceSaveMatrixState = useCallback((caseId: string) => {
+    if (matrixDebounceTimerRef.current) clearTimeout(matrixDebounceTimerRef.current);
+    matrixDebounceTimerRef.current = setTimeout(() => {
+      const finalZoom = currentMatrixZoomRef.current[caseId] || 1.0;
+      setCaseZoom(prev => {
+        if (prev[caseId] === finalZoom) return prev;
+        return { ...prev, [caseId]: finalZoom };
+      });
+    }, 150);
+  }, []);
+
+  const matrixSvgCleanupRef = useRef<(() => void) | null>(null);
+  const matrixSvgRef = useCallback((node: SVGSVGElement | null) => {
+    if (matrixSvgCleanupRef.current) {
+      matrixSvgCleanupRef.current();
+      matrixSvgCleanupRef.current = null;
+    }
+
+    if (node) {
+      const handleNativeWheel = (e: WheelEvent) => {
+        if (!lastAccessedCaseId) return;
+
+        // Prevent default browser zoom/scroll!
+        e.preventDefault();
+
+        const delta = e.deltaY;
+        let factor = 0.0025;
+        if (e.ctrlKey) {
+          factor = 0.015; // Pinch-to-zoom is highly sensitive
+        }
+        
+        if (Math.abs(delta) < 1.0 && !e.ctrlKey) return;
+
+        const scaleFactor = Math.exp(-delta * factor);
+        const currentZoom = currentMatrixZoomRef.current[lastAccessedCaseId] || 1.0;
+        const nextZoom = Math.min(3.0, Math.max(0.3, currentZoom * scaleFactor));
+
+        if (Math.abs(currentZoom - nextZoom) < 0.002) return;
+
+        currentMatrixZoomRef.current = {
+          ...currentMatrixZoomRef.current,
+          [lastAccessedCaseId]: nextZoom
+        };
+        updateMatrixTransform(lastAccessedCaseId);
+        debounceSaveMatrixState(lastAccessedCaseId);
+      };
+
+      node.addEventListener('wheel', handleNativeWheel, { passive: false });
+      matrixSvgCleanupRef.current = () => {
+        node.removeEventListener('wheel', handleNativeWheel);
+      };
+    }
+  }, [lastAccessedCaseId, updateMatrixTransform, debounceSaveMatrixState]);
+
   const windowsRef = useRef(windows);
   useEffect(() => {
     windowsRef.current = windows;
@@ -867,20 +942,6 @@ export default function CaseDashboardPage() {
     });
   }, [lastAccessedCaseId, cases, hasOpenCaseWindow, loadGraphForCase]);
 
-  const handleMatrixWheel = (e: React.WheelEvent) => {
-    if (!lastAccessedCaseId) return;
-    const zoomIntensity = 0.15;
-    const currentZoom = caseZoom[lastAccessedCaseId] || 1.0;
-    const nextZoom = e.deltaY < 0
-      ? Math.min(3.0, currentZoom + zoomIntensity)
-      : Math.max(0.3, currentZoom - zoomIntensity);
-
-    setCaseZoom(prev => ({
-      ...prev,
-      [lastAccessedCaseId]: nextZoom
-    }));
-  };
-
   const handleMatrixMouseDown = (e: React.MouseEvent) => {
     if (!lastAccessedCaseId) return;
     if (e.button !== 2) return; // Right click only
@@ -889,24 +950,31 @@ export default function CaseDashboardPage() {
 
     const startX = e.clientX;
     const startY = e.clientY;
-    const initPan = casePan[lastAccessedCaseId] || { x: 0, y: 0 };
+    const initPan = currentMatrixPanRef.current[lastAccessedCaseId] || { x: 0, y: 0 };
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const dx = moveEvent.clientX - startX;
       const dy = moveEvent.clientY - startY;
 
-      setCasePan(prev => ({
-        ...prev,
+      currentMatrixPanRef.current = {
+        ...currentMatrixPanRef.current,
         [lastAccessedCaseId]: {
           x: initPan.x + dx,
           y: initPan.y + dy
         }
-      }));
+      };
+      updateMatrixTransform(lastAccessedCaseId);
     };
 
     const handleMouseUp = () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      
+      const finalPan = currentMatrixPanRef.current[lastAccessedCaseId] || { x: 0, y: 0 };
+      setCasePan(prev => ({
+        ...prev,
+        [lastAccessedCaseId]: finalPan
+      }));
     };
 
     document.addEventListener('mousemove', handleMouseMove);
@@ -932,13 +1000,13 @@ export default function CaseDashboardPage() {
 
     return (
       <svg
+        ref={matrixSvgRef}
         className="w-full h-full cursor-grab active:cursor-grabbing pointer-events-auto"
         viewBox="0 0 380 120"
-        onWheel={handleMatrixWheel}
         onMouseDown={handleMatrixMouseDown}
         onContextMenu={(e) => e.preventDefault()}
       >
-        <g transform={`translate(190, 60) translate(${pan.x}, ${pan.y}) scale(${zoom}) translate(-350, -200)`}>
+        <g ref={matrixGroupRef} transform={`translate(190, 60) translate(${pan.x}, ${pan.y}) scale(${zoom}) translate(-350, -200)`}>
           {/* Draw Edges */}
           {edges.map((e, idx) => {
             const fromNode = nodes.find(n => n.id === e.source);

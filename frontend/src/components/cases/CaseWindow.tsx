@@ -678,14 +678,16 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                 ) : (
                                   (casePendingSeeds[caseId] || []).map((s, idx) => (
                                     <div key={idx} className="flex justify-between items-center bg-white/5 border border-white/5 px-2.5 py-1 rounded">
-                                      <span className="truncate flex items-center">
-                                        <span className="text-[#a855f7] mr-1.5">[{s.type}]</span> 
+                                      <span className="truncate flex items-center text-[10px] text-gray-400">
+                                        <span className="text-[#a855f7] mr-1.5 text-[10px]">[{s.type}]</span> 
                                         {s.type === 'photo' ? (
-                                          <div className="flex items-center gap-2">
+                                          <div className="flex items-center gap-2 text-[10px]">
                                             <img src={s.value.startsWith('http') ? s.value : `${BASE_URL}/static/uploads/${s.value}`} alt="Upload" className="w-6 h-6 object-cover rounded border border-[#39ff14]/30" />
-                                            <span>{s.value.split(/[\/\\]/).pop()}</span>
+                                            <span className="text-[10px]">{s.value.split(/[\/\\]/).pop()}</span>
                                           </div>
-                                        ) : transliterate(s.value)}
+                                        ) : (
+                                          <span className="text-[10px]">{transliterate(s.value)}</span>
+                                        )}
                                       </span>
                                       <button onClick={() => removeCaseSeed(caseId, idx)} className="text-gray-500 hover:text-red-400 text-[8px] font-bold">X</button>
                                     </div>
@@ -722,14 +724,16 @@ export function CaseWindow({ win }: CaseWindowProps) {
                               ) : (
                                 existingSeeds.map((s, idx) => (
                                   <div key={idx} className="flex justify-between items-center bg-white/5 border border-white/5 px-2.5 py-1 rounded">
-                                    <span className="truncate text-gray-400 flex items-center">
-                                      <span className="text-[#a855f7] mr-1.5">[{s.type}]</span> 
+                                    <span className="truncate text-gray-400 flex items-center text-[10px]">
+                                      <span className="text-[#a855f7] mr-1.5 text-[10px]">[{s.type}]</span> 
                                       {s.type === 'photo' ? (
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 text-[10px]">
                                           <img src={(s.raw_value || '').startsWith('http') ? s.raw_value : `${BASE_URL}/static/uploads/${s.raw_value}`} alt="Upload" className="w-6 h-6 object-cover rounded border border-[#39ff14]/30" />
-                                          <span>{(s.raw_value || '').split(/[\/\\]/).pop()}</span>
+                                          <span className="text-[10px]">{(s.raw_value || '').split(/[\/\\]/).pop()}</span>
                                         </div>
-                                      ) : transliterate(s.raw_value || '')}
+                                      ) : (
+                                        <span className="text-[10px]">{transliterate(s.raw_value || '')}</span>
+                                      )}
                                     </span>
                                     <button onClick={() => removeExistingSeed(s.id)} className="text-gray-500 hover:text-red-400 text-[8px] font-bold border border-transparent hover:border-red-400 px-1 rounded transition-colors">REMOVE</button>
                                   </div>

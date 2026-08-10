@@ -23,3 +23,7 @@ services:
         sync: false
       - key: GROQ_API_KEY
         sync: false
+    disk:
+      name: erakshak-uploads-disk
+      mountPath: /app/app/resources/uploads
+      sizeGB: 1

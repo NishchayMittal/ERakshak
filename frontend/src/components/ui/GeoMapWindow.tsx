@@ -3,6 +3,8 @@ import Globe from 'react-globe.gl';
 import { getGeoIntelligence, type GeoIntelligenceResult } from '../../api/endpoints';
 import { useUIStore } from '../../state/uiStore';
 import { useTransliterate } from './Transliterate';
+import { useTranslation } from 'react-i18next';
+import { X } from 'lucide-react';
 
 interface GeoMapWindowProps {
   caseId: string;
@@ -18,6 +20,7 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { showToast } = useUIStore();
   const transliterate = useTransliterate();
+  const { t } = useTranslation();
 
   // Measure container and set globe size to fill it
   const updateSize = useCallback(() => {
@@ -80,29 +83,25 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
       style={{ minHeight: 0, minWidth: 0 }}
     >
       {/* HUD Overlay */}
-      <div className="absolute top-4 left-4 z-10 pointer-events-none">
-        <div className="text-[12px] font-bold font-mono text-[#39ff14] tracking-widest mb-1 shadow-black drop-shadow-md">
-          {transliterate('GEO-INTELLIGENCE MATRIX')}
-        </div>
-        <div className="flex gap-4 text-[9px] font-mono text-gray-400">
-          <div>{transliterate('NODES DETECTED:')} <span className="text-white">{data?.nodes.length || 0}</span></div>
-          <div>{transliterate('ACTIVE ARCS:')} <span className="text-[#a855f7]">{data?.arcs.length || 0}</span></div>
-        </div>
+      <div className="absolute top-4 left-4 bg-black/80 p-3 rounded border border-white/10 z-10 font-mono text-[10px] pointer-events-none backdrop-blur-sm">
+        <div className="text-[#39ff14] font-bold mb-2 tracking-wider">{t('geo_map.title', 'GEO-INTELLIGENCE MATRIX')}</div>
+        <div><span className="text-gray-500">{t('geo_map.nodes_detected', 'NODES DETECTED:')}</span> <span className="text-white">{data?.nodes.length || 0}</span></div>
+        <div><span className="text-gray-500">{t('geo_map.active_arcs', 'ACTIVE ARCS:')}</span> <span className="text-[#a855f7]">{data?.arcs.length || 0}</span></div>
       </div>
 
       {/* Selected Node Details Panel */}
       {selectedNode && (
-        <div className="absolute bottom-4 right-4 z-20 bg-black/80 border border-[#39ff14]/30 p-3 rounded text-white font-mono text-[10px] w-64 backdrop-blur shadow-[0_0_10px_rgba(57,255,20,0.2)]">
-          <div className="flex justify-between items-center mb-2 border-b border-white/20 pb-1">
-            <span className="text-[#39ff14] font-bold">{transliterate('NODE INTEL')}</span>
-            <button onClick={() => setSelectedNode(null)} className="text-gray-400 hover:text-red-400 font-bold px-1">X</button>
+          <div className="absolute top-4 right-4 bg-black/90 p-4 rounded border border-[#39ff14]/30 z-10 font-mono text-[10px] w-64 backdrop-blur-md shadow-[0_0_15px_rgba(57,255,20,0.15)] pointer-events-auto">
+            <div className="flex justify-between items-start mb-3 border-b border-white/10 pb-2">
+              <span className="text-[#39ff14] font-bold">{t('geo_map.node_intel', 'NODE INTEL')}</span>
+              <button onClick={() => setSelectedNode(null)} className="text-gray-500 hover:text-white"><X size={14} /></button>
+            </div>
+            <div className="space-y-2">
+              <div><span className="text-gray-500">{t('geo_map.label', 'LABEL:')}</span> <span className="break-all">{transliterate(selectedNode.label)}</span></div>
+              <div><span className="text-gray-500">{t('geo_map.source', 'SOURCE:')}</span> {transliterate(selectedNode.source || 'UNKNOWN')}</div>
+              <div><span className="text-gray-500">{t('geo_map.coords', 'COORDS:')}</span> {selectedNode.lat?.toFixed(4)}, {selectedNode.lng?.toFixed(4)}</div>
+            </div>
           </div>
-          <div className="flex flex-col gap-1.5">
-            <div><span className="text-gray-500">{transliterate('LABEL:')}</span> <span className="break-all">{transliterate(selectedNode.label)}</span></div>
-            <div><span className="text-gray-500">{transliterate('SOURCE:')}</span> {transliterate(selectedNode.source || 'UNKNOWN')}</div>
-            <div><span className="text-gray-500">{transliterate('COORDS:')}</span> {selectedNode.lat?.toFixed(4)}, {selectedNode.lng?.toFixed(4)}</div>
-          </div>
-        </div>
       )}
 
       {/* Globe — sized to fill container exactly */}

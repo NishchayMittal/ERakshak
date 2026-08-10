@@ -25,6 +25,9 @@ const normalizeForITRANS = (text: string) => {
     // so it doesn't render with a halant. (e.g. Rahul -> Rahula -> राहुल)
     if (/[bcdfghjklmnpqrstvwxyz]$/i.test(w)) {
         w += 'a';
+    } else if (/a$/i.test(w) && !/aa$/i.test(w)) {
+        // Words ending in 'a' (like Alpha) need to be 'aa' in ITRANS so they get the long vowel matra (ા).
+        w += 'a';
     }
     
     return w;

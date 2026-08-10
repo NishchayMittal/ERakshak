@@ -69,7 +69,7 @@ export interface PendingApproval {
 
 export default function CaseDashboardPage() {
   const transliterate = useTransliterate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { cases, loadCases, initializeNewCase, deleteCase, renameCase, selectCase } = useCaseStore();
   const { showToast } = useUIStore();
   const { user, logout } = useAuth();
@@ -1244,7 +1244,7 @@ export default function CaseDashboardPage() {
     setReportLoadingPerCase(prev => ({ ...prev, [caseId]: true }));
     try {
       showToast('Generating AI narrative synthesis...', 'info');
-      const res = await getNarrative(caseId);
+      const res = await getNarrative(caseId, i18n.language);
       setCaseReportNarrative(prev => ({
         ...prev,
         [caseId]: res.narrative

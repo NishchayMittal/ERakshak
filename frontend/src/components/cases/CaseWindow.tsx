@@ -522,25 +522,29 @@ export function CaseWindow({ win }: CaseWindowProps) {
                     {/* Retro workspace tab headers - scrollable on mobile */}
                     <div className="flex gap-2 border-b border-white/10 pb-2 mb-3 flex-shrink-0 text-[9px] font-bold overflow-x-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
                       {[
-                        { id: 'intake', label: t('case_window.tab_intake'), tooltip: 'The starting point of the OSINT crawl. Enter an email, phone, or username here to begin gathering intelligence.' },
-                        { id: 'graph', label: t('case_window.tab_matrix'), tooltip: 'A visual node-link matrix that maps relationships between discovered emails, domains, accounts, and IPs.' },
-                        { id: 'dossier', label: t('case_window.tab_dossier'), tooltip: 'Displays a consolidated profile and all raw ingested data for the selected entity.' },
-                        { id: 'geo', label: t('case_window.tab_geo'), tooltip: 'Maps IP addresses and location-based findings onto a 3D globe to visualize physical movement and hosting infrastructure.' },
-                        { id: 'legal', label: t('case_window.tab_legal'), tooltip: 'Cross-references discovered activities against the Bharatiya Nyaya Sanhita (BNS) and Information Technology (IT) Act to flag potential violations.' },
-                        { id: 'report', label: t('case_window.tab_report'), tooltip: 'Generates a cohesive, structured intelligence dossier summarizing all findings and identifying key risk factors.' },
-                        { id: 'chat', label: t('case_window.tab_chat'), tooltip: 'Interact with the AI Copilot to ask questions, summarize findings, and suggest pivot strategies based on the current case data.' }
-                      ].map(t => (
+                        { id: 'intake', label: t('case_window.tab_intake'), tooltip: t('case_window.tooltips.intake') },
+                        { id: 'graph', label: t('case_window.tab_matrix'), tooltip: t('case_window.tooltips.graph') },
+                        { id: 'dossier', label: t('case_window.tab_dossier'), tooltip: t('case_window.tooltips.dossier') },
+                        { id: 'geo', label: t('case_window.tab_geo'), tooltip: t('case_window.tooltips.geo') },
+                        { id: 'legal', label: t('case_window.tab_legal'), tooltip: t('case_window.tooltips.legal') },
+                        { id: 'report', label: t('case_window.tab_report'), tooltip: t('case_window.tooltips.report') },
+                        { id: 'chat', label: t('case_window.tab_chat'), tooltip: t('case_window.tooltips.chat') }
+                      ].map(tabItem => (
                         <button
-                          key={t.id}
-                          data-tutorial={`tab-${t.id}`}
+                          key={tabItem.id}
+                          data-tutorial={`tab-${tabItem.id}`}
                           onClick={() => {
-                            setWindows((prev: WindowItem[]) => prev.map((w) => w.id === win.id ? { ...w, activeTab: t.id } : w));
-                            if (t.id === 'report') fetchNarrativeReport(caseId);
+                            setWindows((prev: WindowItem[]) => prev.map((w) => w.id === win.id ? { ...w, activeTab: tabItem.id } : w));
+                            if (tabItem.id === 'report') fetchNarrativeReport(caseId);
                           }}
-                          className={`px-3 py-1.5 border transition flex-shrink-0 whitespace-nowrap flex items-center ${tab === t.id ? 'bg-[#39ff14]/15 border-[#39ff14] text-[#39ff14]' : 'bg-transparent border-white/10 text-gray-400 hover:text-white hover:border-white/20'}`}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded transition-all duration-200 uppercase whitespace-nowrap ${
+                            tab === tabItem.id 
+                              ? 'bg-[#39ff14]/10 text-[#39ff14] border border-[#39ff14]/30 font-bold' 
+                              : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                          }`}
                         >
-                          {transliterate(t.label)}
-                          <FeatureInfoTooltip content={t.tooltip} />
+                          {tabItem.label}
+                          {tabItem.tooltip && <FeatureInfoTooltip content={tabItem.tooltip} />}
                         </button>
                       ))}
                     </div>

@@ -572,16 +572,37 @@ export default function CaseDashboardPage() {
           }
         });
       } else {
-        setFocusedCaseId(targetCase.caseId);
         if (e.shiftKey) {
-          setSelectedCaseIds(prev => {
-            if (prev.includes(targetCase.caseId)) {
-              return prev;
-            } else {
-              return [...prev, targetCase.caseId];
+          if (e.key === 'ArrowLeft') {
+            setSelectedCaseIds(prev => prev.filter(id => id !== focusedCaseId));
+            setFocusedCaseId(targetCase.caseId);
+          } else if (e.key === 'ArrowDown') {
+            const currentIndex = sortedCases.findIndex(c => c.caseId === focusedCaseId);
+            if (currentIndex !== -1) {
+              const startIdx = Math.min(currentIndex, nextIndex);
+              const endIdx = Math.max(currentIndex, nextIndex);
+              const casesToSelect = sortedCases.slice(startIdx, endIdx + 1).map(c => c.caseId);
+              setSelectedCaseIds(prev => {
+                const newSelection = new Set(prev);
+                for (const id of casesToSelect) {
+                  newSelection.add(id);
+                }
+                return Array.from(newSelection);
+              });
             }
-          });
+            setFocusedCaseId(targetCase.caseId);
+          } else {
+            setFocusedCaseId(targetCase.caseId);
+            setSelectedCaseIds(prev => {
+              if (prev.includes(targetCase.caseId)) {
+                return prev;
+              } else {
+                return [...prev, targetCase.caseId];
+              }
+            });
+          }
         } else {
+          setFocusedCaseId(targetCase.caseId);
           setSelectedCaseIds([targetCase.caseId]);
         }
       }
@@ -1494,7 +1515,7 @@ export default function CaseDashboardPage() {
               className="bg-red-500/15 border border-red-500 hover:bg-red-500/25 text-red-400 text-[9px] font-bold font-mono px-2 py-1 uppercase rounded transition-all flex items-center gap-1.5"
             >
               <X size={10} />
-              {t('dashboard.archive_selected')}
+              {t('dashboard.delete_selected', 'DELETE SELECTED')}
             </button>
             <button
               onClick={() => setSelectedCaseIds([])}
@@ -1712,7 +1733,7 @@ export default function CaseDashboardPage() {
                 }}
                 className="text-left font-mono text-[9px] font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 px-3 py-2 w-full transition-colors uppercase tracking-wider"
               >
-                {selectedCaseIds.includes(contextMenu.caseId) ? t('modals.archive_selected_ctx', 'Archive Selected Cases') : t('modals.delete_dossier_ctx')}
+                {selectedCaseIds.includes(contextMenu.caseId) ? t('modals.delete_selected_ctx', 'Delete Selected Cases') : t('modals.delete_dossier_ctx')}
               </button>
             </div>
           </div>

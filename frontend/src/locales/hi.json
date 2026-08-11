@@ -78,7 +78,7 @@
     "logout_tooltip": "जांचकर्ता सत्र डिस्कनेक्ट करें",
     "case_selected": "केस चयनित",
     "cases_selected": "केस चयनित",
-    "archive_selected": "चयनित आर्काइव करें",
+    "delete_selected": "चयनित हटाएं",
     "clear_selection": "चयन साफ करें",
     "case_renamed": "केस का नाम बदला गया",
     "rename_failed": "केस का नाम बदलने में विफल",

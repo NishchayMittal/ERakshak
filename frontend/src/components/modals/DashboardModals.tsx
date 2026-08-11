@@ -76,10 +76,10 @@ export default function DashboardModals({
         <div className="fixed inset-0 bg-black/80 z-[99999] flex items-center justify-center backdrop-blur-sm">
           <div className="bg-[#04080e]/95 border border-red-500 p-6 w-[360px] flex flex-col gap-4 shadow-2xl shadow-red-500/5 backdrop-blur-xl">
             <div className="font-mono text-[10px] font-bold text-red-500 tracking-widest uppercase pb-2 border-b border-white/5">
-              {deleteConfirmCase.id === 'multiple' ? t('modals.confirm_delete_multiple_title', 'ARCHIVE MULTIPLE DOSSIERS') : t('modals.confirm_delete_title')}
+              {deleteConfirmCase.id === 'multiple' ? t('modals.confirm_delete_multiple_title', 'DELETE MULTIPLE DOSSIERS') : t('modals.confirm_delete_title')}
             </div>
             <div className="font-mono text-[10px] text-gray-400 leading-relaxed">
-              {deleteConfirmCase.id === 'multiple' ? t('modals.confirm_delete_multiple_body', 'Are you sure you want to permanently archive the selected dossiers?') : (
+              {deleteConfirmCase.id === 'multiple' ? t('modals.confirm_delete_multiple_body', 'Are you sure you want to permanently delete the selected dossiers?') : (
                 <>
                   {t('modals.confirm_delete_body')} <span className="text-white font-bold">"{deleteConfirmCase.title}"</span>?
                 </>
@@ -100,7 +100,7 @@ export default function DashboardModals({
                 className="px-3.5 py-1.5 bg-red-500/10 border border-red-500 hover:bg-red-500/20 text-red-400 hover:text-red-300 rounded text-[9px] font-bold font-mono tracking-wider transition-all uppercase"
                 style={{ cursor: 'pointer' }}
               >
-                {deleteConfirmCase.id === 'multiple' ? t('modals.archive_selected') : t('modals.delete_dossier')}
+                {deleteConfirmCase.id === 'multiple' ? t('modals.delete_selected', 'DELETE SELECTED') : t('modals.delete_dossier')}
               </button>
             </div>
           </div>

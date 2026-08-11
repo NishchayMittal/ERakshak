@@ -78,7 +78,7 @@
     "logout_tooltip": "Disconnect Investigator Session",
     "case_selected": "CASE SELECTED",
     "cases_selected": "CASES SELECTED",
-    "archive_selected": "ARCHIVE SELECTED",
+    "delete_selected": "DELETE SELECTED",
     "clear_selection": "CLEAR SELECTION",
     "case_renamed": "CASE RENAMED",
     "rename_failed": "Failed to rename case",

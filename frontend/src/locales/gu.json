@@ -78,7 +78,7 @@
     "logout_tooltip": "તપાસકર્તા સત્ર ડિસ્કનેક્ટ કરો",
     "case_selected": "કેસ પસંદ કરેલ",
     "cases_selected": "કેસો પસંદ કરેલ",
-    "archive_selected": "પસંદ કરેલ આર્કાઇવ કરો",
+    "delete_selected": "પસંદ કરેલ કાઢી નાખો",
     "clear_selection": "પસંદગી સાફ કરો",
     "case_renamed": "કેસનું નામ બદલાયું",
     "rename_failed": "કેસનું નામ બદલવામાં નિષ્ફળ",

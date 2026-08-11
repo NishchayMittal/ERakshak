@@ -93,18 +93,30 @@ export default function CaseDashboardPage() {
     startDemo();
   };
 
+  // Onboarding language preferences modal state
+  const [showLanguagePrefModal, setShowLanguagePrefModal] = useState(false);
+  const [selectedPrefLanguage, setSelectedPrefLanguage] = useState<'en' | 'hi' | 'gu'>('en');
+
   // Auto-start demo for first-time login ever
   useEffect(() => {
     if (user?.badgeNumber) {
       const demoKey = `erakshak_demo_started_${user.badgeNumber}`;
       const hasStarted = localStorage.getItem(demoKey);
       if (!hasStarted) {
-        localStorage.setItem(demoKey, 'true');
-        startDemo();
+        setShowLanguagePrefModal(true);
       }
     }
-  }, [user?.badgeNumber, startDemo]);
+  }, [user?.badgeNumber]);
 
+  const handleConfirmLanguagePref = () => {
+    if (user?.badgeNumber) {
+      const demoKey = `erakshak_demo_started_${user.badgeNumber}`;
+      i18n.changeLanguage(selectedPrefLanguage);
+      localStorage.setItem(demoKey, 'true');
+      setShowLanguagePrefModal(false);
+      startDemo();
+    }
+  };
 
   // --- STATE DECLARATIONS ---
   const [windows, setWindows] = useState<WindowState[]>([]);
@@ -1779,6 +1791,68 @@ export default function CaseDashboardPage() {
           setShowLogoutConfirm={setShowLogoutConfirm}
           logout={logout}
         />
+        {showLanguagePrefModal && (
+          <div className="fixed inset-0 bg-black/85 z-[999999] flex items-center justify-center backdrop-blur-md">
+            <div className="bg-[#04080e]/95 border border-[#39ff14]/40 p-8 w-[420px] max-w-[90vw] flex flex-col gap-6 shadow-[0_0_50px_rgba(57,255,20,0.15)] rounded-2xl relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-[#39ff14] opacity-80" />
+              
+              <div className="flex flex-col gap-3 pb-4 border-b border-white/10">
+                <h3 className="text-white text-[12px] font-bold tracking-wide leading-relaxed font-mono">
+                  Please select your preferred language.
+                </h3>
+                <h3 className="text-[#39ff14] text-[12px] font-bold tracking-wide leading-relaxed font-mono">
+                  कृपया अपनी पसंदीदा भाषा चुनें।
+                </h3>
+                <h3 className="text-indigo-400 text-[12px] font-bold tracking-wide leading-relaxed font-mono">
+                  કૃપા કરીને તમારી પસંદગીની ભાષા પસંદ કરો.
+                </h3>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={() => setSelectedPrefLanguage('en')}
+                  className={`w-full p-4 rounded-xl border transition-all text-left flex items-center justify-between ${selectedPrefLanguage === 'en' ? 'border-[#39ff14] bg-[#39ff14]/10 text-white' : 'border-white/10 hover:border-white/20 text-gray-400 hover:text-white bg-transparent'}`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <span className="font-bold text-[11px] tracking-wide font-mono uppercase">English</span>
+                  {selectedPrefLanguage === 'en' && <span className="w-2 h-2 rounded-full bg-[#39ff14] animate-pulse" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPrefLanguage('hi')}
+                  className={`w-full p-4 rounded-xl border transition-all text-left flex items-center justify-between ${selectedPrefLanguage === 'hi' ? 'border-[#39ff14] bg-[#39ff14]/10 text-white' : 'border-white/10 hover:border-white/20 text-gray-400 hover:text-white bg-transparent'}`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <span className="font-bold text-[11px] tracking-wide font-mono uppercase">हिन्दी (Hindi)</span>
+                  {selectedPrefLanguage === 'hi' && <span className="w-2 h-2 rounded-full bg-[#39ff14] animate-pulse" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPrefLanguage('gu')}
+                  className={`w-full p-4 rounded-xl border transition-all text-left flex items-center justify-between ${selectedPrefLanguage === 'gu' ? 'border-[#39ff14] bg-[#39ff14]/10 text-white' : 'border-white/10 hover:border-white/20 text-gray-400 hover:text-white bg-transparent'}`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <span className="font-bold text-[11px] tracking-wide font-mono uppercase">ગુજરાતી (Gujarati)</span>
+                  {selectedPrefLanguage === 'gu' && <span className="w-2 h-2 rounded-full bg-[#39ff14] animate-pulse" />}
+                </button>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={handleConfirmLanguagePref}
+                  className="w-full py-3 bg-[#39ff14]/15 border border-[#39ff14] hover:bg-[#39ff14]/25 text-[#39ff14] hover:text-white rounded-xl text-[10px] font-bold font-mono tracking-widest uppercase transition-all duration-150 shadow-[0_0_15px_rgba(57,255,20,0.1)]"
+                  style={{ cursor: 'pointer' }}
+                >
+                  {selectedPrefLanguage === 'en' && 'Confirm'}
+                  {selectedPrefLanguage === 'hi' && 'पुष्टि करें'}
+                  {selectedPrefLanguage === 'gu' && 'પુષ્ટિ કરો'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <TutorialOverlay />
         <DemoTour />
       </div>

@@ -98,9 +98,12 @@
     "cancel": "CANCEL",
     "save_changes": "SAVE CHANGES",
     "confirm_delete_title": "CONFIRM DOSSIER DELETION",
+    "confirm_delete_multiple_title": "DELETE MULTIPLE DOSSIERS",
     "confirm_delete_body": "ARE YOU SURE YOU WANT TO PERMANENTLY DELETE CASE",
+    "confirm_delete_multiple_body": "Are you sure you want to permanently delete the selected dossiers?",
     "confirm_delete_warning": "THIS WILL IRREVERSIBLY ERASE ALL INGESTED IDENTIFIERS, CORRELATED SUSPECT PROFILES, AND NOTES.",
     "delete_dossier": "DELETE DOSSIER",
+    "delete_selected": "DELETE SELECTED",
     "confirm_disconnect_title": "CONFIRM DISCONNECT",
     "confirm_disconnect_body": "ARE YOU SURE YOU WANT TO TERMINATE THE ACTIVE INVESTIGATOR SESSION?",
     "disconnect": "DISCONNECT",
@@ -577,6 +580,86 @@
       "PMLA_4_title": "Punishment for Money Laundering",
       "PMLA_4_desc": "Prescribes the punishment for the offence of money laundering defined under Section 3. Triggered by significant cryptocurrency flows.",
       "PMLA_4_punish": "Rigorous imprisonment of 3–7 years and fine which may extend to ₹5 Lakhs."
+    }
+  },
+  "demo_tour": {
+    "leo_guide": "LEO GUIDE",
+    "steps": {
+      "welcome": {
+        "title": "WELCOME TO e-RAKSHAK",
+        "subtitle": "ORION TERMINAL v3.1",
+        "message": "I am LEO, your onboard AI intelligence coordinator. This quick tour will show you how to initialize a case, run the OSINT pipeline, and explore the cyber-correlation engine."
+      },
+      "hud-terminal": {
+        "title": "SYSTEM HUD TERMINAL",
+        "subtitle": "STEP 2 OF 15",
+        "message": "The HUD streams real-time audit logs, active OSINT crawl jobs, model retraining events, and connection statuses. Think of it as the nervous system of the platform."
+      },
+      "profile-menu": {
+        "title": "BADGE IDENTITY",
+        "subtitle": "STEP 3 OF 15",
+        "message": "Your badge ID is your cryptographic identity on the platform. All actions are signed and logged against this credential. Keep your credentials secure."
+      },
+      "init-case": {
+        "title": "INITIALIZE A CASE DOSSIER",
+        "subtitle": "STEP 4 OF 15",
+        "message": "To begin an investigation, click the \"+\" button in the Case Management panel. This provisions a secure enclave for the new dossier."
+      },
+      "seed-input": {
+        "title": "SEED THE INTELLIGENCE",
+        "subtitle": "STEP 5 OF 15",
+        "message": "Let's start an investigation. Enter a known identifier (like an email or phone number) into the Intake panel. Type something, then hit Enter."
+      },
+      "run-pipeline": {
+        "title": "EXECUTE OSINT PIPELINE",
+        "subtitle": "STEP 6 OF 15",
+        "message": "Click the RUN CORRELATION SCAN button to unleash the automated OSINT connectors on your seed data."
+      },
+      "graph-network": {
+        "title": "LINK GRAPH ENGINE",
+        "subtitle": "STEP 7 OF 15",
+        "message": "Open the Graph tab to access the Network Link Graph - an interactive visualization of entities, relationships, and pivots. Nodes represent people, phones, accounts, and domains."
+      },
+      "geo-map": {
+        "title": "GEO INTEL MAP",
+        "subtitle": "STEP 8 OF 15",
+        "message": "The GEO MAP tab projects IPs, registered addresses, and location metadata onto a geospatial visualization, exposing physical movement and origin."
+      },
+      "dossier": {
+        "title": "AUTOMATED DOSSIER",
+        "subtitle": "STEP 9 OF 15",
+        "message": "The dossier tab auto-compiles all OSINT evidence into a structured report - social profiles, breach records, communication metadata, and risk scores. Export to PDF, JSON, or CSV in one click."
+      },
+      "legal": {
+        "title": "LEGAL TRACEABILITY",
+        "subtitle": "STEP 10 OF 15",
+        "message": "The Legal tab tracks the cryptographic chain of custody for all evidence discovered, ready for court submission."
+      },
+      "ai-report": {
+        "title": "AI REPORT GENERATION",
+        "subtitle": "STEP 11 OF 15",
+        "message": "Generate natural language executive summaries of your entire case graph in seconds using the onboard LLM."
+      },
+      "ai-chat": {
+        "title": "AI COPILOT",
+        "subtitle": "STEP 12 OF 15",
+        "message": "Your AI Copilot is always available. Ask it to analyze graphs, suggest pivot strategies, or explain complex relationships."
+      },
+      "cross-correlate": {
+        "title": "CROSS-CORRELATION ENGINE",
+        "subtitle": "STEP 13 OF 15",
+        "message": "Use the Cross-Correlate window to find shared identifiers across multiple cases - the same phone number, device fingerprint, or email appearing in separate investigations signals a coordinated network."
+      },
+      "notifications": {
+        "title": "REAL-TIME ALERTS",
+        "subtitle": "STEP 14 OF 15",
+        "message": "The Notifications bell alerts you to important system events, critical intelligence discoveries, and completed background jobs."
+      },
+      "finish": {
+        "title": "CLEARANCE GRANTED",
+        "subtitle": "ORION TERMINAL READY",
+        "message": "You are now cleared for active operations. Good hunting, Agent."
+      }
     }
   }
 }

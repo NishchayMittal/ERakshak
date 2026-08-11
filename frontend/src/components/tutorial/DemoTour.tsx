@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useTutorialStore } from '../../state/tutorialStore';
 import { useTransliterate } from '../ui/Transliterate';
+import { useTranslation } from 'react-i18next';
 
 // ── TOUR STEPS ──────────────────────────────────────────────────────────────
 interface DemoStep {
@@ -402,6 +403,7 @@ export function DemoTour() {
   } = useTutorialStore();
 
   const transliterate = useTransliterate();
+  const { t } = useTranslation();
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [cardPos, setCardPos] = useState({ top: 0, left: 0 });
   const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -643,13 +645,13 @@ export function DemoTour() {
                 <LeoAvatar isSpeaking={isSpeaking} accentColor={accent} />
                 <div>
                   <div className="text-[9px] font-bold tracking-[0.2em] uppercase mb-0.5" style={{ color: `${accent}99` }}>
-                    {transliterate(`LEO GUIDE  ::  ${currentStep.subtitle}`)}
+                    {`${t('demo_tour.leo_guide', 'LEO GUIDE')}  ::  ${t(`demo_tour.steps.${currentStep.id}.subtitle`, currentStep.subtitle)}`}
                   </div>
                   <div
                     className="text-sm font-bold tracking-wider"
                     style={{ color: accent, fontFamily: 'var(--font-heading)' }}
                   >
-                    {transliterate(currentStep.title)}
+                    {t(`demo_tour.steps.${currentStep.id}.title`, currentStep.title)}
                   </div>
                 </div>
               </div>
@@ -703,7 +705,7 @@ export function DemoTour() {
 
                 {/* Typewriter text */}
                 <p className="text-sm leading-relaxed" style={{ color: 'rgba(230,237,243,0.88)', fontFamily: 'var(--font-mono)', fontSize: "calc(12px * var(--font-scale))" }}>
-                  <TypewriterText key={currentStep.id} text={transliterate(currentStep.message)} />
+                  <TypewriterText key={currentStep.id} text={t(`demo_tour.steps.${currentStep.id}.message`, currentStep.message)} />
                 </p>
               </div>
             </div>

@@ -15,6 +15,8 @@ import { useTutorialStore } from '../state/tutorialStore';
 import { TutorialOverlay } from '../components/tutorial/TutorialOverlay';
 import { DemoTour } from '../components/tutorial/DemoTour';
 import HUDPanel from '../components/layout/HUDPanel';
+import { GeoMapWindow } from '../components/ui/GeoMapWindow';
+import { validateSeed } from '../components/intake/IdentifierForm';
 import DesktopWindow from '../components/ui/DesktopWindow';
 import SystemDock from '../components/layout/SystemDock';
 import DashboardModals from '../components/modals/DashboardModals';
@@ -1138,10 +1140,14 @@ export default function CaseDashboardPage() {
     document.addEventListener('mouseup', handleMouseUp);
   };
 
-  // Add identifier seed to temporary pipeline list
   const addCaseSeed = (caseId: string) => {
     const input = caseSeedsInput[caseId] || { type: 'email', value: '' };
     if (!input.value.trim()) return;
+
+    if (!validateSeed(input.type, input.value)) {
+      showToast('Invalid input for the selected identifier type.', 'error');
+      return;
+    }
 
     const existing = casePendingSeeds[caseId] || [];
     if (existing.some(s => s.type === input.type && s.value.toLowerCase() === input.value.toLowerCase())) {

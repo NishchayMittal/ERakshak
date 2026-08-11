@@ -2,6 +2,29 @@ import React, { useState } from 'react';
 import type { IdentifierType } from '../../types/identifier';
 import { useTranslation } from 'react-i18next';
 import { uploadImage } from '../../api/endpoints';
+import { useUIStore } from '../../state/uiStore';
+
+export function validateSeed(type: string, value: string): boolean {
+  const trimmed = value.trim();
+  switch (type) {
+    case 'email':
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+    case 'ip':
+      return /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(trimmed);
+    case 'domain':
+      return /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(trimmed) || (trimmed.includes('.') && !trimmed.includes(' '));
+    case 'name':
+      return trimmed.includes(' ') && trimmed.length >= 3;
+    case 'username':
+      return trimmed.length >= 3 && !trimmed.includes(' ');
+    case 'photo':
+      return trimmed.length > 0;
+    case 'other':
+      return trimmed.length > 0;
+    default:
+      return false;
+  }
+}
 
 interface IdentifierFormProps {
   onAdd: (type: IdentifierType, value: string) => void;
@@ -11,10 +34,8 @@ function detectType(trimmed: string): IdentifierType {
   if (!trimmed) return 'email';
   if (trimmed.includes('@')) return 'email';
   if (/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(trimmed)) return 'photo';
-  if (/^\+?\d[\d-\s()]{7,}\d$/.test(trimmed)) return 'phone';
   if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(trimmed)) return 'ip';
   if (/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(trimmed) || (trimmed.includes('.') && !trimmed.includes(' '))) return 'domain';
-  if (/^(0x)?[0-9a-fA-F]{40}$/.test(trimmed) || /^[139][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(trimmed)) return 'wallet';
   if (trimmed.includes(' ') && trimmed.length > 3) return 'name';
   if (trimmed.length > 2) return 'username';
   return 'email';
@@ -22,6 +43,7 @@ function detectType(trimmed: string): IdentifierType {
 
 export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
   const { t } = useTranslation();
+  const { showToast } = useUIStore();
   const [value, setValue] = useState('');
   const [type, setType] = useState<IdentifierType>('email');
   const [isUploading, setIsUploading] = useState(false);
@@ -30,6 +52,11 @@ export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
     e.preventDefault();
     const trimmed = value.trim();
     if (!trimmed) return;
+
+    if (!validateSeed(type, trimmed)) {
+      showToast('Invalid input for the selected identifier type.', 'error');
+      return;
+    }
 
     onAdd(type, trimmed);
     setValue('');
@@ -108,12 +135,10 @@ export default function IdentifierForm({ onAdd }: IdentifierFormProps) {
             className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-sans"
           >
             <option value="email">{t('case_window.email_address')}</option>
-            <option value="phone">{t('case_window.phone_number')}</option>
             <option value="name">{t('case_window.individual_name')}</option>
             <option value="username">{t('case_window.social_username')}</option>
             <option value="domain">{t('case_window.domains')}</option>
             <option value="ip">{t('case_window.ip_address')}</option>
-            <option value="wallet">{t('case_window.crypto_wallet')}</option>
             <option value="photo">{t('case_window.photo_url')}</option>
             <option value="other">{t('case_window.other_fallback')}</option>
           </select>

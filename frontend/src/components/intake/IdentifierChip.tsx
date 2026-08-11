@@ -19,10 +19,8 @@ export default function IdentifierChip({ id, type, rawValue, onDelete }: Identif
   const typeColors: Record<IdentifierType, string> = {
     name: 'bg-rose-950/40 border-rose-800/40 text-rose-300',
     email: 'bg-indigo-950/40 border-indigo-800/40 text-indigo-300',
-    phone: 'bg-emerald-950/40 border-emerald-800/40 text-emerald-300',
     username: 'bg-cyan-950/40 border-cyan-800/40 text-cyan-300',
     domain: 'bg-purple-950/40 border-purple-800/40 text-purple-300',
-    wallet: 'bg-amber-950/40 border-amber-800/40 text-amber-300',
     photo: 'bg-teal-950/40 border-teal-800/40 text-teal-300',
     ip: 'bg-orange-950/40 border-orange-800/40 text-orange-300',
     other: 'bg-slate-950/40 border-slate-800/40 text-slate-350',

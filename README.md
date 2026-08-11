@@ -1,8 +1,8 @@
-# e-Rakshak
+# Orion
 
 **Live Demo:** [https://orionerakshak.vercel.app/](https://orionerakshak.vercel.app/)
 
-**e-Rakshak** is an OSINT link-analysis and suspect correlation engine built to assist investigative teams in mapping cybercrime networks. The system automates ingestion, normalizes raw suspect data, queries external intelligence databases, detects pivots, and generates evidentiary dossier reports.
+**Orion** is an OSINT link-analysis and suspect correlation engine built to assist investigative teams in mapping cybercrime networks. The system automates ingestion, normalizes raw suspect data, queries external intelligence databases, detects pivots, and generates evidentiary dossier reports.
 
 ## Overview
 
@@ -29,7 +29,7 @@ The system is composed of two main parts:
 
 ## Recommended Deployment: 100% Free Cloud Architecture
 
-e-Rakshak is engineered to be deployed entirely for free using a combination of **Vercel** (Frontend), **Render** (Backend), and **Neon** (PostgreSQL).
+Orion is engineered to be deployed entirely for free using a combination of **Vercel** (Frontend), **Render** (Backend), and **Neon** (PostgreSQL).
 
 - **Python 3.10+** (For the backend)
 - **Node.js 18+** (For the frontend)
@@ -52,13 +52,13 @@ e-Rakshak is engineered to be deployed entirely for free using a combination of 
    - `JWT_SECRET`: A secure random string (generate with `openssl rand -hex 32`).
    - `GROQ_API_KEY`: Your free API key from [console.groq.com](https://console.groq.com).
    - `USE_CELERY`: `false` (forces synchronous execution to fit within free-tier limits).
-6. Deploy the service and copy your new backend URL (e.g., `https://e-rakshak-api.onrender.com`).
+6. Deploy the service and copy your new backend URL (e.g., `https://orion-api.onrender.com`).
 
 ### Step 3: Frontend Deployment (Vercel)
 1. Go to [Vercel](https://vercel.com) and create a new Project from your repository.
 2. Set the Root Directory to `frontend`.
 3. Add the following Environment Variables in Vercel:
-   - `VITE_API_URL`: Your Render backend URL (e.g., `https://e-rakshak-api.onrender.com/api/v1`).
+   - `VITE_API_URL`: Your Render backend URL (e.g., `https://orion-api.onrender.com/api/v1`).
    - `VITE_API_BASE_URL`: Your Render backend URL.
 4. Deploy the frontend! Vercel handles SPA routing automatically via the provided `vercel.json`.
 
@@ -125,7 +125,7 @@ If you prefer to run the application directly on your machine without Docker, fo
 
 ### 4. Setting up the Local RAG Layer
 
-e-Rakshak now uses a local retrieval-augmented generation path for chat and report synthesis. Case evidence is indexed locally, embeddings are generated with `sentence-transformers/all-MiniLM-L6-v2`, and chat/report responses are built from the local case index first.
+Orion now uses a local retrieval-augmented generation path for chat and report synthesis. Case evidence is indexed locally, embeddings are generated with `sentence-transformers/all-MiniLM-L6-v2`, and chat/report responses are built from the local case index first.
 
 1. Make sure the backend dependencies are installed, including `sentence-transformers`.
 2. Keep the backend API and worker running so the local index can be refreshed when cases change.
@@ -153,7 +153,7 @@ docker compose up --build
 - **Backend API:** http://localhost:8000
 
 ### 3. Dedicated Production Deployment
-For heavy-duty production environments, e-Rakshak provides a separate configuration utilizing a persistent PostgreSQL database, Gunicorn, and Nginx.
+For heavy-duty production environments, Orion provides a separate configuration utilizing a persistent PostgreSQL database, Gunicorn, and Nginx.
 
 1. Copy the production template:
    ```bash

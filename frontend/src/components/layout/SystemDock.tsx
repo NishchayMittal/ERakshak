@@ -3,6 +3,7 @@ import { Plus, RefreshCw, Compass, Network, User, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { NotificationPanel } from '../ui/NotificationPanel';
 import { Transliterate } from '../ui/Transliterate';
+import { useDashboardContext } from '../../pages/DashboardContext';
 
 interface WindowState {
   id: string;
@@ -41,6 +42,8 @@ export default function SystemDock({
   setShowLogoutConfirm
 }: SystemDockProps) {
   const { t } = useTranslation();
+  const { pendingApprovals, user } = useDashboardContext();
+  const showPendingDot = user?.badgeNumber?.toUpperCase() === 'INV-001' && pendingApprovals && pendingApprovals.length > 0;
 
   return (
     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 h-14 bg-[#080d16]/75 border border-white/10 backdrop-blur-xl rounded-2xl flex items-center px-2 sm:px-4 gap-2 sm:gap-3 z-[999] shadow-2xl max-w-[calc(100vw-2rem)]">
@@ -79,10 +82,13 @@ export default function SystemDock({
       <button
         onClick={() => openWindow('profile_window', t('dashboard.profile_title'), 'profile')}
         title={t('dashboard.profile_tooltip')}
-        className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${windows.some(w => w.id === 'profile_window') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
+        className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center relative ${windows.some(w => w.id === 'profile_window') ? 'text-[#39ff14] bg-white/5 border border-white/10' : 'text-gray-300 hover:text-[#39ff14] hover:bg-white/5'}`}
         style={{ background: 'none', border: 'none', cursor: 'pointer' }}
       >
         <User size={20} />
+        {showPendingDot && (
+          <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-[#0a0f18]"></span>
+        )}
       </button>
 
       <NotificationPanel />

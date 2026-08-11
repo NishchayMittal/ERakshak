@@ -28,7 +28,7 @@ export default function NotesPanel({ caseId }: NotesPanelProps) {
 
     setSubmitting(true);
     try {
-      const authorId = user?.name || 'Leon Lobo';
+      const authorId = user?.name || 'Lead Investigator';
       await addCaseNote(caseId, authorId, text.trim());
       setText('');
       showToast(t('notes.note_logged'), 'success');
@@ -148,7 +148,7 @@ export default function NotesPanel({ caseId }: NotesPanelProps) {
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: "calc(8px * var(--font-scale))", color: 'var(--text-muted)' }}>
-            {t('notes.signing_as')} <span style={{ color: 'var(--text-primary)' }}>{user?.name || 'Leon Lobo'}</span>
+            {t('notes.signing_as')} <span style={{ color: 'var(--text-primary)' }}>{user?.name || 'Lead Investigator'}</span>
           </span>
           
           <button

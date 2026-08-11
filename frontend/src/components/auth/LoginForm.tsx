@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useUIStore } from "../../state/uiStore";
-import { signupRequest } from "../../api/endpoints";
+import { signupRequest, fetchNextBadgeId } from "../../api/endpoints";
 import { CyberCard } from "../ui/CyberCard";
 import { CyberButton } from "../ui/CyberButton";
 import { motion } from "framer-motion";
@@ -38,6 +38,16 @@ export function LoginForm({ onGoHome }: { onGoHome?: () => void } = {}) {
     }, 1800);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (isSignUp) {
+      fetchNextBadgeId()
+        .then((nextId) => setUsername(nextId))
+        .catch(() => setUsername("INV-002"));
+    } else {
+      setUsername("INV-001");
+    }
+  }, [isSignUp]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

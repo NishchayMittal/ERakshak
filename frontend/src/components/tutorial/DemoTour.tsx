@@ -414,32 +414,41 @@ export function DemoTour() {
     (text: string) => {
       if (!voiceEnabled || typeof window === 'undefined' || !window.speechSynthesis) return;
       window.speechSynthesis.cancel();
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.rate = 0.92;
-      utter.pitch = 1.05;
-      utter.volume = 0.9;
 
-      // Prefer a natural-sounding voice based on toggle
-      const voices = window.speechSynthesis.getVoices();
-      let preferred;
-      if (voiceType === 'Female') {
-        preferred = voices.find((v) => v.name.includes('Google UK English Female') || v.name.includes('Samantha') || v.name.includes('Karen') || v.name.includes('Female'));
-      } else {
-        preferred = voices.find((v) => v.name.includes('Google UK English Male') || v.name.includes('Alex') || v.name.includes('Daniel') || v.name.includes('Male'));
-      }
-      
-      if (!preferred) preferred = voices.find((v) => v.lang.startsWith('en')) || voices[0];
-      if (preferred) utter.voice = preferred;
+      const doSpeak = () => {
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 0.92;
+        utter.pitch = 1.05;
+        utter.volume = 0.9;
 
-      utter.onstart = () => setIsSpeaking(true);
-      utter.onend = () => setIsSpeaking(false);
-      utter.onerror = () => setIsSpeaking(false);
-      synthRef.current = utter;
-      
-      // Fix timing issue: wait slightly for cancel to process before speaking
-      setTimeout(() => {
+        const voices = window.speechSynthesis.getVoices();
+        let preferred;
+        if (voiceType === 'Female') {
+          preferred = voices.find((v) => v.name.includes('Google UK English Female') || v.name.includes('Samantha') || v.name.includes('Karen') || v.name.includes('Female'));
+        } else {
+          preferred = voices.find((v) => v.name.includes('Google UK English Male') || v.name.includes('Alex') || v.name.includes('Daniel') || v.name.includes('Male'));
+        }
+        
+        if (!preferred) preferred = voices.find((v) => v.lang.startsWith('en')) || voices[0];
+        if (preferred) utter.voice = preferred;
+
+        utter.onstart = () => setIsSpeaking(true);
+        utter.onend = () => setIsSpeaking(false);
+        utter.onerror = () => setIsSpeaking(false);
+        synthRef.current = utter;
+
         window.speechSynthesis.speak(utter);
-      }, 50);
+      };
+
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length === 0) {
+        window.speechSynthesis.onvoiceschanged = () => {
+          window.speechSynthesis.onvoiceschanged = null;
+          doSpeak();
+        };
+      } else {
+        setTimeout(doSpeak, 50);
+      }
     },
     [voiceEnabled, voiceType, setIsSpeaking]
   );

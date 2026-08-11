@@ -117,6 +117,24 @@ def signup(payload: InvestigatorCreate, db: Session = Depends(get_db)):
     return investigator
 
 
+@router.get("/next-badge-id")
+def get_next_badge_id(db: Session = Depends(get_db)):
+    investigators = db.query(Investigator).all()
+    max_num = 1
+    for inv in investigators:
+        bid = inv.badge_id
+        if bid.startswith("INV-"):
+            try:
+                num = int(bid[4:])
+                if num > max_num:
+                    max_num = num
+            except ValueError:
+                pass
+    next_num = max_num + 1
+    return {"next_badge_id": f"INV-{next_num:03d}"}
+
+
+
 @router.get("/pending-approvals", response_model=list[InvestigatorOut])
 def get_pending_approvals(
     db: Session = Depends(get_db),

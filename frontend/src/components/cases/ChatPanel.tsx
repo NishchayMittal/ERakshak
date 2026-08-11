@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Send, Zap, MessageCircle } from "lucide-react";
+import { Send, Zap, MessageCircle, Copy, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { chatWithEvidence } from "../../api/endpoints";
 import { useUIStore } from "../../state/uiStore";
@@ -56,23 +56,31 @@ export default function ChatPanel({
   );
   const [internalInputValue, setInternalInputValue] = useState("");
   const [internalIsLoading, setInternalIsLoading] = useState(false);
-  const internalMessagesEndRef = useRef<HTMLDivElement>(null);
   const internalTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+
+  const handleCopyText = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedMessageId(id);
+    setTimeout(() => {
+      setCopiedMessageId(null);
+    }, 2000);
+    showToast(t("chat.copied", "MESSAGE COPIED TO CLIPBOARD"), "success");
+  };
 
   const activeMessages = isControlled ? messages! : internalMessages;
   const activeInputValue = isControlled ? inputValue! : internalInputValue;
   const activeIsLoading = isControlled ? isLoading! : internalIsLoading;
-  const activeMessagesEndRef = isControlled
-    ? messagesEndRef!
-    : internalMessagesEndRef;
   const activeTextareaRef = isControlled ? textareaRef! : internalTextareaRef;
 
-  // Internal scroll
+  // Local scroll container to bottom when messages or loading changes
   useEffect(() => {
-    if (!isControlled) {
-      internalMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [internalMessages, isControlled, internalIsLoading]);
+  }, [activeMessages, activeIsLoading]);
+
 
   const handleSendMessage = async () => {
     if (isControlled && onSendMessage) {
@@ -209,7 +217,7 @@ export default function ChatPanel({
       </div>
 
       {/* Messages Container */}
-      <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
         {(activeMessages || []).filter(Boolean).map((msg, index) => (
           <div
             key={msg?.id || index.toString()}
@@ -257,7 +265,7 @@ export default function ChatPanel({
                     : "rgba(255,255,255,0.03)",
                   border: `1px solid ${msg?.isUser ? "var(--accent-primary)" : "rgba(0,255,194,0.15)"}`,
                   borderRadius: 6,
-                  padding: "8px 12px",
+                  padding: msg?.isUser ? "8px 12px" : "8px 28px 8px 12px",
                   fontFamily: "var(--font-mono)",
                   fontSize: "calc(9px * var(--font-scale))",
                   color: "var(--text-primary)",
@@ -266,6 +274,43 @@ export default function ChatPanel({
                 }}
               >
                 {parseMessageContent(msg?.content || "", transliterate)}
+                
+                {!msg?.isUser && (
+                  <button
+                    onClick={() => handleCopyText(msg?.content || "", msg?.id)}
+                    style={{
+                      position: "absolute",
+                      top: 6,
+                      right: 6,
+                      background: "none",
+                      border: "none",
+                      color: copiedMessageId === msg?.id ? "#39ff14" : "var(--text-muted)",
+                      cursor: "pointer",
+                      padding: 4,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 4,
+                      transition: "color 0.2s, background-color 0.2s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = "var(--accent-primary)";
+                      e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = copiedMessageId === msg?.id ? "#39ff14" : "var(--text-muted)";
+                      e.currentTarget.style.backgroundColor = "transparent";
+                    }}
+                    title={t("chat.copy_tooltip", "Copy message text")}
+                  >
+                    {copiedMessageId === msg?.id ? (
+                      <Check className="w-3 h-3" />
+                    ) : (
+                      <Copy className="w-3 h-3" />
+                    )}
+                  </button>
+                )}
+
                 <div
                   style={{
                     fontSize: "calc(7px * var(--font-scale))",
@@ -358,8 +403,6 @@ export default function ChatPanel({
             </div>
           </div>
         )}
-
-        <div ref={activeMessagesEndRef} />
       </div>
 
       {/* Input Area */}

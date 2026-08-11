@@ -92,7 +92,8 @@ export default function Sidebar() {
     let cancelled = false;
 
     const refreshPendingApprovals = async () => {
-      if (user?.badgeNumber !== 'INV-001') {
+      const isLead = user?.badgeNumber?.toUpperCase() === 'INV-001' || user?.role === 'Lead Investigator';
+      if (!isLead) {
         setPendingApprovalsCount(0);
         return;
       }
@@ -241,7 +242,7 @@ export default function Sidebar() {
                 </div>
               )}
 
-              {pendingApprovalsCount > 0 && (
+              {item.key === 'profile' && pendingApprovalsCount > 0 && (
                 <span
                   title={`${pendingApprovalsCount} pending approval${pendingApprovalsCount === 1 ? '' : 's'}`}
                   style={{
@@ -302,8 +303,18 @@ export default function Sidebar() {
         {!sidebarCollapsed && user && (
           <>
             <div>
-              <div style={{ fontSize: "calc(10px * var(--font-scale))", fontFamily: 'var(--font-heading)', color: 'var(--text-primary)', fontWeight: 600 }}>
+              <div style={{ fontSize: "calc(10px * var(--font-scale))", fontFamily: 'var(--font-heading)', color: 'var(--text-primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
                 {user.name}
+                {pendingApprovalsCount > 0 && (
+                  <span style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    background: 'var(--accent-threat)',
+                    boxShadow: '0 0 6px var(--accent-threat)',
+                    display: 'inline-block'
+                  }} title={`${pendingApprovalsCount} pending approvals`} />
+                )}
               </div>
               <div style={{ fontSize: "calc(9px * var(--font-scale))", fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginTop: 2 }}>
                 {user.badgeNumber}
@@ -325,13 +336,13 @@ export default function Sidebar() {
             </button>
           </>
         )}
-        {/* Online indicator — green = live system */}
+        {/* Online indicator — green = live system, red = pending notifications */}
         <span style={{
           width: 6, height: 6, borderRadius: '50%',
-          background: 'var(--accent-action)',
-          boxShadow: '0 0 6px var(--accent-action)',
+          background: pendingApprovalsCount > 0 ? 'var(--accent-threat)' : 'var(--accent-action)',
+          boxShadow: `0 0 6px ${pendingApprovalsCount > 0 ? 'var(--accent-threat)' : 'var(--accent-action)'}`,
           display: sidebarCollapsed ? 'block' : 'none',
-        }} />
+        }} title={pendingApprovalsCount > 0 ? `${pendingApprovalsCount} pending approvals` : 'Online'} />
       </div>
 
       {/* Disconnect Confirmation Modal */}

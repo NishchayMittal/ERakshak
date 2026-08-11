@@ -175,7 +175,7 @@ export async function triggerModelRetrain(): Promise<{ message: string }> {
 }
 
 export async function updateInvestigatorProfile(fullName?: string, password?: string): Promise<unknown> {
-  if (isMockMode()) return mock.updateMockProfile(fullName || 'Leon Lobo');
+  if (isMockMode()) return mock.updateMockProfile(fullName || 'Lead Investigator');
   const payload: Record<string, unknown> = {};
   if (fullName) payload.full_name = fullName;
   if (password) payload.password = password;
@@ -229,7 +229,7 @@ export async function loginRequest(badgeId: string, password?: string): Promise<
     }
 
     // Check if badge is recognized
-    if (lowerBadge !== 'inv-001' && lowerBadge !== 'leon' && lowerBadge !== 'inv-042') {
+    if (lowerBadge !== 'inv-001' && lowerBadge !== 'inv-042') {
       const err = new Error("Badge ID is not registered.") as LoginError;
       err.response = { data: { detail: "Badge ID is not registered." } };
       throw err;
@@ -244,8 +244,8 @@ export async function loginRequest(badgeId: string, password?: string): Promise<
 
     return {
       access_token: 'mock-token',
-      badge_id: badgeId,
-      full_name: badgeId === 'INV-001' || badgeId.toLowerCase().includes('leon') ? 'Leon Lobo' : badgeId
+      badge_id: badgeId.toUpperCase(),
+      full_name: badgeId.toUpperCase() === 'INV-001' ? 'Lead Investigator' : badgeId
     };
   }
   const params = new URLSearchParams();
@@ -270,6 +270,24 @@ export async function signupRequest(badgeId: string, fullName: string, securityP
     is_active: true
   });
   return res.data;
+}
+
+export async function fetchNextBadgeId(): Promise<string> {
+  if (isMockMode()) {
+    const mockIds = ['INV-001', 'INV-042', ...mockPendingApprovals.map(a => a.badge_id)];
+    let maxNum = 1;
+    for (const bid of mockIds) {
+      if (bid.startsWith('INV-')) {
+        const num = parseInt(bid.substring(4), 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      }
+    }
+    return `INV-${String(maxNum + 1).padStart(3, '0')}`;
+  }
+  const res = await apiClient.get('/auth/next-badge-id');
+  return res.data.next_badge_id;
 }
 
 export async function getPendingApprovals(): Promise<unknown[]> {

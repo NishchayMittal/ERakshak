@@ -586,6 +586,19 @@ export default function PortalPage() {
     }
   }, [phase]);
 
+  useEffect(() => {
+    if (phase !== 'splash') return;
+    const skipSplash = () => {
+      setPhase('ready');
+    };
+    window.addEventListener('keydown', skipSplash);
+    window.addEventListener('mousedown', skipSplash);
+    return () => {
+      window.removeEventListener('keydown', skipSplash);
+      window.removeEventListener('mousedown', skipSplash);
+    };
+  }, [phase]);
+
   const handleGoHome = () => {
     try {
       playClick();
@@ -762,7 +775,7 @@ export default function PortalPage() {
       <div
         style={{
           position: 'absolute',
-          top: '35%',
+          top: '28%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
           width: '90%',

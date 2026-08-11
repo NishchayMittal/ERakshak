@@ -185,10 +185,6 @@ export default function InvestigationPage({
     }
   };
 
-  // Auto-scroll to bottom when new chat messages arrive
-  useEffect(() => {
-    chatMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
 
   // Scroll chat messages when updated
 

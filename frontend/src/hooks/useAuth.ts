@@ -81,7 +81,7 @@ export function useAuth() {
       setUser({
         id: data.badge_id,
         name: data.full_name,
-        role: data.badge_id === 'INV-001' ? 'Lead Investigator' : 'Investigator',
+        role: data.badge_id?.toUpperCase() === 'INV-001' ? 'Lead Investigator' : 'Investigator',
         badgeNumber: data.badge_id,
       });
       return true;

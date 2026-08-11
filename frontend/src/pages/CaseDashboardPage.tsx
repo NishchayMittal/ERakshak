@@ -91,6 +91,19 @@ export default function CaseDashboardPage() {
     startDemo();
   };
 
+  // Auto-start demo for first-time login ever
+  useEffect(() => {
+    if (user?.badgeNumber) {
+      const demoKey = `erakshak_demo_started_${user.badgeNumber}`;
+      const hasStarted = localStorage.getItem(demoKey);
+      if (!hasStarted) {
+        localStorage.setItem(demoKey, 'true');
+        startDemo();
+      }
+    }
+  }, [user?.badgeNumber, startDemo]);
+
+
   // --- STATE DECLARATIONS ---
   const [windows, setWindows] = useState<WindowState[]>([]);
   const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
@@ -1271,7 +1284,7 @@ export default function CaseDashboardPage() {
   };
 
   const fetchPendingApprovals = useCallback(async () => {
-    if (user?.badgeNumber !== 'INV-001') return;
+    if (user?.badgeNumber?.toUpperCase() !== 'INV-001') return;
     Promise.resolve().then(() => setLoadingPending(true));
     try {
       const res = await getPendingApprovals();

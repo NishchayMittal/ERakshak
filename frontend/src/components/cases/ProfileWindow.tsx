@@ -97,7 +97,7 @@ export function ProfileWindow() {
         </button>
       </form>
 
-      {user?.badgeNumber === 'INV-001' && (
+      {user?.badgeNumber?.toUpperCase() === 'INV-001' && (
         <div className="mt-6 border-t border-white/5 pt-4">
           <div className="border-b border-white/5 pb-2 mb-3">
             <h4 className="text-[9px] font-bold text-[#39ff14] tracking-widest uppercase">{t('profile.pending_title')}</h4>

@@ -508,10 +508,8 @@ export function CaseWindow({ win }: CaseWindowProps) {
     if (!trimmed) return 'email';
     if (trimmed.includes('@')) return 'email';
     else if (/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(trimmed)) return 'photo';
-    else if (/^\+?\d[\d-\s()]{7,}\d$/.test(trimmed)) return 'phone';
     else if (/^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(trimmed)) return 'ip';
     else if (/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(trimmed) || (trimmed.includes('.') && !trimmed.includes(' '))) return 'domain';
-    else if (/^(0x)?[0-9a-fA-F]{40}$/.test(trimmed) || /^[139][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(trimmed)) return 'wallet';
     else if (trimmed.includes(' ') && trimmed.length > 3) return 'name';
     else if (trimmed.length > 2) return 'username';
     return 'email';
@@ -571,12 +569,10 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                   className="bg-black border border-white/10 text-gray-300 text-[9px] p-1.5 focus:border-[#39ff14] outline-none"
                                 >
                                   <option value="email">{t('case_window.email_address')}</option>
-                                  <option value="phone">{t('case_window.phone_number')}</option>
                                   <option value="name">{t('case_window.individual_name')}</option>
                                   <option value="username">{t('case_window.social_username')}</option>
                                   <option value="domain">{t('case_window.domains')}</option>
                                   <option value="ip">{t('case_window.ip_address')}</option>
-                                  <option value="wallet">{t('case_window.crypto_wallet')}</option>
                                   <option value="photo">{t('case_window.photo_url')}</option>
                                   <option value="other">{t('case_window.other_fallback')}</option>
                                 </select>

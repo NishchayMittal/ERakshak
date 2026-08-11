@@ -97,12 +97,16 @@ If you prefer to run the application directly on your machine without Docker, fo
    # Optional fallback only if you want remote synthesis
    # GROQ_API_KEY="your-groq-key"
    ```
-5. Start **Redis** locally on port 6379.
-6. Start the Celery worker (in a new terminal, with the virtual environment activated):
+10. Start **Redis** locally on port 6379 (only required if `USE_CELERY=true`).
+11. Start the Backend API (in the virtual environment):
    ```bash
    uvicorn app.main:app --reload --port 8000
    ```
    *The API will be available at http://localhost:8000*
+12. (Optional) If `USE_CELERY=true`, start the Celery worker in a new terminal:
+   ```bash
+   celery -A app.core.celery_app worker --loglevel=info
+   ```
 
 ### 2. Frontend Setup
 1. Open a new terminal window and navigate to the `frontend` directory:
@@ -121,7 +125,7 @@ If you prefer to run the application directly on your machine without Docker, fo
 
 ### 4. Setting up the Local RAG Layer
 
-e-Rakshak now uses a local retrieval-augmented generation path for chat and report synthesis. Case evidence is indexed locally, embeddings are generated with `sentence-transformers/all-MiniLM-L6-v2`, and chat/report responses are built from the local case index first.
+Orion now uses a local retrieval-augmented generation path for chat and report synthesis. Case evidence is indexed locally, embeddings are generated with `sentence-transformers/all-MiniLM-L6-v2`, and chat/report responses are built from the local case index first.
 
 1. Make sure the backend dependencies are installed, including `sentence-transformers`.
 2. Keep the backend API and worker running so the local index can be refreshed when cases change.

@@ -1,4 +1,4 @@
-export type IdentifierType = 'name' | 'email' | 'phone' | 'username' | 'domain' | 'wallet' | 'photo' | 'ip' | 'other';
+export type IdentifierType = 'name' | 'email' | 'username' | 'domain' | 'photo' | 'ip' | 'other';
 
 export interface Identifier {
   id: string;

@@ -509,58 +509,94 @@ export function DemoTour() {
     [voiceEnabled, voiceType, setIsSpeaking, i18n, t]
   );
 
+// Module-level audio blob cache: `${stepId}_${lang}_${gender}` -> Blob
+const audioBlobCache = new Map<string, Blob>();
+
+// Helper to fetch and cache Edge TTS audio with in-memory caching
+async function fetchAndCacheAudio(stepId: string, lang: string, gender: string, i18nInstance: any): Promise<Blob | null> {
+  const normLang = lang.startsWith('hi') ? 'hi' : lang.startsWith('gu') ? 'gu' : 'en';
+  const normGender = gender === 'Male' ? 'Male' : 'Female';
+  const cacheKey = `${stepId}_${normLang}_${normGender}`;
+
+  if (audioBlobCache.has(cacheKey)) {
+    return audioBlobCache.get(cacheKey)!;
+  }
+
+  const stepConfig = DEMO_STEPS.find((s) => s.id === stepId);
+  const defaultVoiceText = stepConfig ? stepConfig.voiceText : '';
+  const text =
+    (i18nInstance.getResource(normLang, 'translation', `demo_tour.steps.${stepId}.voiceText`) as string) ||
+    (i18nInstance.getResource(normLang, 'translation', `demo_tour.steps.${stepId}.message`) as string) ||
+    defaultVoiceText;
+
+  if (!text) return null;
+
+  try {
+    const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+    const response = await fetch(`${apiBase}/api/tts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text,
+        lang: normLang,
+        gender: normGender,
+      }),
+    });
+
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    if (blob && blob.size > 0) {
+      audioBlobCache.set(cacheKey, blob);
+      return blob;
+    }
+  } catch {
+    // Ignore background prefetch errors
+  }
+  return null;
+}
+
+  // Stop speech helper
+  const stopAllAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    setIsSpeaking(false);
+  }, [setIsSpeaking]);
+
+  // Unified exit/skip handler
+  const handleStopDemo = useCallback(() => {
+    stopAllAudio();
+    stopDemo();
+  }, [stopAllAudio, stopDemo]);
+
   // ── Primary Voice synthesis (Microsoft Edge Neural TTS with Fallback) ──────
   const speak = useCallback(
     async (stepId: string) => {
-      // 1. Cancel/stop any currently playing audio clip or speech synthesis
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current = null;
-      }
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
+      // 1. Cancel/stop any currently playing audio clip or speech synthesis immediately
+      stopAllAudio();
 
-      if (!voiceEnabled) {
-        setIsSpeaking(false);
+      const state = useTutorialStore.getState();
+      if (!state.isDemoActive || !voiceEnabled) {
         return;
       }
 
       const rawLang = i18n.language || 'en';
       const currentLang = rawLang.startsWith('hi') ? 'hi' : rawLang.startsWith('gu') ? 'gu' : 'en';
-      const stepConfig = DEMO_STEPS.find((s) => s.id === stepId);
-      const defaultVoiceText = stepConfig ? stepConfig.voiceText : '';
-
-      // Explicitly fetch exact localized string for the selected language
-      const voiceTextToSpeak =
-        (i18n.getResource(currentLang, 'translation', `demo_tour.steps.${stepId}.voiceText`) as string) ||
-        (i18n.getResource(currentLang, 'translation', `demo_tour.steps.${stepId}.message`) as string) ||
-        defaultVoiceText;
-
-      console.log('[LEO Edge TTS]', { stepId, rawLang, currentLang, voiceTextToSpeak });
-
-      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
-      const ttsUrl = `${apiBase}/api/tts`;
 
       try {
-        const response = await fetch(ttsUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            text: voiceTextToSpeak,
-            lang: currentLang,
-            gender: voiceType,
-          }),
-        });
+        const blob = await fetchAndCacheAudio(stepId, currentLang, voiceType, i18n);
 
-        if (!response.ok) {
-          throw new Error(`Edge TTS HTTP status ${response.status}`);
+        // Check again after async fetch if demo is still active before playing audio
+        const currentState = useTutorialStore.getState();
+        if (!currentState.isDemoActive || !voiceEnabled || DEMO_STEPS[currentState.currentStepIndex]?.id !== stepId) {
+          return;
         }
 
-        const blob = await response.blob();
         if (!blob || blob.size === 0) {
           throw new Error('Edge TTS returned empty audio payload');
         }
@@ -582,66 +618,117 @@ export function DemoTour() {
         audio.onended = cleanup;
         audio.onerror = () => {
           cleanup();
-          fallbackSpeechSynthesis(stepId);
+          const st = useTutorialStore.getState();
+          if (st.isDemoActive && voiceEnabled) {
+            fallbackSpeechSynthesis(stepId);
+          }
         };
+
+        // Final check before playback
+        if (!useTutorialStore.getState().isDemoActive) {
+          cleanup();
+          return;
+        }
 
         await audio.play();
       } catch (err) {
-        console.warn('Edge TTS unavailable, using native SpeechSynthesis fallback:', err);
-        fallbackSpeechSynthesis(stepId);
+        const st = useTutorialStore.getState();
+        if (st.isDemoActive && voiceEnabled) {
+          console.warn('Edge TTS unavailable, using native SpeechSynthesis fallback:', err);
+          fallbackSpeechSynthesis(stepId);
+        }
       }
     },
-    [voiceEnabled, voiceType, setIsSpeaking, i18n, t, fallbackSpeechSynthesis]
+    [voiceEnabled, voiceType, stopAllAudio, setIsSpeaking, i18n, fallbackSpeechSynthesis]
   );
 
-  // Speak immediately on step change (no artificial delay)
+  // Speak immediately on step, voiceType, or language change
   useEffect(() => {
     if (!isDemoActive || !currentStep) return;
     if (voiceEnabled) {
       speak(currentStep.id);
     }
-  }, [isDemoActive, currentStepIndex, voiceEnabled, speak, currentStep]);
+  }, [isDemoActive, currentStepIndex, voiceEnabled, voiceType, i18n.language, speak, currentStep]);
 
-  // Preload next step TTS audio in background for instant 0ms playback on slide change
+  // Aggressively pre-warm current & adjacent steps across all languages and genders for 0ms switching
   useEffect(() => {
     if (!isDemoActive || !voiceEnabled) return;
-    const nextStep = DEMO_STEPS[currentStepIndex + 1];
-    if (!nextStep) return;
 
-    const rawLang = i18n.language || 'en';
-    const currentLang = rawLang.startsWith('hi') ? 'hi' : rawLang.startsWith('gu') ? 'gu' : 'en';
-    const defaultVoiceText = nextStep.voiceText || '';
-    const voiceTextToSpeak =
-      (i18n.getResource(currentLang, 'translation', `demo_tour.steps.${nextStep.id}.voiceText`) as string) ||
-      (i18n.getResource(currentLang, 'translation', `demo_tour.steps.${nextStep.id}.message`) as string) ||
-      defaultVoiceText;
+    const langs = ['en', 'hi', 'gu'];
+    const genders = ['Female', 'Male'];
 
-    const apiBase = import.meta.env.VITE_API_BASE_URL || '';
-    fetch(`${apiBase}/api/tts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text: voiceTextToSpeak,
-        lang: currentLang,
-        gender: voiceType,
-      }),
-    }).catch(() => {});
-  }, [isDemoActive, currentStepIndex, voiceEnabled, voiceType, i18n]);
+    const stepsToPrewarm = [
+      DEMO_STEPS[currentStepIndex]?.id,
+      DEMO_STEPS[currentStepIndex + 1]?.id,
+      DEMO_STEPS[currentStepIndex + 2]?.id,
+      DEMO_STEPS[currentStepIndex - 1]?.id,
+    ].filter(Boolean);
 
-  // Stop speech when voice toggled off or unmounted
-  useEffect(() => {
-    if (!voiceEnabled) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-        audioRef.current = null;
+    // Prioritize current step variants for instantaneous toggle response
+    const currentId = stepsToPrewarm[0];
+    if (currentId) {
+      for (const l of langs) {
+        for (const g of genders) {
+          fetchAndCacheAudio(currentId, l, g, i18n);
+        }
       }
-      if (typeof window !== 'undefined' && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-      setIsSpeaking(false);
     }
-  }, [voiceEnabled, setIsSpeaking]);
+
+    // Preload next steps in the background
+    const timer = setTimeout(() => {
+      for (let i = 1; i < stepsToPrewarm.length; i++) {
+        for (const l of langs) {
+          for (const g of genders) {
+            fetchAndCacheAudio(stepsToPrewarm[i], l, g, i18n);
+          }
+        }
+      }
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [isDemoActive, currentStepIndex, voiceEnabled, i18n]);
+
+  // Stop speech when voice toggled off, demo disabled, or unmounted
+  useEffect(() => {
+    if (!voiceEnabled || !isDemoActive) {
+      stopAllAudio();
+    }
+  }, [voiceEnabled, isDemoActive, stopAllAudio]);
+
+  // Component unmount cleanup
+  useEffect(() => {
+    return () => {
+      stopAllAudio();
+    };
+  }, [stopAllAudio]);
+
+// Helper to resolve the exact target element in the active/focused case window when multiple cases are open
+function resolveTargetElement(selector: string): HTMLElement | null {
+  if (!selector) return null;
+  const elements = Array.from(document.querySelectorAll<HTMLElement>(selector));
+  if (elements.length === 0) return null;
+  if (elements.length === 1) return elements[0];
+
+  // 1. Highest priority: element inside the actively focused window
+  const focusedEl = elements.find((el) => el.closest('[data-window-focused="true"]'));
+  if (focusedEl) return focusedEl;
+
+  // 2. Second priority: element inside a case_workspace with the highest z-index
+  const scored = elements.map((el) => {
+    const winEl = el.closest<HTMLElement>('[data-window-zindex]');
+    const zIndex = winEl ? parseInt(winEl.getAttribute('data-window-zindex') || '0', 10) : 0;
+    const isWorkspace = winEl?.getAttribute('data-window-type') === 'case_workspace';
+    const rect = el.getBoundingClientRect();
+    const isVisible = rect.width > 0 && rect.height > 0 && rect.bottom >= 0 && rect.top <= window.innerHeight;
+    return {
+      el,
+      score: (isVisible ? 100000 : 0) + (isWorkspace ? 10000 : 0) + zIndex,
+    };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0]?.el || elements[elements.length - 1];
+}
 
   // ── Target element positioning ────────────────────────────────────────────
   useEffect(() => {
@@ -655,11 +742,11 @@ export function DemoTour() {
         return;
       }
 
-      const el = document.querySelector(sel);
+      const el = resolveTargetElement(sel);
       if (el) {
         const rect = el.getBoundingClientRect();
         setTargetRect(rect);
-        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
 
         // Calculate card position
         const cardW = Math.min(420, window.innerWidth * 0.9);
@@ -668,36 +755,48 @@ export function DemoTour() {
         let top = 0;
         let left = 0;
 
-        if (currentStep.placement === 'bottom') {
+        // Mobile-aware placement calculation
+        const isMobileScreen = window.innerWidth < 640;
+        let effectivePlacement = currentStep.placement;
+        if (isMobileScreen && (effectivePlacement === 'left' || effectivePlacement === 'right')) {
+          effectivePlacement = rect.bottom + cardH + gap < window.innerHeight ? 'bottom' : 'top';
+        }
+
+        if (effectivePlacement === 'bottom') {
           top = rect.bottom + gap;
           left = rect.left + rect.width / 2 - cardW / 2;
-        } else if (currentStep.placement === 'top') {
+        } else if (effectivePlacement === 'top') {
           top = rect.top - gap - cardH;
           left = rect.left + rect.width / 2 - cardW / 2;
-        } else if (currentStep.placement === 'right') {
+        } else if (effectivePlacement === 'right') {
           top = rect.top + rect.height / 2 - cardH / 2;
           left = rect.right + gap;
-        } else if (currentStep.placement === 'left') {
+        } else if (effectivePlacement === 'left') {
           top = rect.top + rect.height / 2 - cardH / 2;
           left = rect.left - gap - cardW;
         }
 
         // Boundary clamp
-        top = Math.max(16, Math.min(top, window.innerHeight - cardH - 16));
-        left = Math.max(16, Math.min(left, window.innerWidth - cardW - 16));
+        top = Math.max(12, Math.min(top, window.innerHeight - cardH - 12));
+        left = Math.max(12, Math.min(left, window.innerWidth - cardW - 12));
         setCardPos({ top, left });
       } else {
         // Element not found — retry
-        setTimeout(compute, 400);
+        setTimeout(compute, 300);
       }
     };
 
     compute();
     window.addEventListener('resize', compute);
     window.addEventListener('scroll', compute, true);
+    
+    // Periodically re-check position in case windows are moved or focused
+    const pollInterval = setInterval(compute, 500);
+
     return () => {
       window.removeEventListener('resize', compute);
       window.removeEventListener('scroll', compute, true);
+      clearInterval(pollInterval);
     };
   }, [isDemoActive, currentStepIndex, currentStep]);
 
@@ -705,13 +804,13 @@ export function DemoTour() {
   useEffect(() => {
     if (!isDemoActive) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { stopDemo(); }
+      if (e.key === 'Escape') { handleStopDemo(); }
       if (e.key === 'ArrowRight' && !isLast && currentStep?.actionRequired !== 'click' && currentStep?.actionRequired !== 'input') { setDemoStep(currentStepIndex + 1); }
       if (e.key === 'ArrowLeft' && !isFirst) { setDemoStep(currentStepIndex - 1); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isDemoActive, currentStepIndex, isFirst, isLast, stopDemo, setDemoStep, currentStep]);
+  }, [isDemoActive, currentStepIndex, isFirst, isLast, handleStopDemo, setDemoStep, currentStep]);
 
   // ── Action auto-advance listener ──────────────────────────────────────────
   useEffect(() => {
@@ -776,7 +875,7 @@ export function DemoTour() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
-        onClick={stopDemo}
+        onClick={handleStopDemo}
         className="fixed top-6 left-1/2 -translate-x-1/2 z-[100000] flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold tracking-widest uppercase text-white hover:text-[#39ff14] border border-white/10 hover:border-[#39ff14]/50 hover:bg-[#39ff14]/10 transition-all backdrop-blur-md shadow-[0_0_20px_rgba(0,0,0,0.5)]"
       >
         <SkipForward size={12} />
@@ -800,13 +899,14 @@ export function DemoTour() {
           style={{
             position: 'fixed',
             zIndex: 99999,
-            width: isCentered ? 'min(500px, 90vw)' : 'min(420px, 90vw)',
+            width: isCentered ? 'min(500px, 92vw)' : 'min(420px, 92vw)',
+            maxHeight: 'min(88vh, 520px)',
             pointerEvents: 'auto',
           }}
         >
           {/* Glass card */}
           <div
-            className="relative rounded-2xl"
+            className="relative rounded-2xl flex flex-col overflow-hidden"
             style={{
               background: 'rgba(6,10,18,0.97)',
               border: `1px solid ${accent}40`,
@@ -863,7 +963,7 @@ export function DemoTour() {
 
                 {/* Close */}
                 <button
-                  onClick={stopDemo}
+                  onClick={handleStopDemo}
                   className="p-2 rounded-lg border border-red-500/30 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 transition-all"
                 >
                   <X size={14} />
@@ -872,7 +972,7 @@ export function DemoTour() {
             </div>
 
             {/* Icon + message body */}
-            <div className="px-5 py-4">
+            <div className="px-5 py-4 overflow-y-auto max-h-[38vh]" style={{ scrollbarWidth: 'thin' }}>
               <div className="flex gap-3">
                 {/* Step icon */}
                 <div
@@ -919,7 +1019,7 @@ export function DemoTour() {
                    </div>
                 ) : isLast ? (
                   <button
-                    onClick={stopDemo}
+                    onClick={handleStopDemo}
                     className="flex items-center gap-1.5 px-5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
                     style={{
                       background: accent,

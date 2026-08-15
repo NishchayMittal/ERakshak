@@ -207,6 +207,18 @@
     "appears_in": "APPEARS IN {{count}} CASES:",
     "scan_failed": "CROSS-CORRELATION SCAN FAILED"
   },
+  "geo_map": {
+    "title": "GEO-INTELLIGENCE MATRIX",
+    "nodes_detected": "NODES DETECTED:",
+    "active_arcs": "ACTIVE ARCS:",
+    "node_intel": "NODE INTEL",
+    "label": "LABEL:",
+    "source": "SOURCE:",
+    "coords": "COORDS:",
+    "unknown": "UNKNOWN",
+    "loading": "ESTABLISHING SATELLITE UPLINK...",
+    "error": "FAILED TO LOAD GEO-INTELLIGENCE"
+  },
   "explorer": {
     "file_path": "File Path: C://cases/list",
     "init_file": "+ Initialize File",

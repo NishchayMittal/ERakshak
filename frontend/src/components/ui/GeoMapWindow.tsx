@@ -47,7 +47,7 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
       } catch (err) {
         if (mounted) {
           console.error('Failed to load geo intelligence:', err);
-          showToast('FAILED TO LOAD GEO-INTELLIGENCE', 'error');
+          showToast(t('geo_map.error', 'FAILED TO LOAD GEO-INTELLIGENCE'), 'error');
         }
       } finally {
         if (mounted) setLoading(false);
@@ -55,7 +55,7 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
     }
     loadData();
     return () => { mounted = false; };
-  }, [caseId, showToast]);
+  }, [caseId, showToast, t]);
 
   useEffect(() => {
     if (globeEl.current && data?.nodes.length) {
@@ -70,7 +70,7 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
       <div className="flex-1 flex flex-col items-center justify-center h-full">
         <div className="w-8 h-8 border-2 border-[#39ff14]/30 border-t-[#39ff14] rounded-full animate-spin mb-4" />
         <div className="text-[10px] font-mono text-[#39ff14] animate-pulse uppercase tracking-widest">
-          ESTABLISHING SATELLITE UPLINK...
+          {t('geo_map.loading', 'ESTABLISHING SATELLITE UPLINK...')}
         </div>
       </div>
     );
@@ -98,7 +98,7 @@ export function GeoMapWindow({ caseId }: GeoMapWindowProps) {
             </div>
             <div className="space-y-2">
               <div><span className="text-gray-500">{t('geo_map.label', 'LABEL:')}</span> <span className="break-all">{transliterate(selectedNode.label)}</span></div>
-              <div><span className="text-gray-500">{t('geo_map.source', 'SOURCE:')}</span> {transliterate(selectedNode.source || 'UNKNOWN')}</div>
+              <div><span className="text-gray-500">{t('geo_map.source', 'SOURCE:')}</span> {transliterate(selectedNode.source || t('geo_map.unknown', 'UNKNOWN'))}</div>
               <div><span className="text-gray-500">{t('geo_map.coords', 'COORDS:')}</span> {selectedNode.lat?.toFixed(4)}, {selectedNode.lng?.toFixed(4)}</div>
             </div>
           </div>

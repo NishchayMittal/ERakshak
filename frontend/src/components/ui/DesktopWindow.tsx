@@ -59,6 +59,10 @@ export default function DesktopWindow({
   return (
     <div
       onClick={() => focusWindow(win.id)}
+      data-window-id={win.id}
+      data-window-type={win.type}
+      data-window-focused={isFocused ? 'true' : 'false'}
+      data-window-zindex={win.zIndex}
       className={`absolute flex flex-col border shadow-2xl transition-all duration-100 bg-[#04080e]/95 backdrop-blur-xl ${isFocused ? 'border-[#39ff14] shadow-[#39ff14]/5' : 'border-white/10 shadow-black/80'}`}
       style={{
         left: (win.isMaximized || isMobile) ? 0 : win.x,

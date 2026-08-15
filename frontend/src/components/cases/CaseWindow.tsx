@@ -585,7 +585,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                     <div className="flex gap-2 flex-grow items-center">
                                       <input
                                         type="text"
-                                        placeholder={isUploading ? "Uploading file..." : "Paste face URL or select file →"}
+                                        placeholder={isUploading ? t('case_window.uploading') : t('case_window.photo_placeholder')}
                                         value={(() => {
                                           const val = caseSeedsInput[caseId]?.value || '';
                                           if (val.startsWith('http://') || val.startsWith('https://')) {
@@ -611,7 +611,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                         disabled={isUploading}
                                       />
                                       <label className="cursor-pointer bg-neutral-900 border border-white/10 hover:border-[#39ff14] text-gray-400 hover:text-white px-2.5 py-1.5 rounded text-[8px] transition-all flex items-center gap-1 flex-shrink-0 font-mono">
-                                        <span>UPLOAD</span>
+                                        <span>{t('case_window.upload')}</span>
                                         <input
                                           type="file"
                                           accept="image/*"
@@ -704,7 +704,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                 disabled={(casePendingSeeds[caseId] || []).length === 0 || (caseIngestProgress[caseId] !== undefined && caseIngestProgress[caseId] !== null)}
                                 className="w-full bg-[#a855f7] hover:bg-[#a855f7]/85 disabled:bg-white/5 disabled:text-gray-600 text-black text-[9px] font-bold py-2 tracking-widest text-center uppercase flex items-center justify-center"
                               >
-                                <span>RUN CORRELATION SCAN</span>
+                                <span>{t('case_window.run_scan')}</span>
                                 <FeatureInfoTooltip content="Fires all specialized web crawlers and API connectors to recursively gather data based on your seeds." />
                               </button>
                             </div>
@@ -713,14 +713,14 @@ export function CaseWindow({ win }: CaseWindowProps) {
                           {/* Existing seeds */}
                           <div className="bg-black/35 border border-white/5 rounded-xl p-4 flex flex-col gap-3">
                             <div className="flex justify-between items-center border-b border-white/5 pb-1">
-                              <h4 className="text-[10px] font-bold text-gray-300">ADDED SEEDS</h4>
+                              <h4 className="text-[10px] font-bold text-gray-300">{t('case_window.added_seeds')}</h4>
                               <button onClick={fetchExistingSeeds} className="text-[8px] text-[#39ff14] hover:text-white flex items-center gap-1 font-mono">
-                                <RefreshCw size={10} /> REFRESH
+                                <RefreshCw size={10} /> {t('case_window.refresh')}
                               </button>
                             </div>
                             <div className="flex-1 flex flex-col gap-1.5 overflow-y-auto max-h-48 min-h-24">
                               {existingSeeds.length === 0 ? (
-                                <span className="text-[8px] text-gray-600 font-mono italic">No seeds added yet.</span>
+                                <span className="text-[8px] text-gray-600 font-mono italic">{t('case_window.no_added_seeds')}</span>
                               ) : (
                                 existingSeeds.map((s, idx) => (
                                   <div key={idx} className="flex justify-between items-center bg-white/5 border border-white/5 px-2.5 py-1 rounded">
@@ -735,7 +735,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                         <span className="text-[10px]">{transliterate(s.raw_value || '')}</span>
                                       )}
                                     </span>
-                                    <button onClick={() => removeExistingSeed(s.id)} className="text-gray-500 hover:text-red-400 text-[8px] font-bold border border-transparent hover:border-red-400 px-1 rounded transition-colors">REMOVE</button>
+                                    <button onClick={() => removeExistingSeed(s.id)} className="text-gray-500 hover:text-red-400 text-[8px] font-bold border border-transparent hover:border-red-400 px-1 rounded transition-colors">{t('case_window.remove')}</button>
                                   </div>
                                 ))
                               )}
@@ -749,7 +749,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                               disabled={existingSeeds.length === 0 || (caseIngestProgress[caseId] !== undefined && caseIngestProgress[caseId] !== null)}
                               className="w-full bg-[#39ff14]/20 hover:bg-[#39ff14]/30 border border-[#39ff14]/50 disabled:bg-white/5 disabled:border-transparent disabled:text-gray-600 text-[#39ff14] text-[9px] font-bold py-2 tracking-widest text-center uppercase mt-1"
                             >
-                              RERUN SCAN ON EXISTING
+                              {t('case_window.rerun_scan')}
                             </button>
                           </div>
 
@@ -757,7 +757,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                           {caseIngestProgress[caseId] !== undefined && caseIngestProgress[caseId] !== null && (
                             <div className="w-full bg-black/45 border border-[#39ff14]/30 p-4 rounded-xl flex flex-col gap-2">
                               <div className="flex justify-between text-[9px] font-bold text-[#39ff14]">
-                                <span className="animate-pulse">CRAWLER PIPELINE CARRYING SCAN...</span>
+                                <span className="animate-pulse">{t('case_window.crawler_running')}</span>
                                 <span>{displayProgress ?? caseIngestProgress[caseId]}%</span>
                               </div>
                               <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden relative">

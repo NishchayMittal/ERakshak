@@ -30,7 +30,7 @@ class InvestigatorOut(InvestigatorBase):
 
 
 class CaseBase(BaseModel):
-    title: str
+    title: str = Field(..., max_length=30)
     description: str | None = None
     status: str = "open"
 
@@ -40,7 +40,7 @@ class CaseCreate(CaseBase):
 
 
 class CaseUpdate(BaseModel):
-    title: str | None = None
+    title: str | None = Field(default=None, max_length=30)
     description: str | None = None
     status: str | None = None
 

@@ -66,7 +66,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         path = request.url.path
         
         # Bypass static files, websockets, and health checks
-        if path.startswith("/static") or path.startswith("/ws") or path == "/":
+        if (
+            path.startswith("/static")
+            or path.startswith("/ws")
+            or path == "/"
+            or path.startswith("/health")
+        ):
             return await call_next(request)
 
         # Get Client IP
@@ -79,8 +84,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         limit, window = self.default_limit, self.default_window
         if path.startswith("/auth/login") or path.startswith("/auth/signup"):
             limit, window = 5, 60  # Strict constraints on sensitive routes
+        elif path.startswith("/api/tts") or path.startswith("/tts"):
+            limit, window = 30, 60  # 30 TTS requests per minute per IP
 
-        if not self.limiter.is_allowed(client_ip, path, limit, window):
+        try:
+            allowed = self.limiter.is_allowed(client_ip, path, limit, window)
+        except Exception as e:
+            logger.error(f"Rate limiter check error: {e}")
+            allowed = True
+
+        if not allowed:
             logger.warning(f"Rate limit exceeded for {client_ip} on {path}")
             return JSONResponse(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,

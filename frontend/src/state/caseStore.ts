@@ -62,7 +62,8 @@ export const useCaseStore = create<CaseState>((set, get) => ({
   initializeNewCase: async (title, description) => {
     set({ loading: true });
     try {
-      const newCase = await createCase(title, description);
+      const sanitizedTitle = (title || '').trim().slice(0, 30);
+      const newCase = await createCase(sanitizedTitle, description);
       set((state) => ({
         cases: [newCase, ...state.cases],
         activeCase: newCase,
@@ -77,7 +78,8 @@ export const useCaseStore = create<CaseState>((set, get) => ({
   },
   renameCase: async (caseId, title) => {
     try {
-      const updatedCase = await renameCase(caseId, title);
+      const sanitizedTitle = (title || '').trim().slice(0, 30);
+      const updatedCase = await renameCase(caseId, sanitizedTitle);
       set((state) => ({
         cases: state.cases.map((c) => (c.caseId === caseId ? updatedCase : c)),
         activeCase: state.activeCase?.caseId === caseId ? updatedCase : state.activeCase,

@@ -38,11 +38,15 @@ export default function DashboardModals({
               {t('modals.rename_title')}
             </div>
             <div className="flex flex-col gap-2">
-              <span className="font-mono text-[8px] text-gray-500 uppercase tracking-wider">{t('modals.new_title_label')}</span>
+              <div className="flex justify-between items-center">
+                <span className="font-mono text-[8px] text-gray-500 uppercase tracking-wider">{t('modals.new_title_label')}</span>
+                <span className="font-mono text-[8px] text-gray-500">{renameCaseState.newTitle.length}/30</span>
+              </div>
               <input
                 type="text"
+                maxLength={30}
                 value={renameCaseState.newTitle}
-                onChange={(e) => setRenameCaseState({ ...renameCaseState, newTitle: e.target.value })}
+                onChange={(e) => setRenameCaseState({ ...renameCaseState, newTitle: e.target.value.slice(0, 30) })}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleSaveRename();
                   if (e.key === 'Escape') setRenameCaseState(null);

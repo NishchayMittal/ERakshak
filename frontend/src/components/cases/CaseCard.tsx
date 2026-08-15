@@ -90,8 +90,9 @@ export default function CaseCard({ caseItem, onSelect }: CaseCardProps) {
           <div className="flex items-center gap-1.5 mb-2 relative z-10">
             <input
               type="text"
+              maxLength={30}
               value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
+              onChange={(e) => setNewTitle(e.target.value.slice(0, 30))}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleRename();
                 if (e.key === 'Escape') {

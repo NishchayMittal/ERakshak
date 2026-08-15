@@ -17,7 +17,9 @@ interface DemoStep {
   title: string;
   subtitle: string;
   message: string;
+  mobileMessage?: string;
   voiceText: string;
+  mobileVoiceText?: string;
   icon: React.ReactNode;
   accentColor: string;
   actionRequired?: 'click' | 'input' | 'none';
@@ -78,7 +80,9 @@ const DEMO_STEPS: DemoStep[] = [
     subtitle: 'STEP 5 OF 14',
     actionRequired: 'input',
     message: 'Let\'s start an investigation. Enter a known identifier (like an email or phone number) into the intake field. Type something, then hit Enter or click ADD SEED.',
+    mobileMessage: 'Let\'s start an investigation. Enter a known identifier (like an email or phone number) into the intake field. Type something, then tap ADD SEED.',
     voiceText: 'Now, enter a known identifier like a phone number or email into the intake panel, and press Enter or click Add Seed to proceed.',
+    mobileVoiceText: 'Now, enter a known identifier like a phone number or email into the intake panel, and tap Add Seed to proceed.',
     icon: <Terminal size={22} />,
     accentColor: '#39ff14',
   },
@@ -337,16 +341,16 @@ function ProgressDots({
   accentColor: string;
 }) {
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1 flex-shrink-0">
       {Array.from({ length: total }).map((_, i) => (
         <motion.div
           key={i}
           animate={{
-            width: i === current ? 20 : 6,
-            opacity: i <= current ? 1 : 0.3,
+            width: i === current ? 14 : 4,
+            opacity: i <= current ? 1 : 0.25,
           }}
           transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-          className="h-1.5 rounded-full"
+          className="h-1 rounded-full flex-shrink-0"
           style={{ background: i === current ? accentColor : 'rgba(255,255,255,0.3)' }}
         />
       ))}
@@ -387,7 +391,6 @@ function TypewriterText({ text, speed = 18 }: { text: string; speed?: number }) 
   );
 }
 
-// ── MAIN DEMO TOUR ──────────────────────────────────────────────────────────
 export function DemoTour() {
   const {
     isDemoActive,
@@ -410,17 +413,43 @@ export function DemoTour() {
   const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const currentStep = DEMO_STEPS[currentStepIndex];
+  // Detect mobile screens (< 640px) vs iPad/tablets (>= 768px) and desktop
+  const [isMobileScreen, setIsMobileScreen] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 640
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileScreen(window.innerWidth < 640);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Filter out HUD terminal and Badge Identity (profile-menu) ONLY on mobile phones (< 640px)
+  const activeSteps = React.useMemo(
+    () => (isMobileScreen ? DEMO_STEPS.filter((step) => step.id !== 'hud-terminal' && step.id !== 'profile-menu') : DEMO_STEPS),
+    [isMobileScreen]
+  );
+
+  const currentStep = activeSteps[currentStepIndex] || activeSteps[0];
   const isFirst = currentStepIndex === 0;
-  const isLast = currentStepIndex === DEMO_STEPS.length - 1;
+  const isLast = currentStepIndex >= activeSteps.length - 1;
+  const lastPlayedKeyRef = useRef<string>('');
+  const activeSpeechIdRef = useRef<number>(0);
+  const synthTimerRef = useRef<any>(null);
 
   // ── Native Browser SpeechSynthesis Fallback ──────────────────────────────
   const fallbackSpeechSynthesis = useCallback(
-    (stepId: string) => {
+    (stepId: string, speechId: number) => {
       if (!voiceEnabled || typeof window === 'undefined' || !window.speechSynthesis) return;
+      if (activeSpeechIdRef.current !== speechId) return;
+
       window.speechSynthesis.cancel();
 
       const doSpeak = () => {
+        if (activeSpeechIdRef.current !== speechId) return;
+
         const voices = window.speechSynthesis.getVoices();
         let preferred;
         let selectedLang = i18n.language || 'en';
@@ -441,7 +470,7 @@ export function DemoTour() {
           const guVoices = voices.filter((v) => v.lang.startsWith('gu'));
           if (guVoices.length > 0) {
             if (voiceType === 'Female') {
-              preferred = guVoices.find((v) => v.name.toLowerCase().includes('female') || !v.name.toLowerCase().includes('male'));
+              preferred = guVoices.find((v) => v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('male'));
             } else {
               preferred = guVoices.find((v) => v.name.toLowerCase().includes('male') || !v.name.toLowerCase().includes('female'));
             }
@@ -473,12 +502,7 @@ export function DemoTour() {
 
         if (!preferred) preferred = voices.find((v) => v.lang.startsWith('en')) || voices[0];
 
-        const stepConfig = DEMO_STEPS.find((s) => s.id === stepId);
-        const defaultVoiceText = stepConfig ? stepConfig.voiceText : '';
-        const voiceTextToSpeak =
-          t(`demo_tour.steps.${stepId}.voiceText`, { lng: selectedLang }) ||
-          t(`demo_tour.steps.${stepId}.message`, { lng: selectedLang }) ||
-          defaultVoiceText;
+        const voiceTextToSpeak = getStepVoiceText(stepId, selectedLang, isMobileScreen, t, i18n);
 
         const utter = new SpeechSynthesisUtterance(voiceTextToSpeak);
         utter.rate = 0.92;
@@ -488,12 +512,20 @@ export function DemoTour() {
 
         if (preferred) utter.voice = preferred;
 
-        utter.onstart = () => setIsSpeaking(true);
-        utter.onend = () => setIsSpeaking(false);
-        utter.onerror = () => setIsSpeaking(false);
+        utter.onstart = () => {
+          if (activeSpeechIdRef.current === speechId) setIsSpeaking(true);
+        };
+        utter.onend = () => {
+          if (activeSpeechIdRef.current === speechId) setIsSpeaking(false);
+        };
+        utter.onerror = () => {
+          if (activeSpeechIdRef.current === speechId) setIsSpeaking(false);
+        };
         synthRef.current = utter;
 
-        window.speechSynthesis.speak(utter);
+        if (activeSpeechIdRef.current === speechId) {
+          window.speechSynthesis.speak(utter);
+        }
       };
 
       const voices = window.speechSynthesis.getVoices();
@@ -503,97 +535,201 @@ export function DemoTour() {
           doSpeak();
         };
       } else {
-        setTimeout(doSpeak, 50);
+        if (synthTimerRef.current) clearTimeout(synthTimerRef.current);
+        synthTimerRef.current = setTimeout(doSpeak, 50);
       }
     },
-    [voiceEnabled, voiceType, setIsSpeaking, i18n, t]
+    [voiceEnabled, voiceType, setIsSpeaking, i18n, t, isMobileScreen]
   );
 
-// Module-level audio blob cache: `${stepId}_${lang}_${gender}` -> Blob
-const audioBlobCache = new Map<string, Blob>();
+// Helper to safely resolve message text without exposing raw i18n missing keys
+function getStepMessage(step: DemoStep, isMobile: boolean, tInstance: any, i18nInstance: any): string {
+  if (isMobile) {
+    const mobileKey = `demo_tour.steps.${step.id}.mobileMessage`;
+    if (i18nInstance?.exists && i18nInstance.exists(mobileKey)) {
+      return tInstance(mobileKey);
+    }
+    if (step.mobileMessage) {
+      return step.mobileMessage;
+    }
+  }
+  const defaultKey = `demo_tour.steps.${step.id}.message`;
+  return tInstance(defaultKey, step.message);
+}
 
-// Helper to fetch and cache Edge TTS audio with in-memory caching
-async function fetchAndCacheAudio(stepId: string, lang: string, gender: string, i18nInstance: any): Promise<Blob | null> {
+// Helper to safely resolve voice text without exposing raw i18n missing keys
+function getStepVoiceText(stepId: string, lang: string, isMobile: boolean, tInstance: any, i18nInstance: any): string {
+  const stepConfig = DEMO_STEPS.find((s) => s.id === stepId);
+  const defaultVoiceText = isMobile && stepConfig?.mobileVoiceText ? stepConfig.mobileVoiceText : (stepConfig ? stepConfig.voiceText : '');
+  
+  if (isMobile) {
+    const mobileVoiceKey = `demo_tour.steps.${stepId}.mobileVoiceText`;
+    if (i18nInstance?.exists && i18nInstance.exists(mobileVoiceKey, { lng: lang })) {
+      return tInstance(mobileVoiceKey, { lng: lang });
+    }
+    const mobileMsgKey = `demo_tour.steps.${stepId}.mobileMessage`;
+    if (i18nInstance?.exists && i18nInstance.exists(mobileMsgKey, { lng: lang })) {
+      return tInstance(mobileMsgKey, { lng: lang });
+    }
+    if (stepConfig?.mobileVoiceText) {
+      return stepConfig.mobileVoiceText;
+    }
+    if (stepConfig?.mobileMessage) {
+      return stepConfig.mobileMessage;
+    }
+  }
+
+  const voiceKey = `demo_tour.steps.${stepId}.voiceText`;
+  if (i18nInstance?.exists && i18nInstance.exists(voiceKey, { lng: lang })) {
+    return tInstance(voiceKey, { lng: lang });
+  }
+  const msgKey = `demo_tour.steps.${stepId}.message`;
+  if (i18nInstance?.exists && i18nInstance.exists(msgKey, { lng: lang })) {
+    return tInstance(msgKey, { lng: lang });
+  }
+  return defaultVoiceText || stepConfig?.message || '';
+}
+
+// Module-level audio blob cache: `${stepId}_${lang}_${gender}_${mode}` -> Blob
+const audioBlobCache = new Map<string, Blob>();
+const inFlightAudioRequests = new Map<string, Promise<Blob | null>>();
+
+// Helper to fetch and cache Edge TTS audio with in-memory caching and in-flight deduplication
+async function fetchAndCacheAudio(stepId: string, lang: string, gender: string, i18nInstance: any, isMobile: boolean = false): Promise<Blob | null> {
   const normLang = lang.startsWith('hi') ? 'hi' : lang.startsWith('gu') ? 'gu' : 'en';
   const normGender = gender === 'Male' ? 'Male' : 'Female';
-  const cacheKey = `${stepId}_${normLang}_${normGender}`;
+  const cacheKey = `${stepId}_${normLang}_${normGender}_${isMobile ? 'm' : 'd'}`;
 
   if (audioBlobCache.has(cacheKey)) {
     return audioBlobCache.get(cacheKey)!;
   }
 
+  if (inFlightAudioRequests.has(cacheKey)) {
+    return inFlightAudioRequests.get(cacheKey)!;
+  }
+
   const stepConfig = DEMO_STEPS.find((s) => s.id === stepId);
-  const defaultVoiceText = stepConfig ? stepConfig.voiceText : '';
-  const text =
-    (i18nInstance.getResource(normLang, 'translation', `demo_tour.steps.${stepId}.voiceText`) as string) ||
-    (i18nInstance.getResource(normLang, 'translation', `demo_tour.steps.${stepId}.message`) as string) ||
-    defaultVoiceText;
+  const defaultVoiceText = isMobile && stepConfig?.mobileVoiceText ? stepConfig.mobileVoiceText : (stepConfig ? stepConfig.voiceText : '');
+  
+  let text = '';
+  if (isMobile) {
+    text =
+      (i18nInstance?.getResource(normLang, 'translation', `demo_tour.steps.${stepId}.mobileVoiceText`) as string) ||
+      (i18nInstance?.getResource(normLang, 'translation', `demo_tour.steps.${stepId}.mobileMessage`) as string) ||
+      (stepConfig?.mobileVoiceText) ||
+      (stepConfig?.mobileMessage) ||
+      '';
+  }
+  if (!text) {
+    text =
+      (i18nInstance?.getResource(normLang, 'translation', `demo_tour.steps.${stepId}.voiceText`) as string) ||
+      (i18nInstance?.getResource(normLang, 'translation', `demo_tour.steps.${stepId}.message`) as string) ||
+      defaultVoiceText;
+  }
 
   if (!text) return null;
 
-  try {
-    const apiBase = import.meta.env.VITE_API_BASE_URL || '';
-    const response = await fetch(`${apiBase}/api/tts`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text,
-        lang: normLang,
-        gender: normGender,
-      }),
-    });
+  const fetchPromise = (async () => {
+    try {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+      const response = await fetch(`${apiBase}/api/tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          lang: normLang,
+          gender: normGender,
+        }),
+      });
 
-    if (!response.ok) return null;
-    const blob = await response.blob();
-    if (blob && blob.size > 0) {
-      audioBlobCache.set(cacheKey, blob);
-      return blob;
+      if (!response.ok) return null;
+      const blob = await response.blob();
+      if (blob && blob.size > 0) {
+        audioBlobCache.set(cacheKey, blob);
+        return blob;
+      }
+    } catch {
+      // Ignore background prefetch errors
+    } finally {
+      inFlightAudioRequests.delete(cacheKey);
     }
-  } catch {
-    // Ignore background prefetch errors
-  }
-  return null;
+    return null;
+  })();
+
+  inFlightAudioRequests.set(cacheKey, fetchPromise);
+  return fetchPromise;
 }
 
   // Stop speech helper
   const stopAllAudio = useCallback(() => {
+    // Invalidate any in-flight async TTS requests or scheduled speech timers
+    activeSpeechIdRef.current += 1;
+
+    if (synthTimerRef.current) {
+      clearTimeout(synthTimerRef.current);
+      synthTimerRef.current = null;
+    }
+
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+      audioRef.current.onplay = null;
+      audioRef.current.onended = null;
+      audioRef.current.onerror = null;
+      audioRef.current.src = '';
       audioRef.current = null;
     }
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
+    if (synthRef.current && typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel();
+      synthRef.current = null;
     }
     setIsSpeaking(false);
   }, [setIsSpeaking]);
 
   // Unified exit/skip handler
   const handleStopDemo = useCallback(() => {
+    lastPlayedKeyRef.current = '';
     stopAllAudio();
     stopDemo();
   }, [stopAllAudio, stopDemo]);
 
-  // ── Primary Voice synthesis (Microsoft Edge Neural TTS with Fallback) ──────
+  // Edge TTS playback with speech synthesis fallback
   const speak = useCallback(
     async (stepId: string) => {
-      // 1. Cancel/stop any currently playing audio clip or speech synthesis immediately
-      stopAllAudio();
+      if (!voiceEnabled || typeof window === 'undefined') return;
 
-      const state = useTutorialStore.getState();
-      if (!state.isDemoActive || !voiceEnabled) {
-        return;
+      // Invalidate existing speech and claim this new speech ID
+      const currentSpeechId = ++activeSpeechIdRef.current;
+
+      if (synthTimerRef.current) {
+        clearTimeout(synthTimerRef.current);
+        synthTimerRef.current = null;
       }
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.onplay = null;
+        audioRef.current.onended = null;
+        audioRef.current.onerror = null;
+        audioRef.current.src = '';
+        audioRef.current = null;
+      }
+      if (synthRef.current && typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        synthRef.current = null;
+      }
+      setIsSpeaking(false);
 
-      const rawLang = i18n.language || 'en';
-      const currentLang = rawLang.startsWith('hi') ? 'hi' : rawLang.startsWith('gu') ? 'gu' : 'en';
+      const currentLang = i18n.language || 'en';
 
       try {
-        const blob = await fetchAndCacheAudio(stepId, currentLang, voiceType, i18n);
+        const blob = await fetchAndCacheAudio(stepId, currentLang, voiceType, i18n, isMobileScreen);
 
-        // Check again after async fetch if demo is still active before playing audio
+        // Check if a newer speak request superceded this one while fetching
+        if (activeSpeechIdRef.current !== currentSpeechId) {
+          return;
+        }
+
         const currentState = useTutorialStore.getState();
-        if (!currentState.isDemoActive || !voiceEnabled || DEMO_STEPS[currentState.currentStepIndex]?.id !== stepId) {
+        if (!currentState.isDemoActive || !voiceEnabled || activeSteps[currentState.currentStepIndex]?.id !== stepId) {
           return;
         }
 
@@ -605,92 +741,83 @@ async function fetchAndCacheAudio(stepId: string, lang: string, gender: string, 
         const audio = new Audio(audioUrl);
         audioRef.current = audio;
 
-        audio.onplay = () => setIsSpeaking(true);
+        audio.onplay = () => {
+          if (activeSpeechIdRef.current === currentSpeechId) {
+            setIsSpeaking(true);
+          }
+        };
 
         const cleanup = () => {
-          setIsSpeaking(false);
           URL.revokeObjectURL(audioUrl);
           if (audioRef.current === audio) {
             audioRef.current = null;
+            setIsSpeaking(false);
           }
         };
 
         audio.onended = cleanup;
         audio.onerror = () => {
           cleanup();
-          const st = useTutorialStore.getState();
-          if (st.isDemoActive && voiceEnabled) {
-            fallbackSpeechSynthesis(stepId);
+          if (activeSpeechIdRef.current === currentSpeechId) {
+            const st = useTutorialStore.getState();
+            if (st.isDemoActive && voiceEnabled) {
+              fallbackSpeechSynthesis(stepId, currentSpeechId);
+            }
           }
         };
 
-        // Final check before playback
-        if (!useTutorialStore.getState().isDemoActive) {
+        if (activeSpeechIdRef.current !== currentSpeechId || !useTutorialStore.getState().isDemoActive) {
           cleanup();
           return;
         }
 
         await audio.play();
       } catch (err) {
-        const st = useTutorialStore.getState();
-        if (st.isDemoActive && voiceEnabled) {
-          console.warn('Edge TTS unavailable, using native SpeechSynthesis fallback:', err);
-          fallbackSpeechSynthesis(stepId);
-        }
-      }
-    },
-    [voiceEnabled, voiceType, stopAllAudio, setIsSpeaking, i18n, fallbackSpeechSynthesis]
-  );
-
-  // Speak immediately on step, voiceType, or language change
-  useEffect(() => {
-    if (!isDemoActive || !currentStep) return;
-    if (voiceEnabled) {
-      speak(currentStep.id);
-    }
-  }, [isDemoActive, currentStepIndex, voiceEnabled, voiceType, i18n.language, speak, currentStep]);
-
-  // Aggressively pre-warm current & adjacent steps across all languages and genders for 0ms switching
-  useEffect(() => {
-    if (!isDemoActive || !voiceEnabled) return;
-
-    const langs = ['en', 'hi', 'gu'];
-    const genders = ['Female', 'Male'];
-
-    const stepsToPrewarm = [
-      DEMO_STEPS[currentStepIndex]?.id,
-      DEMO_STEPS[currentStepIndex + 1]?.id,
-      DEMO_STEPS[currentStepIndex + 2]?.id,
-      DEMO_STEPS[currentStepIndex - 1]?.id,
-    ].filter(Boolean);
-
-    // Prioritize current step variants for instantaneous toggle response
-    const currentId = stepsToPrewarm[0];
-    if (currentId) {
-      for (const l of langs) {
-        for (const g of genders) {
-          fetchAndCacheAudio(currentId, l, g, i18n);
-        }
-      }
-    }
-
-    // Preload next steps in the background
-    const timer = setTimeout(() => {
-      for (let i = 1; i < stepsToPrewarm.length; i++) {
-        for (const l of langs) {
-          for (const g of genders) {
-            fetchAndCacheAudio(stepsToPrewarm[i], l, g, i18n);
+        if (activeSpeechIdRef.current === currentSpeechId) {
+          const st = useTutorialStore.getState();
+          if (st.isDemoActive && voiceEnabled) {
+            console.warn('Edge TTS unavailable, using native SpeechSynthesis fallback:', err);
+            fallbackSpeechSynthesis(stepId, currentSpeechId);
           }
         }
       }
-    }, 150);
+    },
+    [voiceEnabled, voiceType, setIsSpeaking, i18n, fallbackSpeechSynthesis, activeSteps]
+  );
 
+  // Speak on-demand when a step is active with slight debounce so rapid skipping doesn't fire intermediate requests
+  useEffect(() => {
+    if (!isDemoActive || !currentStep) {
+      lastPlayedKeyRef.current = '';
+      stopAllAudio();
+      return;
+    }
+    if (!voiceEnabled) {
+      lastPlayedKeyRef.current = '';
+      stopAllAudio();
+      return;
+    }
+
+    const normLang = (i18n.language || 'en').startsWith('hi') ? 'hi' : (i18n.language || 'en').startsWith('gu') ? 'gu' : 'en';
+    const key = `${currentStep.id}_${normLang}_${voiceType}`;
+    if (lastPlayedKeyRef.current === key) {
+      return;
+    }
+
+    // Immediately stop old audio when settings/step change
+    stopAllAudio();
+
+    const timer = setTimeout(() => {
+      lastPlayedKeyRef.current = key;
+      speak(currentStep.id);
+    }, 60);
     return () => clearTimeout(timer);
-  }, [isDemoActive, currentStepIndex, voiceEnabled, i18n]);
+  }, [isDemoActive, currentStepIndex, voiceEnabled, voiceType, i18n.language, currentStep?.id, speak, stopAllAudio]);
 
   // Stop speech when voice toggled off, demo disabled, or unmounted
   useEffect(() => {
     if (!voiceEnabled || !isDemoActive) {
+      lastPlayedKeyRef.current = '';
       stopAllAudio();
     }
   }, [voiceEnabled, isDemoActive, stopAllAudio]);
@@ -698,6 +825,7 @@ async function fetchAndCacheAudio(stepId: string, lang: string, gender: string, 
   // Component unmount cleanup
   useEffect(() => {
     return () => {
+      lastPlayedKeyRef.current = '';
       stopAllAudio();
     };
   }, [stopAllAudio]);
@@ -745,13 +873,24 @@ function resolveTargetElement(selector: string): HTMLElement | null {
       const el = resolveTargetElement(sel);
       if (el) {
         const rect = el.getBoundingClientRect();
-        setTargetRect(rect);
-        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        setTargetRect((prev) => {
+          if (
+            prev &&
+            Math.abs(prev.top - rect.top) < 1 &&
+            Math.abs(prev.left - rect.left) < 1 &&
+            Math.abs(prev.width - rect.width) < 1 &&
+            Math.abs(prev.height - rect.height) < 1
+          ) {
+            return prev;
+          }
+          return rect;
+        });
 
-        // Calculate card position
-        const cardW = Math.min(420, window.innerWidth * 0.9);
-        const cardH = 340; // Increased to prevent bottom clipping on long text
-        const gap = 20;
+        // Calculate card position dynamically measuring actual dimensions
+        const cardEl = cardRef.current;
+        const cardW = cardEl ? cardEl.offsetWidth : Math.min(460, window.innerWidth * 0.94);
+        const cardH = cardEl ? cardEl.offsetHeight : 380;
+        const gap = 16;
         let top = 0;
         let left = 0;
 
@@ -765,21 +904,38 @@ function resolveTargetElement(selector: string): HTMLElement | null {
         if (effectivePlacement === 'bottom') {
           top = rect.bottom + gap;
           left = rect.left + rect.width / 2 - cardW / 2;
+          if (top + cardH > window.innerHeight - 12) {
+            top = rect.top - gap - cardH;
+          }
         } else if (effectivePlacement === 'top') {
           top = rect.top - gap - cardH;
           left = rect.left + rect.width / 2 - cardW / 2;
+          if (top < 12) {
+            top = rect.bottom + gap;
+          }
         } else if (effectivePlacement === 'right') {
           top = rect.top + rect.height / 2 - cardH / 2;
           left = rect.right + gap;
+          if (left + cardW > window.innerWidth - 12) {
+            left = rect.left - gap - cardW;
+          }
         } else if (effectivePlacement === 'left') {
           top = rect.top + rect.height / 2 - cardH / 2;
           left = rect.left - gap - cardW;
+          if (left < 12) {
+            left = rect.right + gap;
+          }
         }
 
-        // Boundary clamp
+        // Strict boundary clamp to guarantee card is always 100% visible inside the window
         top = Math.max(12, Math.min(top, window.innerHeight - cardH - 12));
         left = Math.max(12, Math.min(left, window.innerWidth - cardW - 12));
-        setCardPos({ top, left });
+        setCardPos((prev) => {
+          if (Math.abs(prev.top - top) < 1 && Math.abs(prev.left - left) < 1) {
+            return prev;
+          }
+          return { top, left };
+        });
       } else {
         // Element not found — retry
         setTimeout(compute, 300);
@@ -880,7 +1036,7 @@ function resolveTargetElement(selector: string): HTMLElement | null {
       >
         <SkipForward size={12} />
         {transliterate('Skip Tour')}
-        <span className="text-white/30 ml-1">ESC</span>
+        {!isMobileScreen && <span className="text-white/30 ml-1">ESC</span>}
       </motion.button>
 
       {/* ── Floating Tour Card ─────────────────────────────────────────────── */}
@@ -899,35 +1055,39 @@ function resolveTargetElement(selector: string): HTMLElement | null {
           style={{
             position: 'fixed',
             zIndex: 99999,
-            width: isCentered ? 'min(500px, 92vw)' : 'min(420px, 92vw)',
-            maxHeight: 'min(88vh, 520px)',
+            width: isCentered ? 'min(520px, 94vw)' : 'min(450px, 94vw)',
+            maxHeight: 'min(90vh, 580px)',
+            display: 'flex',
+            flexDirection: 'column',
             pointerEvents: 'auto',
+            boxSizing: 'border-box',
           }}
         >
           {/* Glass card */}
           <div
-            className="relative rounded-2xl flex flex-col overflow-hidden"
+            className="relative rounded-2xl flex flex-col overflow-hidden max-h-full flex-1"
             style={{
               background: 'rgba(6,10,18,0.97)',
               border: `1px solid ${accent}40`,
               boxShadow: `0 0 40px ${accent}22, 0 24px 60px rgba(0,0,0,0.6)`,
               backdropFilter: 'blur(20px)',
+              maxHeight: 'min(90vh, 580px)',
             }}
           >
             {/* Top accent line */}
             <div style={{ height: 2, background: `linear-gradient(90deg, transparent, ${accent}, transparent)` }} />
 
             {/* Header */}
-            <div className="flex items-center justify-between px-5 pt-4 pb-3"
+            <div className="flex items-center justify-between px-4 sm:px-5 pt-3.5 pb-2.5 flex-shrink-0"
               style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <LeoAvatar isSpeaking={isSpeaking} accentColor={accent} />
-                <div>
-                  <div className="text-[9px] font-bold tracking-[0.2em] uppercase mb-0.5" style={{ color: `${accent}99` }}>
-                    {`${t('demo_tour.leo_guide', 'LEO GUIDE')}  ::  ${t(`demo_tour.steps.${currentStep.id}.subtitle`, currentStep.subtitle)}`}
+                <div className="min-w-0">
+                  <div className="text-[8.5px] font-bold tracking-[0.15em] uppercase mb-0.5 truncate" style={{ color: `${accent}99` }}>
+                    {`${t('demo_tour.leo_guide', 'LEO GUIDE')}  ::  STEP ${currentStepIndex + 1} OF ${activeSteps.length}`}
                   </div>
                   <div
-                    className="text-sm font-bold tracking-wider"
+                    className="text-xs sm:text-sm font-bold tracking-wider truncate"
                     style={{ color: accent, fontFamily: 'var(--font-heading)' }}
                   >
                     {t(`demo_tour.steps.${currentStep.id}.title`, currentStep.title)}
@@ -935,25 +1095,25 @@ function resolveTargetElement(selector: string): HTMLElement | null {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                 {/* Voice toggle */}
                 <button
                   onClick={() => setVoiceEnabled(!voiceEnabled)}
-                  className="p-2 rounded-lg border transition-all"
+                  className="p-1.5 rounded-lg border transition-all"
                   style={voiceEnabled
                     ? { background: `${accent}20`, border: `1px solid ${accent}50`, color: accent }
                     : { background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }
                   }
                   title={voiceEnabled ? 'Mute voice' : 'Enable voice'}
                 >
-                  {voiceEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
+                  {voiceEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
                 </button>
 
                 {/* Voice Type Toggle */}
                 {voiceEnabled && (
                   <button
                     onClick={() => setVoiceType(voiceType === 'Female' ? 'Male' : 'Female')}
-                    className="p-2 rounded-lg border transition-all text-[10px] font-bold"
+                    className="px-2 py-1 rounded-lg border transition-all text-[9px] font-bold"
                     style={{ background: `${accent}10`, border: `1px solid ${accent}40`, color: accent }}
                     title={`Switch to ${voiceType === 'Female' ? 'Male' : 'Female'} voice`}
                   >
@@ -964,95 +1124,102 @@ function resolveTargetElement(selector: string): HTMLElement | null {
                 {/* Close */}
                 <button
                   onClick={handleStopDemo}
-                  className="p-2 rounded-lg border border-red-500/30 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                  className="p-1.5 rounded-lg border border-red-500/30 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 transition-all"
                 >
-                  <X size={14} />
+                  <X size={13} />
                 </button>
               </div>
             </div>
 
-            {/* Icon + message body */}
-            <div className="px-5 py-4 overflow-y-auto max-h-[38vh]" style={{ scrollbarWidth: 'thin' }}>
-              <div className="flex gap-3">
+            {/* Icon + message body (scrollable, flex-1) */}
+            <div className="px-4 sm:px-5 py-3 overflow-y-auto flex-1 min-h-0" style={{ scrollbarWidth: 'thin' }}>
+              <div className="flex gap-2.5">
                 {/* Step icon */}
                 <div
-                  className="flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center mt-0.5"
+                  className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center mt-0.5"
                   style={{ background: `${accent}18`, border: `1px solid ${accent}30`, color: accent }}
                 >
                   {currentStep.icon}
                 </div>
 
                 {/* Typewriter text */}
-                <p className="text-sm leading-relaxed" style={{ color: 'rgba(230,237,243,0.88)', fontFamily: 'var(--font-mono)', fontSize: "calc(12px * var(--font-scale))" }}>
-                  <TypewriterText key={currentStep.id} text={t(`demo_tour.steps.${currentStep.id}.message`, currentStep.message)} />
+                <p className="text-xs sm:text-sm leading-relaxed" style={{ color: 'rgba(230,237,243,0.88)', fontFamily: 'var(--font-mono)', fontSize: "calc(11.5px * var(--font-scale))" }}>
+                  <TypewriterText
+                    key={`${currentStep.id}-${isMobileScreen}`}
+                    text={getStepMessage(currentStep, isMobileScreen, t, i18n)}
+                  />
                 </p>
               </div>
             </div>
 
             {/* Footer */}
             <div
-              className="flex items-center justify-between px-5 pb-4 pt-3"
+              className="flex items-center justify-between px-4 sm:px-5 pb-3 pt-2 flex-shrink-0 flex-wrap gap-2"
               style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
             >
               <ProgressDots
-                total={DEMO_STEPS.length}
+                total={activeSteps.length}
                 current={currentStepIndex}
                 accentColor={accent}
               />
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap ml-auto">
                 {/* Prev */}
                 {!isFirst && (
                   <button
                     onClick={() => setDemoStep(currentStepIndex - 1)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border border-white/10 text-white/50 hover:text-white hover:border-white/25 transition-all"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg font-bold uppercase tracking-wider border border-white/10 text-white/50 hover:text-white hover:border-white/25 transition-all flex-shrink-0"
+                    style={{ fontSize: "calc(10.5px * var(--font-scale))" }}
                   >
-                    <ChevronLeft size={13} />
+                    <ChevronLeft size={12} />
                     {transliterate('Prev')}
                   </button>
                 )}
 
                 {/* Next / Finish */}
                 {currentStep.actionRequired ? (
-                   <div className="px-2 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-wider border border-[#39ff14]/30 text-[#39ff14] animate-pulse whitespace-nowrap flex-shrink-0">
-                     {transliterate(currentStep.actionRequired === 'click' ? 'Awaiting Click' : 'Awaiting Input')}
+                   <div className="px-2 py-1 rounded-lg font-bold uppercase tracking-wider border border-[#39ff14]/30 text-[#39ff14] animate-pulse whitespace-nowrap flex-shrink-0"
+                     style={{ fontSize: "calc(9px * var(--font-scale))" }}>
+                     {transliterate(currentStep.actionRequired === 'click' ? 'Awaiting Click' : (isMobileScreen ? 'Awaiting Tap' : 'Awaiting Input'))}
                    </div>
                 ) : isLast ? (
                   <button
                     onClick={handleStopDemo}
-                    className="flex items-center gap-1.5 px-5 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-bold uppercase tracking-wider transition-all flex-shrink-0"
                     style={{
                       background: accent,
                       color: '#000',
                       boxShadow: `0 0 16px ${accent}60`,
+                      fontSize: "calc(10.5px * var(--font-scale))"
                     }}
                   >
-                    <Play size={12} fill="currentColor" />
+                    <Play size={11} fill="currentColor" />
                     {transliterate('Launch Mission')}
                   </button>
                 ) : (
                   <button
                     onClick={() => setDemoStep(currentStepIndex + 1)}
-                    className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all"
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-bold uppercase tracking-wider transition-all flex-shrink-0"
                     style={{
                       background: accent,
                       color: '#000',
                       boxShadow: `0 0 12px ${accent}50`,
+                      fontSize: "calc(10.5px * var(--font-scale))"
                     }}
                   >
                     {transliterate('Next')}
-                    <ChevronRight size={13} />
+                    <ChevronRight size={12} />
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Keyboard hint */}
+            {/* Keyboard / Navigation hint */}
             <div
-              className="text-center pb-3 text-[9px] tracking-widest uppercase"
+              className="text-center pb-2.5 text-[8.5px] tracking-widest uppercase flex-shrink-0"
               style={{ color: 'rgba(255,255,255,0.2)' }}
             >
-              {transliterate('Arrow keys to navigate  ::  ESC to skip')}
+              {transliterate(isMobileScreen ? 'Tap buttons to navigate' : 'Arrow keys to navigate  ::  ESC to skip')}
             </div>
           </div>
         </motion.div>

@@ -633,7 +633,9 @@
         "title": "SEED THE INTELLIGENCE",
         "subtitle": "STEP 5 OF 15",
         "message": "Let's start an investigation. Enter a known identifier (like an email or phone number) into the intake field. Type something, then hit Enter or click 'ADD SEED'.",
-        "voiceText": "Now, enter a known identifier like a phone number or email into the intake panel, and press Enter or click Add Seed to proceed."
+        "mobileMessage": "Let's start an investigation. Enter a known identifier (like an email or phone number) into the intake field. Type something, then tap 'ADD SEED'.",
+        "voiceText": "Now, enter a known identifier like a phone number or email into the intake panel, and press Enter or click Add Seed to proceed.",
+        "mobileVoiceText": "Now, enter a known identifier like a phone number or email into the intake panel, and tap Add Seed to proceed."
       },
       "run-pipeline": {
         "title": "EXECUTE OSINT PIPELINE",

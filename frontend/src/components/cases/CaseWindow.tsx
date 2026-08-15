@@ -522,8 +522,8 @@ export function CaseWindow({ win }: CaseWindowProps) {
 
   return (
                   <div className="flex flex-col flex-1 min-height-0 overflow-hidden">
-                    {/* Retro workspace tab headers - scrollable on mobile */}
-                    <div className="flex gap-2 border-b border-white/10 pb-2 mb-3 flex-shrink-0 text-[9px] font-bold overflow-x-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+                    {/* Retro workspace tab headers - wrap on mobile / narrow screens */}
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2 border-b border-white/10 pb-2 mb-3 flex-shrink-0 text-[9px] font-bold">
                       {[
                         { id: 'intake', label: t('case_window.tab_intake'), tooltip: t('case_window.tooltips.intake') },
                         { id: 'graph', label: t('case_window.tab_matrix'), tooltip: t('case_window.tooltips.graph') },

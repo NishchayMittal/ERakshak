@@ -406,15 +406,16 @@ export function DemoTour() {
   const { t, i18n } = useTranslation();
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [cardPos, setCardPos] = useState({ top: 0, left: 0 });
-  const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const currentStep = DEMO_STEPS[currentStepIndex];
   const isFirst = currentStepIndex === 0;
   const isLast = currentStepIndex === DEMO_STEPS.length - 1;
 
-  // ── Voice synthesis ──────────────────────────────────────────────────────
-  const speak = useCallback(
+  // ── Native Browser SpeechSynthesis Fallback ──────────────────────────────
+  const fallbackSpeechSynthesis = useCallback(
     (stepId: string) => {
       if (!voiceEnabled || typeof window === 'undefined' || !window.speechSynthesis) return;
       window.speechSynthesis.cancel();
@@ -434,7 +435,6 @@ export function DemoTour() {
             }
             if (!preferred) preferred = hiVoices[0];
           } else {
-            // Fall back to English voice
             selectedLang = 'en';
           }
         } else if (selectedLang.startsWith('gu')) {
@@ -447,7 +447,6 @@ export function DemoTour() {
             }
             if (!preferred) preferred = guVoices[0];
           } else {
-            // Fall back to Hindi if a Hindi voice is available, otherwise fallback to English
             const hiVoices = voices.filter((v) => v.lang.startsWith('hi'));
             if (hiVoices.length > 0) {
               selectedLang = 'hi';
@@ -474,10 +473,12 @@ export function DemoTour() {
 
         if (!preferred) preferred = voices.find((v) => v.lang.startsWith('en')) || voices[0];
 
-        // Resolve translation matching selectedLang
         const stepConfig = DEMO_STEPS.find((s) => s.id === stepId);
         const defaultVoiceText = stepConfig ? stepConfig.voiceText : '';
-        const voiceTextToSpeak = t(`demo_tour.steps.${stepId}.voiceText`, { lng: selectedLang, defaultValue: defaultVoiceText });
+        const voiceTextToSpeak =
+          t(`demo_tour.steps.${stepId}.voiceText`, { lng: selectedLang }) ||
+          t(`demo_tour.steps.${stepId}.message`, { lng: selectedLang }) ||
+          defaultVoiceText;
 
         const utter = new SpeechSynthesisUtterance(voiceTextToSpeak);
         utter.rate = 0.92;
@@ -508,20 +509,136 @@ export function DemoTour() {
     [voiceEnabled, voiceType, setIsSpeaking, i18n, t]
   );
 
-  // Speak on step change
+  // ── Primary Voice synthesis (Microsoft Edge Neural TTS with Fallback) ──────
+  const speak = useCallback(
+    async (stepId: string) => {
+      // 1. Cancel/stop any currently playing audio clip or speech synthesis
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+
+      if (!voiceEnabled) {
+        setIsSpeaking(false);
+        return;
+      }
+
+      const rawLang = i18n.language || 'en';
+      const currentLang = rawLang.startsWith('hi') ? 'hi' : rawLang.startsWith('gu') ? 'gu' : 'en';
+      const stepConfig = DEMO_STEPS.find((s) => s.id === stepId);
+      const defaultVoiceText = stepConfig ? stepConfig.voiceText : '';
+
+      // Explicitly fetch exact localized string for the selected language
+      const voiceTextToSpeak =
+        (i18n.getResource(currentLang, 'translation', `demo_tour.steps.${stepId}.voiceText`) as string) ||
+        (i18n.getResource(currentLang, 'translation', `demo_tour.steps.${stepId}.message`) as string) ||
+        defaultVoiceText;
+
+      console.log('[LEO Edge TTS]', { stepId, rawLang, currentLang, voiceTextToSpeak });
+
+      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+      const ttsUrl = `${apiBase}/api/tts`;
+
+      try {
+        const response = await fetch(ttsUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: voiceTextToSpeak,
+            lang: currentLang,
+            gender: voiceType,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Edge TTS HTTP status ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        if (!blob || blob.size === 0) {
+          throw new Error('Edge TTS returned empty audio payload');
+        }
+
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        audioRef.current = audio;
+
+        audio.onplay = () => setIsSpeaking(true);
+
+        const cleanup = () => {
+          setIsSpeaking(false);
+          URL.revokeObjectURL(audioUrl);
+          if (audioRef.current === audio) {
+            audioRef.current = null;
+          }
+        };
+
+        audio.onended = cleanup;
+        audio.onerror = () => {
+          cleanup();
+          fallbackSpeechSynthesis(stepId);
+        };
+
+        await audio.play();
+      } catch (err) {
+        console.warn('Edge TTS unavailable, using native SpeechSynthesis fallback:', err);
+        fallbackSpeechSynthesis(stepId);
+      }
+    },
+    [voiceEnabled, voiceType, setIsSpeaking, i18n, t, fallbackSpeechSynthesis]
+  );
+
+  // Speak immediately on step change (no artificial delay)
   useEffect(() => {
     if (!isDemoActive || !currentStep) return;
     if (voiceEnabled) {
-      // Small delay to let DOM settle
-      const tId = setTimeout(() => speak(currentStep.id), 400);
-      return () => clearTimeout(tId);
+      speak(currentStep.id);
     }
   }, [isDemoActive, currentStepIndex, voiceEnabled, speak, currentStep]);
 
-  // Stop speech when voice toggled off
+  // Preload next step TTS audio in background for instant 0ms playback on slide change
+  useEffect(() => {
+    if (!isDemoActive || !voiceEnabled) return;
+    const nextStep = DEMO_STEPS[currentStepIndex + 1];
+    if (!nextStep) return;
+
+    const rawLang = i18n.language || 'en';
+    const currentLang = rawLang.startsWith('hi') ? 'hi' : rawLang.startsWith('gu') ? 'gu' : 'en';
+    const defaultVoiceText = nextStep.voiceText || '';
+    const voiceTextToSpeak =
+      (i18n.getResource(currentLang, 'translation', `demo_tour.steps.${nextStep.id}.voiceText`) as string) ||
+      (i18n.getResource(currentLang, 'translation', `demo_tour.steps.${nextStep.id}.message`) as string) ||
+      defaultVoiceText;
+
+    const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+    fetch(`${apiBase}/api/tts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: voiceTextToSpeak,
+        lang: currentLang,
+        gender: voiceType,
+      }),
+    }).catch(() => {});
+  }, [isDemoActive, currentStepIndex, voiceEnabled, voiceType, i18n]);
+
+  // Stop speech when voice toggled off or unmounted
   useEffect(() => {
     if (!voiceEnabled) {
-      window.speechSynthesis?.cancel();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
       setIsSpeaking(false);
     }
   }, [voiceEnabled, setIsSpeaking]);

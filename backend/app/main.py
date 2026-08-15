@@ -20,6 +20,7 @@ from app.routers import cases as cases_router
 from app.routers import identifiers as identifiers_router
 from app.routers import model as model_router
 from app.routers import ws as ws_router
+from app.routers import tts as tts_router
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.security import SecurityHeadersMiddleware
 
@@ -47,6 +48,7 @@ app.include_router(cases_router.router)
 app.include_router(identifiers_router.router)
 app.include_router(model_router.router)
 app.include_router(ws_router.router)
+app.include_router(tts_router.router)
 
 register_all()
 

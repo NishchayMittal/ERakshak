@@ -403,7 +403,7 @@ export function DemoTour() {
   } = useTutorialStore();
 
   const transliterate = useTransliterate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [cardPos, setCardPos] = useState({ top: 0, left: 0 });
   const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -415,25 +415,76 @@ export function DemoTour() {
 
   // ── Voice synthesis ──────────────────────────────────────────────────────
   const speak = useCallback(
-    (text: string) => {
+    (stepId: string) => {
       if (!voiceEnabled || typeof window === 'undefined' || !window.speechSynthesis) return;
       window.speechSynthesis.cancel();
 
       const doSpeak = () => {
-        const utter = new SpeechSynthesisUtterance(text);
+        const voices = window.speechSynthesis.getVoices();
+        let preferred;
+        let selectedLang = i18n.language || 'en';
+
+        if (selectedLang.startsWith('hi')) {
+          const hiVoices = voices.filter((v) => v.lang.startsWith('hi'));
+          if (hiVoices.length > 0) {
+            if (voiceType === 'Female') {
+              preferred = hiVoices.find((v) => v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('lekha') || !v.name.toLowerCase().includes('male'));
+            } else {
+              preferred = hiVoices.find((v) => v.name.toLowerCase().includes('male') || !v.name.toLowerCase().includes('female'));
+            }
+            if (!preferred) preferred = hiVoices[0];
+          } else {
+            // Fall back to English voice
+            selectedLang = 'en';
+          }
+        } else if (selectedLang.startsWith('gu')) {
+          const guVoices = voices.filter((v) => v.lang.startsWith('gu'));
+          if (guVoices.length > 0) {
+            if (voiceType === 'Female') {
+              preferred = guVoices.find((v) => v.name.toLowerCase().includes('female') || !v.name.toLowerCase().includes('male'));
+            } else {
+              preferred = guVoices.find((v) => v.name.toLowerCase().includes('male') || !v.name.toLowerCase().includes('female'));
+            }
+            if (!preferred) preferred = guVoices[0];
+          } else {
+            // Fall back to Hindi if a Hindi voice is available, otherwise fallback to English
+            const hiVoices = voices.filter((v) => v.lang.startsWith('hi'));
+            if (hiVoices.length > 0) {
+              selectedLang = 'hi';
+              if (voiceType === 'Female') {
+                preferred = hiVoices.find((v) => v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('lekha') || !v.name.toLowerCase().includes('male'));
+              } else {
+                preferred = hiVoices.find((v) => v.name.toLowerCase().includes('male') || !v.name.toLowerCase().includes('female'));
+              }
+              if (!preferred) preferred = hiVoices[0];
+            } else {
+              selectedLang = 'en';
+            }
+          }
+        }
+
+        if (!preferred) {
+          selectedLang = 'en';
+          if (voiceType === 'Female') {
+            preferred = voices.find((v) => v.name.includes('Google UK English Female') || v.name.includes('Samantha') || v.name.includes('Karen') || v.name.includes('Female'));
+          } else {
+            preferred = voices.find((v) => v.name.includes('Google UK English Male') || v.name.includes('Alex') || v.name.includes('Daniel') || v.name.includes('Male'));
+          }
+        }
+
+        if (!preferred) preferred = voices.find((v) => v.lang.startsWith('en')) || voices[0];
+
+        // Resolve translation matching selectedLang
+        const stepConfig = DEMO_STEPS.find((s) => s.id === stepId);
+        const defaultVoiceText = stepConfig ? stepConfig.voiceText : '';
+        const voiceTextToSpeak = t(`demo_tour.steps.${stepId}.voiceText`, { lng: selectedLang, defaultValue: defaultVoiceText });
+
+        const utter = new SpeechSynthesisUtterance(voiceTextToSpeak);
         utter.rate = 0.92;
         utter.pitch = 1.05;
         utter.volume = 0.9;
+        utter.lang = selectedLang;
 
-        const voices = window.speechSynthesis.getVoices();
-        let preferred;
-        if (voiceType === 'Female') {
-          preferred = voices.find((v) => v.name.includes('Google UK English Female') || v.name.includes('Samantha') || v.name.includes('Karen') || v.name.includes('Female'));
-        } else {
-          preferred = voices.find((v) => v.name.includes('Google UK English Male') || v.name.includes('Alex') || v.name.includes('Daniel') || v.name.includes('Male'));
-        }
-        
-        if (!preferred) preferred = voices.find((v) => v.lang.startsWith('en')) || voices[0];
         if (preferred) utter.voice = preferred;
 
         utter.onstart = () => setIsSpeaking(true);
@@ -454,7 +505,7 @@ export function DemoTour() {
         setTimeout(doSpeak, 50);
       }
     },
-    [voiceEnabled, voiceType, setIsSpeaking]
+    [voiceEnabled, voiceType, setIsSpeaking, i18n, t]
   );
 
   // Speak on step change
@@ -462,8 +513,8 @@ export function DemoTour() {
     if (!isDemoActive || !currentStep) return;
     if (voiceEnabled) {
       // Small delay to let DOM settle
-      const t = setTimeout(() => speak(currentStep.voiceText), 400);
-      return () => clearTimeout(t);
+      const tId = setTimeout(() => speak(currentStep.id), 400);
+      return () => clearTimeout(tId);
     }
   }, [isDemoActive, currentStepIndex, voiceEnabled, speak, currentStep]);
 

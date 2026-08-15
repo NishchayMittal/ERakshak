@@ -588,77 +588,92 @@
       "welcome": {
         "title": "WELCOME TO e-RAKSHAK",
         "subtitle": "ORION TERMINAL v3.1",
-        "message": "I am LEO, your onboard AI intelligence coordinator. This quick tour will show you how to initialize a case, run the OSINT pipeline, and explore the cyber-correlation engine."
+        "message": "I am LEO, your onboard AI intelligence coordinator. This quick tour will show you how to initialize a case, run the OSINT pipeline, and explore the cyber-correlation engine.",
+        "voiceText": "Welcome to E Rakshak. I am Leo, your AI intelligence coordinator. Let's walk through the platform's core capabilities."
       },
       "hud-terminal": {
         "title": "SYSTEM HUD TERMINAL",
         "subtitle": "STEP 2 OF 15",
-        "message": "The HUD streams real-time audit logs, active OSINT crawl jobs, model retraining events, and connection statuses. Think of it as the nervous system of the platform."
+        "message": "The HUD streams real-time audit logs, active OSINT crawl jobs, model retraining events, and connection statuses. Think of it as the nervous system of the platform.",
+        "voiceText": "This is the HUD Terminal. It streams live system audits, pipeline crawl jobs, and background model updates in real time."
       },
       "profile-menu": {
         "title": "BADGE IDENTITY",
         "subtitle": "STEP 3 OF 15",
-        "message": "Your badge ID is your cryptographic identity on the platform. All actions are signed and logged against this credential. Keep your credentials secure."
+        "message": "Your badge ID is your cryptographic identity on the platform. All actions are signed and logged against this credential. Keep your credentials secure.",
+        "voiceText": "Your badge is your cryptographic identity. All your actions on the platform are securely signed and logged against it."
       },
       "init-case": {
         "title": "INITIALIZE A CASE DOSSIER",
         "subtitle": "STEP 4 OF 15",
-        "message": "To begin an investigation, click the \"+\" button in the Case Management panel. This provisions a secure enclave for the new dossier."
+        "message": "To begin an investigation, click the \"+\" button in the Case Management panel. This provisions a secure enclave for the new dossier.",
+        "voiceText": "Let's begin. Click the plus button in the case management panel to initialize a new secure dossier."
       },
       "seed-input": {
         "title": "SEED THE INTELLIGENCE",
         "subtitle": "STEP 5 OF 15",
-        "message": "Let's start an investigation. Enter a known identifier (like an email or phone number) into the Intake panel. Type something, then hit Enter."
+        "message": "Let's start an investigation. Enter a known identifier (like an email or phone number) into the Intake panel. Type something, then hit Enter.",
+        "voiceText": "Now, enter a known identifier like a phone number or email into the intake panel, and press Enter to seed the intelligence."
       },
       "run-pipeline": {
         "title": "EXECUTE OSINT PIPELINE",
         "subtitle": "STEP 6 OF 15",
-        "message": "Click the RUN CORRELATION SCAN button to unleash the automated OSINT connectors on your seed data."
+        "message": "Click the RUN CORRELATION SCAN button to unleash the automated OSINT connectors on your seed data.",
+        "voiceText": "Click the run correlation scan button. This dispatches our OSINT connectors to scour the dark web, public records, and social platforms."
       },
       "graph-network": {
         "title": "LINK GRAPH ENGINE",
         "subtitle": "STEP 7 OF 15",
-        "message": "Open the Graph tab to access the Network Link Graph - an interactive visualization of entities, relationships, and pivots. Nodes represent people, phones, accounts, and domains."
+        "message": "Open the Graph tab to access the Network Link Graph - an interactive visualization of entities, relationships, and pivots. Nodes represent people, phones, accounts, and domains.",
+        "voiceText": "The Graph engine visually maps all discovered entities. It's fully interactive, letting you expand nodes and discover hidden connections."
       },
       "geo-map": {
         "title": "GEO INTEL MAP",
         "subtitle": "STEP 8 OF 15",
-        "message": "The GEO MAP tab projects IPs, registered addresses, and location metadata onto a geospatial visualization, exposing physical movement and origin."
+        "message": "The GEO MAP tab projects IPs, registered addresses, and location metadata onto a geospatial visualization, exposing physical movement and origin.",
+        "voiceText": "The Geo Intel map plots all discovered physical coordinates, helping you trace origins and physical movements of targets."
       },
       "dossier": {
         "title": "AUTOMATED DOSSIER",
         "subtitle": "STEP 9 OF 15",
-        "message": "The dossier tab auto-compiles all OSINT evidence into a structured report - social profiles, breach records, communication metadata, and risk scores. Export to PDF, JSON, or CSV in one click."
+        "message": "The dossier tab auto-compiles all OSINT evidence into a structured report - social profiles, breach records, communication metadata, and risk scores. Export to PDF, JSON, or CSV in one click.",
+        "voiceText": "The dossier automatically compiles all evidence into a comprehensive report. You can easily export it to PDF for offline briefing."
       },
       "legal": {
         "title": "LEGAL TRACEABILITY",
         "subtitle": "STEP 10 OF 15",
-        "message": "The Legal tab tracks the cryptographic chain of custody for all evidence discovered, ready for court submission."
+        "message": "The Legal tab tracks the cryptographic chain of custody for all evidence discovered, ready for court submission.",
+        "voiceText": "The Legal tab maintains a strict cryptographic chain of custody for all digital evidence, ensuring it is court-admissible."
       },
       "ai-report": {
         "title": "AI REPORT GENERATION",
         "subtitle": "STEP 11 OF 15",
-        "message": "Generate natural language executive summaries of your entire case graph in seconds using the onboard LLM."
+        "message": "Generate natural language executive summaries of your entire case graph in seconds using the onboard LLM.",
+        "voiceText": "Need an executive summary? The AI report feature uses our onboard language model to synthesize the entire case graph into a readable brief."
       },
       "ai-chat": {
         "title": "AI COPILOT",
         "subtitle": "STEP 12 OF 15",
-        "message": "Your AI Copilot is always available. Ask it to analyze graphs, suggest pivot strategies, or explain complex relationships."
+        "message": "Your AI Copilot is always available. Ask it to analyze graphs, suggest pivot strategies, or explain complex relationships.",
+        "voiceText": "Your AI Copilot is available on the right. Ask it to analyze findings, suggest next steps, or explain complex relationships."
       },
       "cross-correlate": {
         "title": "CROSS-CORRELATION ENGINE",
         "subtitle": "STEP 13 OF 15",
-        "message": "Use the Cross-Correlate window to find shared identifiers across multiple cases - the same phone number, device fingerprint, or email appearing in separate investigations signals a coordinated network."
+        "message": "Use the Cross-Correlate window to find shared identifiers across multiple cases - the same phone number, device fingerprint, or email appearing in separate investigations signals a coordinated network.",
+        "voiceText": "The cross-correlation engine lets you find shared identifiers across multiple cases - revealing coordinated networks and linked suspects."
       },
       "notifications": {
         "title": "REAL-TIME ALERTS",
         "subtitle": "STEP 14 OF 15",
-        "message": "The Notifications bell alerts you to important system events, critical intelligence discoveries, and completed background jobs."
+        "message": "The Notifications bell alerts you to important system events, critical intelligence discoveries, and completed background jobs.",
+        "voiceText": "Finally, the notifications bell keeps you updated on system alerts and background job completions."
       },
       "finish": {
         "title": "CLEARANCE GRANTED",
         "subtitle": "ORION TERMINAL READY",
-        "message": "You are now cleared for active operations. Good hunting, Agent."
+        "message": "You are now cleared for active operations. Good hunting, Agent.",
+        "voiceText": "Tour complete. You are now cleared for active operations. Good hunting, Agent."
       }
     }
   }

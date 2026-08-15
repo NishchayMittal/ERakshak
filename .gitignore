@@ -7,10 +7,15 @@ venv/
 ENV/
 env/
 .env
+.env.*
 backend/.env
+backend/.env.*
 test.db
 *.db
 secrets/
+backend/secrets/
+secrets/*.json
+backend/secrets/*.json
 .env.prod
 
 # Node / Frontend

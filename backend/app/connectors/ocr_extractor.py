@@ -17,16 +17,44 @@ class OcrExtractorConnector(BaseConnector):
         if not api_key:
             return []
             
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                resp = await client.get(identifier_value)
-                resp.raise_for_status()
-                # Guess mimetype
-                content_type = resp.headers.get("Content-Type", "image/jpeg")
-                b64_image = base64.b64encode(resp.content).decode("utf-8")
-        except Exception as e:
+        content = None
+        content_type = "image/jpeg"
 
-            logger.error(f"Unexpected error: {e}", exc_info=True)
+        try:
+            if identifier_value.startswith("http://") or identifier_value.startswith("https://"):
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                }
+                async with httpx.AsyncClient(timeout=10.0, follow_redirects=True, headers=headers) as client:
+                    resp = await client.get(identifier_value)
+                    if resp.status_code == 200:
+                        content = resp.content
+                        content_type = resp.headers.get("Content-Type", "image/jpeg")
+            else:
+                resolved_path = identifier_value
+                if not os.path.exists(resolved_path):
+                    uploads_dir = os.path.abspath(
+                        os.path.join(os.path.dirname(__file__), "..", "resources", "uploads")
+                    )
+                    possible_path = os.path.join(uploads_dir, identifier_value.replace("\\", "/"))
+                    if os.path.exists(possible_path):
+                        resolved_path = possible_path
+
+                if os.path.exists(resolved_path):
+                    with open(resolved_path, "rb") as image_file:
+                        content = image_file.read()
+                        if resolved_path.lower().endswith(".png"):
+                            content_type = "image/png"
+                        elif resolved_path.lower().endswith(".webp"):
+                            content_type = "image/webp"
+
+            if not content:
+                logger.warning(f"OCR Extractor: Could not read image content for '{identifier_value}'")
+                return []
+
+            b64_image = base64.b64encode(content).decode("utf-8")
+        except Exception as e:
+            logger.error(f"Unexpected error loading image for OCR: {e}")
             return []
             
         groq_client = AsyncGroq(api_key=api_key)

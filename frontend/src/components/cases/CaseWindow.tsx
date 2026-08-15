@@ -660,6 +660,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                     />
                                   )}
                                   <button
+                                    data-tutorial="add-seed-btn"
                                     onClick={() => addCaseSeed(caseId)}
                                     className="bg-[#39ff14] hover:bg-[#39ff14]/80 text-black text-[9px] font-bold px-3 py-1.5"
                                   >

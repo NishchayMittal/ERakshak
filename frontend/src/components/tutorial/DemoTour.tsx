@@ -77,8 +77,8 @@ const DEMO_STEPS: DemoStep[] = [
     title: 'SEED THE INTELLIGENCE',
     subtitle: 'STEP 5 OF 14',
     actionRequired: 'input',
-    message: 'Let\'s start an investigation. Enter a known identifier (like an email or phone number) into the Intake panel. Type something, then hit Enter.',
-    voiceText: 'Now, enter a known identifier like a phone number or email into the intake panel, and press Enter to seed the intelligence.',
+    message: 'Let\'s start an investigation. Enter a known identifier (like an email or phone number) into the intake field. Type something, then hit Enter or click ADD SEED.',
+    voiceText: 'Now, enter a known identifier like a phone number or email into the intake panel, and press Enter or click Add Seed to proceed.',
     icon: <Terminal size={22} />,
     accentColor: '#39ff14',
   },
@@ -106,26 +106,26 @@ const DEMO_STEPS: DemoStep[] = [
     accentColor: '#39ff14',
   },
   {
-    id: 'geo-map',
-    targetSelector: '[data-tutorial="tab-geo"]',
-    placement: 'bottom',
-    title: 'GEO INTEL MAP',
-    subtitle: 'STEP 8 OF 14',
-    message: 'The GEO MAP tab projects IPs, registered addresses, and location metadata onto a geospatial visualization, exposing physical movement and origin.',
-    voiceText: 'The Geo Intel map plots all discovered physical coordinates, helping you trace origins and physical movements of targets.',
-    icon: <Compass size={22} />, 
-    accentColor: '#00f0ff',
-  },
-  {
     id: 'dossier',
     targetSelector: '[data-tutorial="tab-dossier"]',
     placement: 'bottom',
     title: 'AUTOMATED DOSSIER',
-    subtitle: 'STEP 9 OF 14',
+    subtitle: 'STEP 8 OF 14',
     message: 'The dossier tab auto-compiles all OSINT evidence into a structured report - social profiles, breach records, communication metadata, and risk scores. Export to PDF, JSON, or CSV in one click.',
     voiceText: 'The dossier automatically compiles all evidence into a comprehensive report. You can easily export it to PDF for offline briefing.',
     icon: <Search size={22} />,
     accentColor: '#39ff14',
+  },
+  {
+    id: 'geo-map',
+    targetSelector: '[data-tutorial="tab-geo"]',
+    placement: 'bottom',
+    title: 'GEO INTEL MAP',
+    subtitle: 'STEP 9 OF 14',
+    message: 'The GEO MAP tab projects IPs, registered addresses, and location metadata onto a geospatial visualization, exposing physical movement and origin.',
+    voiceText: 'The Geo Intel map plots all discovered physical coordinates, helping you trace origins and physical movements of targets.',
+    icon: <Compass size={22} />, 
+    accentColor: '#00f0ff',
   },
   {
     id: 'legal',
@@ -720,29 +720,40 @@ export function DemoTour() {
 
     const action = currentStep.actionRequired;
 
-    const onEvent = (e: Event) => {
+    const onKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
-      if (target && target.closest(targetSel)) {
-        if (action === 'input' && e.type === 'keydown') {
-           const kbEvent = e as KeyboardEvent;
-           if (kbEvent.key === 'Enter') {
-             const inputEl = target.closest(targetSel) as HTMLInputElement;
-             if (inputEl.value.trim().length > 0) {
-               setDemoStep(currentStepIndex + 1);
-             }
-           }
-        } else if (action === 'click' && e.type === 'click') {
-           setTimeout(() => setDemoStep(currentStepIndex + 1), 100);
+      if (target && target.closest('[data-tutorial="seed-input"]')) {
+        if (e.key === 'Enter') {
+          const inputEl = target.closest('[data-tutorial="seed-input"]') as HTMLInputElement;
+          if (inputEl && inputEl.value.trim().length > 0) {
+            setDemoStep(currentStepIndex + 1);
+          }
+        }
+      }
+    };
+
+    const onClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target) return;
+
+      // Handle clicking the 'ADD SEED' button on seed-input step
+      if (currentStep.id === 'seed-input' && target.closest('[data-tutorial="add-seed-btn"]')) {
+        setTimeout(() => setDemoStep(currentStepIndex + 1), 100);
+        return;
+      }
+
+      if (target.closest(targetSel)) {
+        if (action === 'click') {
+          setTimeout(() => setDemoStep(currentStepIndex + 1), 100);
         }
       }
     };
 
     const controller = new AbortController();
 
-    if (action === 'click') {
-      document.addEventListener('click', onEvent, { capture: true, signal: controller.signal });
-    } else if (action === 'input') {
-      document.addEventListener('keydown', onEvent, { capture: true, signal: controller.signal });
+    document.addEventListener('click', onClick, { capture: true, signal: controller.signal });
+    if (action === 'input') {
+      document.addEventListener('keydown', onKeyDown, { capture: true, signal: controller.signal });
     }
     
     return () => controller.abort();

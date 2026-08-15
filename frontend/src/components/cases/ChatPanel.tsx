@@ -47,7 +47,7 @@ export default function ChatPanel({
         id: "welcome",
         content: t(
           "chat.welcome",
-          "Hello! I'm your AI assistant for the e-Rakshak OSINT platform. I can help you analyze your case evidence by answering questions about linked entities, discovered findings, breach data, and more. What would you like to know about your case?",
+          "Hello! I'm your AI assistant for the Orion OSINT platform. I can help you analyze your case evidence by answering questions about linked entities, discovered findings, breach data, and more. What would you like to know about your case?",
         ),
         isUser: false,
         timestamp: new Date().toISOString(),

@@ -267,7 +267,7 @@ export default function IntroSequence({ onComplete }: IntroSequenceProps) {
             animation: 'intro-wordmark-glitch 0.85s ease-out forwards',
             textShadow: '0 0 30px rgba(0,255,194,0.5)',
           }}>
-            e-RAKSHAK
+            ORION
           </h1>
 
           {/* Stamp line – appears in stamp phase */}

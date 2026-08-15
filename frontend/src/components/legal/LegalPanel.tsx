@@ -383,7 +383,7 @@ export default function LegalPanel({ caseId }: LegalPanelProps) {
     const text = result.flags.map(f =>
       `${f.section} — ${f.title} [${f.act}]\nSeverity: ${f.severity} | Confidence: ${Math.round(f.confidence * 100)}%\nPunishment: ${f.punishment}\nEvidence: ${f.triggered_by.map(e => `${e.connector}: ${e.value}`).join('; ')}\n`
     ).join('\n─────────────────────────────────────\n');
-    const blob = new Blob([`e-Rakshak Legal Section Mapping — Case ${caseId}\n${'═'.repeat(60)}\n\n${result.summary}\n\n${'═'.repeat(60)}\n\n${text}`], { type: 'text/plain' });
+    const blob = new Blob([`Orion Legal Section Mapping — Case ${caseId}\n${'═'.repeat(60)}\n\n${result.summary}\n\n${'═'.repeat(60)}\n\n${text}`], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

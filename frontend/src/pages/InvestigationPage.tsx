@@ -54,7 +54,7 @@ export default function InvestigationPage({
   const [prevCaseId, setPrevCaseId] = useState(caseId);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => [{
     id: "welcome",
-    content: "Hello! I'm your AI assistant for the e-Rakshak OSINT platform. I can help you analyze your case evidence by answering questions about linked entities, discovered findings, breach data, and more. What would you like to know about your case?",
+    content: "Hello! I'm your AI assistant for the Orion OSINT platform. I can help you analyze your case evidence by answering questions about linked entities, discovered findings, breach data, and more. What would you like to know about your case?",
     isUser: false,
     timestamp: new Date().toISOString()
   }]);
@@ -63,7 +63,7 @@ export default function InvestigationPage({
     setPrevCaseId(caseId);
     setChatMessages([{
       id: "welcome",
-      content: "Hello! I'm your AI assistant for the e-Rakshak OSINT platform. I can help you analyze your case evidence by answering questions about linked entities, discovered findings, breach data, and more. What would you like to know about your case?",
+      content: "Hello! I'm your AI assistant for the Orion OSINT platform. I can help you analyze your case evidence by answering questions about linked entities, discovered findings, breach data, and more. What would you like to know about your case?",
       isUser: false,
       timestamp: new Date().toISOString()
     }]);

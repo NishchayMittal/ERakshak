@@ -31,10 +31,10 @@ const DEMO_STEPS: DemoStep[] = [
     id: 'welcome',
     targetSelector: null,
     placement: 'center',
-    title: 'WELCOME TO e-RAKSHAK',
+    title: 'WELCOME TO ORION',
     subtitle: 'ORION TERMINAL v3.1',
     message: 'I am LEO, your onboard AI intelligence coordinator. This quick tour will show you how to initialize a case, run the OSINT pipeline, and explore the cyber-correlation engine.',
-    voiceText: 'Welcome to E Rakshak. I am Leo, your AI intelligence coordinator. Let\'s walk through the platform\'s core capabilities.',
+    voiceText: 'Welcome to Orion. I am Leo, your AI intelligence coordinator. Let\'s walk through the platform\'s core capabilities.',
     icon: <Play size={22} />,
     accentColor: '#39ff14',
   },
@@ -451,10 +451,11 @@ export function DemoTour() {
         if (activeSpeechIdRef.current !== speechId) return;
 
         const voices = window.speechSynthesis.getVoices();
+        const rawLang = i18n.language || 'en';
+        const selectedLang = rawLang.startsWith('hi') ? 'hi' : rawLang.startsWith('gu') ? 'gu' : 'en';
         let preferred;
-        let selectedLang = i18n.language || 'en';
 
-        if (selectedLang.startsWith('hi')) {
+        if (selectedLang === 'hi') {
           const hiVoices = voices.filter((v) => v.lang.startsWith('hi'));
           if (hiVoices.length > 0) {
             if (voiceType === 'Female') {
@@ -463,10 +464,8 @@ export function DemoTour() {
               preferred = hiVoices.find((v) => v.name.toLowerCase().includes('male') || !v.name.toLowerCase().includes('female'));
             }
             if (!preferred) preferred = hiVoices[0];
-          } else {
-            selectedLang = 'en';
           }
-        } else if (selectedLang.startsWith('gu')) {
+        } else if (selectedLang === 'gu') {
           const guVoices = voices.filter((v) => v.lang.startsWith('gu'));
           if (guVoices.length > 0) {
             if (voiceType === 'Female') {
@@ -475,32 +474,18 @@ export function DemoTour() {
               preferred = guVoices.find((v) => v.name.toLowerCase().includes('male') || !v.name.toLowerCase().includes('female'));
             }
             if (!preferred) preferred = guVoices[0];
-          } else {
-            const hiVoices = voices.filter((v) => v.lang.startsWith('hi'));
-            if (hiVoices.length > 0) {
-              selectedLang = 'hi';
-              if (voiceType === 'Female') {
-                preferred = hiVoices.find((v) => v.name.toLowerCase().includes('female') || v.name.toLowerCase().includes('lekha') || !v.name.toLowerCase().includes('male'));
-              } else {
-                preferred = hiVoices.find((v) => v.name.toLowerCase().includes('male') || !v.name.toLowerCase().includes('female'));
-              }
-              if (!preferred) preferred = hiVoices[0];
+          }
+        } else {
+          const enVoices = voices.filter((v) => v.lang.startsWith('en'));
+          if (enVoices.length > 0) {
+            if (voiceType === 'Female') {
+              preferred = enVoices.find((v) => v.name.includes('Google UK English Female') || v.name.includes('Samantha') || v.name.includes('Karen') || v.name.includes('Female'));
             } else {
-              selectedLang = 'en';
+              preferred = enVoices.find((v) => v.name.includes('Google UK English Male') || v.name.includes('Alex') || v.name.includes('Daniel') || v.name.includes('Male'));
             }
+            if (!preferred) preferred = enVoices[0];
           }
         }
-
-        if (!preferred) {
-          selectedLang = 'en';
-          if (voiceType === 'Female') {
-            preferred = voices.find((v) => v.name.includes('Google UK English Female') || v.name.includes('Samantha') || v.name.includes('Karen') || v.name.includes('Female'));
-          } else {
-            preferred = voices.find((v) => v.name.includes('Google UK English Male') || v.name.includes('Alex') || v.name.includes('Daniel') || v.name.includes('Male'));
-          }
-        }
-
-        if (!preferred) preferred = voices.find((v) => v.lang.startsWith('en')) || voices[0];
 
         const voiceTextToSpeak = getStepVoiceText(stepId, selectedLang, isMobileScreen, t, i18n);
 
@@ -508,7 +493,7 @@ export function DemoTour() {
         utter.rate = 0.92;
         utter.pitch = 1.05;
         utter.volume = 0.9;
-        utter.lang = selectedLang;
+        utter.lang = selectedLang === 'hi' ? 'hi-IN' : selectedLang === 'gu' ? 'gu-IN' : 'en-US';
 
         if (preferred) utter.voice = preferred;
 
@@ -535,8 +520,11 @@ export function DemoTour() {
           doSpeak();
         };
       } else {
-        if (synthTimerRef.current) clearTimeout(synthTimerRef.current);
-        synthTimerRef.current = setTimeout(doSpeak, 50);
+        if (synthTimerRef.current) {
+          clearTimeout(synthTimerRef.current);
+          synthTimerRef.current = null;
+        }
+        doSpeak();
       }
     },
     [voiceEnabled, voiceType, setIsSpeaking, i18n, t, isMobileScreen]
@@ -785,7 +773,32 @@ async function fetchAndCacheAudio(stepId: string, lang: string, gender: string, 
     [voiceEnabled, voiceType, setIsSpeaking, i18n, fallbackSpeechSynthesis, activeSteps]
   );
 
-  // Speak on-demand when a step is active with slight debounce so rapid skipping doesn't fire intermediate requests
+  // Proactively prefetch current step for opposite gender and other languages + next step in the background
+  useEffect(() => {
+    if (!isDemoActive || !currentStep) return;
+    const normLang = (i18n.language || 'en').startsWith('hi') ? 'hi' : (i18n.language || 'en').startsWith('gu') ? 'gu' : 'en';
+    const otherGender = voiceType === 'Female' ? 'Male' : 'Female';
+
+    // 1. Prefetch opposite gender for current step & current language (instant switch)
+    fetchAndCacheAudio(currentStep.id, normLang, otherGender, i18n, isMobileScreen);
+
+    // 2. Prefetch all other languages for current step
+    ['en', 'hi', 'gu'].forEach((lng) => {
+      if (lng !== normLang) {
+        fetchAndCacheAudio(currentStep.id, lng, voiceType, i18n, isMobileScreen);
+        fetchAndCacheAudio(currentStep.id, lng, otherGender, i18n, isMobileScreen);
+      }
+    });
+
+    // 3. Prefetch the next step for current lang & both genders
+    const nextStep = activeSteps[currentStepIndex + 1];
+    if (nextStep) {
+      fetchAndCacheAudio(nextStep.id, normLang, voiceType, i18n, isMobileScreen);
+      fetchAndCacheAudio(nextStep.id, normLang, otherGender, i18n, isMobileScreen);
+    }
+  }, [isDemoActive, currentStepIndex, voiceType, i18n.language, isMobileScreen, activeSteps, currentStep]);
+
+  // Speak immediately when a step, language, or voice type becomes active
   useEffect(() => {
     if (!isDemoActive || !currentStep) {
       lastPlayedKeyRef.current = '';
@@ -807,11 +820,8 @@ async function fetchAndCacheAudio(stepId: string, lang: string, gender: string, 
     // Immediately stop old audio when settings/step change
     stopAllAudio();
 
-    const timer = setTimeout(() => {
-      lastPlayedKeyRef.current = key;
-      speak(currentStep.id);
-    }, 60);
-    return () => clearTimeout(timer);
+    lastPlayedKeyRef.current = key;
+    speak(currentStep.id);
   }, [isDemoActive, currentStepIndex, voiceEnabled, voiceType, i18n.language, currentStep?.id, speak, stopAllAudio]);
 
   // Stop speech when voice toggled off, demo disabled, or unmounted
@@ -1084,7 +1094,7 @@ function resolveTargetElement(selector: string): HTMLElement | null {
                 <LeoAvatar isSpeaking={isSpeaking} accentColor={accent} />
                 <div className="min-w-0">
                   <div className="text-[8.5px] font-bold tracking-[0.15em] uppercase mb-0.5 truncate" style={{ color: `${accent}99` }}>
-                    {`${t('demo_tour.leo_guide', 'LEO GUIDE')}  ::  STEP ${currentStepIndex + 1} OF ${activeSteps.length}`}
+                    {`${t('demo_tour.leo_guide', 'LEO GUIDE')}  ::  ${t('demo_tour.step_indicator', { current: currentStepIndex + 1, total: activeSteps.length, defaultValue: `STEP ${currentStepIndex + 1} OF ${activeSteps.length}` })}`}
                   </div>
                   <div
                     className="text-xs sm:text-sm font-bold tracking-wider truncate"

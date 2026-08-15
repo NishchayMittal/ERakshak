@@ -189,7 +189,7 @@
     "placeholder": "Ask about linked entities, breach data, connections, or investigation details...",
     "processing": "PROCESSING...",
     "send": "SEND",
-    "welcome": "Hello! I'm your AI assistant for the e-Rakshak OSINT platform. I can help you analyze your case evidence by answering questions about linked entities, discovered findings, breach data, and more. What would you like to know about your case?",
+    "welcome": "Hello! I'm your AI assistant for the Orion OSINT platform. I can help you analyze your case evidence by answering questions about linked entities, discovered findings, breach data, and more. What would you like to know about your case?",
     "error": "Failed to get AI response",
     "fallback_error": "I'm sorry, I encountered an error while processing your question. Please try again."
   },
@@ -428,7 +428,7 @@
   },
   "intro": {
     "initiating": "INITIATING SECURE ACCESS...",
-    "brand": "e-RAKSHAK",
+    "brand": "ORION",
     "clearance": "CLEARANCE GRANTED // LINK ANALYSIS ACTIVE",
     "live": "LIVE"
   },
@@ -438,8 +438,8 @@
     "investigate": "INVESTIGATE",
     "profile": "PROFILE",
     "settings": "SETTINGS",
-    "brand": "e-RAKSHAK",
-    "brand_short": "eR",
+    "brand": "ORION",
+    "brand_short": "OR",
     "expand": "Expand",
     "collapse": "Collapse",
     "select_case_first": "Please select or initialize a case first",
@@ -604,12 +604,13 @@
   },
   "demo_tour": {
     "leo_guide": "LEO GUIDE",
+    "step_indicator": "STEP {{current}} OF {{total}}",
     "steps": {
       "welcome": {
-        "title": "WELCOME TO e-RAKSHAK",
+        "title": "WELCOME TO ORION",
         "subtitle": "ORION TERMINAL v3.1",
         "message": "I am LEO, your onboard AI intelligence coordinator. This quick tour will show you how to initialize a case, run the OSINT pipeline, and explore the cyber-correlation engine.",
-        "voiceText": "Welcome to E Rakshak. I am Leo, your AI intelligence coordinator. Let's walk through the platform's core capabilities."
+        "voiceText": "Welcome to Orion. I am Leo, your AI intelligence coordinator. Let's walk through the platform's core capabilities."
       },
       "hud-terminal": {
         "title": "SYSTEM HUD TERMINAL",

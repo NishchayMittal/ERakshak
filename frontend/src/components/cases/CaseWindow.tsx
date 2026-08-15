@@ -6,6 +6,7 @@ import { Download, FileText, RefreshCw } from 'lucide-react';
 import { useDashboardContext } from '../../pages/DashboardContext';
 import { useCaseWebSocket } from '../../hooks/useCaseWebSocket';
 import { useGraphStore } from '../../state/graphStore';
+import { useUIStore } from '../../state/uiStore';
 import { uploadImage, getIdentifiers, deleteIdentifier } from '../../api/endpoints';
 import { BASE_URL } from '../../api/client';
 import ChatPanel from './ChatPanel';
@@ -97,6 +98,7 @@ interface CaseWindowProps {
 export function CaseWindow({ win }: CaseWindowProps) {
   const { t } = useTranslation();
   const transliterate = useTransliterate();
+  const { showToast } = useUIStore();
   useCaseWebSocket(win.caseId);
   const [isUploading, setIsUploading] = useState(false);
   const {
@@ -135,7 +137,8 @@ export function CaseWindow({ win }: CaseWindowProps) {
 
   const caseId = win.caseId;
   const tab = win.activeTab || 'intake';
-  const activeEntity = activeEntityPerCase[caseId] || 'n1';
+  const caseGraph = graphDataPerCase[caseId] || graphData;
+  const activeEntity = activeEntityPerCase[caseId] || caseGraph?.nodes?.[0]?.id || 'n1';
   const zoom = caseZoom[caseId] || 1.0;
   const pan = casePan[caseId] || { x: 0, y: 0 };
 
@@ -177,9 +180,11 @@ export function CaseWindow({ win }: CaseWindowProps) {
 
   // 1. High Performance Native Mouse Panning (Bypasses React renders during drag)
   const handleLocalSvgMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0 && e.button !== 2) return;
-    const target = e.target as SVGElement;
-    if (e.button === 0 && target.tagName !== 'svg' && target.tagName !== 'rect') {
+    // Allow dragging with Left Click (0), Middle Click (1), or Right Click (2)
+    if (e.button !== 0 && e.button !== 1 && e.button !== 2) return;
+    const target = e.target as HTMLElement | SVGElement;
+    // If clicking directly on an interactive node, let node drag/click handlers take over
+    if (target.closest && target.closest('g.graph-node-group')) {
       return;
     }
 
@@ -825,7 +830,7 @@ export function CaseWindow({ win }: CaseWindowProps) {
                               return (
                                 <svg
                                   ref={svgRef}
-                                  className="w-full h-full cursor-grab active:cursor-grabbing"
+                                  className="w-full h-full cursor-grab active:cursor-grabbing select-none"
                                   onMouseDown={handleLocalSvgMouseDown}
                                   onContextMenu={(e) => e.preventDefault()}
                                 >
@@ -882,7 +887,13 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                         <g
                                           key={n.id}
                                           data-node-id={n.id}
-                                          onMouseDown={(e) => handleNodeDrag(e, caseId, n.id)}
+                                          onMouseDown={(e) => {
+                                            setActiveEntityPerCase((prev: Record<string, string>) => ({
+                                              ...prev,
+                                              [caseId]: n.id
+                                            }));
+                                            handleNodeDrag(e, caseId, n.id);
+                                          }}
                                           onClick={() => {
                                             setActiveEntityPerCase((prev: Record<string, string>) => ({
                                               ...prev,
@@ -944,11 +955,11 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                   </div>
                                   <div className="flex flex-col gap-0.5">
                                     <span className="text-gray-500 font-mono font-semibold">{t('case_window.value_detail')}</span>
-                                     <span className="text-gray-200 font-mono break-all bg-white/5 p-1 select-text">{/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(nodeInfo.label) ? nodeInfo.label.split(/[\/\\]/).pop() : transliterate(nodeInfo.label)}</span>
+                                    <span className="text-gray-200 font-mono break-all bg-white/5 p-1 select-text">{/\.(png|jpg|jpeg|webp|gif|bmp)(?:\?.*)?$/i.test(nodeInfo.label) ? nodeInfo.label.split(/[\/\\]/).pop() : transliterate(nodeInfo.label)}</span>
                                   </div>
                                   <div className="flex flex-col gap-0.5">
                                     <span className="text-gray-500 font-mono font-semibold">{t('case_window.identifier_type')}</span>
-                                     <span className="text-gray-200 font-mono uppercase bg-white/5 p-1">{transliterate(nodeInfo.type)}</span>
+                                    <span className="text-gray-200 font-mono uppercase bg-white/5 p-1">{transliterate(nodeInfo.type)}</span>
                                   </div>
                                   {nodeInfo.profile_url && (
                                     <div className="flex flex-col gap-0.5">
@@ -963,7 +974,6 @@ export function CaseWindow({ win }: CaseWindowProps) {
                                       </a>
                                     </div>
                                   )}
-
                                 </div>
                               );
                             })()}

@@ -992,7 +992,11 @@ export default function CaseDashboardPage() {
 
   const handleMatrixMouseDown = (e: React.MouseEvent) => {
     if (!lastAccessedCaseId) return;
-    if (e.button !== 2) return; // Right click only
+    // Allow dragging with Left Click (0), Middle Click (1), or Right Click (2)
+    if (e.button !== 0 && e.button !== 1 && e.button !== 2) return;
+    const target = e.target as HTMLElement | SVGElement;
+    if (target.closest && target.closest('g.cursor-pointer')) return;
+
     e.preventDefault();
     e.stopPropagation();
 
@@ -1049,7 +1053,7 @@ export default function CaseDashboardPage() {
     return (
       <svg
         ref={matrixSvgRef}
-        className="w-full h-full cursor-grab active:cursor-grabbing pointer-events-auto"
+        className="w-full h-full cursor-grab active:cursor-grabbing pointer-events-auto select-none"
         viewBox="0 0 380 120"
         onMouseDown={handleMatrixMouseDown}
         onContextMenu={(e) => e.preventDefault()}
@@ -1085,8 +1089,32 @@ export default function CaseDashboardPage() {
             return (
               <g
                 key={n.id}
-                onMouseDown={(e) => handleNodeDrag(e, lastAccessedCaseId, n.id)}
-                className="cursor-pointer select-none"
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  setActiveEntityPerCase(prev => ({
+                    ...prev,
+                    [lastAccessedCaseId]: n.id
+                  }));
+                  handleNodeDrag(e, lastAccessedCaseId, n.id);
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (lastAccessedCaseId) {
+                    setActiveEntityPerCase(prev => ({
+                      ...prev,
+                      [lastAccessedCaseId]: n.id
+                    }));
+                    const targetCase = cases.find(c => c.caseId === lastAccessedCaseId);
+                    const title = targetCase ? targetCase.title : `Investigation #${lastAccessedCaseId}`;
+                    openWindow(
+                      `workspace-${lastAccessedCaseId}`,
+                      `Case Workspace: ${title}`,
+                      'case_workspace',
+                      { caseId: lastAccessedCaseId, activeTab: 'graph' }
+                    );
+                  }
+                }}
+                className="cursor-pointer select-none group"
               >
                 <circle
                   cx={pos.x}

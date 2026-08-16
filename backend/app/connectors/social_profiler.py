@@ -330,23 +330,29 @@ class SocialProfilerConnector(BaseConnector):
         # Fallback/Name search via Yahoo Search - use flexible matching
         try:
             # Instead of exact quoted search, use OR logic for multiple variants or remove quotes for fuzzy matching
-            # Build a query that searches for any of our variants
-            query_variants = [v for v in variants if " " not in v][:4]  # Limit to 4 variants without spaces
-            if query_variants:
-                # Create OR query: site:instagram.com (term1 OR term2 OR term3)
-                query_parts = [f'"{v}"' for v in query_variants]
-                query = f'site:instagram.com {" OR ".join(query_parts)}'
-            else:
-                # Fallback to original approach but without strict quotes for fuzzy matching
-                query = f'site:instagram.com {clean_val}'
+            # Let DuckDuckGo handle the fuzzy matching of the raw name
+            query = f'site:instagram.com {clean_val}'
+            
+            ddg_headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0",
+                "Content-Type": "application/x-www-form-urlencoded",
+            }
 
-            async with httpx.AsyncClient(timeout=4.0, headers=headers) as client:
-                r = await client.get(f"https://search.yahoo.com/search?q={urllib.parse.quote(query)}")
-                if r.status_code == 200:
-                    matches = re.findall(r'RU=(https?%3a%2f%2f[a-z\.]*instagram\.com%2f[a-zA-Z0-9\-%_]+)', r.text, re.IGNORECASE)
+            async with httpx.AsyncClient(timeout=6.0, headers=ddg_headers, follow_redirects=True) as client:
+                r = await client.post("https://html.duckduckgo.com/html/", data={"q": query})
+                if r.status_code in (200, 202):
+                    html = r.text
+                    urls = []
+                    for match in re.finditer(r'uddg=([^"&]+)', html):
+                        from urllib.parse import unquote
+                        decoded = unquote(match.group(1))
+                        if decoded.startswith("http") and "instagram.com" in decoded: urls.append(decoded)
+                    for match in re.finditer(r'class="result__a"[^>]*href="([^"]+)"', html):
+                        url = match.group(1)
+                        if url.startswith("http") and "instagram.com" in url: urls.append(url)
+                    
                     # Filter out common non-user urls
-                    urls = [urllib.parse.unquote(m) for m in matches]
-                    valid_urls = [u for u in urls if not any(x in u.lower() for x in ('/p/', '/explore/', '/developer', '/about', '/reel', '/tv'))]
+                    valid_urls = [u for u in set(urls) if not any(x in u.lower() for x in ('/p/', '/explore/', '/developer', '/about', '/reel', '/tv'))]
                     for url in valid_urls:
                         uname = url.split("instagram.com/")[-1].replace("/", "").split("?")[0].split("/")[0]
                         if not uname:
@@ -366,8 +372,9 @@ class SocialProfilerConnector(BaseConnector):
                                         title_match = re.search(r'<title>([^<]+)</title>', r2.text, re.IGNORECASE)
                                         if title_match:
                                             title = title_match.group(1).lower()
-                                            queried_words = [w.lower() for w in clean_val.split() if len(w) > 2]
-                                            if queried_words and all(w in title for w in queried_words):
+                                            # Use rapidfuzz for resilient matching against typos
+                                            from rapidfuzz import fuzz
+                                            if fuzz.partial_ratio(clean_val.lower(), title) > 65:
                                                 is_valid = True
                                                 
                                     if is_valid:

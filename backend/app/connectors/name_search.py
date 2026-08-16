@@ -318,13 +318,17 @@ class NameSearchConnector(BaseConnector):
                         profile_path = self._extract_profile_path(url, site_key)
                         if profile_path:
                             path_clean = profile_path.lower().replace("-", "").replace("_", "")
-                            queried_words = [w.lower() for w in name.split() if len(w) > 2]
                             
-                            if queried_words:
-                                # For Wikipedia, Instagram, LinkedIn, etc., the URL usually contains the name.
-                                # Require all meaningful words of the name to be present in the path to avoid false positives.
-                                if not all(w in path_clean for w in queried_words):
-                                    continue
+                            # Use fuzzy matching instead of strict substring checks to handle typos
+                            from rapidfuzz import fuzz
+                            # token_set_ratio is great here because path_clean might have extra words or missing spaces
+                            match_ratio = fuzz.token_set_ratio(name.lower(), path_clean)
+                            
+                            # For Wikipedia, we need a slightly higher match to avoid false generic articles
+                            threshold = 75 if site_key == "wikipedia" else 65
+                            
+                            if match_ratio < threshold:
+                                continue
                                     
                             # Has a username/profile path → more likely a real profile
                             confidence = min(1.0, confidence + 0.10)

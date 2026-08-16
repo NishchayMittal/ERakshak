@@ -63,7 +63,7 @@ ERakshak/
 │   │   ├── main.py           # Application entrypoint
 │   │   ├── models.py         # SQLAlchemy Database Models
 │   │   ├── schemas.py        # Pydantic validation schemas
-│   │   └── database.py       # MySQL connection config
+│   │   └── database.py       # PostgreSQL connection config
 │   ├── docker-compose.yml
 │   └── requirements.txt      # Python dependencies
 ├── frontend/                 # React (Vite) Frontend UI
@@ -96,7 +96,7 @@ Orion is built on a highly concurrent, decoupled architecture for maximum scalab
 ```mermaid
 graph TD
     UI[React / Cytoscape Frontend] <--> API[FastAPI Gateway]
-    API --> DB[(MySQL on Aiven)]
+    API --> DB[(PostgreSQL on Neon.tech)]
     API --> OSINT[Async Connector Engine \n19 Data Connectors]
     API --> ML[NetworkX / XGBoost Engine]
     ML --> Correlate[Pivot Detection & Correlation]
@@ -111,7 +111,7 @@ graph TD
 
 ## 🗄️ Database Schema
 
-The database utilizes MySQL managed via SQLAlchemy ORM.
+The database utilizes PostgreSQL managed via SQLAlchemy ORM.
 
 <details>
 <summary><b>Click to expand Entity-Relationship (ER) Diagram</b></summary>
@@ -209,7 +209,7 @@ Orion utilizes a RESTful JSON API via FastAPI.
 
 **Backend (Python 3.10+):**
 - **Core API**: `fastapi`, `uvicorn`, `pydantic`
-- **Database**: `sqlalchemy`, `pymysql` (MySQL)
+- **Database**: `sqlalchemy`, `pymysql` (PostgreSQL)
 - **Security**: `python-jose` (JWT), `passlib`, `bcrypt`
 - **ML / Graphing**: `networkx`, `xgboost`, `rapidfuzz` (string matching)
 - **AI Integrations**: `groq`, `edge-tts` (Text-to-Speech)
@@ -231,10 +231,10 @@ Orion utilizes a RESTful JSON API via FastAPI.
    ```bash
    git clone https://github.com/YourOrg/Orion.git
    ```
-2. Set up a MySQL database (e.g., local install or free tier via [Aiven](https://aiven.io)).
+2. Set up a PostgreSQL database (e.g., local install or free tier via [Neon.tech](https://neon.tech)).
 3. Create a `.env` file in the `backend/` directory based on `backend/.env.example`:
    ```env
-   DATABASE_URL=mysql+pymysql://user:password@host/dbname
+   DATABASE_URL=postgresql://user:password@host/dbname
    GROQ_API_KEY=your_groq_key
    SECRET_KEY=your_jwt_secret
    ```
@@ -280,8 +280,8 @@ The project is designed to be deployed entirely on free-tier infrastructure.
 5. Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 6. Add your `.env` variables to Render's Environment section.
 
-### Database (Aiven)
-- Create a free Aiven MySQL instance.
+### Database (Neon.tech)
+- Create a free Neon.tech PostgreSQL instance.
 - Copy the Connection String and add it as the `DATABASE_URL` environment variable on your Render backend. The backend uses `Base.metadata.create_all` to automatically initialize the schema on first boot.
 
 ---

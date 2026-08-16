@@ -32,7 +32,7 @@ const MOCK_PIPELINE_LOGS = [
   'INGEST: Indic Transliterator romanized native string tokens.',
   'WHOIS: Pinging rdap.org root registry servers...',
   'WHOIS: registrant contact organization parsed: "SecureHosting Ltd".',
-  'CRT.SH: Querying certificate public logs registry for wildcard subdomains...',
+  'CRT.SH: Querying PostgreSQL public logs registry for wildcard subdomains...',
   'CRT.SH: Found 12 certified assets linked to target root domain.',
   'SHERLOCK: Fetching user handles on GitHub, Twitter, Instagram, Reddit...',
   'SHERLOCK: Entity handle collision flagged on 4 active endpoints.',

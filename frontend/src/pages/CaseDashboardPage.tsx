@@ -1266,7 +1266,7 @@ export default function CaseDashboardPage() {
     const stages = [
       'INGEST: Translating native scripts...',
       'WHOIS: Extracting historic registrar contact names...',
-      'CRT.SH: Scanned certificate transparency logs.',
+      'CRT.SH: Scanned PostgreSQL certificate transparency logs.',
       'SHERLOCK: Fetching handles across 280+ active endpoints...',
       'XGBOOST: Calculating correlation weights.',
       'MATRIX: Audit entry signed. Jaro-Winkler map completed.'

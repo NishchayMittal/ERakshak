@@ -1,5 +1,0 @@
-All improvements have been successfully applied to the existing connectors in the e-Rakshak project. The changes eliminate hallucinated data, add verification steps to reduce false positives, introduce caching for efficiency, and improve confidence scoring based on contextual signals.
-
-You can now proceed to test the updated connectors. No further connector additions are required at this stage unless new requirements arise.
-
-For any further adjustments or to add new connectors later, feel free to ask.

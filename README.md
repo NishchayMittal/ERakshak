@@ -290,10 +290,10 @@ The project is designed to be deployed entirely on free-tier infrastructure.
 **Hackathon:** ERakshak (2026)  
 **Track:** PS_01: Advanced Multi-Platform OSINT Intelligence Aggregator
 
-- Nishchay Mittal (Lead Developer)
-- Neel Mhaske (Developer)
-- Leon Simon Lobo (Developer)
-- Shreya Ashar (Developer)
+- Nishchay Mittal 
+- Neel Mhaske 
+- Leon Lobo 
+- Shreya Ashar 
 
 ## 📄 License
 This project is licensed under the [MIT License](LICENSE).

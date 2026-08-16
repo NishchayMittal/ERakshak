@@ -1,13 +1,13 @@
 services:
   db:
-    image: postgres:16
+    image: mysql:8.0
     restart: always
     environment:
-      POSTGRES_USER: erakshak
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-erakshak_prod}
-      POSTGRES_DB: erakshak
+      MYSQL_USER: erakshak
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-erakshak_prod}
+      MYSQL_DATABASE: erakshak
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - mysqldata:/var/lib/mysql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U erakshak -d erakshak"]
       interval: 10s

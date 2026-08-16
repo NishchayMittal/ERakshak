@@ -17,15 +17,32 @@ Cybercrime investigations often stall due to highly fragmented data. Evidence sc
 **Orion** is an intelligent, automated OSINT ingestion and correlation engine. It automatically normalizes raw suspect data, queries a wide array of external intelligence databases, detects hidden pivot points, and generates comprehensive evidentiary dossiers. By utilizing an XGBoost refinement layer over a NetworkX correlation engine, Orion empowers analysts to map complex criminal networks in a fraction of the time.
 
 ## ✨ Key Features
-- **Pluggable OSINT Connectors**: Concurrent asynchronous querying of sources like WHOIS/RDAP, crt.sh, Web Archive CDX, WhatsMyName Username Enumeration, and Face Similarity Matchers.
-- **Auto-Type Detection & Sanitization**: Dynamically categorizes inputs (emails, phones, domains, crypto wallets) using regex, strips wrappers, and standardizes formats before querying.
-- **Standalone Transliteration**: Normalizes native text scripts (Hindi, Gujarati, etc.) to Latin form using a standalone phonetic engine for multilingual suspect matching.
-- **Link Correlation Engine**: Maps case-wide associations and disambiguates suspects using a Fellegi-Sunter baseline matcher and an XGBoost refinement layer.
-- **Automated Pivot Detection**: Automatically flags key hub entities (nodes with 3+ connections) to highlight critical investigative pivot points.
-- **Interactive Visualizations**: A React-based UI powered by Cytoscape.js for deep-dive graph exploration of suspect relationships and SHAP feature confidences.
-- **Geo-Intelligence Mapping**: Interactive 3D globe visualizations (via React Globe) for mapping geographic IP intelligence and location-based suspects.
-- **Evidentiary & Legal Dossiers**: One-click generation of comprehensive case reports in JSON, CSV, and print-ready PDF formats, complete with automated legal offense mapping based on Indian IT Act/BNS criteria.
-- **Security & Auditing**: Complete local SQLite logging system that tracks investigator actions, timestamps, and case ingestion parameters for chain-of-custody tracking.
+
+### 🖥️ Immersive Investigator UI
+- **Cyberpunk Desktop Paradigm**: A window-based operating system UI tailored for complex multi-tasking investigations.
+- **Interactive Graph Visualizations**: Cytoscape.js powered suspect correlation node map to visually explore entity relationships.
+- **Geo-Intelligence Mapping**: 3D interactive globe visualizations (via React Globe) for spatial mapping of IP intelligence and suspect locations.
+- **Temporal Event Timeline**: A chronological timeline view to track events, breaches, and suspect activities over time.
+- **Cross-Correlation Window**: Advanced interface to cross-reference attributes across multiple distinct cases simultaneously.
+
+### 🧠 Intelligence Engine & Machine Learning
+- **Pluggable OSINT Connector Registry**: Concurrent asynchronous querying of external sources (WHOIS/RDAP, crt.sh, Web Archive CDX, WhatsMyName Username Enumeration, Face Similarity Matcher, Breach Data).
+- **Auto-Type Detection & Sanitization**: Regex categorization and standardizing inputs (emails, phones, domains, wallets, images) automatically upon ingestion.
+- **Link Correlation Engine**: NetworkX multi-directed graph engine mapping case-wide associations.
+- **Fuzzy Disambiguation & XGBoost**: Uses `rapidfuzz` (Fellegi-Sunter baseline) and XGBoost classification to calculate dynamic edge confidence scores.
+- **Automated Pivot Detection**: Automatically flags critical hub entities (nodes with 3+ connections) to highlight investigative pivot points.
+
+### 🤖 Generative AI & Accessibility
+- **Generative AI Case Narrative**: Built-in OSINT AI Assistant powered by Groq (LLaMA-3.3-70B) to synthesize evidence packs into conversational answers and dossier narratives.
+- **Multilingual Text-to-Speech (TTS)**: Built-in Edge TTS engine reading out dossier intel in English, Hindi, and Gujarati.
+- **Standalone Transliteration & i18n**: Dynamically transliterates native Indic scripts (Hindi, Gujarati) to Latin form for unified searching and suspect matching.
+- **Guided AI Assistant & Tour**: Interactive onboarding led by 'LeoAvatar' to guide new investigators.
+- **Real-Time Websocket Notifications**: Alert bell system for long-running background ingestion jobs.
+
+### ⚖️ Evidentiary & Legal Reporting
+- **Evidentiary Dossier Reports**: One-click generation of comprehensive case reports in JSON, CSV, and print-ready PDF formats.
+- **Legal Offense Mapping**: Automatically maps findings to Indian IT Act and BNS sections based on extracted evidence.
+- **Security & Auditing**: Local SQLite chain-of-custody logging system tracking all investigator actions, timestamps, and parameters.
 
 ## 🛠 Tech Stack
 - **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Cytoscape.js, Framer Motion

@@ -198,37 +198,69 @@ def _leet_variants(base: str) -> list[tuple[str, float]]:
 
 def _typo_variants(base: str) -> list[tuple[str, float]]:
     """
-    Generate Levenshtein distance-1 typo variants:
+    Generate Levenshtein distance-1 and phoneme typo variants:
     - Single character deletion
     - Adjacent character swap
-    - Character doubling
+    - Character doubling & consonant reduction (tt -> t, t -> tt)
+    - Common phonetic sound exchanges (sh/sch/s, v/w, ph/f, k/c, etc.)
     """
     results = []
     base_lower = base.lower()
     
-    # Typos on very short names produce too much noise (e.g. admin -> amin)
-    if len(base_lower) < 6:
+    # Allow typos on words length >= 3
+    if len(base_lower) < 3:
         return []
         
     n = len(base_lower)
 
-    # Deletion
+    # Deletion (nishchay -> nishcay, nishchy)
     for i in range(n):
         variant = base_lower[:i] + base_lower[i + 1:]
         if len(variant) >= 3:
-            results.append((variant, 0.55))
+            results.append((variant, 0.70))
 
-    # Swap adjacent
+    # Swap adjacent (kholi -> kohli)
     for i in range(n - 1):
         swapped = list(base_lower)
         swapped[i], swapped[i + 1] = swapped[i + 1], swapped[i]
-        results.append(("".join(swapped), 0.55))
+        results.append(("".join(swapped), 0.75))
 
-    # Character doubling (johnndoe)
-    for i in range(n):
-        variant = base_lower[:i] + base_lower[i] + base_lower[i:]
-        if len(variant) <= 24:
-            results.append((variant, 0.50))
+    # Character doubling (mital -> mittal, patel -> patell)
+    for c in "bcdfghjklmnpqrstvwxyz":
+        if c in base_lower:
+            for i in range(n):
+                if base_lower[i] == c:
+                    doubled = base_lower[:i] + c + base_lower[i:]
+                    results.append((doubled, 0.72))
+
+    # Consonant reduction (mittal -> mital, sharmaa -> sharma)
+    for c in "bcdfghjklmnpqrstvwxyz":
+        double_c = c * 2
+        if double_c in base_lower:
+            reduced = base_lower.replace(double_c, c)
+            results.append((reduced, 0.75))
+
+    # Common phonetic sound exchanges
+    SOUND_EXCHANGES = [
+        ("sh", "sch"), ("sch", "sh"),
+        ("sh", "s"), ("s", "sh"),
+        ("sch", "ch"), ("ch", "sch"),
+        ("ee", "i"), ("i", "ee"),
+        ("oo", "u"), ("u", "oo"),
+        ("v", "w"), ("w", "v"),
+        ("ph", "f"), ("f", "ph"),
+        ("k", "c"), ("c", "k"),
+        ("dh", "d"), ("d", "dh"),
+        ("th", "t"), ("t", "th"),
+        ("kh", "k"), ("k", "kh"),
+        ("gh", "g"), ("g", "gh"),
+        ("bh", "b"), ("b", "bh"),
+        ("aa", "a"), ("a", "aa"),
+    ]
+    for p1, p2 in SOUND_EXCHANGES:
+        if p1 in base_lower:
+            variant = base_lower.replace(p1, p2)
+            results.append((variant, 0.72))
 
     return results
 
@@ -256,47 +288,112 @@ def _truncation_variants(base: str) -> list[tuple[str, float]]:
     return results
 
 
+# Comprehensive phonetic and common name variations dictionary
+PHONETIC_GROUPS: list[list[str]] = [
+    # Indian First & Last Names with common spelling variations
+    ["mittal", "mital", "mitall"],
+    ["nishchay", "nischay", "nishchal", "nishant"],
+    ["dhruv", "dhruva", "dhruvv"],
+    ["kohli", "kholi", "koli", "kole"],
+    ["sharma", "sharmaa", "shrma", "sarma", "sharmar"],
+    ["verma", "varma", "barmar"],
+    ["gupta", "guptaa", "guptha"],
+    ["agarwal", "agrawal", "aggarwal", "aggrawal"],
+    ["jain", "jaine", "jayan"],
+    ["chaudhary", "choudhary", "chowdhury", "choudhry", "chaudhari"],
+    ["mehta", "mheta", "mahta"],
+    ["joshi", "josi"],
+    ["patel", "patil", "patell"],
+    ["shah", "sah", "sha"],
+    ["reddy", "reddi", "redi"],
+    ["nair", "nayar", "nayyar"],
+    ["iyer", "aiyar", "ayyar"],
+    ["mishra", "misra"],
+    ["pandey", "pande", "panday"],
+    ["yadav", "yadaav", "jadhav"],
+    ["khan", "khaan"],
+    ["ahmed", "ahmad", "ahmet"],
+    ["singh", "sing", "sinha", "singht"],
+    ["kumar", "kumaar", "kmr"],
+    ["priya", "priyaa", "priyah"],
+    ["raj", "raaj", "rj"],
+    ["dev", "dv", "dave"],
+    ["arjun", "arjuna", "arjoon"],
+    ["amit", "amitt", "ameet"],
+    ["rahul", "raahul", "rahool"],
+    ["vikram", "vikrm", "vikrum"],
+    ["sundar", "sunder"],
+    ["pichai", "pitchai"],
+    ["satya", "sathya"],
+    ["nadella", "nadela"],
+    # Arabic / Islamic Names
+    ["mohammed", "muhammad", "mohd", "mohammad", "mohamad", "muhammed", "mhd"],
+    ["ali", "aali", "aly"],
+    ["hussain", "husain", "hussein", "husayn"],
+    # Common Western Names
+    ["john", "jon", "jhon", "jhn"],
+    ["alex", "alx", "aleksandr", "alexey"],
+    ["chris", "kris", "kristopher", "christopher"],
+    ["mike", "mick", "michael", "mikhail"],
+    ["nick", "nik", "nikolas", "nikolai"],
+    ["kate", "katy", "katie", "katherine", "kathryn"],
+    ["matt", "mat", "matthew"],
+    # Russian / Slavic
+    ["ivan", "ewan", "iwan"],
+    ["dmitri", "dmitry", "dmitriy", "mitya"],
+]
+
+
 def _phonetic_variants(name: str) -> list[tuple[str, float]]:
     """
     Phonetically equivalent name variants for common transliterations.
-    Covers South Asian, Arabic, Slavic, and common Western name groups.
+    Handles single tokens as well as multi-word full names.
     """
-    PHONETIC_GROUPS: list[list[str]] = [
-        # Arabic/Islamic names
-        ["mohammed", "muhammad", "mohd", "mohammad", "mohamad", "muhammed", "mhd"],
-        ["ali", "aali", "aly"],
-        ["hussain", "husain", "hussein", "husayn"],
-        # South Asian names
-        ["priya", "priyaa", "priyah"],
-        ["sharma", "shrama", "sharmar"],
-        ["kumar", "kumaar", "kmr"],
-        ["patel", "patil", "patell", "patel"],
-        ["singh", "sing", "singht"],
-        ["raj", "raaj", "rj"],
-        ["dev", "dv", "dave"],
-        ["arjun", "arjuna", "arjoon"],
-        ["amit", "amitt", "ameet"],
-        ["rahul", "raahul", "rahool"],
-        ["vikram", "vikrm", "vikrum"],
-        # Common Western names
-        ["john", "jon", "jhon", "jhn"],
-        ["alex", "alx", "aleksandr", "alexey"],
-        ["chris", "kris", "kristopher", "christopher"],
-        ["mike", "mick", "michael", "mikhail"],
-        ["nick", "nik", "nikolas", "nikolai"],
-        ["kate", "katy", "katie", "katherine", "kathryn"],
-        ["matt", "mat", "matthew"],
-        # Russian/Slavic
-        ["ivan", "ewan", "iwan"],
-        ["dmitri", "dmitry", "dmitriy", "mitya"],
-    ]
     results = []
-    name_lower = name.lower().replace(" ", "").replace("_", "").replace(".", "")
+    clean_parts = [w.strip().lower() for w in re.split(r"[._\-\s]+", name) if w.strip()]
+    if not clean_parts:
+        return []
+
+    # 1. Whole name check
+    name_joined = "".join(clean_parts)
     for group in PHONETIC_GROUPS:
-        if name_lower in group or any(name_lower.startswith(g) for g in group):
+        if name_joined in group or any(name_joined.startswith(g) for g in group):
             for alt in group:
-                if alt != name_lower:
-                    results.append((alt, 0.72))
+                if alt != name_joined:
+                    results.append((alt, 0.85))
+
+    # 2. Multi-word name token substitution (e.g. "Nishchay Mital" -> "Nishchay Mittal")
+    if len(clean_parts) >= 2:
+        part_variations: list[list[str]] = []
+        for p in clean_parts:
+            variations = {p}
+            # Look up in phonetic groups
+            for group in PHONETIC_GROUPS:
+                if p in group:
+                    variations.update(group)
+            # Double/single consonant reduction on individual token
+            for c in "bcdfghjklmnpqrstvwxyz":
+                if c * 2 in p:
+                    variations.add(p.replace(c * 2, c))
+                elif c in p:
+                    for i, char in enumerate(p):
+                        if char == c:
+                            variations.add(p[:i] + c + p[i:])
+            part_variations.append(list(variations)[:4])
+
+        # Generate cross-combinations of name tokens
+        if len(part_variations) == 2:
+            first_vars, last_vars = part_variations[0], part_variations[1]
+            for f in first_vars:
+                for l in last_vars:
+                    if f == clean_parts[0] and l == clean_parts[1]:
+                        continue
+                    results.append((f"{f}{l}", 0.85))
+                    results.append((f"{f}.{l}", 0.82))
+                    results.append((f"{f}_{l}", 0.82))
+                    results.append((f"{f[0]}{l}", 0.78))
+                    results.append((f"{f}{l[0]}", 0.75))
+
     return results
 
 

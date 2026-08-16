@@ -127,20 +127,41 @@ class NameSearchConnector(BaseConnector):
                     "https://api.github.com/search/users",
                     params={"q": q_fallback, "per_page": 5},
                 )
-            if resp.status_code != 200:
-                return []
+            if resp.status_code == 200:
+                data = resp.json()
+                items = data.get("items", [])
+            else:
+                items = []
 
-            data = resp.json()
+            # If no items found and name has phonetic/spelling variants, try top phonetic candidates
+            if not items:
+                from app.connectors.username_mutator import _phonetic_variants
+                phonetic_alts = _phonetic_variants(name)
+                for alt_var, _ in phonetic_alts[:3]:
+                    # Format alt_var back with spaces if needed
+                    alt_query = alt_var.replace(".", " ").replace("_", " ")
+                    if alt_query.lower() == name.lower():
+                        continue
+                    try:
+                        r_alt = await client.get(
+                            "https://api.github.com/search/users",
+                            params={"q": alt_query, "per_page": 3},
+                        )
+                        if r_alt.status_code == 200:
+                            alt_items = r_alt.json().get("items", [])
+                            if alt_items:
+                                items.extend(alt_items)
+                                break
+                    except Exception:
+                        pass
         except Exception as e:
-
             logger.error(f"Unexpected error: {e}", exc_info=True)
             return []
 
-        items = data.get("items", [])
         findings: list[Finding] = []
 
-        # Pinpoint heuristic: If no anchors provided, cap at top 2 to reduce noise.
-        limit = 5 if (location or employer) else 2
+        # Pinpoint heuristic: If no anchors provided, cap at top 3 to reduce noise.
+        limit = 5 if (location or employer) else 3
 
         for item in items[:limit]:
             login = item.get("login", "")
@@ -165,13 +186,32 @@ class NameSearchConnector(BaseConnector):
             gh_blog = profile_data.get("blog") or ""
 
             # --- Name relevance filter ---
-            # Only include if the profile's display name shares a word with the queried name.
-            # Meaningful words = words longer than 2 chars (skip "de", "van", etc.)
-            queried_words = [w.lower() for w in name.split() if len(w) > 2]
+            # Use multi-metric fuzzy matching across display name and login handle to handle typos & misspellings
+            from rapidfuzz import fuzz
+            name_lower = name.lower()
+            name_compact = name_lower.replace(" ", "")
             profile_name_lower = gh_name.lower()
-            if gh_name and queried_words:
-                if not all(w in profile_name_lower for w in queried_words):
-                    continue   # profile display name doesn't match all words — skip
+            login_lower = login.lower()
+
+            match_scores = []
+            if gh_name:
+                match_scores.extend([
+                    fuzz.token_set_ratio(name_lower, profile_name_lower),
+                    fuzz.WRatio(name_lower, profile_name_lower),
+                    fuzz.ratio(name_compact, profile_name_lower.replace(" ", "")),
+                    fuzz.partial_ratio(name_compact, profile_name_lower.replace(" ", "")),
+                ])
+            # Also check against the GitHub login/handle
+            match_scores.extend([
+                fuzz.token_set_ratio(name_lower, login_lower),
+                fuzz.WRatio(name_lower, login_lower),
+                fuzz.ratio(name_compact, login_lower.replace("-", "").replace("_", "")),
+                fuzz.partial_ratio(name_compact, login_lower.replace("-", "").replace("_", "")),
+            ])
+
+            best_match = max(match_scores) if match_scores else 0
+            if best_match < 60:
+                continue   # profile doesn't sufficiently match queried name — skip
 
             profile_url = f"https://github.com/{login}"
 
@@ -319,13 +359,19 @@ class NameSearchConnector(BaseConnector):
                         if profile_path:
                             path_clean = profile_path.lower().replace("-", "").replace("_", "")
                             
-                            # Use fuzzy matching instead of strict substring checks to handle typos
+                            # Use multi-metric fuzzy matching to handle typos, name concatenation, and transposed chars
                             from rapidfuzz import fuzz
-                            # token_set_ratio is great here because path_clean might have extra words or missing spaces
-                            match_ratio = fuzz.token_set_ratio(name.lower(), path_clean)
+                            name_clean = name.lower()
+                            name_compact = name_clean.replace(" ", "")
+                            match_ratio = max(
+                                fuzz.token_set_ratio(name_clean, path_clean),
+                                fuzz.WRatio(name_clean, path_clean),
+                                fuzz.ratio(name_compact, path_clean),
+                                fuzz.partial_ratio(name_compact, path_clean),
+                            )
                             
                             # For Wikipedia, we need a slightly higher match to avoid false generic articles
-                            threshold = 75 if site_key == "wikipedia" else 65
+                            threshold = 70 if site_key == "wikipedia" else 58
                             
                             if match_ratio < threshold:
                                 continue

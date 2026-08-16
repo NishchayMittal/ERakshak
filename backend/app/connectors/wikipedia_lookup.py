@@ -52,7 +52,7 @@ class WikipediaConnector(BaseConnector):
             timeout=self.timeout_seconds,
             follow_redirects=True,
             headers={
-                "User-Agent": "e-Rakshak-OSINT/1.0 (github.com/erakshak)",
+                "User-Agent": "Orion-CyberIntel/2.0 (https://github.com/erakshak/orion; forensic-tool@svnit.ac.in)",
                 "Accept": "application/json",
             }
         ) as client:
@@ -103,7 +103,30 @@ class WikipediaConnector(BaseConnector):
             if title:
                 return title
 
-        # Strategy 3: Use the name directly as a page title guess
+        # Strategy 3: Try typo & phonetic variations of the name
+        from app.connectors.username_mutator import _phonetic_variants, _typo_variants
+        variant_queries = []
+        for alt, _ in _phonetic_variants(name)[:4]:
+            variant_queries.append(alt.replace(".", " ").replace("_", " "))
+        for alt, _ in _typo_variants(name)[:4]:
+            variant_queries.append(alt.replace(".", " ").replace("_", " "))
+
+        for vq in variant_queries:
+            if vq.lower() == name.lower():
+                continue
+            title = await self._exact_search(client, vq, target_name=name)
+            if title:
+                return title
+
+        # Strategy 4: Search individual distinct words of the name if multi-word
+        words = [w.strip() for w in name.split() if len(w.strip()) >= 3]
+        if len(words) >= 2:
+            for w in words:
+                title = await self._exact_search(client, w, target_name=name)
+                if title:
+                    return title
+
+        # Strategy 5: Use the name directly as a page title guess
         # Wikipedia URLs use underscores for spaces, and capitalize first letter
         guessed_title = name.strip().title().replace(" ", "_")
         summary = await self._fetch_summary(client, guessed_title)
@@ -113,14 +136,13 @@ class WikipediaConnector(BaseConnector):
             page_title_lower = summary.get("title", "").lower()
             name_lower = name.lower()
 
-            # Verify the name appears in the extract or title
-            name_words = set(w.lower() for w in name.split() if len(w) > 2)
-            if name_words and (name_lower in page_title_lower or any(w in extract.lower() for w in name_words)):
+            from rapidfuzz import fuzz
+            if fuzz.token_set_ratio(name_lower, page_title_lower) >= 60 or fuzz.partial_ratio(name_lower, extract.lower()) >= 65:
                 return summary.get("title", guessed_title)
 
         return None
 
-    async def _exact_search(self, client: httpx.AsyncClient, query: str) -> str | None:
+    async def _exact_search(self, client: httpx.AsyncClient, query: str, target_name: str | None = None) -> str | None:
         """Search Wikipedia and return the most relevant page title."""
         params = {
             "action": "query",
@@ -143,9 +165,9 @@ class WikipediaConnector(BaseConnector):
             if not search_results:
                 return None
 
-            # Score each result: prefer exact title matches, then high word overlap
-            query_lower = query.lower()
-            query_words = set(w.lower() for w in query_lower.split() if len(w) > 2)
+            # Score each result: compare against target_name if provided, else query
+            target_clean = (target_name or query).lower()
+            query_words = set(w.lower() for w in target_clean.split() if len(w) > 2)
 
             best_score = -1
             best_title = None
@@ -153,25 +175,37 @@ class WikipediaConnector(BaseConnector):
             for result in search_results[:5]:
                 title = result.get("title", "")
                 title_lower = title.lower()
-                snippet = result.get("snippet", "").lower()
-                snippet_clean = re.sub(r'<[^>]+>', '', snippet)
 
                 score = 0
 
+                from rapidfuzz import fuzz
                 # Exact title match is best
-                if title_lower == query_lower:
+                if title_lower == target_clean:
                     score += 100
-                # Title starts with query
-                elif title_lower.startswith(query_lower):
+                elif title_lower.startswith(target_clean):
                     score += 50
-                # Title contains query
-                elif query_lower in title_lower:
+                elif target_clean in title_lower:
                     score += 30
+
+                # Length penalty: if the candidate title is only a single short word while target has multiple words
+                target_words_count = len(target_clean.split())
+                title_words_count = len(title_lower.split())
+                
+                # Balanced fuzzy metric using token_sort_ratio and character ratio
+                fuzzy_sim = max(
+                    fuzz.token_sort_ratio(target_clean, title_lower),
+                    fuzz.ratio(target_clean, title_lower),
+                    fuzz.ratio(target_clean.replace(" ", ""), title_lower.replace(" ", ""))
+                )
+                score += fuzzy_sim * 1.0
 
                 # Word overlap score
                 title_words = set(w.lower() for w in title.split() if len(w) > 2)
                 overlap = len(query_words & title_words) if query_words else 0
                 score += overlap * 10
+
+                if target_words_count >= 2 and title_words_count == 1:
+                    score -= 25  # Penalize choosing a single name (like 'Arnold') when a full name was queried
 
                 # Check if it's a person (has birth/death years in title like "Virat Kohli (cricketer)")
                 has_disambiguation = "(disambiguation)" in title_lower
@@ -183,7 +217,7 @@ class WikipediaConnector(BaseConnector):
                     best_title = title
 
             # Only return if we have a reasonable match
-            if best_score >= 10:
+            if best_score >= 60:
                 return best_title
 
         except Exception as e:

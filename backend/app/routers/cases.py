@@ -391,28 +391,42 @@ async def submit_case_identifiers(
         from app.normalize import normalize
         normalized_value = normalize(item.rawValue, valid_type)
 
-        db_id = Identifier(
-            type=valid_type,
-            raw_value=item.rawValue,
-            normalized_value=normalized_value,
-            confidence=1.0,
-            source="manual_intake",
-            case_id=case_id,
-            investigator_id=current_investigator.id,
-            identifier_metadata=item.metadata
-        )
-        db.add(db_id)
-        db.commit()
-        db.refresh(db_id)
-        created_identifiers.append(db_id)
+        # Check if identifier already exists for this case to prevent duplication on rerun
+        existing_id = db.query(Identifier).filter(
+            Identifier.case_id == case_id,
+            Identifier.type == valid_type,
+            Identifier.normalized_value == normalized_value
+        ).first()
 
-        log_action(
-            db,
-            "identifier.create",
-            investigator_id=current_investigator.id,
-            case_id=case_id,
-            detail={"identifier_id": db_id.id, "type": db_id.type.value, "normalized_value": db_id.normalized_value},
-        )
+        if existing_id:
+            db_id = existing_id
+            if item.metadata:
+                db_id.identifier_metadata = item.metadata
+                db.commit()
+        else:
+            db_id = Identifier(
+                type=valid_type,
+                raw_value=item.rawValue,
+                normalized_value=normalized_value,
+                confidence=1.0,
+                source="manual_intake",
+                case_id=case_id,
+                investigator_id=current_investigator.id,
+                identifier_metadata=item.metadata
+            )
+            db.add(db_id)
+            db.commit()
+            db.refresh(db_id)
+
+            log_action(
+                db,
+                "identifier.create",
+                investigator_id=current_investigator.id,
+                case_id=case_id,
+                detail={"identifier_id": db_id.id, "type": db_id.type.value, "normalized_value": db_id.normalized_value},
+            )
+
+        created_identifiers.append(db_id)
 
         from app.worker import dispatch_task
         dispatch_task(case_id, db_id.id, current_investigator.id, 0)

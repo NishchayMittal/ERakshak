@@ -126,7 +126,7 @@ class FuzzyUsernameConnector(BaseConnector):
     Discovers alt/shadow accounts that exact-match enumeration cannot find.
     """
     name = "fuzzy_username"
-    applies_to = (IdentifierType.username,)
+    applies_to = (IdentifierType.username, IdentifierType.name)
     timeout_seconds = 12.0
     max_retries = 0
     # Longer cache TTL since these searches are expensive
@@ -139,8 +139,9 @@ class FuzzyUsernameConnector(BaseConnector):
         if not seed or len(seed) < 3:
             return []
 
-        # Generate mutation variants ranked by confidence
-        variants = generate_variants(seed, is_name=False, max_variants=MAX_VARIANTS_TO_PROBE)
+        # Generate mutation variants ranked by confidence (is_name=True enables full name token permutations & phonetic groups)
+        is_name_input = (" " in identifier_value) or (metadata and metadata.get("is_name")) or (not any(c.isdigit() for c in seed))
+        variants = generate_variants(seed, is_name=bool(is_name_input), max_variants=MAX_VARIANTS_TO_PROBE)
         if not variants:
             return []
 
@@ -174,13 +175,25 @@ class FuzzyUsernameConnector(BaseConnector):
             variant_strategy: str,
             platform: dict,
         ) -> Finding | None:
+            # Skip invalid username formats for specific platforms
+            if "." in variant and platform["name"] in ("GitHub", "HackerNews", "GitLab"):
+                return None
+            if "-" in variant and platform["name"] in ("HackerNews", "Reddit"):
+                if platform["name"] == "HackerNews":
+                    return None
+
             url = platform["url"].format(username=variant)
             try:
+                # Platform-specific headers
+                req_headers = dict(headers)
+                if platform["name"] == "Reddit":
+                    req_headers["User-Agent"] = "android:com.erakshak.osint:v1.0 (by /u/erakshak_app)"
+
                 # Each platform has its own 3 req/s budget — no cross-platform interference
                 await _get_platform_limiter(platform["name"]).acquire()
                 resp = await client.get(
                     url,
-                    headers=headers,
+                    headers=req_headers,
                     timeout=self.timeout_seconds,
                     follow_redirects=True,
                 )

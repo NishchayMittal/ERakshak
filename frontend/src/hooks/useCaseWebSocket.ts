@@ -3,19 +3,23 @@ import { useDashboardContext } from '../pages/DashboardContext';
 
 export function useCaseWebSocket(caseId: string | null) {
   const ws = useRef<WebSocket | null>(null);
-  const { setCaseIngestLogs, setCaseIngestProgress, loadGraphForCase } = useDashboardContext();
+  const { setCaseIngestLogs, setCaseIngestProgress, loadGraphForCase, setWindows } = useDashboardContext();
 
-  const handlersRef = useRef({ setCaseIngestLogs, setCaseIngestProgress, loadGraphForCase });
+  const handlersRef = useRef({ setCaseIngestLogs, setCaseIngestProgress, loadGraphForCase, setWindows });
   
   useEffect(() => {
-    handlersRef.current = { setCaseIngestLogs, setCaseIngestProgress, loadGraphForCase };
+    handlersRef.current = { setCaseIngestLogs, setCaseIngestProgress, loadGraphForCase, setWindows };
   });
 
   useEffect(() => {
     if (!caseId) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.hostname}:8000/ws/cases/${caseId}`;
+    const host = window.location.host;
+    const apiBase = import.meta.env.VITE_API_BASE_URL;
+    const wsUrl = apiBase
+      ? `${apiBase.replace(/^http/, 'ws')}/ws/cases/${caseId}`
+      : `${protocol}//${host}/ws/cases/${caseId}`;
     
     ws.current = new WebSocket(wsUrl);
 
@@ -25,7 +29,7 @@ export function useCaseWebSocket(caseId: string | null) {
     ws.current.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        const { setCaseIngestLogs, loadGraphForCase } = handlersRef.current;
+        const { setCaseIngestLogs, setCaseIngestProgress, loadGraphForCase, setWindows } = handlersRef.current;
         
         if (data.action === 'findings_discovered') {
           const count = data.detail.count;
@@ -38,6 +42,28 @@ export function useCaseWebSocket(caseId: string | null) {
             ...prev,
             [caseId]: [...(prev[caseId] || []), `> Pipeline completed for identifier ${data.detail.identifier_id}.`],
           }));
+
+          // Finish loading bar at 100%
+          setCaseIngestProgress((prev: Record<string, number | null>) => {
+            if (prev[caseId] !== undefined && prev[caseId] !== null) {
+              return { ...prev, [caseId]: 100 };
+            }
+            return prev;
+          });
+
+          // After a short celebration delay, clear progress and switch to graph tab
+          setTimeout(() => {
+            setCaseIngestProgress((prev: Record<string, number | null>) => {
+              if (prev[caseId] !== undefined && prev[caseId] !== null) {
+                return { ...prev, [caseId]: null };
+              }
+              return prev;
+            });
+            if (setWindows) {
+              setWindows((prev: any[]) => prev.map(w => (w.caseId === caseId ? { ...w, activeTab: 'graph' } : w)));
+            }
+          }, 600);
+
           // Reload graph since pipeline finished
           if (loadGraphForCase) {
             loadGraphForCase(caseId, '');

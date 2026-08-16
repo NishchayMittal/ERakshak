@@ -326,13 +326,16 @@ async def run_connectors_and_pivot_background(
         ).first()
         if identifier:
             await run_connectors_and_pivot(db, identifier, investigator_id, depth)
-            if depth == 0:
+    except Exception as e:
+        logger.error(f"Error in background pivot pipeline: {e}", exc_info=True)
+    finally:
+        if depth == 0:
+            try:
                 await publish_update(
                     case_id,
                     "pipeline_completed",
                     {"identifier_id": identifier_id}
                 )
-    except Exception as e:
-        logger.error(f"Error in background pivot pipeline: {e}", exc_info=True)
-    finally:
+            except Exception as ws_err:
+                logger.warning(f"Failed to publish pipeline_completed: {ws_err}")
         db.close()

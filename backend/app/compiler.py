@@ -175,7 +175,13 @@ def generate_case_graph(case_id: str, db: Session, investigator_id: str) -> dict
             target_node_id = result_val.split(" (")[0].strip()
             target_type = "person" # map to person in frontend types
             if seed_names:
-                match_score = max(fuzz.token_set_ratio(n, target_node_id) / 100.0 for n in seed_names)
+                match_score = max(
+                    max(
+                        fuzz.token_set_ratio(n.lower(), target_node_id.lower()),
+                        fuzz.WRatio(n.lower(), target_node_id.lower()),
+                        fuzz.ratio(n.lower().replace(" ", ""), target_node_id.lower().replace(" ", ""))
+                    ) / 100.0 for n in seed_names
+                )
                 confidence = max(confidence * match_score, 0.1)
         elif result_type == "registrant_org":
             target_node_id = result_val.split(" (")[0].strip()

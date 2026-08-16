@@ -111,7 +111,7 @@ def generate_username_variants(username: str) -> list[str]:
 
 class SocialProfilerConnector(BaseConnector):
     name = "social_profiler"
-    applies_to = (IdentifierType.username,)
+    applies_to = (IdentifierType.username, IdentifierType.name)
     timeout_seconds = 10.0
     max_retries = 1
 
@@ -208,8 +208,8 @@ class SocialProfilerConnector(BaseConnector):
                                             title_match = re.search(r'<title>([^<]+)</title>', r2.text, re.IGNORECASE)
                                             if title_match:
                                                 title = title_match.group(1).lower()
-                                                queried_words = [w.lower() for w in clean_val.split() if len(w) > 2]
-                                                if queried_words and all(w in title for w in queried_words):
+                                                from rapidfuzz import fuzz
+                                                if fuzz.partial_ratio(clean_val.lower(), title) > 65 or fuzz.WRatio(clean_val.lower(), title) > 65:
                                                     is_valid = True
                                 except Exception as e:
                                     logger.debug(f"Reddit profile fetch failed: {e}")
@@ -327,74 +327,71 @@ class SocialProfilerConnector(BaseConnector):
                     logger.error(f"Unexpected error: {e}", exc_info=True)
                     continue  # Try next variant
 
-        # Fallback/Name search via Yahoo Search - use flexible matching
+        # Fallback/Name search via DuckDuckGo & Yahoo Search - use flexible matching
         try:
-            # Instead of exact quoted search, use OR logic for multiple variants or remove quotes for fuzzy matching
-            # Let DuckDuckGo handle the fuzzy matching of the raw name
             query = f'site:instagram.com {clean_val}'
             
             ddg_headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
                 "Content-Type": "application/x-www-form-urlencoded",
             }
 
+            extracted_urls = []
             async with httpx.AsyncClient(timeout=6.0, headers=ddg_headers, follow_redirects=True) as client:
                 r = await client.post("https://html.duckduckgo.com/html/", data={"q": query})
                 if r.status_code in (200, 202):
                     html = r.text
-                    urls = []
                     for match in re.finditer(r'uddg=([^"&]+)', html):
                         from urllib.parse import unquote
                         decoded = unquote(match.group(1))
-                        if decoded.startswith("http") and "instagram.com" in decoded: urls.append(decoded)
+                        if "instagram.com" in decoded:
+                            extracted_urls.append(decoded)
                     for match in re.finditer(r'class="result__a"[^>]*href="([^"]+)"', html):
                         url = match.group(1)
-                        if url.startswith("http") and "instagram.com" in url: urls.append(url)
-                    
-                    # Filter out common non-user urls
-                    valid_urls = [u for u in set(urls) if not any(x in u.lower() for x in ('/p/', '/explore/', '/developer', '/about', '/reel', '/tv'))]
-                    for url in valid_urls:
-                        uname = url.split("instagram.com/")[-1].replace("/", "").split("?")[0].split("/")[0]
-                        if not uname:
-                            continue
-                        
-                        # Fetch the profile page to verify it's a real profile and not a deleted/invalid one
-                        try:
-                            async with httpx.AsyncClient(timeout=5.0, headers=headers, follow_redirects=True) as client2:
-                                r2 = await client2.get(url)
-                                if r2.status_code == 200 and "accounts/login" not in str(r2.url).lower():
-                                    is_valid = False
-                                    # 1. Strict match against generated variants
-                                    if any(v.lower() == uname.lower() for v in variants if " " not in v):
-                                        is_valid = True
-                                    else:
-                                        # 2. Check title tag for original name
-                                        title_match = re.search(r'<title>([^<]+)</title>', r2.text, re.IGNORECASE)
-                                        if title_match:
-                                            title = title_match.group(1).lower()
-                                            # Use rapidfuzz for resilient matching against typos
-                                            from rapidfuzz import fuzz
-                                            if fuzz.partial_ratio(clean_val.lower(), title) > 65:
-                                                is_valid = True
-                                                
-                                    if is_valid:
-                                        return [
-                                            Finding(
-                                                connector_name=self.name,
-                                                result_type="instagram_profile",
-                                                result_value=f"Instagram profile matching \"{clean_val}\" (@{uname})",
-                                                confidence=0.85,
-                                                raw_payload={
-                                                    "username": uname,
-                                                    "profile_url": url
-                                                }
-                                            )
-                                        ]
-                        except Exception as e:
-                            logger.debug(f"Instagram profile fetch failed: {e}")
-        except Exception as e:
+                        if "instagram.com" in url:
+                            extracted_urls.append(url)
 
-            logger.warning(f"Silenced exception: {e}", exc_info=True)
+                # Fallback to Yahoo if DDG returned no URLs
+                if not extracted_urls:
+                    r2 = await client.get(f"https://search.yahoo.com/search?q={urllib.parse.quote(query)}")
+                    if r2.status_code == 200:
+                        for m in re.findall(r'RU=(https?%3a%2f%2f[a-z\.]*instagram\.com%2f[a-zA-Z0-9\-%_]+)', r2.text, re.IGNORECASE):
+                            extracted_urls.append(urllib.parse.unquote(m))
+
+            skip_routes = {'p', 'explore', 'developer', 'about', 'reel', 'tv', 'accounts', 'stories', 'reels', 'login'}
+            from rapidfuzz import fuzz
+
+            for url in set(extracted_urls):
+                uname = url.split("instagram.com/")[-1].strip("/").split("?")[0].split("/")[0]
+                if not uname or uname.lower() in skip_routes or len(uname) < 2:
+                    continue
+
+                # Compute match score against queried name & variants
+                sim = max(
+                    fuzz.token_set_ratio(clean_val.lower(), uname.lower()),
+                    fuzz.token_sort_ratio(clean_val.lower(), uname.lower()),
+                    fuzz.WRatio(clean_val.lower(), uname.lower()),
+                    fuzz.partial_ratio(clean_val.lower(), uname.lower()),
+                    fuzz.ratio(clean_val.lower().replace(" ", ""), uname.lower().replace("_", "").replace(".", ""))
+                )
+
+                if sim >= 58 or any(v.lower() == uname.lower() for v in variants if " " not in v):
+                    clean_profile_url = f"https://www.instagram.com/{uname}/"
+                    return [
+                        Finding(
+                            connector_name=self.name,
+                            result_type="instagram_profile",
+                            result_value=f"Instagram profile matching \"{clean_val}\" (@{uname})",
+                            confidence=min(0.90, round(sim / 100.0, 2)),
+                            raw_payload={
+                                "username": uname,
+                                "profile_url": clean_profile_url,
+                                "match_similarity": sim,
+                            }
+                        )
+                    ]
+        except Exception as e:
+            logger.warning(f"Instagram search exception: {e}", exc_info=True)
         return []
 
     async def _check_linkedin(self, val: str) -> list[Finding]:
@@ -445,8 +442,8 @@ class SocialProfilerConnector(BaseConnector):
                                         title_match = re.search(r'<title>([^<]+)</title>', r2.text, re.IGNORECASE)
                                         if title_match:
                                             title = title_match.group(1).lower()
-                                            queried_words = [w.lower() for w in clean_val.split() if len(w) > 2]
-                                            if queried_words and all(w in title for w in queried_words):
+                                            from rapidfuzz import fuzz
+                                            if fuzz.partial_ratio(clean_val.lower(), title) > 65 or fuzz.WRatio(clean_val.lower(), title) > 65:
                                                 is_valid = True
                             except Exception as e:
                                 logger.debug(f"LinkedIn profile fetch failed: {e}")

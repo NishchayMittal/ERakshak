@@ -269,7 +269,12 @@ export default function CaseDashboardPage() {
         }
         return prev;
       });
-    }, 500);
+
+      // Smoothly transition window to Graph tab once loading finishes at 100%
+      setWindows(prev =>
+        prev.map(w => (w.caseId === caseId ? { ...w, activeTab: 'graph' } : w))
+      );
+    }, 600);
   }, [showToast]);
 
   const activeCaseId = windows.find(w => w.id === activeWindowId && w.type === 'case_workspace')?.caseId;
@@ -1302,12 +1307,7 @@ export default function CaseDashboardPage() {
 
       setCasePendingSeeds(prev => ({ ...prev, [caseId]: [] }));
 
-      // Switch to Graph tab
-      setWindows(prev =>
-        prev.map(w => (w.caseId === caseId ? { ...w, activeTab: 'graph' } : w))
-      );
-
-      // We do NOT clear the loading bar here. The WebSocket handlePipelineCompleted callback will do it!
+      // Note: Tab switch to 'graph' will happen automatically when loading completes at 100%
     } catch {
       clearInterval(timer);
       showToast('Backend ingestion pipeline failed', 'error');

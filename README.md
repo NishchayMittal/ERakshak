@@ -6,8 +6,9 @@
   [![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-black?logo=vercel)](https://orionerakshak.vercel.app/)
   
   **Live Demo:** [orionerakshak.vercel.app](https://orionerakshak.vercel.app/) • **Demo Video:**  [Demo Video Link](https://youtu.be/ozIQ1pxAIW0) 
-  **To access the website for demo use credentials**
-  **Username - INV-001**
+  <br>
+  **To access the website for demo use credentials**<br>
+  **Username - INV-001**<br>
   **Password - Password123!**
 </div>
 

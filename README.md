@@ -23,7 +23,8 @@ Cybercrime investigations often stall due to highly fragmented data. Evidence sc
 - **Link Correlation Engine**: Maps case-wide associations and disambiguates suspects using a Fellegi-Sunter baseline matcher and an XGBoost refinement layer.
 - **Automated Pivot Detection**: Automatically flags key hub entities (nodes with 3+ connections) to highlight critical investigative pivot points.
 - **Interactive Visualizations**: A React-based UI powered by Cytoscape.js for deep-dive graph exploration of suspect relationships and SHAP feature confidences.
-- **Evidentiary Dossier Reports**: One-click generation of comprehensive case reports in JSON, CSV, and print-ready PDF formats.
+- **Geo-Intelligence Mapping**: Interactive 3D globe visualizations (via React Globe) for mapping geographic IP intelligence and location-based suspects.
+- **Evidentiary & Legal Dossiers**: One-click generation of comprehensive case reports in JSON, CSV, and print-ready PDF formats, complete with automated legal offense mapping based on Indian IT Act/BNS criteria.
 - **Security & Auditing**: Complete local SQLite logging system that tracks investigator actions, timestamps, and case ingestion parameters for chain-of-custody tracking.
 
 ## 🛠 Tech Stack

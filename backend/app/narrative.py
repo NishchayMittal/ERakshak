@@ -14,6 +14,18 @@ def normalize_text(text: Any) -> str:
         return ""
     return re.sub(r"\s+", " ", str(text)).strip()
 
+def sanitize_evidence(data):
+    """Recursively truncates large lists, strings, and removes raw_payloads."""
+    if isinstance(data, dict):
+        return {k: sanitize_evidence(v) for k, v in data.items() if k != "raw_payload"}
+    elif isinstance(data, list):
+        if len(data) > 15:
+            return [sanitize_evidence(item) for item in data[:15]] + [f"... [TRUNCATED {len(data)-15} MORE ITEMS]"]
+        return [sanitize_evidence(item) for item in data]
+    elif isinstance(data, str) and len(data) > 300:
+        return data[:300] + "... [TRUNCATED]"
+    return data
+
 def compact_evidence_pack(evidence_pack: dict, max_nodes: int = 15) -> dict:
     import copy
     ep = copy.deepcopy(evidence_pack)
@@ -130,7 +142,7 @@ def generate_narrative(evidence_pack: dict, language: str = "en") -> str:
             
         prompt += (
             "Evidence Pack:\n"
-            f"{json.dumps(compact_evidence_pack(evidence_pack), indent=2, default=str)}\n"
+            f"{json.dumps(sanitize_evidence(compact_evidence_pack(evidence_pack)), indent=2, default=str)}\n"
         )
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -177,7 +189,7 @@ def answer_question_about_evidence(evidence_pack: dict, question: str, history: 
             sys_prompt += "Reply in English.\n\n"
             
         sys_prompt += (
-            f"Evidence Pack:\n{json.dumps(compact_evidence_pack(evidence_pack), default=str)}\n"
+            f"Evidence Pack:\n{json.dumps(sanitize_evidence(compact_evidence_pack(evidence_pack)), default=str)}\n"
         )
         
         messages = [{"role": "system", "content": sys_prompt}]

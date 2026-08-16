@@ -773,28 +773,15 @@ async function fetchAndCacheAudio(stepId: string, lang: string, gender: string, 
     [voiceEnabled, voiceType, setIsSpeaking, i18n, fallbackSpeechSynthesis, activeSteps]
   );
 
-  // Proactively prefetch current step for opposite gender and other languages + next step in the background
+  // Proactively prefetch the next step in the background for the current language and gender
   useEffect(() => {
     if (!isDemoActive || !currentStep) return;
     const normLang = (i18n.language || 'en').startsWith('hi') ? 'hi' : (i18n.language || 'en').startsWith('gu') ? 'gu' : 'en';
-    const otherGender = voiceType === 'Female' ? 'Male' : 'Female';
 
-    // 1. Prefetch opposite gender for current step & current language (instant switch)
-    fetchAndCacheAudio(currentStep.id, normLang, otherGender, i18n, isMobileScreen);
-
-    // 2. Prefetch all other languages for current step
-    ['en', 'hi', 'gu'].forEach((lng) => {
-      if (lng !== normLang) {
-        fetchAndCacheAudio(currentStep.id, lng, voiceType, i18n, isMobileScreen);
-        fetchAndCacheAudio(currentStep.id, lng, otherGender, i18n, isMobileScreen);
-      }
-    });
-
-    // 3. Prefetch the next step for current lang & both genders
+    // Prefetch the next step for current lang & current gender to save TTS rate limits
     const nextStep = activeSteps[currentStepIndex + 1];
     if (nextStep) {
       fetchAndCacheAudio(nextStep.id, normLang, voiceType, i18n, isMobileScreen);
-      fetchAndCacheAudio(nextStep.id, normLang, otherGender, i18n, isMobileScreen);
     }
   }, [isDemoActive, currentStepIndex, voiceType, i18n.language, isMobileScreen, activeSteps, currentStep]);
 

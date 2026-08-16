@@ -85,7 +85,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if path.startswith("/auth/login") or path.startswith("/auth/signup"):
             limit, window = 5, 60  # Strict constraints on sensitive routes
         elif path.startswith("/api/tts") or path.startswith("/tts"):
-            limit, window = 30, 60  # 30 TTS requests per minute per IP
+            limit, window = 300, 60  # 300 TTS requests per minute per IP
 
         try:
             allowed = self.limiter.is_allowed(client_ip, path, limit, window)

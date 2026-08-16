@@ -5,7 +5,7 @@
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
   [![Vercel](https://img.shields.io/badge/Deployed_on-Vercel-black?logo=vercel)](https://orionerakshak.vercel.app/)
   
-  **Live Demo:** [orionerakshak.vercel.app](https://orionerakshak.vercel.app/) • **Demo Video:** `[TODO: Add YouTube/Loom Link]`
+  **Live Demo:** [orionerakshak.vercel.app](https://orionerakshak.vercel.app/) • **Demo Video:**  [Demo Video Link](https://youtu.be/ozIQ1pxAIW0) 
 </div>
 
 ---

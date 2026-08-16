@@ -17,11 +17,14 @@ Cybercrime investigations often stall due to highly fragmented data. Evidence sc
 **Orion** is an intelligent, automated OSINT ingestion and correlation engine. It automatically normalizes raw suspect data, queries a wide array of external intelligence databases, detects hidden pivot points, and generates comprehensive evidentiary dossiers. By utilizing an XGBoost refinement layer over a NetworkX correlation engine, Orion empowers analysts to map complex criminal networks in a fraction of the time.
 
 ## ✨ Key Features
-- **Pluggable OSINT Connectors**: Concurrent asynchronous querying of sources like WHOIS/RDAP, crt.sh, Web Archive CDX, and Breach Repositories.
+- **Pluggable OSINT Connectors**: Concurrent asynchronous querying of sources like WHOIS/RDAP, crt.sh, Web Archive CDX, WhatsMyName Username Enumeration, and Face Similarity Matchers.
+- **Auto-Type Detection & Sanitization**: Dynamically categorizes inputs (emails, phones, domains, crypto wallets) using regex, strips wrappers, and standardizes formats before querying.
+- **Standalone Transliteration**: Normalizes native text scripts (Hindi, Gujarati, etc.) to Latin form using a standalone phonetic engine for multilingual suspect matching.
 - **Link Correlation Engine**: Maps case-wide associations and disambiguates suspects using a Fellegi-Sunter baseline matcher and an XGBoost refinement layer.
+- **Automated Pivot Detection**: Automatically flags key hub entities (nodes with 3+ connections) to highlight critical investigative pivot points.
 - **Interactive Visualizations**: A React-based UI powered by Cytoscape.js for deep-dive graph exploration of suspect relationships and SHAP feature confidences.
-- **Evidentiary Dossier Reports**: One-click generation of comprehensive case reports in JSON, CSV, and PDF formats.
-- **Standalone Transliteration**: Normalizes native text scripts to Latin form using a standalone phonetic engine for multilingual suspect matching.
+- **Evidentiary Dossier Reports**: One-click generation of comprehensive case reports in JSON, CSV, and print-ready PDF formats.
+- **Security & Auditing**: Complete local SQLite logging system that tracks investigator actions, timestamps, and case ingestion parameters for chain-of-custody tracking.
 
 ## 🛠 Tech Stack
 - **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Cytoscape.js, Framer Motion

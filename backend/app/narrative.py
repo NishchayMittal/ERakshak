@@ -140,17 +140,25 @@ def generate_narrative(evidence_pack: dict, language: str = "en") -> str:
         else:
             prompt += "Write the report in English.\n\n"
             
+        evidence_json = json.dumps(sanitize_evidence(compact_evidence_pack(evidence_pack, max_nodes=10)), default=str)
+        if len(evidence_json) > 8000:
+            evidence_json = evidence_json[:8000] + "\n...[TRUNCATED TO FIT LIMITS]"
+            
         prompt += (
             "Evidence Pack:\n"
-            f"{json.dumps(sanitize_evidence(compact_evidence_pack(evidence_pack)), indent=2, default=str)}\n"
+            f"{evidence_json}\n"
         )
         completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="qwen/qwen3.6-27b",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
-            max_tokens=1000,
+            max_tokens=3000,
         )
         content = completion.choices[0].message.content or ""
+        
+        # Strip out any <think> blocks used by reasoning models (like Qwen/DeepSeek)
+        content = re.sub(r'<think>.*?(?:</think>|$)', '', content, flags=re.DOTALL).strip()
+        
         if content.startswith("```markdown"):
             content = content[11:]
         elif content.startswith("```"):
@@ -188,26 +196,35 @@ def answer_question_about_evidence(evidence_pack: dict, question: str, history: 
         else:
             sys_prompt += "Reply in English.\n\n"
             
+        evidence_json = json.dumps(sanitize_evidence(compact_evidence_pack(evidence_pack, max_nodes=5)), default=str)
+        if len(evidence_json) > 8000:
+            evidence_json = evidence_json[:8000] + "\n...[TRUNCATED TO FIT LIMITS]"
+            
         sys_prompt += (
-            f"Evidence Pack:\n{json.dumps(sanitize_evidence(compact_evidence_pack(evidence_pack)), default=str)}\n"
+            f"Evidence Pack:\n{evidence_json}\n"
         )
         
         messages = [{"role": "system", "content": sys_prompt}]
         
         if history:
-            for msg in history:
+            # Only keep the last 4 messages to save tokens for strict models
+            for msg in history[-4:]:
                 if msg.get("role") in ["user", "assistant"] and msg.get("content"):
                     messages.append({"role": msg["role"], "content": msg["content"]})
                     
         messages.append({"role": "user", "content": question})
 
         completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="qwen/qwen3.6-27b",
             messages=messages,
             temperature=0.3,
-            max_tokens=1000,
+            max_tokens=3000,
         )
         content = completion.choices[0].message.content or ""
+        
+        # Strip out any <think> blocks used by reasoning models (like Qwen/DeepSeek)
+        content = re.sub(r'<think>.*?(?:</think>|$)', '', content, flags=re.DOTALL).strip()
+        
         if content.startswith("```markdown"):
             content = content[11:]
         elif content.startswith("```"):

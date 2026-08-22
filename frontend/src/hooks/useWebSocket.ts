@@ -39,9 +39,9 @@ export function useWebSocket(
     ws.current.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data.action === 'pipeline_completed') {
+        if (data.action === 'pipeline_completed' || data.action === 'findings_discovered') {
           // Only reload the graph if a case workspace window is actually open and not minimized.
-          // Uses a ref to avoid stale closures — reads the latest value every time.
+          // Uses a ref to avoid stale closures - reads the latest value every time.
           if (!graphReloadActiveRef.current) {
             return;
           }
@@ -49,7 +49,7 @@ export function useWebSocket(
           const latestEntityId = useGraphStore.getState().selectedEntityId;
           loadEntityGraph(caseId, latestEntityId || 'n1');
           
-          if (onPipelineCompletedRef.current) {
+          if (data.action === 'pipeline_completed' && onPipelineCompletedRef.current) {
             onPipelineCompletedRef.current(caseId);
           }
         }

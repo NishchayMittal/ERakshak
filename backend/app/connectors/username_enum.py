@@ -105,11 +105,26 @@ class UsernameEnumConnector(BaseConnector):
                 if site["name"] == "Instagram":
                     if "accounts/login" in str(response.url).lower():
                         return None
-                    # Check that the username appears in the response (case-insensitive)
-                    if username.lower() not in response.text.lower():
-                        return None
-                    # Additional check: look for common strings that indicate a profile page
-                    if not any(x in response.text.lower() for x in ['profilepage', '"username":', 'og:title']):
+                        
+                    body_lower = response.text.lower()
+                    profile_detected = False
+                    
+                    # 1. Check for og:title meta tag
+                    import re
+                    og_title_match = re.search(r'og:title["\s][^>]*content="([^"}]*)', response.text, re.IGNORECASE)
+                    if og_title_match and username.lower() in og_title_match.group(1).lower() and "instagram" in og_title_match.group(1).lower():
+                        profile_detected = True
+
+                    # 2. Check for profile page JSON data
+                    if f'"username":"{username}"' in response.text or f'"username":"{username.lower()}"' in body_lower:
+                        profile_detected = True
+
+                    # 3. Check title tag
+                    title_match = re.search(r'<title>([^<]+)</title>', response.text, re.IGNORECASE)
+                    if title_match and "instagram" in title_match.group(1).lower() and username.lower() in title_match.group(1).lower():
+                        profile_detected = True
+
+                    if not profile_detected:
                         return None
 
                 profile_tpl = site.get("profile_url", site["uri_check"])

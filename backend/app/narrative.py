@@ -149,7 +149,7 @@ def generate_narrative(evidence_pack: dict, language: str = "en") -> str:
             f"{evidence_json}\n"
         )
         completion = client.chat.completions.create(
-            model="qwen/qwen3.6-27b",
+            model="qwen/qwen3.8-27b",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
             max_tokens=3000,
@@ -215,7 +215,7 @@ def answer_question_about_evidence(evidence_pack: dict, question: str, history: 
         messages.append({"role": "user", "content": question})
 
         completion = client.chat.completions.create(
-            model="qwen/qwen3.6-27b",
+            model="qwen/qwen3.8-27b",
             messages=messages,
             temperature=0.3,
             max_tokens=3000,

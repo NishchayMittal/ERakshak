@@ -73,7 +73,29 @@ def compact_evidence_pack(evidence_pack: dict, max_nodes: int = 15) -> dict:
             ep["graph"]["nodes"] = top_nodes
             ep["graph"]["edges"] = filtered_edges
             ep["graph"]["_truncation_warning"] = f"Graph truncated from {len(nodes)} down to top {max_nodes} nodes to fit API limits."
-            
+
+    # Strip and compact identifiers and their findings to prevent payload explosion
+    if "identifiers" in ep and isinstance(ep["identifiers"], list):
+        compact_idents = []
+        for ident in ep["identifiers"][:6]:
+            findings = ident.get("findings", [])
+            findings_sorted = sorted(findings, key=lambda f: f.get("confidence", 0.0), reverse=True)[:3]
+            compact_findings = []
+            for f in findings_sorted:
+                compact_findings.append({
+                    "connector": f.get("connector"),
+                    "type": f.get("type"),
+                    "value": str(f.get("value", ""))[:120],
+                    "confidence": f.get("confidence")
+                })
+            compact_idents.append({
+                "type": ident.get("type"),
+                "value": ident.get("normalized_value") or ident.get("raw_value"),
+                "confidence": ident.get("confidence"),
+                "findings": compact_findings
+            })
+        ep["identifiers"] = compact_idents
+
     return ep
 
 logger = logging.getLogger(__name__)
@@ -140,20 +162,34 @@ def generate_narrative(evidence_pack: dict, language: str = "en") -> str:
         else:
             prompt += "Write the report in English.\n\n"
             
-        evidence_json = json.dumps(sanitize_evidence(compact_evidence_pack(evidence_pack, max_nodes=10)), default=str)
-        if len(evidence_json) > 8000:
-            evidence_json = evidence_json[:8000] + "\n...[TRUNCATED TO FIT LIMITS]"
+        evidence_json = json.dumps(sanitize_evidence(compact_evidence_pack(evidence_pack, max_nodes=8)), default=str)
+        if len(evidence_json) > 4000:
+            evidence_json = evidence_json[:4000] + "\n...[TRUNCATED TO FIT LIMITS]"
             
         prompt += (
             "Evidence Pack:\n"
             f"{evidence_json}\n"
         )
-        completion = client.chat.completions.create(
-            model="qwen/qwen3.8-27b",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
-            max_tokens=3000,
-        )
+        try:
+            completion = client.chat.completions.create(
+                model="qwen/qwen3.8-27b",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,
+                max_tokens=1200,
+            )
+        except Exception as api_err:
+            err_msg = str(api_err).lower()
+            if "413" in err_msg or "too large" in err_msg or "rate_limit" in err_msg:
+                logger.warning(f"Groq narrative hit rate/token limit ({api_err}). Retrying with ultracompact payload...")
+                trimmed_prompt = prompt[:len(prompt)//2] + "\nSynthesize concise summary from available intel."
+                completion = client.chat.completions.create(
+                    model="qwen/qwen3.8-27b",
+                    messages=[{"role": "user", "content": trimmed_prompt}],
+                    temperature=0.3,
+                    max_tokens=600,
+                )
+            else:
+                raise api_err
         content = completion.choices[0].message.content or ""
         
         # Strip out any <think> blocks used by reasoning models (like Qwen/DeepSeek)
@@ -196,9 +232,9 @@ def answer_question_about_evidence(evidence_pack: dict, question: str, history: 
         else:
             sys_prompt += "Reply in English.\n\n"
             
-        evidence_json = json.dumps(sanitize_evidence(compact_evidence_pack(evidence_pack, max_nodes=5)), default=str)
-        if len(evidence_json) > 8000:
-            evidence_json = evidence_json[:8000] + "\n...[TRUNCATED TO FIT LIMITS]"
+        evidence_json = json.dumps(sanitize_evidence(compact_evidence_pack(evidence_pack, max_nodes=4)), default=str)
+        if len(evidence_json) > 2500:
+            evidence_json = evidence_json[:2500] + "\n...[TRUNCATED TO FIT LIMITS]"
             
         sys_prompt += (
             f"Evidence Pack:\n{evidence_json}\n"
@@ -207,19 +243,38 @@ def answer_question_about_evidence(evidence_pack: dict, question: str, history: 
         messages = [{"role": "system", "content": sys_prompt}]
         
         if history:
-            # Only keep the last 4 messages to save tokens for strict models
-            for msg in history[-4:]:
+            # Keep up to 3 recent messages and truncate each to 250 chars to prevent context window explosion
+            for msg in history[-3:]:
                 if msg.get("role") in ["user", "assistant"] and msg.get("content"):
-                    messages.append({"role": msg["role"], "content": msg["content"]})
+                    trimmed_content = str(msg["content"])[:250]
+                    messages.append({"role": msg["role"], "content": trimmed_content})
                     
-        messages.append({"role": "user", "content": question})
+        messages.append({"role": "user", "content": str(question)[:400]})
 
-        completion = client.chat.completions.create(
-            model="qwen/qwen3.8-27b",
-            messages=messages,
-            temperature=0.3,
-            max_tokens=3000,
-        )
+        try:
+            completion = client.chat.completions.create(
+                model="qwen/qwen3.8-27b",
+                messages=messages,
+                temperature=0.3,
+                max_tokens=800,
+            )
+        except Exception as api_err:
+            err_msg = str(api_err).lower()
+            if "413" in err_msg or "too large" in err_msg or "rate_limit" in err_msg:
+                # Emergency compact retry with zero history and minimal prompt
+                logger.warning(f"Groq chat hit rate/token limit ({api_err}). Retrying with zero-history ultracompact payload...")
+                minimal_messages = [
+                    {"role": "system", "content": f"You are e-Rakshak AI. Case Intel: {evidence_json[:1200]}\nAnswer concisely in Markdown."},
+                    {"role": "user", "content": str(question)[:300]}
+                ]
+                completion = client.chat.completions.create(
+                    model="qwen/qwen3.8-27b",
+                    messages=minimal_messages,
+                    temperature=0.3,
+                    max_tokens=400,
+                )
+            else:
+                raise api_err
         content = completion.choices[0].message.content or ""
         
         # Strip out any <think> blocks used by reasoning models (like Qwen/DeepSeek)

@@ -175,29 +175,25 @@ class SocialProfilerConnector(BaseConnector):
 
         # Fallback/Name search via Yahoo Search - use flexible matching
         try:
-            # Instead of exact quoted search, use OR logic for multiple variants or remove quotes for fuzzy matching
-            # Build a query that searches for any of our variants
-            query_variants = [v for v in variants if " " not in v][:4]  # Limit to 4 variants without spaces
-            if query_variants:
-                # Create OR query: site:reddit.com/user (term1 OR term2 OR term3)
-                query_parts = [f'"{v}"' for v in query_variants]
-                query = f'site:reddit.com/user {" OR ".join(query_parts)}'
-            else:
-                # Fallback to original approach but without strict quotes for fuzzy matching
-                query = f'site:reddit.com/user {clean_val}'
+            # Always search Yahoo with exact quotes for precise matching on the full name in the title/content
+            query = f'site:reddit.com/user "{clean_val}"'
 
             async with httpx.AsyncClient(timeout=4.0, headers=headers) as client:
                 r = await client.get(f"https://search.yahoo.com/search?q={urllib.parse.quote(query)}")
                 if r.status_code == 200:
                     matches = re.findall(r'RU=(https?%3a%2f%2f[a-z\.]*reddit\.com%2fuser%2f[a-zA-Z0-9\-%_]+)', r.text, re.IGNORECASE)
+                    
+                    from rapidfuzz import fuzz
                     for m in matches:
                         url = urllib.parse.unquote(m)
                         uname_match = re.search(r'/user/([a-zA-Z0-9\-%_]+)', url)
                         if uname_match:
                             username = uname_match.group(1)
                             is_valid = False
-                            # 1. Strict match against generated variants without spaces
-                            if any(v.lower() == username.lower() for v in variants if " " not in v):
+                            
+                            uname_clean = re.sub(r'[\d\-]', '', username).lower()
+                            val_clean = clean_val.lower().replace(" ", "")
+                            if any(v.lower() == username.lower() for v in variants if " " not in v) or fuzz.partial_ratio(val_clean, uname_clean) > 85:
                                 is_valid = True
                             else:
                                 # 2. Check title tag for original name
@@ -208,7 +204,6 @@ class SocialProfilerConnector(BaseConnector):
                                             title_match = re.search(r'<title>([^<]+)</title>', r2.text, re.IGNORECASE)
                                             if title_match:
                                                 title = title_match.group(1).lower()
-                                                from rapidfuzz import fuzz
                                                 if fuzz.partial_ratio(clean_val.lower(), title) > 65 or fuzz.WRatio(clean_val.lower(), title) > 65:
                                                     is_valid = True
                                 except Exception as e:
@@ -273,25 +268,21 @@ class SocialProfilerConnector(BaseConnector):
                                 # Check multiple indicators of a real profile
                                 profile_detected = False
 
-                                # 1. Check if username appears in script data
-                                if variant.lower() in html.lower():
-                                    profile_detected = True
-
-                                # 2. Check for og:title meta tag (typically "First Last (@username) • Instagram")
+                                # 1. Check for og:title meta tag (typically "First Last (@username) • Instagram")
                                 og_title_match = re.search(
                                     r'og:title["\s][^>]*content="([^"}]*)',
                                     html, re.IGNORECASE
                                 )
-                                if og_title_match and variant.lower() in og_title_match.group(1).lower():
+                                if og_title_match and variant.lower() in og_title_match.group(1).lower() and "instagram" in og_title_match.group(1).lower():
                                     profile_detected = True
 
-                                # 3. Check for profile page JSON data
+                                # 2. Check for profile page JSON data
                                 if f'"username":"{variant}"' in html or f'"username":"{variant.lower()}"' in html.lower():
                                     profile_detected = True
 
-                                # 4. Check title tag
+                                # 3. Check title tag
                                 title_match = re.search(r'<title>([^<]+)</title>', html, re.IGNORECASE)
-                                if title_match and "instagram" in title_match.group(1).lower():
+                                if title_match and "instagram" in title_match.group(1).lower() and variant.lower() in title_match.group(1).lower():
                                     profile_detected = True
 
                                 if profile_detected:
@@ -375,18 +366,35 @@ class SocialProfilerConnector(BaseConnector):
                     fuzz.ratio(clean_val.lower().replace(" ", ""), uname.lower().replace("_", "").replace(".", ""))
                 )
 
+                is_valid = False
                 if sim >= 58 or any(v.lower() == uname.lower() for v in variants if " " not in v):
+                    is_valid = True
+                else:
+                    # Fetch the profile page to verify title
+                    try:
+                        async with httpx.AsyncClient(timeout=5.0, headers=ddg_headers, follow_redirects=True) as client2:
+                            r2 = await client2.get(url)
+                            if r2.status_code == 200 and "accounts/login" not in str(r2.url).lower():
+                                title_match = re.search(r'<title>([^<]+)</title>', r2.text, re.IGNORECASE)
+                                if title_match:
+                                    title = title_match.group(1).lower()
+                                    if fuzz.partial_ratio(clean_val.lower(), title) > 65:
+                                        is_valid = True
+                    except Exception as e:
+                        logger.debug(f"Instagram profile fetch failed: {e}")
+
+                if is_valid:
                     clean_profile_url = f"https://www.instagram.com/{uname}/"
                     return [
                         Finding(
                             connector_name=self.name,
                             result_type="instagram_profile",
                             result_value=f"Instagram profile matching \"{clean_val}\" (@{uname})",
-                            confidence=min(0.90, round(sim / 100.0, 2)),
+                            confidence=min(0.95, max(0.70, round(sim / 100.0, 2) if sim >= 58 else 0.85)),
                             raw_payload={
                                 "username": uname,
                                 "profile_url": clean_profile_url,
-                                "match_similarity": sim,
+                                "match_similarity": sim if sim >= 58 else "title_match",
                             }
                         )
                     ]
@@ -408,21 +416,15 @@ class SocialProfilerConnector(BaseConnector):
         variants = generate_username_variants(clean_val)
 
         try:
-            # Instead of exact quoted search, use OR logic for multiple variants or remove quotes for fuzzy matching
-            # Build a query that searches for any of our variants
-            query_variants = [v for v in variants if " " not in v][:4]  # Limit to 4 variants without spaces
-            if query_variants:
-                # Create OR query: site:linkedin.com/in/ (term1 OR term2 OR term3)
-                query_parts = [f'"{v}"' for v in query_variants]
-                query = f'site:linkedin.com/in/ {" OR ".join(query_parts)}'
-            else:
-                # Fallback to original approach but without strict quotes for fuzzy matching
-                query = f'site:linkedin.com/in/ {clean_val}'
+            # Always search Yahoo with exact quotes for precise matching on the full name in the title/content
+            query = f'site:linkedin.com/in/ "{clean_val}"'
 
             async with httpx.AsyncClient(timeout=4.0, headers=headers) as client:
                 r = await client.get(f"https://search.yahoo.com/search?q={urllib.parse.quote(query)}")
                 if r.status_code == 200:
                     matches = re.findall(r'RU=(https?%3a%2f%2f[a-z\.]*linkedin\.com%2fin%2f[a-zA-Z0-9\-%_]+)', r.text, re.IGNORECASE)
+                    
+                    from rapidfuzz import fuzz
                     for m in matches:
                         url = urllib.parse.unquote(m)
                         profile_id = url.split("linkedin.com/in/")[-1].replace("/", "").split("?")[0].split("/")[0]
@@ -430,11 +432,14 @@ class SocialProfilerConnector(BaseConnector):
                             continue
                             
                         is_valid = False
-                        # 1. Strict variant match
-                        if any(v.lower() == profile_id.lower() for v in variants if " " not in v):
+                        
+                        # 1. Fast fuzzy match on the profile ID
+                        uname_clean = re.sub(r'[\d\-]', '', profile_id).lower()
+                        val_clean = clean_val.lower().replace(" ", "")
+                        if any(v.lower() == profile_id.lower() for v in variants if " " not in v) or fuzz.partial_ratio(val_clean, uname_clean) > 85:
                             is_valid = True
                         else:
-                            # 2. Check title tag for original name
+                            # 2. Check title tag for original name (fallback)
                             try:
                                 async with httpx.AsyncClient(timeout=5.0, headers=headers, follow_redirects=True) as client2:
                                     r2 = await client2.get(url)
@@ -442,7 +447,6 @@ class SocialProfilerConnector(BaseConnector):
                                         title_match = re.search(r'<title>([^<]+)</title>', r2.text, re.IGNORECASE)
                                         if title_match:
                                             title = title_match.group(1).lower()
-                                            from rapidfuzz import fuzz
                                             if fuzz.partial_ratio(clean_val.lower(), title) > 65 or fuzz.WRatio(clean_val.lower(), title) > 65:
                                                 is_valid = True
                             except Exception as e:

@@ -37,6 +37,11 @@ export function useCaseWebSocket(caseId: string | null) {
             ...prev,
             [caseId]: [...(prev[caseId] || []), `> Discovered ${count} new findings. Updating matrix...`],
           }));
+          
+          // Reload graph so it updates in real time while the pipeline runs
+          if (loadGraphForCase) {
+            loadGraphForCase(caseId, '');
+          }
         } else if (data.action === 'pipeline_completed') {
           setCaseIngestLogs((prev: Record<string, string[]>) => ({
             ...prev,

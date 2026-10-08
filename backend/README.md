@@ -72,11 +72,10 @@ curl -X GET http://localhost:8000/identifiers/$IDENTIFIER_ID/findings \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-## Team Stubs
+## Core Backend Modules
 
-The following pieces are intentionally left for teammates:
-
-- Indic transliteration for Hindi/Gujarati/Hinglish normalization.
-- Additional connectors such as whois, wayback, and username enumeration.
-- The NetworkX correlation graph endpoint.
-- Export endpoints.
+- **Indic Transliteration & Normalization**: Native Sanskrit/Hindi/Gujarati transliteration with script normalization.
+- **19 OSINT Connectors**: Asynchronous querying including WHOIS, Wayback CDX, crt.sh, multi-platform username & fuzzy profile search, breach checks, wallet lookup, and reverse image analysis.
+- **Graph & Correlation Engine**: NetworkX-powered correlation graph with probabilistic matching and XGBoost refinement.
+- **Evidentiary Dossier & Export**: Cryptographically signed JSON/CSV/PDF exports with ECDSA digital signatures (SECP256R1) and Section 65B legal mapping.
+- **AI Narrative Synthesis**: Groq-powered Qwen 3.8 27B intelligence report generation with payload sanitization and multilingual support.

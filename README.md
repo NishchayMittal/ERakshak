@@ -25,6 +25,7 @@ Cybercrime investigations often stall due to highly fragmented data. Evidence sc
 ### 🖥️ Immersive Investigator UI
 - **Cyberpunk Desktop Paradigm**: A window-based operating system UI tailored for complex multi-tasking investigations.
 - **Interactive Graph Visualizations**: Cytoscape.js powered suspect correlation node map to visually explore entity relationships.
+- **Real-Time Graph Streaming**: WebSocket-driven live node rendering updates the correlation canvas dynamically as findings arrive without requiring manual case reloads.
 - **Geo-Intelligence Mapping**: 3D interactive globe visualizations for spatial mapping of IP intelligence and suspect locations.
 - **Cross-Correlation Window**: Advanced interface to cross-reference attributes across multiple distinct cases simultaneously.
 
@@ -32,18 +33,20 @@ Cybercrime investigations often stall due to highly fragmented data. Evidence sc
 - **Pluggable OSINT Connector Registry**: Concurrent asynchronous querying of 19 external sources (WHOIS/RDAP, crt.sh, Web Archive CDX, WhatsMyName, HIBP, etc.).
 - **Auto-Type Detection & Sanitization**: Regex categorization and standardizing inputs automatically upon ingestion.
 - **Link Correlation Engine**: Fellegi-Sunter probabilistic matching with an XGBoost refinement layer to calculate edge confidence scores.
+- **Fuzzy Identity Resolution**: Multi-metric fuzzy name and username matching (token-sort, token-set, and Levenshtein metrics) to detect mutated handles and shadow accounts across platforms while preventing false positives.
 - **Automated Pivot Detection**: Automatically flags critical hub entities (nodes with 3+ connections) to highlight investigative pivot points.
 
 ### 🤖 Generative AI & Accessibility
-- **Generative AI Case Narrative**: Built-in OSINT AI Assistant powered by Groq (LLaMA-3.3-70B) to synthesize evidence packs into dossier narratives.
+- **Generative AI Case Narrative**: Built-in OSINT AI Assistant powered by Groq (Qwen 3.8 27B) with optimized payload compaction, strict token bounds, and reasoning tag filtering to synthesize evidence packs into dossier narratives.
 - **Multilingual Text-to-Speech (TTS)**: Built-in Edge TTS engine reading out dossier intel in English, Hindi, and Gujarati.
 - **Standalone Transliteration & i18n**: Dynamically transliterates native Indic scripts (Hindi, Gujarati) to Latin form for unified searching.
 - **Guided AI Assistant & Tour**: Interactive onboarding led by 'LeoAvatar' to guide new investigators.
 
-### ⚖️ Evidentiary & Legal Reporting
+### ⚖️ Evidentiary, Security & Legal Reporting
 - **Evidentiary Dossier Reports**: One-click generation of comprehensive case reports in JSON, CSV, and print-ready PDF formats.
-- **Legal Offense Mapping**: Automatically maps findings to 17 Indian law sections based on extracted evidence.
-- **Security & Auditing**: Cryptographically signed chain-of-custody logging system tracking all investigator actions.
+- **Legal Offense Mapping**: Automatically maps findings to 17 Indian law sections (IT Act 2000, BNS 2023, PMLA 2002) based on extracted evidence.
+- **Cryptographic Evidence Auditing**: Cryptographically signed chain-of-custody logging system using ECDSA (SECP256R1) digital signatures for all actions and evidence exports.
+- **Production Security Hardening**: Memory-efficient IP rate-limiting middleware, strict HTTP security headers (HSTS, nosniff, DENY, CSP), RBAC with Lead Investigator approval gates, and automated data retention purging.
 
 ---
 
@@ -63,7 +66,7 @@ ERakshak/
 │   │   ├── correlation/      # XGBoost and NetworkX correlation engine
 │   │   ├── middleware/       # Auth, Security, and Rate Limiting
 │   │   ├── routers/          # API Route endpoints (Auth, Cases, Websockets)
-│   │   ├── resources/        # Trained XGBoost models and RAG knowledge base
+│   │   ├── resources/        # Trained XGBoost models and reference datasets
 │   │   ├── main.py           # Application entrypoint
 │   │   ├── models.py         # SQLAlchemy Database Models
 │   │   ├── schemas.py        # Pydantic validation schemas
@@ -109,7 +112,7 @@ graph TD
 1. **Frontend (React/Vite)**: Operates a cyberpunk-style desktop OS paradigm. Uses `Cytoscape.js` for heavy graph rendering and `react-globe.gl` for 3D geospatial IP mapping.
 2. **Backend (FastAPI)**: Serves as the gateway, executing concurrent OSINT requests utilizing `asyncio.gather` for rapid fan-out to 19 external connectors.
 3. **Correlation Engine**: Utilizes Fellegi-Sunter probabilistic matching for a baseline score, refined by an XGBoost ML classifier. High-confidence nodes are assembled via NetworkX to detect network pivot points.
-4. **AI/LLM Tier**: Leverages Groq APIs (Llama 3.3 70B for narrative reports/chat, Llama 3.2 11B Vision for OCR extraction).
+4. **AI/LLM Tier**: Leverages Groq APIs (Qwen 3.8 27B for synthesized narrative reports and conversational case analysis).
 
 ---
 
@@ -194,8 +197,8 @@ Orion utilizes a RESTful JSON API via FastAPI.
 - `GET /cases/cross-correlate`: Scans the entire database to find identical identifiers shared across multiple separate cases.
 - `GET /cases/{case_id}/graph`: Retrieves the computed NetworkX graph (nodes and edges) for Cytoscape rendering.
 - `GET /cases/{case_id}/evidence`: Exports the entire case (identifiers, findings, notes, audit logs) as a signed JSON payload.
-- `POST /cases/{case_id}/chat`: Sends a query to the LLM (RAG) to chat with the case evidence.
-- `GET /cases/{case_id}/narrative`: Triggers Llama 3.3 70B to auto-generate a comprehensive markdown case report.
+- `POST /cases/{case_id}/chat`: Sends a query to the AI Assistant to interactively analyze case evidence.
+- `GET /cases/{case_id}/narrative`: Triggers Qwen 3.8 27B to auto-generate a comprehensive markdown case report.
 
 ### Identifier & OSINT Routes
 - `POST /identifiers/`: Manually injects a new seed identifier into a case.

@@ -15,6 +15,11 @@ import os
 import sys
 from typing import List
 
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+except Exception:
+    pass
+
 # ----------------------------------------------------------------------
 # Make sure the project root is on the import path so we can do:
 #   from app.connectors.xxx import XxxConnector

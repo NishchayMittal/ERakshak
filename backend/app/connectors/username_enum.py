@@ -31,10 +31,25 @@ SITES = [
     {
         "name": "Instagram",
         "uri_check": "https://www.instagram.com/{account}/",
-        "profile_url": "https://instagram.com/{account}",
+        "profile_url": "https://www.instagram.com/{account}/",
         "e_code": 200,
-        "not_found": [],  # We'll rely on content check
-    }
+        "headers": {
+            "User-Agent": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+        "not_found": [],
+    },
+    {
+        "name": "LinkedIn",
+        "uri_check": "https://www.linkedin.com/in/{account}/",
+        "profile_url": "https://www.linkedin.com/in/{account}/",
+        "e_code": 200,
+        "headers": {
+            "User-Agent": "Twitterbot/1.0",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+        "not_found": ["profile not found", "page not found"],
+    },
 ]
 
 
@@ -75,12 +90,13 @@ class UsernameEnumConnector(BaseConnector):
 
         async def check_site(client: httpx.AsyncClient, site: dict) -> Finding | None:
             url = site["uri_check"].format(account=username)
+            site_headers = site.get("headers", headers)
             try:
                 async with sem:
                     await limiter.acquire()
                     response = await client.get(
                         url,
-                        headers=headers,
+                        headers=site_headers,
                         timeout=self.timeout_seconds,
                         follow_redirects=True
                     )
@@ -97,34 +113,30 @@ class UsernameEnumConnector(BaseConnector):
 
                 # For GitHub, check if the response contains the username (case-insensitive) or common profile elements
                 if site["name"] == "GitHub":
-                    # Check for the username in the response (case-insensitive) or the avatar
-                    if username.lower() not in response.text.lower() and "avatar" not in response.text.lower():
+                    if username.lower() not in body_lower and "avatar" not in body_lower:
                         return None
 
-                # For Instagram, check for the username in the response and look for signs of a profile
+                # For Instagram, verify SSR OpenGraph metadata from crawler header
                 if site["name"] == "Instagram":
-                    if "accounts/login" in str(response.url).lower():
-                        return None
-                        
-                    body_lower = response.text.lower()
-                    profile_detected = False
-                    
-                    # 1. Check for og:title meta tag
                     import re
-                    og_title_match = re.search(r'og:title["\s][^>]*content="([^"}]*)', response.text, re.IGNORECASE)
-                    if og_title_match and username.lower() in og_title_match.group(1).lower() and "instagram" in og_title_match.group(1).lower():
-                        profile_detected = True
+                    og_title_match = (
+                        re.search(r'property="og:title"\s+content="([^"]*)"', response.text, re.IGNORECASE)
+                        or re.search(r'og:title[^>]*content="([^"]*)"', response.text, re.IGNORECASE)
+                    )
+                    if not og_title_match:
+                        return None
+                    og_title = og_title_match.group(1).lower()
+                    if username.lower() not in og_title or "instagram" not in og_title:
+                        return None
 
-                    # 2. Check for profile page JSON data
-                    if f'"username":"{username}"' in response.text or f'"username":"{username.lower()}"' in body_lower:
-                        profile_detected = True
-
-                    # 3. Check title tag
+                # For LinkedIn, verify profile title from Twitterbot header
+                if site["name"] == "LinkedIn":
+                    import re
                     title_match = re.search(r'<title>([^<]+)</title>', response.text, re.IGNORECASE)
-                    if title_match and "instagram" in title_match.group(1).lower() and username.lower() in title_match.group(1).lower():
-                        profile_detected = True
-
-                    if not profile_detected:
+                    if not title_match:
+                        return None
+                    title_lower = title_match.group(1).lower()
+                    if "linkedin" not in title_lower or "profile not found" in title_lower or "404" in title_lower:
                         return None
 
                 profile_tpl = site.get("profile_url", site["uri_check"])

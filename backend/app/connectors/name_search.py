@@ -313,28 +313,42 @@ class NameSearchConnector(BaseConnector):
                     "Content-Type": "application/x-www-form-urlencoded",
                 },
             )
-            if resp.status_code != 200:
-                return []
-
-            html = resp.text
-
-            # Extract result URLs from DDG HTML response
-            # DDG wraps results in <a class="result__a" href="...">
-            # with redirect URLs that contain the actual target
             all_urls: list[str] = []
+            if resp.status_code == 200:
+                html = resp.text
 
-            # Pattern 1: Standard result links
-            for match in re.finditer(r'uddg=([^"&]+)', html):
-                from urllib.parse import unquote
-                decoded = unquote(match.group(1))
-                if decoded and decoded.startswith("http"):
-                    all_urls.append(decoded)
+                # Extract result URLs from DDG HTML response
+                for match in re.finditer(r'uddg=([^"&]+)', html):
+                    from urllib.parse import unquote
+                    decoded = unquote(match.group(1))
+                    if decoded and decoded.startswith("http"):
+                        all_urls.append(decoded)
 
-            # Pattern 2: Direct links (fallback)
-            for match in re.finditer(r'class="result__a"[^>]*href="([^"]+)"', html):
-                url = match.group(1)
-                if url.startswith("http"):
-                    all_urls.append(url)
+                for match in re.finditer(r'class="result__a"[^>]*href="([^"]+)"', html):
+                    url = match.group(1)
+                    if url.startswith("http"):
+                        all_urls.append(url)
+
+            # Fallback to Yahoo Search if DDG blocked or returned no URLs
+            if not all_urls:
+                try:
+                    import urllib.parse
+                    yahoo_resp = await client.get(
+                        "https://search.yahoo.com/search",
+                        params={"p": query},
+                        headers={
+                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+                        },
+                        timeout=5.0
+                    )
+                    if yahoo_resp.status_code == 200:
+                        matches = re.findall(r'RU=([^/"]+)/RK=', yahoo_resp.text)
+                        for m in matches:
+                            u = urllib.parse.unquote(m)
+                            if u.startswith("http"):
+                                all_urls.append(u)
+                except Exception:
+                    pass
 
             # Check each URL against known platforms
             for url in all_urls:

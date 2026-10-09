@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import httpx
 import re
@@ -8,105 +9,158 @@ from app.models import IdentifierType
 logger = logging.getLogger(__name__)
 
 
+CRAWLER_IG_HEADERS = {
+    "User-Agent": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+}
+
+CRAWLER_LI_HEADERS = {
+    "User-Agent": "Twitterbot/1.0",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+}
+
+BROWSER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+}
+
+
 def generate_username_variants(username: str) -> list[str]:
     """
-    Generate common variants of a username for more flexible searching.
-    Returns a list of variants including the original.
-
-    For names (e.g. "Virat Kohli"), this generates realistic social media
-    username patterns:
-      - viratkohli      (concatenated)
-      - virat.kohli     (dot separated)
-      - virat_kohli     (underscore separated)
-      - virat-kohli     (hyphen separated)
-      - vkohli          (first initial + last name)
-      - viratk          (first name + last initial)
-      - kohli           (last name only)
-      - virat           (first name only)
-      - viratkohli123   (with random numbers)
-      - iamviratkohli   (with "iam" prefix)
+    Generate realistic candidate usernames.
+    For multi-word names (e.g. 'Satya Nadella'), generates concatenated/dotted combinations.
+    For single usernames, returns the handle itself and minor numerical variants.
     """
-    if not username or len(username) < 2:
-        return [username]
+    clean = username.strip()
+    if not clean or len(clean) < 2:
+        return [clean]
 
-    variants: set[str] = {username}  # Use a set to avoid duplicates
+    has_space = " " in clean
 
-    # Split into words if this looks like a name
-    words = [w.strip() for w in username.replace("_", " ").replace(".", " ").replace("-", " ").split() if w.strip()]
-    lowercase_username = username.lower()
-
-    if len(words) >= 2:
-        # Multi-word name → generate social-media-style usernames
-        first = words[0].lower()
-        last = words[-1].lower()
-
-        # Combined forms (most common on social media)
-        combos = [
-            f"{first}{last}",           # viratkohli
-            f"{first}.{last}",          # virat.kohli
-            f"{first}_{last}",          # virat_kohli
-            f"{first}-{last}",          # virat-kohli
-            f"{first[0]}{last}",         # vkohli
-            f"{first}{last[0]}",         # viratk
-            f"iam{first}{last}",         # iamviratkohli
-            f"official{first}{last}",     # officialviratkohli
-            f"real{first}{last}",         # realviratkohli
-            f"the{first}{last}",          # theviratkohli
-            f"{first}{last}official",     # viratkohliofficial
-        ]
-
-        # If more than 2 words, try first_middle_last patterns
-        if len(words) >= 3:
-            middle = "_".join(words)
-            combos.extend([
-                middle,
-                middle.lower().replace(" ", "."),
-                middle.lower().replace(" ", "_"),
-            ])
-
-        for combo in combos:
-            cleaned = combo.strip().lower()
-            if 2 <= len(cleaned) <= 64:
-                variants.add(cleaned)
-
+    if has_space:
+        words = [w.strip() for w in clean.split() if w.strip()]
+        if len(words) >= 2:
+            first = words[0].lower()
+            last = words[-1].lower()
+            combos = [
+                f"{first}{last}",           # satyanadella
+                f"{first}.{last}",          # satya.nadella
+                f"{first}_{last}",          # satya_nadella
+                f"{first}-{last}",          # satya-nadella
+                f"{first[0]}{last}",         # snadella
+                f"{first}{last[0]}",         # satyan
+                f"iam{first}{last}",         # iamsatyanadella
+                f"real{first}{last}",        # realsatyanadella
+            ]
+            return combos
     else:
-        # Single word — apply the original transformations
-        no_trailing_nums = re.sub(r'\d+$', '', username)
-        if no_trailing_nums and no_trailing_nums != username:
-            variants.add(no_trailing_nums)
+        variants = [clean.lower()]
+        no_trailing_nums = re.sub(r'\d+$', '', clean)
+        if no_trailing_nums and no_trailing_nums.lower() != clean.lower() and len(no_trailing_nums) >= 2:
+            variants.append(no_trailing_nums.lower())
+        return variants
 
-        no_leading_nums = re.sub(r'^\d+', '', username)
-        if no_leading_nums and no_leading_nums != username:
-            variants.add(no_leading_nums)
+    return [clean.lower()]
 
-        # Replace common leetspeak substitutions
-        leetspeak_map = {
-            '0': 'o', '3': 'e', '4': 'a',
-            '5': 's', '6': 'g', '7': 't', '8': 'b', '9': 'g',
-            '2': 'z'
-        }
-        leet_version = username
-        for num, letter in leetspeak_map.items():
-            if num in leet_version:
-                leet_version = leet_version.replace(num, letter)
-        if leet_version != username and len(leet_version) >= 2:
-            variants.add(leet_version)
 
-        # Remove underscores
-        no_underscores = username.replace('_', '')
-        if no_underscores and no_underscores != username and len(no_underscores) >= 2:
-            variants.add(no_underscores)
+def is_profile_match(target: str, title: str, handle: str) -> bool:
+    """Verify that candidate profile actually matches queried name/handle."""
+    from rapidfuzz import fuzz
 
-        # Remove dots
-        no_dots = username.replace('.', '')
-        if no_dots and no_dots != username and len(no_dots) >= 2:
-            variants.add(no_dots)
+    target_clean = target.strip().lower()
+    if not target_clean:
+        return False
+    title_lower = title.lower()
+    handle_lower = handle.lower()
 
-    # Convert set back to list and limit to reasonable number
-    result = list(variants)
-    # Prioritize shorter, more common variants (shorter = more likely to be taken)
-    result.sort(key=lambda x: (len(x), x))
-    return result[:12]  # Limit to 12 variants max to avoid excessive requests
+    person_name = title.split(" - ")[0].split(" | ")[0].split(" • ")[0].split("(@")[0].strip().lower()
+
+    if " " in target_clean:
+        if person_name:
+            sim_person = max(
+                fuzz.token_set_ratio(target_clean, person_name),
+                fuzz.token_sort_ratio(target_clean, person_name),
+                fuzz.ratio(target_clean, person_name),
+            )
+            if sim_person >= 80:
+                return True
+
+        words = [w for w in target_clean.split() if len(w) >= 2]
+        if all(w in title_lower for w in words) and (
+            handle_lower == "".join(words)
+            or handle_lower == ".".join(words)
+            or handle_lower == "_".join(words)
+            or handle_lower == "-".join(words)
+        ):
+            return True
+
+        return False
+    else:
+        if target_clean == handle_lower:
+            return True
+        if target_clean in handle_lower:
+            return True
+        return False
+
+
+async def _direct_check_instagram(client: httpx.AsyncClient, handle: str) -> dict | None:
+    clean = handle.strip().lstrip("@")
+    if not clean or len(clean) < 2 or " " in clean:
+        return None
+    url = f"https://www.instagram.com/{clean}/"
+    try:
+        r = await client.get(url, headers=CRAWLER_IG_HEADERS, follow_redirects=True, timeout=4.0)
+        if r.status_code == 200:
+            html = r.text
+            og_title_m = (
+                re.search(r'property="og:title"\s+content="([^"]*)"', html, re.IGNORECASE)
+                or re.search(r'og:title[^>]*content="([^"]*)"', html, re.IGNORECASE)
+            )
+            if og_title_m:
+                title = og_title_m.group(1)
+                title_lower = title.lower()
+                if "instagram" in title_lower and clean.lower() in title_lower:
+                    followers = "unknown"
+                    desc_m = (
+                        re.search(r'property="og:description"\s+content="([^"]*)"', html, re.IGNORECASE)
+                        or re.search(r'og:description[^>]*content="([^"]*)"', html, re.IGNORECASE)
+                    )
+                    if desc_m:
+                        desc = desc_m.group(1)
+                        f_m = re.search(r'(\d[\d,]*[KMkm]?)\s*[Ff]ollower', desc)
+                        if f_m:
+                            followers = f_m.group(1).replace(',', '')
+                    return {
+                        "username": clean,
+                        "profile_url": url,
+                        "title": title,
+                        "followers": followers,
+                    }
+    except Exception:
+        pass
+    return None
+
+
+async def _direct_check_linkedin(client: httpx.AsyncClient, handle: str) -> dict | None:
+    clean = handle.strip().lstrip("@")
+    if not clean or len(clean) < 2 or " " in clean:
+        return None
+    url = f"https://www.linkedin.com/in/{clean}/"
+    try:
+        r = await client.get(url, headers=CRAWLER_LI_HEADERS, follow_redirects=True, timeout=4.0)
+        if r.status_code == 200:
+            title_m = re.search(r'<title>([^<]+)</title>', r.text, re.IGNORECASE)
+            title = title_m.group(1) if title_m else ""
+            title_lower = title.lower()
+            if "linkedin" in title_lower and "profile not found" not in title_lower and "404" not in title_lower:
+                return {
+                    "username": clean,
+                    "profile_url": url,
+                    "title": title,
+                }
+    except Exception:
+        pass
+    return None
 
 
 class SocialProfilerConnector(BaseConnector):
@@ -228,244 +282,132 @@ class SocialProfilerConnector(BaseConnector):
         return []
 
     async def _check_instagram(self, val: str) -> list[Finding]:
-        clean_val = re.sub(r'[^a-zA-Z0-9_\.\s]', '', val).strip()
-        if not clean_val:
+        clean_val = val.strip().lstrip("@")
+        if not clean_val or len(clean_val) < 2:
             return []
         has_space = " " in clean_val
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
-
-        # Generate variants for more flexible matching
         variants = generate_username_variants(clean_val)
+        candidates_to_try = [clean_val] if not has_space else [v for v in variants if " " not in v][:4]
 
-        # Try direct Instagram profile lookup for each variant if no spaces
-        if not has_space:
-            for variant in variants:
-                # Skip variants with spaces for direct lookup (they won't work as usernames)
-                if " " in variant:
-                    continue
-                try:
-                    async with httpx.AsyncClient(timeout=5.0, headers=headers, follow_redirects=True) as client:
-                        r = await client.get(f"https://www.instagram.com/{variant}/")
-                        if r.status_code == 200:
-                            if "accounts/login" in str(r.url).lower():
-                                continue
-                                
-                            html = r.text
-                            # Check if the profile exists by looking for typical patterns
-                            # Instagram returns a 200 even for non-existent profiles, so we
-                            # need to detect "not found" indicators
-                            not_found_indicators = [
-                                "this page isn't available",
-                                "the link you followed may be broken",
-                                "page isn't available",
-                                "sorry, this page",
-                                "content isn't available",
-                                "page not found",
-                            ]
-                            is_not_found = any(indicator in html.lower() for indicator in not_found_indicators)
-
-                            if not is_not_found:
-                                # Check multiple indicators of a real profile
-                                profile_detected = False
-
-                                # 1. Check for og:title meta tag (typically "First Last (@username) • Instagram")
-                                og_title_match = re.search(
-                                    r'og:title["\s][^>]*content="([^"}]*)',
-                                    html, re.IGNORECASE
-                                )
-                                if og_title_match and variant.lower() in og_title_match.group(1).lower() and "instagram" in og_title_match.group(1).lower():
-                                    profile_detected = True
-
-                                # 2. Check for profile page JSON data
-                                if f'"username":"{variant}"' in html or f'"username":"{variant.lower()}"' in html.lower():
-                                    profile_detected = True
-
-                                # 3. Check title tag
-                                title_match = re.search(r'<title>([^<]+)</title>', html, re.IGNORECASE)
-                                if title_match and "instagram" in title_match.group(1).lower() and variant.lower() in title_match.group(1).lower():
-                                    profile_detected = True
-
-                                if profile_detected:
-                                    # Attempt to extract follower count from meta property og:description
-                                    followers = "unknown"
-                                    follow_match = re.search(
-                                        r'(\d[\d,]*[KMkm]?)\s*[Ff]ollower',
-                                        html, re.IGNORECASE
-                                    )
-                                    if follow_match:
-                                        followers = follow_match.group(1).replace(',', '')
-                                    # Get full name from og:title
-                                    full_name = variant
-                                    title_match = re.search(r'og:title"[^>]*content="([^"]*)"', html, re.IGNORECASE)
-                                    if title_match:
-                                        full_name = title_match.group(1).strip()
-                                    return [
-                                        Finding(
-                                            connector_name=self.name,
-                                            result_type="instagram_profile",
-                                            result_value=f"Instagram profile: @{variant} | Followers: {followers}",
-                                            confidence=0.9,
-                                            raw_payload={
-                                                "username": variant,
-                                                "followers": followers,
-                                                "full_name": full_name,
-                                                "profile_url": f"https://www.instagram.com/{variant}/"
-                                            }
-                                        )
-                                    ]
-                except Exception as e:
-
-                    logger.error(f"Unexpected error: {e}", exc_info=True)
-                    continue  # Try next variant
-
-        # Fallback/Name search via DuckDuckGo & Yahoo Search - use flexible matching
-        try:
-            query = f'site:instagram.com {clean_val}'
-            
-            ddg_headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                "Content-Type": "application/x-www-form-urlencoded",
-            }
-
-            extracted_urls = []
-            async with httpx.AsyncClient(timeout=6.0, headers=ddg_headers, follow_redirects=True) as client:
-                r = await client.post("https://html.duckduckgo.com/html/", data={"q": query})
-                if r.status_code in (200, 202):
-                    html = r.text
-                    for match in re.finditer(r'uddg=([^"&]+)', html):
-                        from urllib.parse import unquote
-                        decoded = unquote(match.group(1))
-                        if "instagram.com" in decoded:
-                            extracted_urls.append(decoded)
-                    for match in re.finditer(r'class="result__a"[^>]*href="([^"]+)"', html):
-                        url = match.group(1)
-                        if "instagram.com" in url:
-                            extracted_urls.append(url)
-
-                # Fallback to Yahoo if DDG returned no URLs
-                if not extracted_urls:
-                    r2 = await client.get(f"https://search.yahoo.com/search?q={urllib.parse.quote(query)}")
-                    if r2.status_code == 200:
-                        for m in re.findall(r'RU=(https?%3a%2f%2f[a-z\.]*instagram\.com%2f[a-zA-Z0-9\-%_]+)', r2.text, re.IGNORECASE):
-                            extracted_urls.append(urllib.parse.unquote(m))
-
-            skip_routes = {'p', 'explore', 'developer', 'about', 'reel', 'tv', 'accounts', 'stories', 'reels', 'login'}
-            from rapidfuzz import fuzz
-
-            for url in set(extracted_urls):
-                uname = url.split("instagram.com/")[-1].strip("/").split("?")[0].split("/")[0]
-                if not uname or uname.lower() in skip_routes or len(uname) < 2:
-                    continue
-
-                # Compute match score against queried name & variants
-                sim = max(
-                    fuzz.token_set_ratio(clean_val.lower(), uname.lower()),
-                    fuzz.token_sort_ratio(clean_val.lower(), uname.lower()),
-                    fuzz.WRatio(clean_val.lower(), uname.lower()),
-                    fuzz.partial_ratio(clean_val.lower(), uname.lower()),
-                    fuzz.ratio(clean_val.lower().replace(" ", ""), uname.lower().replace("_", "").replace(".", ""))
-                )
-
-                is_valid = False
-                if sim >= 58 or any(v.lower() == uname.lower() for v in variants if " " not in v):
-                    is_valid = True
-                else:
-                    # Fetch the profile page to verify title
-                    try:
-                        async with httpx.AsyncClient(timeout=5.0, headers=ddg_headers, follow_redirects=True) as client2:
-                            r2 = await client2.get(url)
-                            if r2.status_code == 200 and "accounts/login" not in str(r2.url).lower():
-                                title_match = re.search(r'<title>([^<]+)</title>', r2.text, re.IGNORECASE)
-                                if title_match:
-                                    title = title_match.group(1).lower()
-                                    if fuzz.partial_ratio(clean_val.lower(), title) > 65:
-                                        is_valid = True
-                    except Exception as e:
-                        logger.debug(f"Instagram profile fetch failed: {e}")
-
-                if is_valid:
-                    clean_profile_url = f"https://www.instagram.com/{uname}/"
+        async with httpx.AsyncClient() as client:
+            tasks = [_direct_check_instagram(client, c) for c in candidates_to_try]
+            results = await asyncio.gather(*tasks)
+            for res in results:
+                if res and is_profile_match(clean_val, res["title"], res["username"]):
+                    followers_text = f" | Followers: {res['followers']}" if res.get('followers') != 'unknown' else ""
                     return [
                         Finding(
                             connector_name=self.name,
                             result_type="instagram_profile",
-                            result_value=f"Instagram profile matching \"{clean_val}\" (@{uname})",
-                            confidence=min(0.95, max(0.70, round(sim / 100.0, 2) if sim >= 58 else 0.85)),
+                            result_value=f"Instagram profile: @{res['username']}{followers_text}",
+                            confidence=0.95 if not has_space else 0.85,
                             raw_payload={
-                                "username": uname,
-                                "profile_url": clean_profile_url,
-                                "match_similarity": sim if sim >= 58 else "title_match",
+                                "username": res["username"],
+                                "followers": res.get("followers", "unknown"),
+                                "profile_url": res["profile_url"],
+                                "title": res.get("title", ""),
                             }
                         )
                     ]
-        except Exception as e:
-            logger.warning(f"Instagram search exception: {e}", exc_info=True)
+
+            # Fallback search via Yahoo
+            try:
+                q = f"site:instagram.com {clean_val}"
+                r = await client.get("https://search.yahoo.com/search", params={"p": q}, headers=BROWSER_HEADERS, follow_redirects=True, timeout=5.0)
+                if r.status_code == 200:
+                    matches = re.findall(r'RU=([^/"]+)/RK=', r.text)
+                    skip_routes = {'p', 'explore', 'developer', 'about', 'reel', 'tv', 'accounts', 'stories', 'reels', 'login', 'directory'}
+                    candidate_handles = []
+                    for m in matches:
+                        u = urllib.parse.unquote(m)
+                        if "instagram.com/" in u:
+                            handle = u.split("instagram.com/")[-1].strip("/").split("?")[0].split("/")[0]
+                            if handle and handle.lower() not in skip_routes and len(handle) >= 2:
+                                if handle not in candidate_handles:
+                                    candidate_handles.append(handle)
+
+                    for handle in candidate_handles[:4]:
+                        res = await _direct_check_instagram(client, handle)
+                        if res and is_profile_match(clean_val, res["title"], res["username"]):
+                            followers_text = f" | Followers: {res['followers']}" if res.get('followers') != 'unknown' else ""
+                            return [
+                                Finding(
+                                    connector_name=self.name,
+                                    result_type="instagram_profile",
+                                    result_value=f"Instagram profile: @{res['username']}{followers_text}",
+                                    confidence=0.85,
+                                    raw_payload={
+                                        "username": res["username"],
+                                        "followers": res.get("followers", "unknown"),
+                                        "profile_url": res["profile_url"],
+                                        "title": res.get("title", ""),
+                                    }
+                                )
+                            ]
+            except Exception as e:
+                logger.warning(f"Instagram search exception: {e}", exc_info=True)
+
         return []
 
     async def _check_linkedin(self, val: str) -> list[Finding]:
-        clean_val = val.strip()
-        if not clean_val:
+        clean_val = val.strip().lstrip("@")
+        if not clean_val or len(clean_val) < 2:
             return []
-        # Remove the demo/test values
-        # if clean_val.lower() in ("suspect", "test_user", "agent"):
-        #     return [...]   # removed
-
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
-
-        # Generate variants for more flexible matching
+        has_space = " " in clean_val
         variants = generate_username_variants(clean_val)
+        candidates_to_try = [clean_val] if not has_space else [v for v in variants if " " not in v][:4]
 
-        try:
-            # Always search Yahoo with exact quotes for precise matching on the full name in the title/content
-            query = f'site:linkedin.com/in/ "{clean_val}"'
+        async with httpx.AsyncClient() as client:
+            tasks = [_direct_check_linkedin(client, c) for c in candidates_to_try]
+            results = await asyncio.gather(*tasks)
+            for res in results:
+                if res and is_profile_match(clean_val, res["title"], res["username"]):
+                    return [
+                        Finding(
+                            connector_name=self.name,
+                            result_type="linkedin_profile",
+                            result_value=f"LinkedIn profile: {res['title']}",
+                            confidence=0.95 if not has_space else 0.85,
+                            raw_payload={
+                                "username": res["username"],
+                                "profile_url": res["profile_url"],
+                                "title": res["title"],
+                            }
+                        )
+                    ]
 
-            async with httpx.AsyncClient(timeout=4.0, headers=headers) as client:
-                r = await client.get(f"https://search.yahoo.com/search?q={urllib.parse.quote(query)}")
+            # Fallback search via Yahoo (clean syntax: site:linkedin.com/in {name})
+            try:
+                q = f"site:linkedin.com/in {clean_val}"
+                r = await client.get("https://search.yahoo.com/search", params={"p": q}, headers=BROWSER_HEADERS, follow_redirects=True, timeout=5.0)
                 if r.status_code == 200:
-                    matches = re.findall(r'RU=(https?%3a%2f%2f[a-z\.]*linkedin\.com%2fin%2f[a-zA-Z0-9\-%_]+)', r.text, re.IGNORECASE)
-                    
-                    from rapidfuzz import fuzz
+                    matches = re.findall(r'RU=([^/"]+)/RK=', r.text)
+                    candidate_handles = []
                     for m in matches:
-                        url = urllib.parse.unquote(m)
-                        profile_id = url.split("linkedin.com/in/")[-1].replace("/", "").split("?")[0].split("/")[0]
-                        if not profile_id:
-                            continue
-                            
-                        is_valid = False
-                        
-                        # 1. Fast fuzzy match on the profile ID
-                        uname_clean = re.sub(r'[\d\-]', '', profile_id).lower()
-                        val_clean = clean_val.lower().replace(" ", "")
-                        if any(v.lower() == profile_id.lower() for v in variants if " " not in v) or fuzz.partial_ratio(val_clean, uname_clean) > 85:
-                            is_valid = True
-                        else:
-                            # 2. Check title tag for original name (fallback)
-                            try:
-                                async with httpx.AsyncClient(timeout=5.0, headers=headers, follow_redirects=True) as client2:
-                                    r2 = await client2.get(url)
-                                    if r2.status_code == 200:
-                                        title_match = re.search(r'<title>([^<]+)</title>', r2.text, re.IGNORECASE)
-                                        if title_match:
-                                            title = title_match.group(1).lower()
-                                            if fuzz.partial_ratio(clean_val.lower(), title) > 65 or fuzz.WRatio(clean_val.lower(), title) > 65:
-                                                is_valid = True
-                            except Exception as e:
-                                logger.debug(f"LinkedIn profile fetch failed: {e}")
-                        
-                        if is_valid:
+                        u = urllib.parse.unquote(m)
+                        if "linkedin.com/in/" in u:
+                            handle = u.split("linkedin.com/in/")[-1].strip("/").split("?")[0].split("/")[0]
+                            if handle and handle.lower() not in ("in", "dir", "login") and len(handle) >= 2:
+                                if handle not in candidate_handles:
+                                    candidate_handles.append(handle)
+
+                    for handle in candidate_handles[:4]:
+                        res = await _direct_check_linkedin(client, handle)
+                        if res and is_profile_match(clean_val, res["title"], res["username"]):
                             return [
                                 Finding(
                                     connector_name=self.name,
                                     result_type="linkedin_profile",
-                                    result_value=f"LinkedIn profile matching \"{clean_val}\"",
+                                    result_value=f"LinkedIn profile: {res['title']}",
                                     confidence=0.85,
                                     raw_payload={
-                                        "username": profile_id,
-                                        "profile_url": url
+                                        "username": res["username"],
+                                        "profile_url": res["profile_url"],
+                                        "title": res["title"],
                                     }
                                 )
                             ]
-        except Exception as e:
+            except Exception as e:
+                logger.warning(f"LinkedIn search exception: {e}", exc_info=True)
 
-            logger.warning(f"Silenced exception: {e}", exc_info=True)
         return []
